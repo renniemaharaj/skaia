@@ -114,9 +114,122 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-07-17T08:42:00-04:00
+- 2026-07-18T08:51:53-04:00
 
 ## Last Run Remarks
+
+- Completed `typed_page_sections_redesign` Phase 1 and started Phase 2 with the
+  checked-in 19-type
+  compatibility matrix, sanitized fixtures for all 12 production-observed page
+  section types and three saved-preset types, canonical legacy mappings, and
+  parse/save/copy/duplicate/shell/registry/live-payload regression tests. Made
+  renderer dispatch exhaustive, restored the legacy `features` alias, and added
+  a safe visible unknown-type fallback. Added four renderer-family DOM parity
+  tests, embedded page-theme/shared-shell v1 JSON Schema contracts, a public
+  registry contract endpoint, and a reusable fail-closed section-revision guard.
+- Progressed Phase 2 with normalized item/preset and all 19 versioned config
+  contracts. Registry definitions now derive version, defaults, capabilities,
+  config schema, and optional item schema from the embedded canonical sources;
+  drift and defensive-copy tests cover the public metadata. Canonical interactive
+  config contracts intentionally exclude runtime records and result summaries.
+- Added fail-closed normalized runtime validation with a locally cached Draft
+  2020-12 validator, embedded-only reference resolution, schema-default checks,
+  explicit safe CSS color validation, sanitized errors, and tests proving legacy
+  config remains behind the compatibility boundary.
+- Added deterministic backend-to-frontend contract generation for the section
+  union, per-type config aliases, versions, defaults, and capabilities. Frontend
+  `types.ts` now consumes the generated list; Go and npm checks fail on drift.
+- Extended generation to normalized Go discriminators/config DTOs and added a
+  bounded, depth-limited, duplicate-key-safe validation/decode factory with
+  sanitized failures and default/type coverage for all 19 section types.
+- Added the generic normalized frontend `PageSection<T>` boundary and a tested
+  compatibility adapter that separates shared shell, generated per-type config,
+  interactive runtime projections, and quarantine while retaining legacy keys
+  and a reverse projection for the current document path.
+- Closed `typed_page_sections_redesign` Phase 2 at the verified contract boundary.
+  Renderer migration is Phase 3, shadow persistence is Phase 4, typed mutation
+  and revision wiring is Phase 5, and cutover/rollback controls are Phase 7.
+- Completed Phase 3 by moving all renderer families behind one `SectionFrame`
+  and one shared toolbar, with six type-specific action portals, an exhaustive
+  generated-metadata renderer registry, safe page-palette/color resolution,
+  container width and overflow-safe content scaling, and accessible
+  permission-aware collapse state. The compatibility adapter projects generated
+  shell edits back into the legacy document without erasing unknown config.
+- Verification passed: backend `go test ./...`; contract drift checks; 32 focused
+  frontend tests; frontend TypeScript, lint, and build. The full frontend suite
+  passes 109/113 tests; its only failures are the same four unrelated existing
+  MFA/Header assertions recorded in the todo tip.
+- Completed `typed_page_sections_redesign` Phase 4 with idempotent fresh and
+  incremental normalized storage for page themes/tokens, section instances,
+  palette references, items, presets, responses, quarantine, and parity runs.
+  Ordinary page creates/updates now maintain the shadow transactionally while
+  `pages.content` remains authoritative.
+- Added bounded response-free legacy/normalized projectors, stable server-ID
+  upserts, stale-row cleanup, safe quarantine/repair telemetry, palette
+  referential integrity, and a resumable 1-500 page backfill command. Sensitive
+  interactive records remain exclusively in the current document until Phase 6.
+- Real PostgreSQL verification exposed and fixed existing baseline drift in the
+  provisioning seed order, inbox participant migration, product-review table,
+  store special-action columns, and role bootstrap password handling. A fresh
+  database now runs all migrations twice successfully without rotating an
+  existing database role credential.
+- Verification passed: standard full backend suite; all Phase 4 pure and DB-backed
+  tests; 11 focused frontend tests; contract drift check; frontend lint/build.
+  A serial full DB-backed suite also passed the Phase 4 packages but exposed
+  unrelated existing forum/store/user fixture and nullable-column failures,
+  recorded in the todo tip.
+- Completed `typed_page_sections_redesign` Phase 5 with a backend-owned,
+  page-specific cutover gate; typed section CRUD/reorder and palette endpoints;
+  centralized fail-closed page-editor policy; bounded generated config and shell
+  validation; and sanitized content-free HTTP conflict responses.
+- Added transactional page/row locking, expected section and theme revisions,
+  stable normalized identities, independent-section convergence, revision-guarded
+  structural changes, deferred theme-token ordering, and compatibility-document
+  rebuilds that retain interactive records exclusively in the legacy runtime
+  envelope.
+- Moved the builder to per-section typed writes on eligible pages, with queued-edit
+  flushing before structural mutations, explicit conflict recovery, typed
+  numeric/string legacy-key identity, subscriber-targeted content-free page
+  invalidations, replayed shared WebSocket subscriptions, and reconnect refetch.
+- Verification passed: complete backend suite; focused serial PostgreSQL typed
+  concurrency/theme/migration tests; frontend contract drift, lint, and production
+  build; and all page-section tests. The full frontend suite passes 112/116 tests;
+  only the same four unrelated MFA/Header baseline assertions fail.
+- Completed `typed_page_sections_redesign` Phase 6 with migration 032, a bounded
+  resumable sensitive-response backfill, page-scoped definition/response parity
+  gates, and `PAGE_NORMALIZED_INTERACTIVE_RESPONSES`. Matched pages now use locked
+  normalized response authority and transactionally refresh their rollback
+  document; non-migrated pages retain the legacy response path.
+- Preserved response keys, stable respondent identity, answers, statuses,
+  moderator answers, pinned state, timestamps, and one-way idempotency parity.
+  Raw idempotency keys are replaced in rollback projections, while both keys and
+  hashes are explicitly excluded from participant/manager REST projections,
+  result summaries, telemetry, audit metadata, logs, and WebSockets. Malformed
+  interactive documents now sanitize to an empty result instead of failing open.
+- Introduced `SectionPreset`, `preset_type`, and `/config/section-presets` as the
+  preferred datasource-preset vocabulary while retaining the legacy model,
+  discriminator, and route aliases. Preset writes now require a service-level,
+  fail-closed `home.manage` policy.
+- Verification passed: complete backend suite; serial PostgreSQL migration rerun,
+  parity/idempotency/concurrency/moderation/type-race/disclosure tests; 20 focused
+  frontend tests; contract drift; lint; TypeScript; and production build. The
+  full frontend suite remains at 112/116, with only the same four unrelated
+  MFA/Header baseline assertions failing.
+- Completed `typed_page_sections_redesign` Phase 7 with migration 033,
+  `PAGE_NORMALIZED_SECTION_READS`, page-specific consecutive parity/window and
+  rollback-drill gates, normalized-only read projection, compatibility-endpoint
+  usage telemetry, and the bounded `page-section-cutover` operational command.
+- Added a deliberately non-destructive legacy-write retirement preflight. It
+  requires every page ready for a full release window, no recent compatibility
+  client writes, empty dormant legacy tables, and explicit external client/job
+  review; legacy projection writes remain intact until real deployment evidence
+  satisfies those conditions.
+- Phase 7 verification passed: complete backend suite; focused PostgreSQL
+  migration/cutover/rollback/telemetry tests; the live preflight runbook refusal;
+  frontend contract drift, 26 focused page-section tests, lint, TypeScript, and
+  production build.
+
+## Previous Run Remarks (2026-07-17T08:42:00-04:00)
 
 - Completed `interactive_sections_audit_remediation` across backend privacy,
   centralized page policy, integrity validation, content-free realtime, CORS,

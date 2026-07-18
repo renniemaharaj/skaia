@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skaia.dev/schemas/page-sections/page-item.v1.schema.json",
+  "title": "Skaia page section item v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "integer", "minimum": 1 },
+    "section_id": { "type": "integer", "minimum": 1 },
+    "legacy_key": { "type": ["string", "number", "null"] },
+    "display_order": { "type": "integer", "minimum": 0 },
+    "icon": { "type": "string", "maxLength": 120 },
+    "heading": { "type": "string", "maxLength": 1000 },
+    "subheading": { "type": "string", "maxLength": 5000 },
+    "image_url": { "type": "string", "maxLength": 4096 },
+    "link_url": { "type": "string", "maxLength": 4096 },
+    "config_version": { "const": 1 },
+    "config": { "type": "object" },
+    "revision": { "type": "integer", "minimum": 1 }
+  },
+  "required": [
+    "id",
+    "section_id",
+    "legacy_key",
+    "display_order",
+    "icon",
+    "heading",
+    "subheading",
+    "image_url",
+    "link_url",
+    "config_version",
+    "config",
+    "revision"
+  ]
+}

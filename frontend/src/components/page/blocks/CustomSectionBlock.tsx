@@ -6,17 +6,7 @@ import { Clock } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "../../../utils/api";
 import { ColumnMapper } from "../ColumnMapper";
-import {
-  SectionToolbar,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  getSectionLayout,
-  getSectionMargins,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-  setSectionLayout,
-  setSectionMargins,
-} from "../EditControls";
+import { SectionToolbarActions } from "../EditControls";
 import { detectColumns, mapRowsToItems, rowKey } from "../mapRows";
 import type { RawRow } from "../mapRows";
 import type {
@@ -217,8 +207,7 @@ function TablePreview({
   );
 }
 
-export const CustomSectionBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
-  const layout = getSectionLayout(section.config);
+export const CustomSectionBlock = ({ section, canEdit, onUpdate }: Props) => {
   const cfg = parseConfig(section.config);
 
   const [customSections, setCustomSections] = useState<CustomSection[]>([]);
@@ -239,7 +228,7 @@ export const CustomSectionBlock = ({ section, canEdit, onUpdate, onDelete }: Pro
   // Load available custom sections
   useEffect(() => {
     setAuthError(false);
-    apiRequest<CustomSection[]>("/config/custom-sections")
+    apiRequest<CustomSection[]>("/config/section-presets")
       .then(list => setCustomSections(list ?? []))
       .catch((err: unknown) => {
         const msg = err instanceof Error ? err.message : String(err);
@@ -420,51 +409,19 @@ export const CustomSectionBlock = ({ section, canEdit, onUpdate, onDelete }: Pro
   return (
     <section className="custom-section-block">
       {canEdit && (
-        <SectionToolbar
-          onDelete={() => onDelete(section.id)}
-          label="Custom Section"
-          layout={layout}
-          onLayoutChange={l =>
-            onUpdate({
-              ...section,
-              config: setSectionLayout(section.config, l),
-            })
-          }
-          margins={getSectionMargins(section.config)}
-          onMarginsChange={m =>
-            onUpdate({
-              ...section,
-              config: setSectionMargins(section.config, m),
-            })
-          }
-          animation={getSectionAnimation(section.config)}
-          onAnimationChange={a =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimation(section.config, a),
-            })
-          }
-          animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={i =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimationIntensity(section.config, i),
-            })
-          }
-          extra={
-            <Button
-              unstyled
-              type="button"
-              className="pb-section-toolbar-btn"
-              onClick={runEvaluation}
-              disabled={evaluating || !cfg.custom_section_id}
-              title="Re-evaluate"
-            >
-              <RefreshCw size={14} className={evaluating ? "spin" : ""} />
-              {evaluating ? " Running…" : " Refresh"}
-            </Button>
-          }
-        />
+        <SectionToolbarActions>
+          <Button
+            unstyled
+            type="button"
+            className="pb-section-toolbar-btn"
+            onClick={runEvaluation}
+            disabled={evaluating || !cfg.custom_section_id}
+            title="Re-evaluate"
+          >
+            <RefreshCw size={14} className={evaluating ? "spin" : ""} />
+            {evaluating ? " Running…" : " Refresh"}
+          </Button>
+        </SectionToolbarActions>
       )}
 
       {/* Controls bar */}

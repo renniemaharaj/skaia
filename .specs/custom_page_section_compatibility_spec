@@ -1,0 +1,261 @@
+# Custom Page Section Compatibility Spec
+
+## Scope
+
+Frozen input, rendering, edit, copy, duplicate, and live-update behavior that the
+typed page-section migration must preserve. This is a compatibility baseline,
+not authorization to keep the legacy document model after cutover.
+
+## Load when
+
+Changing `pages.content`, page section/item types, `BlockRenderer`, section
+toolbars, registry validation, saved custom sections, page duplication, or page
+WebSocket reconciliation.
+
+## Owns
+
+- Anonymized shapes: `backend/internal/page/testdata/production_page_shapes.json`
+- Current frontend envelope: `frontend/src/components/page/types.ts`
+- Generated frontend contracts: `frontend/src/components/page/sectionContracts.generated.ts`
+- Frontend compatibility adapter: `frontend/src/components/page/sectionAdapter.ts`
+- Current shell: `frontend/src/components/page/SectionFrame.tsx`
+- Shared shell editor: `frontend/src/components/page/SectionShellControls.tsx`
+- Typed renderer registry: `frontend/src/components/page/sectionRendererRegistry.tsx`
+- Safe palette resolver: `frontend/src/components/page/sectionTheme.ts`
+- Shared toolbar/action portal: `frontend/src/components/page/EditControls.tsx`
+- Current registry/save validation: `backend/internal/s_registry/registry.go`
+- Canonical schema contracts: `backend/internal/s_registry/schemas/*.schema.json`
+- Revision gate: `backend/internal/page/revision.go`
+- Migration plan: `.todo/typed_page_sections_redesign`
+
+## Legacy document envelope
+
+| Level | Fields and behavior |
+| --- | --- |
+| Page | `id`, `slug`, `title`, `description`, `visibility`, `content`, ownership/engagement/timestamps; `content` is a JSON string containing an ordered section array |
+| Section | `id`, `display_order`, `section_type`, `heading`, `subheading`, `config`, optional `items`, optional frontend-only `last_edited_by` |
+| Item | `id`, `section_id`, `display_order`, `icon`, `heading`, `subheading`, `image_url`, `link_url`, `config` |
+| Config storage | Production input includes JSON-encoded strings and JSON objects; compatibility decoding must accept both and canonical output must use one object form |
+| Identity | Legacy section/item IDs may be numbers or strings and are scoped to their parent page/section; copied pages can reuse IDs |
+| Empty values | Empty pages are valid; empty visibility currently behaves as non-private and migrates explicitly to `public` |
+
+Current page saves accept only positive numeric section IDs and registered
+canonical types. Legacy string IDs and `features` therefore require a dedicated
+migration adapter; they must not be made valid accidentally by weakening normal
+write validation.
+
+## Current shared presentation inventory
+
+All shared presentation currently lives inside each section's `config` string.
+
+| Field | Accepted/default behavior | Legacy alias |
+| --- | --- | --- |
+| `layout` | `left`, `center`, `right`, `wide`; default `center` | truthy `wide` means `wide` |
+| `marginTop/Right/Bottom/Left` | numbers; default `0`; negative values are currently rendered | none |
+| `paddingTop/Right/Bottom/Left` | numbers; default `0` | card-template `padding` expands to four sides |
+| `animation` | `none`, `fade-in`, `slide-up`, `slide-left`, `slide-right`, `zoom-in`, `bounce`; default `none` | none |
+| `animationIntensity` | `subtle`, `normal`, `dramatic`; default `normal` | none |
+| `bg_color` | free string today; default empty | CTA also applies this inside its own surface |
+
+`SectionFrame`, invoked by `BlockRenderer`, consumes the generated shared shell
+through the compatibility adapter and owns outer layout, spacing, container
+width, background, bounded content scale, animation, collapse, suspense, and one
+shared move/copy/cut/delete toolbar. Blocks no longer render shared toolbars; six
+families portal only renderer-specific actions into the frame toolbar. Renderers
+retain semantic heading/subheading placement, inline content editing, item
+controls, and empty states where their DOM contracts differ. Clipboard copy
+keeps the complete section except interactive `records` and `result_summary`;
+page duplicate does the same and forces the new page to `private`.
+
+Renderer dispatch is exhaustive across the 19 canonical types. Stored legacy
+`features` resolves to `feature_grid`; every other unknown or missing type renders
+a content-safe visible error, and editors may remove it without exposing config.
+
+The v1 typed shared-shell schema includes validated background, ordinary text,
+`h1`, `h2`, and `h3` color sources; page palette-token references; bounded
+`content_scale`; `collapsible`; and `default_collapsed`.
+Viewer collapse state is permission-aware ephemeral state, not persisted viewer
+data. It is keyed by page, section, and authoritative revision so rerenders
+retain the local choice while reload, navigation, or a revision change restores
+the authored default. Literal colors use a safe CSS subset; palette references
+resolve only to declared page tokens through namespaced CSS variables. Resolvable
+background/text pairs surface an editor contrast warning.
+
+## Section-specific compatibility matrix
+
+Every type also accepts the shared presentation fields above.
+
+| Canonical type | Section config and defaults | Items / special behavior |
+| --- | --- | --- |
+| `hero` | `background_image` (fallback banner), `videos[]`, `tint_color` (`#000000`), `tint_opacity` (`0.45`), `variant` (`1`) | legacy `video_url` becomes a one-entry video list; multi-video order is meaningful |
+| `card_group` | shared only | common items; new heading/subheading defaults are `New Card` / `Description here` |
+| `stat_cards` | shared only | common items; icon defaults to `Star` |
+| `social_links` | `links[{icon,url}]`, default empty | config-backed list, not `PageItem` rows |
+| `image_gallery` | `albums[{key,label}]` (fallback `all`), `default_card_width` (`regular`) | item config has `album` (`all`) and `width`; truthy item/section `wide` aliases to `wide` |
+| `feature_grid` | shared only | common items; legacy section type `features` maps here |
+| `cta` | shared plus `bg_color` | heading/subheading only; background is applied by outer renderer and CTA surface |
+| `event_highlights` | shared only | common items use image, heading, subheading |
+| `profile_card` | `banner_url`, `avatar_url`, `profile_name`, `profile_subtitle`, `description`, `checklist[]`, `links[{label,url}]` | fallback images/name/subtitle remain visible |
+| `rich_text` | `content` HTML, default empty | inline author styles must round-trip; empty editor prompt is editor-only |
+| `code_editor` | `code` (`""`), `language` (`typescript`), `filename` (`""`) | HTML/Markdown preview; copy/download are viewer actions |
+| `data_sources` | shared only | management UI reads datasource APIs; environment values never enter fixtures or page broadcasts |
+| `derived_section` | `datasource_id`, `column_map`, `row_overrides`, `row_key_column`, `card_template`, `component_type`, `component_version`, `bindings`, `style_overrides`, `component_group`, `event_hooks` | datasource rows are runtime projections, not persisted page items |
+| `custom_section` | derived fields plus `custom_section_id` | saved `custom_sections` values are presets/datasource views, not page-section types |
+| `form` | interactive shared definition fields; new default has name/email/message fields | records are sensitive runtime data and are cleared on copy/duplicate |
+| `qa` | interactive fields plus `moderation` default `true`; question textarea default | public feed exposes only policy-approved records |
+| `survey` | interactive fields; satisfaction scale and feedback defaults | default limit `1`, results after participation |
+| `poll` | interactive fields; one radio choice default | effective per-user limit `1` |
+| `vote` | interactive fields; one candidate radio default | confirmed ballot, effective per-user limit `1` |
+
+Interactive shared definition fields are `status`, `submit_label`, `success_text`,
+`result_visibility`, `response_limit`, `fields`, and `records`; optional
+`moderation` and derived `result_summary` vary by type and authorization. Raw
+records are never reusable design data.
+
+## Item and designed-card inventory
+
+- Common item fields are all independently editable depending on block type;
+  unused fields still round-trip.
+- Gallery item config owns `album` and width. Unknown item config keys must not
+  be silently dropped during compatibility projection.
+- `CardTemplate` includes width/height/aspect, zones, gaps, four margins, four
+  paddings, image position/height, radius, style, overflow, content alignment,
+  constrained custom CSS, and table flags.
+- Legacy unified `padding` initializes all four padding sides only when the
+  side-specific values are absent.
+- Saved `custom_sections.section_type` production values are `table`, `cards`,
+  and `component`. Component presets include string group IDs, bind maps,
+  event-hook arrays, max width, and constrained custom CSS. These values must not
+  be validated as the 19 page `SectionType` values.
+
+## Current live and persistence paths
+
+1. REST reads use the authorization-filtered `Page.Content` rollback projection
+   until `PAGE_NORMALIZED_SECTION_READS` and the page-specific cutover gate select
+   normalized definition/response rows. A normalized read never reads the
+   rollback document.
+2. Pages without the typed-ready flag serialize the section array through
+   `PUT /pages/{id}`. Matched, flag-enabled pages use typed section CRUD/reorder
+   and palette endpoints; whole-document definition changes then return `409`.
+3. Typed services enforce centralized editor policy and generated contract
+   validation before repositories lock page/section rows and check revisions.
+4. Transactions update normalized definitions and the legacy document together.
+   On response-migrated pages normalized response rows are authoritative and the
+   document retains an answer-bearing rollback projection with hashed, never raw,
+   idempotency material; other pages retain document response authority.
+5. Successful writes invalidate page SEO cache state.
+6. `page:update/page_updated` sends stable IDs/revisions in a content-free partial
+   invalidation to `page:{id}` subscribers, excluding the HTTP sender.
+7. `usePageData` refetches partial invalidations, holds updates during active
+   editing, replays page subscriptions on reconnect, and refetches revisions.
+8. `GET /config/section-contracts` publishes the embedded shared-shell and
+   page-theme, normalized item/preset, and 19 per-type config JSON Schema 2020-12
+   contracts without making them mutable data. Registry definitions derive their
+   version, defaults, capabilities, config schema, and optional item schema from
+   those contracts. Canonical interactive configs exclude runtime response data.
+
+`ValidateContractValue` is the authoritative normalized-contract boundary. It
+resolves only embedded schemas, validates contract defaults, rejects unknown
+fields and unsafe CSS color literals, and returns errors without echoing user
+config. `ValidateNormalizedSectionConfig` is intentionally not called by legacy
+`ValidateContent`: object/string decoding, shell extraction, aliases, and runtime
+record separation must happen first.
+
+`backend/cmd/section-contract-gen` deterministically generates frontend and Go
+section discriminators, shared-shell/config types, config-key maps, per-type DTOs,
+versions/defaults, and capabilities from registry contracts. `go test ./...` and
+frontend `npm run contracts:check` fail when either checked-in artifact drifts.
+`DecodeNormalizedSectionConfig` rejects oversized, deeply nested, duplicate-key,
+malformed, unknown-field, and schema-invalid JSON before returning a generated Go
+DTO.
+
+Frontend `PageSection<T>` is the generic normalized boundary; an unparameterized
+`PageSection` remains the `LegacyPageSection` document envelope until normalized
+persistence cuts over. `adaptLegacyPageSection` accepts object or string config,
+canonicalizes `features`, separates shared shell, per-type config, interactive
+runtime projections, and unknown quarantine, and retains numeric or string
+legacy section/item keys. `SectionFrame` consumes that normalized shell for every
+renderer, while the reverse projector feeds the current document save/render
+path during the compatibility window. This adapter is structural; backend schema
+validation remains authoritative before normalized persistence.
+
+Normalized section writes retain the REST-authoritative flow with expected
+revisions and stable server IDs. Same-section stale revisions conflict;
+different-section writes converge independently. WebSocket payloads identify
+affected resources and revisions but never include page content, preset config,
+interactive answers, or idempotency keys.
+`RequireExpectedSectionRevision` is the reusable fail-closed gate: missing or
+invalid revisions are rejected, stale writes to one section conflict without
+mutation, and writes to different sections advance independently. Normalized
+repositories must apply it to a locked row in the same transaction as the write.
+
+Phase 4 established the response-free normalized shadow. Phase 5 exposes it for
+matched, feature-enabled pages while reads remain on the rollback projection.
+`page_section_instances` and `page_section_instance_items` receive
+stable server IDs while preserving page/section-scoped numeric-or-string legacy
+keys, source order, display order, object/string config encoding, shell/config
+separation, rich HTML, media, items, and unknown fields. Page creates and builder
+updates write the document and shadow rows in one transaction; interactive
+Phase 6 adds a separate page-scoped matched response-migration gate. When
+`PAGE_NORMALIZED_INTERACTIVE_RESPONSES` is enabled, record mutations use locked
+normalized rows and transactionally refresh the compatibility projection;
+non-migrated pages continue to use the document path.
+
+The bounded `page-section-shadow-backfill` command resumes by page ID. Each run
+stores only canonical hashes, counts, field-name repair/quarantine metadata, and
+mismatch codes. Invalid values remain in authoritative `pages.content` and in
+non-public quarantine columns where a normalized row exists; operational
+telemetry never echoes values. Unsupported sections receive structural
+quarantine metadata. Response migration telemetry likewise stores only hashes,
+counts, and mismatch codes.
+
+`page-section-cutover` is the Phase 7 operational gate. It adds a consecutive
+zero-diff observation, verifies normalized -> compatibility -> normalized
+definition and response parity, records rollback-drill status, and evaluates a
+non-destructive legacy-write retirement preflight. Normalized reads require the
+matched definition/response migrations, zero quarantine, the configured minimum
+run/window, and a matched drill. `PAGE_NORMALIZED_SECTION_READS=0` is the read
+rollback switch. Whole-document compatibility saves remain enabled and counted
+for one release window; retirement stays blocked by recent calls, incomplete
+pages, non-empty dormant tables, or missing operator confirmation that external
+clients and jobs no longer depend on `pages.content`.
+
+Datasource-backed reusable `custom_sections` are now named section presets at
+the API/type boundary. `/config/section-presets` and `preset_type` are preferred;
+`/config/custom-sections` and `section_type` remain exact compatibility aliases.
+Their `table`/`cards`/`component` discriminator remains distinct from the 19 page
+section types and from normalized page-section snapshot presets.
+
+## Canonical migration mappings
+
+- Decode config object or JSON string to one object without double encoding.
+- Map legacy `features` to `feature_grid` and retain the original spelling in
+  migration audit/quarantine metadata until parity is proven.
+- Store original numeric/string IDs as scoped legacy keys; generate new server
+  primary keys rather than casting or reusing them globally.
+- Normalize empty visibility to `public` only in the verified compatibility
+  projector.
+- Preserve unknown section, config, and item keys in quarantine/round-trip data
+  until a versioned type migration owns them.
+- Preserve ordering, empty content, negative spacing, inline rich-text colors,
+  media URLs, preset references, and copied page-scoped ID collisions.
+
+## Verify
+
+- `go test ./internal/page ./internal/s_registry` from `backend/`.
+- Fresh PostgreSQL: run the complete migration chain twice, then the shadow
+  repository/backfill/palette/runtime-separation integration tests.
+- Frontend focused tests for exhaustive renderer dispatch, renderer-family DOM
+  parity, single-toolbar ownership and action portals, safe palette resolution,
+  accessible collapse, legacy alias and unknown fallback behavior,
+  `EditControls`, interactive clipboard behavior, structural legacy/typed
+  adapter behavior, and section merge/reconnect.
+- Raw local production inventory such as `output.txt` remains uncommitted.
+
+## Trace
+
+- `.specs/custom_pages_multiplayer_spec`
+- `.specs/custom_page_interactive_sections_spec`
+- `.specs/realtime_wss_spec`
+- `.todo/typed_page_sections_redesign.tip`
+- `.todo/ui_component_refactor_plan.tip`

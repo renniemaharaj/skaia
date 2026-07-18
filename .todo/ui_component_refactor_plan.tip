@@ -9,7 +9,7 @@
 - **Phase 4: Component registry & bind-point contracts** — ✅ Complete
 - **Phase 5: Open derived/custom sections to registered components** — 🟡 In progress
 - **Phase 6: Convert routes to dynamic page rendering** — ⬜ Not started
-- **Phase 7: Add versioning and migration** — ⬜ Not started
+- **Phase 7: Section versioning/migration (tracked in `typed_page_sections_redesign`)** — ✅ Complete
 
 ### Phase 5 Progress
 - [x] Component picker UI in `DerivedSectionBlock` and `CustomSectionBlock` (2026-06-09)
@@ -19,10 +19,34 @@
 - [x] `ComponentGroupEditor` refactored with tab UI (layout/styles) and `CardDesigner` integration (2026-06-11)
 - [x] `ComponentRenderer` extended with `MediaScraperCard` compound component (2026-06-11)
 - [x] CSS sanitization added to `DesignedCardWrapper` for safe `customCss` rendering (2026-06-11)
+- [x] Shared section compatibility matrix, sanitized production-shape fixtures,
+      and 19-type registry drift tests added under `typed_page_sections_redesign`
+      (2026-07-17)
+- [x] Canonical page-theme/shared-shell v1 schemas embedded in the backend
+      registry and exposed through `/config/section-contracts` (2026-07-17)
+- [x] Registry metadata bound to normalized item/preset and all 19 versioned
+      section-config contracts with drift coverage (2026-07-17)
+- [x] Generic normalized `PageSection<T>` and the legacy document compatibility
+      adapter are available for incremental renderer-family migration (2026-07-17)
+- [x] All page-section renderer families now use the shared `SectionFrame`, one
+      toolbar with type-specific action portals, and the exhaustive typed
+      renderer registry from `typed_page_sections_redesign` Phase 3 (2026-07-17)
+- [x] Versioned normalized persistence, response migration, typed mutations,
+      normalized read cutover, rollback drill, and guarded retirement preflight
+      completed by `typed_page_sections_redesign` Phases 4-7 (2026-07-18)
 
 ### Next Steps
 - [ ] Continue Phase 5: add component group rendering/editing to remaining section types.
 - [ ] Add focused tests for component-rendered section behavior when the frontend test harness is normalized.
 - [ ] Verify refactored UI components as part of `.todo/live_testing`.
+- [ ] Reuse the typed section registry and shared shell contracts from
+      `.todo/typed_page_sections_redesign`; do not add a separate config model.
+
+### Verification Note (2026-07-17)
+
+- All 32 focused page-section tests, frontend lint/build, and the full backend
+  suite pass. The full frontend suite passes 109/113 tests; its four unrelated
+  pre-existing assertion failures are recorded in
+  `.todo/typed_page_sections_redesign.tip`.
 
 <--/------->

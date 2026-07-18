@@ -14,15 +14,7 @@ import {
   DeleteItemButton,
   EditableText,
   ImagePickerButton,
-  SectionToolbar,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  getSectionLayout,
-  getSectionMargins,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-  setSectionLayout,
-  setSectionMargins,
+  SectionToolbarActions,
 } from "../EditControls";
 import type { PageItem, PageSection } from "../types";
 
@@ -146,7 +138,6 @@ export const ImageGalleryBlock = ({
   section,
   canEdit,
   onUpdate,
-  onDelete,
   onItemCreate,
   onItemUpdate,
   onItemDelete,
@@ -236,60 +227,28 @@ export const ImageGalleryBlock = ({
   return (
     <section className="showcase">
       {canEdit && (
-        <SectionToolbar
-          onDelete={() => onDelete(section.id)}
-          label="Image Gallery"
-          layout={getSectionLayout(section.config)}
-          onLayoutChange={nextLayout =>
-            onUpdate({
-              ...section,
-              config: setSectionLayout(section.config, nextLayout),
-            })
-          }
-          margins={getSectionMargins(section.config)}
-          onMarginsChange={m =>
-            onUpdate({
-              ...section,
-              config: setSectionMargins(section.config, m),
-            })
-          }
-          animation={getSectionAnimation(section.config)}
-          onAnimationChange={a =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimation(section.config, a),
-            })
-          }
-          animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={i =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimationIntensity(section.config, i),
-            })
-          }
-          extra={
-            <div className="gallery-default-width-controls">
-              {CARD_WIDTH_OPTIONS.map(option => (
-                <button
-                  key={option.key}
-                  type="button"
-                  className={`gallery-default-width-btn action-btn ${
-                    defaultCardWidth === option.key ? " active" : ""
-                  }`}
-                  title={`Default ${option.title}`}
-                  onClick={() =>
-                    onUpdate({
-                      ...section,
-                      config: setSectionCardWidth(section.config, option.key),
-                    })
-                  }
-                >
-                  {option.icon}
-                </button>
-              ))}
-            </div>
-          }
-        />
+        <SectionToolbarActions>
+          <div className="gallery-default-width-controls">
+            {CARD_WIDTH_OPTIONS.map(option => (
+              <button
+                key={option.key}
+                type="button"
+                className={`gallery-default-width-btn action-btn ${
+                  defaultCardWidth === option.key ? " active" : ""
+                }`}
+                title={`Default ${option.title}`}
+                onClick={() =>
+                  onUpdate({
+                    ...section,
+                    config: setSectionCardWidth(section.config, option.key),
+                  })
+                }
+              >
+                {option.icon}
+              </button>
+            ))}
+          </div>
+        </SectionToolbarActions>
       )}
 
       {/* Heading */}

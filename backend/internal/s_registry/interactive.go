@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-const interactiveConfigSchema = `{"type":"object","properties":{"fields":{"type":"array","maxItems":50},"records":{"type":"array","maxItems":1000},"result_visibility":{"enum":["never","after_participation","always"]},"status":{"enum":["open","closed"]}}}`
-
 var interactiveTypes = map[string]bool{
 	"form": true, "qa": true, "survey": true, "poll": true, "vote": true,
 }

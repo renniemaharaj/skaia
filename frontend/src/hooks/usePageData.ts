@@ -1,7 +1,9 @@
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { currentUserAtom, hasPermissionAtom } from "../atoms/auth";
+import type { PageTheme } from "../components/page/types";
 import { apiRequest } from "../utils/api";
+import { useWebSocketSync } from "./useWebSocketSync";
 
 export interface PageUser {
   id: number;
@@ -29,6 +31,8 @@ export interface PageBuilderDoc {
   comment_count: number;
   can_edit?: boolean;
   can_delete?: boolean;
+  theme?: PageTheme;
+  typed_section_mutations?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -51,9 +55,11 @@ interface UsePageDataReturn {
   updatePage: (page: Omit<PageBuilderDoc, "created_at" | "updated_at">) => Promise<PageBuilderDoc>;
   deletePage: (id: number) => Promise<void>;
   duplicatePage: (id: number, newSlug: string, newTitle?: string) => Promise<PageBuilderDoc>;
+  applyMutationPage: (page: PageBuilderDoc) => void;
 }
 
 export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
+  const { subscribe, unsubscribe } = useWebSocketSync();
   const hasPermission = useAtomValue(hasPermissionAtom);
   const currentUser = useAtomValue(currentUserAtom);
   const isAdmin = hasPermission("home.manage");
@@ -215,6 +221,32 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
   }, []);
 
   useEffect(() => {
+    if (!page?.id) return;
+    subscribe("page", page.id);
+    return () => unsubscribe("page", page.id);
+  }, [page?.id, subscribe, unsubscribe]);
+
+  useEffect(() => {
+    const handleReconnect = () => {
+      const currentSlug = currentSlugRef.current;
+      if (!currentSlug) return;
+      if (suppressRef.current) {
+        pendingDataRef.current = null;
+        setPendingIncoming(true);
+        return;
+      }
+      void refresh(currentSlug);
+    };
+    window.addEventListener("ws:reconnected", handleReconnect);
+    return () => window.removeEventListener("ws:reconnected", handleReconnect);
+  }, [refresh]);
+
+  const applyMutationPage = useCallback((updated: PageBuilderDoc) => {
+    setPage(updated);
+    currentSlugRef.current = updated.slug;
+  }, []);
+
+  useEffect(() => {
     const handler = (e: Event) => {
       const { action, data } = (e as CustomEvent<{ action: string; data?: any }>).detail;
       const slug = currentSlugRef.current;
@@ -291,5 +323,6 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     updatePage,
     deletePage,
     duplicatePage,
+    applyMutationPage,
   };
 }

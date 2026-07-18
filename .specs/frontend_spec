@@ -30,6 +30,37 @@ WebSocket consumers, or page-builder UX.
   for `subscribe`/`unsubscribe`; it must remain a singleton per browser context.
 - Route pages live under `src/pages`; reusable domain UI lives under
   `src/components`; shared CSS tokens live only in `src/index.css`.
+- Page-section types, config aliases, versions, defaults, and capabilities in
+  `sectionContracts.generated.ts` are generated from backend canonical schemas;
+  update them with `npm run contracts:generate`, never by hand.
+- New normalized page-section boundaries use `PageSection<T>` with generated
+  shell and per-type config. Existing document renderers use `LegacyPageSection`
+  until migrated; `sectionAdapter.ts` is the compatibility owner for object/string
+  configs, legacy aliases/keys, runtime separation, quarantine, and reverse
+  projection. Backend schema validation remains authoritative.
+- Every registered or unsupported page section renders through one
+  `SectionFrame`. The frame owns shared presentation, collapse, and the single
+  toolbar; renderers may portal type-specific actions into it but must not create
+  block-local shared shell controls. Renderers retain semantic heading placement
+  and inline content editing where their DOM contracts differ.
+- Page palettes expose only declared safe values through namespaced
+  `--skaia-page-color-*` variables. Section colors use generated
+  inherit/literal/palette sources; content scale applies to an overflow-safe
+  inner wrapper, never the toolbar or outer section box.
+- `PageBuilderDoc.theme` may carry the generated optional page theme during the
+  legacy document compatibility window.
+- `PageBuilderDoc.typed_section_mutations` is a backend-owned, per-page cutover
+  signal. When true, `PageBuilder` adapts legacy renderer values through
+  `typedSectionApi.ts`, batches updates by stable legacy key, sends expected
+  server revisions, and uses typed create/delete/reorder operations. A `409`
+  discards no server state: the builder explains the conflict and refetches.
+- Normalized read cutover is backend-owned and preserves the existing
+  `Page.Content` response envelope, so renderers and `usePageData` do not branch
+  on storage mode. Reconnect/refetch behavior therefore remains identical when
+  `PAGE_NORMALIZED_SECTION_READS` changes authority.
+- Datasource-backed reusable designs use the `SectionPreset` type and
+  `/config/section-presets`; `CustomSection` remains a deprecated type alias and
+  the backend retains the old route during the compatibility window.
 
 ## State Ownership
 
@@ -134,6 +165,13 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 | `src/hooks/useWebSocketSync.ts` | WS singleton, message-to-atom reducer |
 | `src/hooks/usePageData.ts` | page load/live-update behavior |
 | `src/pages/page/PageBuilder.tsx` | page editor, section merge/save pipeline |
+| `src/components/page/sectionContracts.generated.ts` | generated typed section registry |
+| `src/components/page/sectionAdapter.ts` | legacy document to normalized section compatibility boundary |
+| `src/components/page/SectionFrame.tsx` | shared presentation, collapse, suspense, and single-toolbar owner |
+| `src/components/page/SectionShellControls.tsx` | shared shell appearance editor |
+| `src/components/page/sectionRendererRegistry.tsx` | exhaustive typed renderer metadata and clipboard dispatch |
+| `src/components/page/sectionTheme.ts` | safe page-palette variable and section-color resolution |
+| `src/components/page/typedSectionApi.ts` | typed section payload adaptation, stable-ID/revision API client |
 | `src/pages/cart/index.tsx` | checkout state and guest/auth cart submission |
 | `src/components/store/cart/*` | cart UI panels and delivery picker |
 
@@ -149,6 +187,9 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 
 - Do not create a second global WebSocket connection.
 - Do not poll for data that has a WS projection.
+- Custom-page views subscribe to `page:{id}`. The singleton subscription set is
+  replayed after reconnect and `usePageData` then performs an authoritative REST
+  refetch so missed section/theme revisions cannot remain hidden.
 - Do not duplicate token definitions in component CSS.
 - Do not persist sensitive card CVV-like data in frontend local storage.
 - Backend permissions are authoritative; frontend permission checks are UX only.

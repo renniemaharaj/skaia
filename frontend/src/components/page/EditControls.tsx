@@ -23,6 +23,7 @@ import {
   Video,
 } from "lucide-react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import Button from "../input/Button";
@@ -42,6 +43,8 @@ export interface SectionMoveContextValue {
   lastEditedBy?: SectionEditor;
   onCopy?: () => void;
   onCut?: () => void;
+  frameOwnsToolbar?: boolean;
+  toolbarExtraTarget?: Element | null;
 }
 
 export const SectionMoveContext = createContext<SectionMoveContextValue>({
@@ -816,6 +819,7 @@ export const SectionToolbar = ({
             className="pb-section-toolbar-btn danger"
             onClick={onDelete}
             title="Remove section"
+            aria-label="Remove section"
             type="button"
           >
             <Trash2 size={14} />
@@ -824,6 +828,15 @@ export const SectionToolbar = ({
       </div>
     </div>
   );
+};
+
+/** Mount renderer-specific actions into the single toolbar owned by SectionFrame. */
+export const SectionToolbarActions = ({ children }: { children: React.ReactNode }) => {
+  const { frameOwnsToolbar, toolbarExtraTarget } = useContext(SectionMoveContext);
+  if (frameOwnsToolbar) {
+    return toolbarExtraTarget ? createPortal(children, toolbarExtraTarget) : null;
+  }
+  return <>{children}</>;
 };
 
 /** Add-item button inside a section. */

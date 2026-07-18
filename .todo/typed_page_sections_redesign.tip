@@ -1,0 +1,374 @@
+<--/------->
+
+## typed_page_sections_redesign
+
+### Current Progress
+
+- **Phase 1: Existing behavior inventory and contract fixtures** — ✅ Complete
+- **Phase 2: Canonical schemas and typed registry** — ✅ Complete
+- **Phase 3: Shared frontend section shell** — ✅ Complete
+- **Phase 4: Shadow normalized persistence** — ✅ Complete
+- **Phase 5: Typed APIs and concurrency cutover** — ✅ Complete
+- **Phase 6: Sensitive-data and preset migration** — ✅ Complete
+- **Phase 7: Cutover, rollback window, and cleanup** — ✅ Complete
+
+### Completed Work (Phases 1-3)
+
+- [x] Use `.routines/worker` to inventory all current section, item, and shared
+      shell fields/defaults/legacy aliases in a checked-in compatibility matrix.
+- [x] Include background/text/`h1`/`h2`/`h3` color sources, page palette tokens,
+      content scale, and collapse settings in the first shared-shell schema;
+      define permission-aware viewer state alongside it as ephemeral UI state.
+- [x] Capture the existing REST/WebSocket/cache/SEO/reconnect/merge paths and
+      freeze content-free page-update propagation with a regression test.
+- [x] Add optimistic-revision acceptance tests before changing the persistence
+      model; the expected same-section conflict and different-section convergence
+      behavior now runs through the reusable fail-closed revision guard.
+- [x] Collect the sanitized schema/config-shape inventory for `cueballcraft` and
+      `thewriterco`; 2026-07-17 baseline is summarized in the plan and the raw
+      production-content export remains uncommitted in local `output.txt`.
+- [x] Confirm deployed legacy `page_sections` and `page_items` are empty in both
+      current tenants; retain a transactional fail-closed emptiness preflight in
+      the eventual rename/retirement migration.
+- [x] Define the canonical mapping for object/string configs, `features` to
+      `feature_grid`, page-scoped numeric/string legacy IDs, and empty visibility.
+- [x] Derive minimal anonymized fixtures for every observed production shape;
+      do not commit raw production page content.
+- [x] Add representative legacy `pages.content` fixtures and no-loss
+      parse/save/copy/duplicate, registry, shell-default, and alias tests.
+- [x] Make renderer dispatch exhaustive across all canonical types, resolve the
+      production `features` alias, and render a safe visible unknown-type fallback.
+- [x] Add DOM parity tests for the simple-grid, hero-media, datasource-derived,
+      and interactive renderer families before replacing the current block shells.
+- [x] Establish JSON Schema 2020-12 as the canonical source format; add embedded
+      page-theme/shared-shell v1 contracts and expose them through the registry API.
+- [x] Add normalized item/preset and all 19 versioned section-config contracts;
+      canonical interactive configs exclude runtime `records`/`result_summary`.
+- [x] Bind registry config versions, defaults, capabilities, config schemas, and
+      item schemas to the embedded contracts with exact drift tests.
+- [x] Add fail-closed Draft 2020-12 runtime validation for every embedded
+      normalized contract, including local `$ref`/default checks, bounded CSS
+      colors, sanitized errors, and an explicit boundary from legacy validation.
+- [x] Generate the frontend `SectionType`, `SectionConfigByType`, per-type config
+      aliases, versions, defaults, and capabilities from backend contracts; add
+      deterministic Go and npm drift checks and remove the handwritten type list.
+- [x] Generate normalized Go discriminators/config DTOs and add a bounded,
+      duplicate-key-safe decode factory that validates before typed decoding.
+- [x] Introduce the generic normalized `PageSection<T>` frontend boundary and a
+      compatibility adapter that separates shell/config/runtime data, retains
+      numeric-or-string legacy keys, quarantines unknown input, and projects back
+      to the current document envelope.
+
+### Phase 2 Closure
+
+Phase 2 ends at the generated, runtime-validated contract boundary. All 19
+section configs, shared shell/theme, items/presets, registry metadata, Go DTOs,
+frontend types, compatibility adapter, and drift checks are implemented and
+verified. The remaining work is intentionally assigned to later phases:
+
+- [x] **Phase 3:** consume `PageSection<T>` shell contracts at the page-builder
+      boundary and consolidate every renderer family behind one shared
+      `SectionFrame` while retaining the legacy save envelope.
+- [x] **Phase 4:** add shadow normalized persistence, transactional projection,
+      resumable backfill, quarantine, and content-free parity reporting.
+- [x] **Phase 5:** invoke normalized decoding from typed mutation services and
+      enforce transactional expected revisions/conflict responses.
+- [x] **Phase 7:** define and exercise cutover flags, parity metrics, quarantine,
+      rollback criteria, and cleanup gates.
+
+### Phase 3 Closure
+
+- [x] Extract the registered-section outer layout, spacing, background,
+      animation, suspense, move, copy, and cut behavior from `BlockRenderer` into
+      `SectionFrame` without changing the rendered DOM contract.
+- [x] Add direct frame tests for legacy shell projection and movement context;
+      keep all four renderer-family parity tests green.
+- [x] Feed generated `SharedSectionShell` values into `SectionFrame` through the
+      compatibility boundary and project shell edits back into the current
+      document envelope without erasing unknown or section-specific config.
+- [x] Remove duplicated shared toolbars from all 15 block implementations. The
+      frame owns exactly one toolbar; the six renderer families with specialized
+      commands portal only those type-specific actions into it.
+- [x] Replace renderer dispatch casts with an exhaustive typed registry that
+      owns each lazy component, generated version/default/capability metadata,
+      and clipboard sanitizer. Unknown sections retain a safe framed fallback.
+- [x] Add one shared appearance editor for container width, bounded content
+      scale, background/text/`h1`/`h2`/`h3` color sources, and authored collapse
+      settings, including inherit/literal/palette modes and contrast warnings.
+- [x] Resolve page palette colors only through declared, validated, namespaced
+      CSS variables and reject unsafe literal/declaration input at the frontend
+      compatibility boundary; backend contract validation remains authoritative.
+- [x] Apply scaling to an overflow-safe inner content wrapper, preserve reachable
+      horizontal content, and keep toolbar controls outside the scaled region.
+- [x] Implement an accessible `aria-expanded` collapse trigger. Viewer state is
+      local and permission-aware, survives React rerenders, and resets when the
+      page, section identity, or authoritative revision changes.
+- [x] Preserve semantic heading/subheading placement and inline content editing
+      inside renderers where DOM structure differs; `SectionFrame` owns shared
+      presentation and actions, not a forced one-size-fits-all heading wrapper.
+
+### Phase 4 Closure
+
+- [x] Add idempotent fresh/incremental schema for page themes/tokens, section
+      instances, palette references, section items, presets, responses,
+      quarantine records, and parity runs under names that cannot collide with
+      the dormant global `page_sections`/`page_items` tables.
+- [x] Enforce page ownership, cascades, typed section discriminators, shell/config
+      bounds, revisions, stable server IDs, page-scoped legacy key identity, item
+      identity, response idempotency, and palette-token deletion restrictions.
+- [x] Implement a bounded legacy-to-normalized projector for object/string config,
+      numeric/string IDs, `features`, shell/config aliases, defaults, items,
+      unknown-field quarantine, unsafe colors, and response-free interactive
+      definitions. The reverse projector preserves the compatibility envelope.
+- [x] Make ordinary page creates and builder updates refresh normalized shadow
+      rows in the same transaction as authoritative `pages.content`; interactive
+      record mutations remain document-owned until the Phase 6 sensitive migration.
+- [x] Retain normalized section/item server IDs across reruns and reorders, remove
+      stale rows transactionally, and preserve exact source ordering separately
+      from display order.
+- [x] Add safe operational telemetry containing hashes, counts, repair codes,
+      quarantine field names, run counters, and mismatch codes without page
+      content, answers, idempotency keys, or quarantined values.
+- [x] Add `page-section-shadow-backfill`, an ID-ordered resumable command with a
+      required batch size of 1-500; reruns are idempotent and report the next
+      cursor plus matched/quarantined/mismatched counts.
+- [x] Fix fresh-schema/rerun defects discovered by real PostgreSQL verification:
+      provisioning baseline tables now precede their seed rows, the inbox group
+      migration handles both legacy and fresh schemas, and store migrations 022
+      and 023 use idempotent guards. Schema reruns also no longer reset an
+      existing database role password to the deployment template placeholder.
+
+The Phase 4 statement above records the then-current response authority. Phase 6
+now owns the page-specific normalized response cutover described below.
+
+### Phase 5 Closure
+
+- [x] Add feature-gated typed section list/create/update/delete/reorder and page
+      palette mutation endpoints. The gate is backend-owned and page-specific:
+      `PAGE_TYPED_SECTION_MUTATIONS` must be enabled and the page's latest shadow
+      parity status must be `matched`.
+- [x] Enforce editor/owner/admin authorization through the centralized,
+      fail-closed `PagePolicy.RequirePageEditor` service gate before normalized
+      values reach the repository.
+- [x] Decode section configs through the generated bounded duplicate-key-safe
+      factory; validate shared shells, items, themes, safe colors, integration
+      references, request size, identity, and field bounds without echoing config.
+- [x] Lock the page and normalized rows in one transaction, require expected
+      revisions, return content-free conflicts, preserve stable server IDs,
+      converge different-section writes independently, and revision-guard
+      structural reorders and palette replacements.
+- [x] Rebuild `pages.content` transactionally after each typed definition write
+      so old reads and rollback remain available. Interactive records never enter
+      normalized section config, audit metadata, or WebSocket invalidations;
+      Phase 6 moves matched pages to the dedicated response table while retaining
+      the authorization-filtered rollback projection.
+- [x] Reject whole-document definition changes on typed-ready pages while still
+      allowing metadata-only legacy updates and retaining the legacy path for
+      flag-disabled or non-matched pages.
+- [x] Move `PageBuilder` to typed updates per page without changing renderer
+      inputs. Debounced changes diff against the authoritative document;
+      structural actions first flush queued edits; same-section `409` conflicts
+      explain the reload instead of silently overwriting either editor.
+- [x] Subscribe page views to `page:{id}`, target typed invalidations only to
+      subscribers other than the HTTP sender, share/replay subscriptions across
+      the singleton socket, and REST-refetch after reconnect to recover missed
+      revisions.
+- [x] Add migration 031 so page-theme token order swaps can use a deferred unique
+      constraint while final page-scoped uniqueness and 0-63 bounds remain intact.
+
+### Verification (2026-07-17)
+
+- [x] Backend: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
+- [x] Frontend focused: 32 tests across `BlockRendererParity.test.tsx`,
+      `BlockRenderer.test.tsx`, `sectionCompatibility.test.ts`,
+      `interactiveTypes.test.ts`, `sectionAdapter.test.ts`, and
+      `SectionFrame.test.tsx`, plus `sectionTheme.test.ts`.
+- [x] Frontend: `npm run contracts:check`, `npm run lint`, and `npm run build`.
+- [x] Full frontend suite rerun: 109/113 tests pass. The only failures are the
+      same three unrelated `MFAChallenge.test.tsx` exact text-node assertions and
+      one unrelated `Header.test.tsx` legacy `.header` selector assertion; all
+      page-section tests pass in the full run.
+
+### Phase 4 Verification (2026-07-18)
+
+- [x] Pure projector tests pass for every sanitized production page shape plus
+      runtime separation, alias audit, unsafe-color quarantine, and reverse
+      projection parity.
+- [x] Fresh PostgreSQL verification passes: the complete migration chain runs
+      twice, all normalized tables exist, live repository writes keep stable IDs,
+      reorder/delete cleanup works, palette references fail closed, bounded
+      backfill resumes correctly, and Phase 4 copies zero interactive responses.
+- [x] Backend: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`.
+- [x] Frontend: 11 focused adapter/theme/frame tests, `npm run contracts:check`,
+      `npm run lint`, and `npm run build`.
+- [x] A serial full DB-backed backend run reaches all packages; Phase 4 and
+      migration tests pass. Existing unrelated forum nullable-avatar, store
+      fixture/FK, and user nullable-display-name failures remain outside this
+      phase and do not occur in the standard full suite.
+
+### Phase 5 Verification (2026-07-18)
+
+- [x] Backend focused: page typed validation/policy/revision tests, centralized
+      page-policy dependency-failure tests, and subscriber-targeted content-free
+      WebSocket tests.
+- [x] PostgreSQL focused serial run: typed same-section conflict, independent
+      section convergence, rollback projection, theme revision conflict,
+      two-token order swap, palette referential integrity, and complete migration
+      rerun tests pass against isolated `skaia_test`.
+- [x] Frontend focused: 11 adapter/API/frame tests pass, including numeric/string
+      legacy-key separation and interactive runtime stripping.
+- [x] Frontend: `npm run lint` and `npm run build` pass.
+- [x] Final backend: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp
+      JWT_SECRET=test-secret go test ./...` passes, including sanitized typed
+      HTTP conflict/error-shape coverage.
+- [x] Final frontend contract drift, lint, and production build checks pass. The
+      full suite passes 112/116 tests; its only failures are the same three
+      unrelated MFA exact text-node assertions and one unrelated Header legacy
+      `.header` selector assertion already recorded above. All page-section tests
+      pass.
+
+### Phase 6 Closure
+
+- [x] Add migration 032 and fresh-schema parity for normalized respondent names,
+      stable respondent identity after user-row deletion, moderator answers,
+      pinned state, constrained statuses, hashed idempotency uniqueness, and
+      page-scoped response migration readiness.
+- [x] Add `page-interactive-response-backfill`, a resumable ID-ordered 1-500 page
+      command that copies records, verifies count/key/respondent/answer/status/
+      moderation/timestamp/idempotency-hash parity, preserves response row IDs on
+      rerun, and emits only counts and mismatch codes.
+- [x] Replace raw idempotency keys in the rollback document with SHA-256 hashes.
+      Explicitly remove both raw keys and hashes from every participant, manager,
+      aggregate, HTTP, audit, log, and WebSocket projection.
+- [x] Gate normalized response authority on
+      `PAGE_NORMALIZED_INTERACTIVE_RESPONSES` plus matched definition and response
+      runs. Missing dependencies/readiness errors fail closed; migrated writes
+      lock the page and section, enforce the locked section type, update normalized
+      records, and refresh the compatibility projection in one transaction.
+- [x] Preserve legacy response authority for non-migrated pages, including retry
+      matching after a rollback document has been scrubbed to hashed idempotency
+      material.
+- [x] Verify normalized replay idempotency, concurrent response-limit enforcement,
+      Q&A moderation, response-type race rejection, manager/participant privacy,
+      raw/hash negative disclosure, and migration rerun stability in PostgreSQL.
+- [x] Introduce `SectionPreset`, `preset_type`, and
+      `/config/section-presets` as the preferred datasource-preset terminology;
+      retain `CustomSection`, `section_type`, and `/config/custom-sections` as
+      compatibility aliases because `table`/`cards`/`component` are not page
+      section discriminators.
+- [x] Move preset create/update/delete authorization into a required fail-closed
+      service policy. Missing policy and permission-store failures never reach the
+      repository.
+
+### Phase 6 Verification (2026-07-18)
+
+- [x] Backend full suite: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp
+      JWT_SECRET=test-secret go test ./...`.
+- [x] PostgreSQL focused serial suite: complete migrations rerun plus normalized
+      response backfill/parity/rerun, idempotent retry, concurrent response limit,
+      moderation, locked-type race, and negative-disclosure tests against isolated
+      `skaia_test`.
+- [x] Frontend: 20 focused interactive/adapter/API/frame tests, contract drift,
+      lint, TypeScript, and production build pass.
+- [x] Final full frontend baseline rerun passes 112/116 tests; only the same three
+      unrelated MFA exact text-node assertions and one unrelated Header legacy
+      selector assertion fail. `git diff --check` and final status audit pass.
+
+### Phase 7 Closure
+
+- [x] Add migration 033 and fresh-schema parity for consecutive matched
+      observations, matched-window timestamps, rollback-drill state, and
+      compatibility-endpoint write telemetry. All operational fields remain
+      content-free.
+- [x] Add `PAGE_NORMALIZED_SECTION_READS`, defaulting off. A page reads from
+      normalized definition and response rows only after matched definition and
+      response migrations, zero quarantine, three consecutive zero-diff runs over
+      24 hours by default, and a successful rollback projection drill.
+- [x] Make cutover reads independent from `pages.content`; readiness or projection
+      storage failures fail closed. Disabling the flag restores compatibility
+      reads immediately without rewriting either representation.
+- [x] Add bounded `page-section-cutover` audit/runbook support. It resumes by page
+      ID, records a parity observation, verifies normalized -> compatibility ->
+      normalized definition/response hashes, and emits only IDs, counts, statuses,
+      and mismatch codes.
+- [x] Count successful whole-document compatibility saves so the release-window
+      preflight can detect old application clients. The preflight also requires
+      all pages ready for the entire release window, empty dormant
+      `page_sections`/`page_items`, and explicit operator confirmation that
+      external clients and scheduled jobs have been reviewed.
+- [x] Keep legacy projection writes and tables intact: repository code deliberately
+      provides a non-destructive retirement preflight rather than bypassing the
+      plan's real release-window and production-telemetry requirements.
+- [x] Preserve the public `Page.Content` response envelope, authorization
+      filtering, realtime invalidation, SEO invalidation, typed mutation, and
+      frontend reconciliation contracts across read modes; no frontend storage
+      branch was introduced.
+
+### Phase 7 Verification (2026-07-18)
+
+- [x] Focused Go service tests prove page-specific fallback/cutover behavior,
+      threshold propagation, rollback-document immutability, and fail-closed
+      readiness/projection errors.
+- [x] Focused PostgreSQL tests prove migration rerun safety, consecutive-run
+      readiness, response-migration gating, rollback drill success, normalized
+      reads after deliberately damaging the compatibility document, immediate
+      flag rollback, and legacy-write telemetry.
+- [x] Final complete backend suite; frontend contract drift, 26 focused
+      page-section tests, lint, TypeScript, and production build all pass.
+- [x] Exercise the compiled retirement runbook against local PostgreSQL. It
+      correctly refuses retirement while pages remain unready and the external
+      dependency review has not been attested; dormant legacy tables are empty.
+
+### Phase 1-7 Outputs
+
+- `.specs/custom_page_section_compatibility_spec`
+- `backend/internal/page/testdata/production_page_shapes.json`
+- `backend/internal/page/compatibility_test.go`
+- `backend/internal/page/revision.go`
+- `backend/internal/page/revision_test.go`
+- `backend/internal/migrations/030_page_section_shadow_storage.sql`
+- `backend/internal/migrations/031_page_theme_ordering_concurrency.sql`
+- `backend/internal/migrations/032_page_interactive_response_migration.sql`
+- `backend/internal/migrations/033_page_section_cutover_controls.sql`
+- `backend/internal/page/cutover.go`
+- `backend/internal/page/cutover_test.go`
+- `backend/cmd/page-section-cutover/`
+- `backend/internal/page/shadow_projector.go`
+- `backend/internal/page/shadow_projector_test.go`
+- `backend/internal/page/shadow_repository.go`
+- `backend/internal/page/shadow_repository_test.go`
+- `backend/internal/page/typed_sections.go`
+- `backend/internal/page/typed_sections_test.go`
+- `backend/internal/page/typed_repository.go`
+- `backend/internal/page/typed_repository_test.go`
+- `backend/internal/page/interactive_normalized.go`
+- `backend/internal/page/interactive_repository.go`
+- `backend/internal/page/interactive_repository_test.go`
+- `backend/cmd/page-section-shadow-backfill/`
+- `backend/cmd/page-interactive-response-backfill/`
+- `backend/internal/s_registry/schemas/*.schema.json`
+- `backend/internal/s_registry/schemas/section-configs.v1.json`
+- `backend/internal/s_registry/contracts.go`
+- `backend/internal/s_registry/contracts_test.go`
+- `backend/internal/s_registry/validation.go`
+- `backend/internal/s_registry/validation_test.go`
+- `backend/cmd/section-contract-gen/`
+- `backend/internal/s_registry/section_configs_generated.go`
+- `backend/internal/s_registry/normalized.go`
+- `backend/internal/s_registry/normalized_test.go`
+- `frontend/src/components/page/sectionContracts.generated.ts`
+- `frontend/src/components/page/sectionAdapter.ts`
+- `frontend/src/components/page/sectionAdapter.test.ts`
+- `frontend/src/components/page/SectionFrame.tsx`
+- `frontend/src/components/page/SectionFrame.test.tsx`
+- `frontend/src/components/page/SectionShellControls.tsx`
+- `frontend/src/components/page/sectionRendererRegistry.tsx`
+- `frontend/src/components/page/sectionTheme.ts`
+- `frontend/src/components/page/sectionTheme.test.ts`
+- `frontend/src/components/page/BlockRenderer.test.tsx`
+- `frontend/src/components/page/BlockRendererParity.test.tsx`
+- `frontend/src/components/page/sectionCompatibility.test.ts`
+- `frontend/src/components/page/typedSectionApi.ts`
+- `frontend/src/components/page/typedSectionApi.test.ts`
+
+<--/------->

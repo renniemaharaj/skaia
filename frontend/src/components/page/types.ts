@@ -1,5 +1,27 @@
 /** Types for the page block system. */
 
+import {
+  SECTION_TYPES,
+  type SectionConfig,
+  type SectionType,
+  type SharedSectionShell,
+} from "./sectionContracts.generated";
+
+export {
+  SECTION_CAPABILITIES,
+  SECTION_CONFIG_KEYS,
+  SECTION_CONFIG_VERSIONS,
+  DEFAULT_SECTION_SHELL,
+  SECTION_DEFAULT_CONFIGS,
+  SECTION_TYPES,
+} from "./sectionContracts.generated";
+export type {
+  SectionConfig,
+  SectionConfigByType,
+  SharedSectionShell,
+  SectionType,
+} from "./sectionContracts.generated";
+
 export interface PageItem {
   id: number;
   section_id: number;
@@ -20,7 +42,8 @@ export interface SectionEditor {
   edited_at?: string;
 }
 
-export interface PageSection {
+/** Current pages.content envelope retained until normalized API cutover. */
+export interface LegacyPageSection {
   id: number;
   display_order: number;
   section_type: string;
@@ -29,7 +52,72 @@ export interface PageSection {
   config: string;
   items?: PageItem[];
   last_edited_by?: SectionEditor;
+  revision?: number;
 }
+
+export interface NormalizedPageItem {
+  id: number | null;
+  legacy_key: string | number | null;
+  display_order: number;
+  icon: string;
+  heading: string;
+  subheading: string;
+  image_url: string;
+  link_url: string;
+  config_version: 1;
+  config: Record<string, unknown>;
+  revision: number;
+}
+
+export interface TypedPageSection<T extends SectionType> {
+  id: number | null;
+  legacy_key: string | number;
+  display_order: number;
+  section_type: T;
+  heading: string;
+  subheading: string;
+  shell_version: 1;
+  shell: SharedSectionShell;
+  config_version: 1;
+  config: SectionConfig<T>;
+  items: NormalizedPageItem[];
+  revision: number;
+  quarantined_config: Record<string, unknown>;
+}
+
+/**
+ * Existing callers without a type argument remain on the legacy envelope.
+ * `PageSection<T>` is the normalized typed boundary used by new adapters/APIs.
+ */
+export type PageSection<T extends SectionType | never = never> = [T] extends [never]
+  ? LegacyPageSection
+  : T extends SectionType
+    ? TypedPageSection<T>
+    : never;
+
+export type AnyTypedPageSection = {
+  [T in SectionType]: PageSection<T>;
+}[SectionType];
+
+export interface PageThemeToken {
+  key: string;
+  label: string;
+  value: string;
+  display_order: number;
+  revision: number;
+}
+
+export interface PageTheme {
+  version: 1;
+  revision: number;
+  tokens: PageThemeToken[];
+}
+
+export const EMPTY_PAGE_THEME: PageTheme = {
+  version: 1,
+  revision: 1,
+  tokens: [],
+};
 
 export interface Branding {
   site_name: string;
@@ -75,31 +163,17 @@ export interface FooterConfig {
   social_links: FooterSocialLink[];
 }
 
-/** All section types the renderer knows about. */
+/** All section types the renderer knows about are generated from backend contracts. */
 
-export const SECTION_TYPES = [
-  "hero",
-  "card_group",
-  "stat_cards",
-  "social_links",
-  "image_gallery",
-  "feature_grid",
-  "cta",
-  "event_highlights",
-  "profile_card",
-  "rich_text",
-  "code_editor",
-  "data_sources",
-  "derived_section",
-  "custom_section",
-  "form",
-  "qa",
-  "survey",
-  "poll",
-  "vote",
-] as const;
+export const LEGACY_SECTION_TYPE_ALIASES = {
+  features: "feature_grid",
+} as const satisfies Record<string, SectionType>;
 
-export type SectionType = (typeof SECTION_TYPES)[number];
+/** Resolve stored legacy names without treating arbitrary strings as section types. */
+export function canonicalSectionType(type: string): SectionType | null {
+  if ((SECTION_TYPES as readonly string[]).includes(type)) return type as SectionType;
+  return LEGACY_SECTION_TYPE_ALIASES[type as keyof typeof LEGACY_SECTION_TYPE_ALIASES] ?? null;
+}
 
 export const SECTION_TYPE_LABELS: Record<string, string> = {
   hero: "Hero Banner",
@@ -405,19 +479,23 @@ export interface FactTableConfig {
   event_hooks?: EventHook[];
 }
 
-/** A saved custom section (reusable data-bound visualization). */
-export interface CustomSection {
+/** A reusable datasource-backed section preset. */
+export interface SectionPreset {
   id: number;
   name: string;
   description: string;
   datasource_id: number;
   section_type: PreviewType;
+  preset_type?: PreviewType;
   config: string;
   created_by?: number;
   creator?: DataSourceCreator;
   created_at: string;
   updated_at: string;
 }
+
+/** @deprecated Use SectionPreset; retained while custom-section aliases exist. */
+export type CustomSection = SectionPreset;
 
 /*  Component Registry Types (Phase 4)  */
 

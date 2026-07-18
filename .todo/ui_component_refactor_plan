@@ -12,7 +12,8 @@
 - **Phase 4: Add component registry and bind-point contracts** — ⬜ Not started
 - **Phase 5: Open derived/custom sections to registered primitive components** — ⬜ Not started
 - **Phase 6: Convert routes to dynamic page rendering** — ⬜ Not started
-- **Phase 7: Add versioning and migration** — ⬜ Not started
+- **Phase 7: Add versioning and migration** — ✅ Complete in
+  `.todo/typed_page_sections_redesign`
 
 ### Next Steps
 
@@ -20,7 +21,16 @@
 - [ ] Define bind-point metadata, supported data types, validation, and row replication semantics
 - [ ] Extend derived/custom sections so builders can choose registered components and bind datasource columns to component bind points
 - [ ] Begin dynamic route rendering and registry-driven blocks after component binding is modeled
-- [ ] Plan and implement versioning/migration for legacy data
+- [x] Plan and implement section versioning/migration and guarded storage cutover
+      in `.todo/typed_page_sections_redesign`
+
+### Plan Boundary
+
+Section-instance typing, the shared section shell, normalized page-owned section
+storage, config versioning, and storage cutover are owned by
+`.todo/typed_page_sections_redesign`. This plan continues to own component
+registry, bind-point, renderer composition, and dynamic-route work. The two plans
+must share registry contracts rather than introduce parallel section models.
 
 Create a Skaia-aligned schema-driven UI system where the backend owns canonical page content, section/block definitions, component definitions, bind-point contracts, and integration primitives, while the frontend renders and edits those sections through an existing builder surface.
 

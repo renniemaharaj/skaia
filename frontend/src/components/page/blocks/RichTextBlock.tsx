@@ -2,17 +2,7 @@ import { Suspense, lazy, useEffect, useState } from "react";
 import { usePageBuilderContext } from "../PageBuilderContext";
 import type { PageSection } from "../types";
 import "./RichTextBlock.css";
-import {
-  SectionToolbar,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  getSectionLayout,
-  getSectionMargins,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-  setSectionLayout,
-  setSectionMargins,
-} from "../EditControls";
+import { SectionToolbarActions } from "../EditControls";
 
 /** Lazy-load the heavy editor + viewer to keep the page bundle small. */
 const Editor = lazy(() => import("../../forum/Editor"));
@@ -38,7 +28,7 @@ function getContent(config: string): string {
   }
 }
 
-export const RichTextBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
+export const RichTextBlock = ({ section, canEdit, onUpdate }: Props) => {
   const [editing, setEditing] = useState(false);
   const { enterEdit, leaveEdit } = usePageBuilderContext();
   // Hold saves in PageBuilder while this editor is active.
@@ -56,8 +46,6 @@ export const RichTextBlock = ({ section, canEdit, onUpdate, onDelete }: Props) =
     if (!editing) setLocalContent(getContent(section.config));
   }, [section.config, editing]);
 
-  const layout = getSectionLayout(section.config);
-
   const saveContent = (html: string) => {
     setLocalContent(html);
     const c = JSON.parse(section.config || "{}");
@@ -67,45 +55,15 @@ export const RichTextBlock = ({ section, canEdit, onUpdate, onDelete }: Props) =
   return (
     <section className="richtext-block">
       {canEdit && (
-        <SectionToolbar
-          onDelete={() => onDelete(section.id)}
-          label="Rich Text"
-          layout={layout}
-          onLayoutChange={nextLayout =>
-            onUpdate({
-              ...section,
-              config: setSectionLayout(section.config, nextLayout),
-            })
-          }
-          margins={getSectionMargins(section.config)}
-          onMarginsChange={m =>
-            onUpdate({
-              ...section,
-              config: setSectionMargins(section.config, m),
-            })
-          }
-          animation={getSectionAnimation(section.config)}
-          onAnimationChange={a =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimation(section.config, a),
-            })
-          }
-          animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={i =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimationIntensity(section.config, i),
-            })
-          }
-          extra=<button
+        <SectionToolbarActions>
+          <button
             className="pb-section-toolbar-btn"
             onClick={() => setEditing(!editing)}
             title={editing ? "Preview" : "Edit content"}
           >
             {editing ? "Preview" : "Edit"}
           </button>
-        />
+        </SectionToolbarActions>
       )}
 
       <Suspense

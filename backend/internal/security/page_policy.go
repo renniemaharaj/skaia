@@ -29,6 +29,12 @@ func NewPagePolicy(pages PageAccess, permissions PermissionChecker) *PagePolicy 
 }
 
 func (p *PagePolicy) RequireInteractiveResponseManager(pageID, actorID int64) error {
+	return p.RequirePageEditor(pageID, actorID)
+}
+
+// RequirePageEditor is the single fail-closed policy gate for page-definition,
+// palette, section, item, and ordering mutations.
+func (p *PagePolicy) RequirePageEditor(pageID, actorID int64) error {
 	if p == nil || p.pages == nil || actorID <= 0 {
 		return ErrPolicyDenied
 	}

@@ -40,18 +40,19 @@ Backend dispatch after success:
 
 | Channel | Action | Payload |
 | --- | --- | --- |
-| `page:update` | `landing_page_changed` | Full `PageBuilderPage` |
+| `page:update` | `landing_page_changed` | `{ id, slug, partial: true }` |
 | `config:update` | `landing_page_updated` | `{ slug }` |
 
-Clients in index mode apply the full page from `landing_page_changed` without an
-HTTP refetch. `landing_page_updated` is a fallback signal for UI badges and missed
-page pushes.
+Clients in index mode refetch through the slug resolution path after the
+content-free landing invalidation. `landing_page_updated` is a fallback signal
+for UI badges and missed page pushes.
 
 ## Page Mutations
 
 - `PUT /pages/{id}` returns the authoritative updated page to the sender.
-- Backend calls `BroadcastPageExceptUser(userID, "page_updated", enrichedPage)`.
-- Other clients apply the page if slug/id matches their current page.
+- Legacy writes broadcast a content-free partial invalidation. Typed writes use
+  the `page:{id}` subscription and include affected IDs/revisions only.
+- Other clients refetch if slug/id matches their current page.
 - Deletion broadcasts `page:update page_deleted` with `{ id, slug }`.
 
 ## Invariants

@@ -511,7 +511,7 @@ export default function DataSourceEditorPage() {
     }
     setSavingSection(true);
     try {
-      await apiRequest<CustomSection>("/config/custom-sections", {
+      await apiRequest<CustomSection>("/config/section-presets", {
         method: "POST",
         body: JSON.stringify({
           name: sectionName,

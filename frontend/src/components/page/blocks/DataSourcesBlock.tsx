@@ -9,17 +9,6 @@ import { AlertTriangle, Database, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "../../../utils/api";
 import Button from "../../input/Button";
-import {
-  SectionToolbar,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  getSectionLayout,
-  getSectionMargins,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-  setSectionLayout,
-  setSectionMargins,
-} from "../EditControls";
 
 const TabbedEditor = lazy(() => import("../TabbedEditor"));
 
@@ -30,8 +19,7 @@ interface Props {
   onDelete: (id: number) => void;
 }
 
-export const DataSourcesBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
-  const layout = getSectionLayout(section.config);
+export const DataSourcesBlock = ({ section, canEdit }: Props) => {
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
@@ -176,41 +164,6 @@ export const DataSourcesBlock = ({ section, canEdit, onUpdate, onDelete }: Props
 
   return (
     <section className="data-sources-block">
-      {canEdit && (
-        <SectionToolbar
-          onDelete={() => onDelete(section.id)}
-          label="Data Sources"
-          layout={layout}
-          onLayoutChange={l =>
-            onUpdate({
-              ...section,
-              config: setSectionLayout(section.config, l),
-            })
-          }
-          margins={getSectionMargins(section.config)}
-          onMarginsChange={m =>
-            onUpdate({
-              ...section,
-              config: setSectionMargins(section.config, m),
-            })
-          }
-          animation={getSectionAnimation(section.config)}
-          onAnimationChange={a =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimation(section.config, a),
-            })
-          }
-          animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={i =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimationIntensity(section.config, i),
-            })
-          }
-        />
-      )}
-
       <div className="data-sources-header">
         <h2>
           {editingDS ? (

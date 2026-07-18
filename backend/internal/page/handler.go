@@ -1,10 +1,11 @@
 package page
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	log "github.com/skaia/backend/internal/syslog"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	ianalytics "github.com/skaia/backend/internal/analytics"
 	iconfig "github.com/skaia/backend/internal/config"
 	ievents "github.com/skaia/backend/internal/events"
+	log "github.com/skaia/backend/internal/syslog"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
@@ -54,6 +56,12 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, comme
 			r.Post("/claim", h.claimPage)
 			r.Get("/my-allocation", h.getMyAllocation)
 			r.Put("/{id}", h.updatePage)
+			r.Get("/{id}/sections", h.listTypedSections)
+			r.Post("/{id}/sections", h.createTypedSection)
+			r.Put("/{id}/sections/reorder", h.reorderTypedSections)
+			r.Put("/{id}/sections/{sectionId}", h.updateTypedSection)
+			r.Delete("/{id}/sections/{sectionId}", h.deleteTypedSection)
+			r.Put("/{id}/theme", h.updatePageTheme)
 			r.Delete("/{id}", h.deletePage)
 			r.Post("/{id}/duplicate", h.duplicatePage)
 			r.Post("/{id}/sections/{sectionId}/responses", h.submitInteractiveResponse)
@@ -243,7 +251,7 @@ func (h *Handler) sanitizeInteractivePage(r *http.Request, p *models.Page) {
 		return
 	}
 	uid, _ := utils.UserIDFromCtx(r)
-	p.Content = SanitizeInteractiveContent(p.Content, uid, h.canEditPage(r, p.ID))
+	h.svc.SanitizeInteractivePage(p, uid, h.canEditPage(r, p.ID))
 }
 
 func (h *Handler) getBySlug(w http.ResponseWriter, r *http.Request) {
@@ -403,6 +411,10 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 	}
 	p.ID = id
 	if err := h.svc.Update(&p); err != nil {
+		if errors.Is(err, ErrLegacySectionMutationDisabled) {
+			utils.WriteError(w, http.StatusConflict, "use typed section mutations")
+			return
+		}
 		if errors.Is(err, ErrInvalidContent) {
 			utils.WriteError(w, http.StatusBadRequest, err.Error())
 			return
@@ -441,6 +453,246 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 			},
 		})
 	}
+}
+
+type typedSectionMutationRequest struct {
+	ExpectedRevision int64             `json:"expected_revision"`
+	Section          TypedSectionWrite `json:"section"`
+}
+
+func decodeTypedBody(w http.ResponseWriter, r *http.Request, target any) bool {
+	r.Body = http.MaxBytesReader(w, r.Body, 3<<20)
+	decoder := json.NewDecoder(r.Body)
+	decoder.UseNumber()
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(target); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid typed mutation")
+		return false
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		utils.WriteError(w, http.StatusBadRequest, "invalid typed mutation")
+		return false
+	}
+	return true
+}
+
+func writeTypedMutationError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, ErrTypedSectionMutationsDisabled):
+		utils.WriteError(w, http.StatusNotFound, "typed section mutations unavailable")
+	case errors.Is(err, ErrTypedSectionPolicyDenied):
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+	case errors.Is(err, ErrTypedSectionNotFound), errors.Is(err, sql.ErrNoRows):
+		utils.WriteError(w, http.StatusNotFound, "section not found")
+	case errors.Is(err, ErrSectionRevisionConflict):
+		var conflict *SectionRevisionConflict
+		if errors.As(err, &conflict) {
+			utils.WriteJSON(w, http.StatusConflict, map[string]any{
+				"error": "section revision conflict", "conflict": conflict,
+			})
+			return
+		}
+		utils.WriteError(w, http.StatusConflict, "section revision conflict")
+	case errors.Is(err, ErrExpectedSectionRevisionRequired):
+		utils.WriteError(w, http.StatusBadRequest, "expected revision is required")
+	case errors.Is(err, ErrPaletteTokenReferenced):
+		utils.WriteError(w, http.StatusConflict, "palette token is still referenced")
+	case errors.Is(err, ErrPaletteTokenNotFound), errors.Is(err, ErrTypedSectionInvalid):
+		utils.WriteError(w, http.StatusBadRequest, "invalid typed mutation")
+	default:
+		log.Printf("page.typedMutation: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "typed mutation failed")
+	}
+}
+
+func (h *Handler) typedMutationPage(w http.ResponseWriter, r *http.Request, pageID int64, sections []TypedSectionResource, action string, affectedIDs []int64) {
+	page, err := h.svc.GetByID(pageID)
+	if err != nil {
+		writeTypedMutationError(w, err)
+		return
+	}
+	h.svc.EnrichPage(page)
+	h.sanitizeInteractivePage(r, page)
+	utils.WriteJSON(w, http.StatusOK, map[string]any{"page": page, "sections": sections})
+	userID, _ := utils.UserIDFromCtx(r)
+	revisions := make([]map[string]any, 0, len(sections))
+	for _, section := range sections {
+		revisions = append(revisions, map[string]any{"id": section.ID, "revision": section.Revision})
+	}
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID: userID, Activity: ievents.ActPageUpdated, Resource: ievents.ResPage,
+		ResourceID: pageID, IP: ievents.ClientIP(r),
+		Meta: map[string]any{"action": action, "affected_count": len(affectedIDs)},
+		Fn: func() {
+			h.hub.PropagatePageExceptUser(pageID, userID, "page_updated", map[string]any{
+				"id": pageID, "slug": page.Slug, "partial": true, "typed": true,
+				"affected_section_ids": affectedIDs, "section_revisions": revisions,
+			})
+		},
+	})
+}
+
+func (h *Handler) typedTarget(w http.ResponseWriter, r *http.Request) (int64, int64, bool) {
+	pageID, err := parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid page id")
+		return 0, 0, false
+	}
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return 0, 0, false
+	}
+	return pageID, userID, true
+}
+
+func (h *Handler) listTypedSections(w http.ResponseWriter, r *http.Request) {
+	pageID, userID, ok := h.typedTarget(w, r)
+	if !ok {
+		return
+	}
+	sections, err := h.svc.ListTypedSections(pageID, userID)
+	if err != nil {
+		writeTypedMutationError(w, err)
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]any{"sections": sections})
+}
+
+func (h *Handler) createTypedSection(w http.ResponseWriter, r *http.Request) {
+	pageID, userID, ok := h.typedTarget(w, r)
+	if !ok {
+		return
+	}
+	var request struct {
+		Section TypedSectionWrite `json:"section"`
+	}
+	if !decodeTypedBody(w, r, &request) {
+		return
+	}
+	sections, err := h.svc.CreateTypedSection(pageID, userID, request.Section)
+	if err != nil {
+		writeTypedMutationError(w, err)
+		return
+	}
+	affected := []int64{}
+	requestedKey, validKey := parseShadowLegacyKey(request.Section.LegacyKey)
+	if validKey {
+		for _, section := range sections {
+			sectionKey, ok := parseShadowLegacyKey(section.LegacyKey)
+			if ok && sectionKey == requestedKey {
+				affected = append(affected, section.ID)
+			}
+		}
+	}
+	h.typedMutationPage(w, r, pageID, sections, "create_section", affected)
+}
+
+func (h *Handler) updateTypedSection(w http.ResponseWriter, r *http.Request) {
+	pageID, userID, ok := h.typedTarget(w, r)
+	if !ok {
+		return
+	}
+	sectionID, err := parseID(r, "sectionId")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid section id")
+		return
+	}
+	var request typedSectionMutationRequest
+	if !decodeTypedBody(w, r, &request) {
+		return
+	}
+	sections, err := h.svc.UpdateTypedSection(pageID, sectionID, userID, request.ExpectedRevision, request.Section)
+	if err != nil {
+		writeTypedMutationError(w, err)
+		return
+	}
+	h.typedMutationPage(w, r, pageID, sections, "update_section", []int64{sectionID})
+}
+
+func (h *Handler) deleteTypedSection(w http.ResponseWriter, r *http.Request) {
+	pageID, userID, ok := h.typedTarget(w, r)
+	if !ok {
+		return
+	}
+	sectionID, err := parseID(r, "sectionId")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid section id")
+		return
+	}
+	var request struct {
+		ExpectedRevision int64 `json:"expected_revision"`
+	}
+	if !decodeTypedBody(w, r, &request) {
+		return
+	}
+	sections, err := h.svc.DeleteTypedSection(pageID, sectionID, userID, request.ExpectedRevision)
+	if err != nil {
+		writeTypedMutationError(w, err)
+		return
+	}
+	h.typedMutationPage(w, r, pageID, sections, "delete_section", []int64{sectionID})
+}
+
+func (h *Handler) reorderTypedSections(w http.ResponseWriter, r *http.Request) {
+	pageID, userID, ok := h.typedTarget(w, r)
+	if !ok {
+		return
+	}
+	var request struct {
+		Sections []TypedSectionOrder `json:"sections"`
+	}
+	if !decodeTypedBody(w, r, &request) {
+		return
+	}
+	sections, err := h.svc.ReorderTypedSections(pageID, userID, request.Sections)
+	if err != nil {
+		writeTypedMutationError(w, err)
+		return
+	}
+	affected := make([]int64, 0, len(request.Sections))
+	for _, section := range request.Sections {
+		affected = append(affected, section.ID)
+	}
+	h.typedMutationPage(w, r, pageID, sections, "reorder_sections", affected)
+}
+
+func (h *Handler) updatePageTheme(w http.ResponseWriter, r *http.Request) {
+	pageID, userID, ok := h.typedTarget(w, r)
+	if !ok {
+		return
+	}
+	var request struct {
+		ExpectedRevision int64            `json:"expected_revision"`
+		Theme            models.PageTheme `json:"theme"`
+	}
+	if !decodeTypedBody(w, r, &request) {
+		return
+	}
+	theme, err := h.svc.UpdatePageTheme(pageID, userID, request.ExpectedRevision, request.Theme)
+	if err != nil {
+		writeTypedMutationError(w, err)
+		return
+	}
+	page, err := h.svc.GetByID(pageID)
+	if err != nil {
+		writeTypedMutationError(w, err)
+		return
+	}
+	h.svc.EnrichPage(page)
+	h.sanitizeInteractivePage(r, page)
+	utils.WriteJSON(w, http.StatusOK, map[string]any{"page": page, "theme": theme})
+	h.dispatcher.Dispatch(ievents.Job{
+		UserID: userID, Activity: ievents.ActPageUpdated, Resource: ievents.ResPage,
+		ResourceID: pageID, IP: ievents.ClientIP(r), Meta: map[string]any{"action": "update_page_theme"},
+		Fn: func() {
+			h.hub.PropagatePageExceptUser(pageID, userID, "page_updated", map[string]any{
+				"id": pageID, "slug": page.Slug, "partial": true, "typed": true,
+				"theme_revision": theme.Revision,
+			})
+		},
+	})
 }
 
 func (h *Handler) interactiveTarget(w http.ResponseWriter, r *http.Request) (int64, int64, int64, bool) {

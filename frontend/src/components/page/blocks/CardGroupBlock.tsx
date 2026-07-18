@@ -1,20 +1,7 @@
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import type { PageItem, PageSection } from "../types";
 import "./CardGroupBlock.css";
-import {
-  AddItemButton,
-  DeleteItemButton,
-  EditableText,
-  SectionToolbar,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  getSectionLayout,
-  getSectionMargins,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-  setSectionLayout,
-  setSectionMargins,
-} from "../EditControls";
+import { AddItemButton, DeleteItemButton, EditableText } from "../EditControls";
 
 interface Props {
   section: PageSection;
@@ -30,7 +17,6 @@ export const CardGroupBlock = ({
   section,
   canEdit,
   onUpdate,
-  onDelete,
   onItemCreate,
   onItemUpdate,
   onItemDelete,
@@ -39,40 +25,6 @@ export const CardGroupBlock = ({
 
   return (
     <section className="community-legacy">
-      {canEdit && (
-        <SectionToolbar
-          onDelete={() => onDelete(section.id)}
-          label="Card Group"
-          layout={getSectionLayout(section.config)}
-          onLayoutChange={nextLayout =>
-            onUpdate({
-              ...section,
-              config: setSectionLayout(section.config, nextLayout),
-            })
-          }
-          margins={getSectionMargins(section.config)}
-          onMarginsChange={m =>
-            onUpdate({
-              ...section,
-              config: setSectionMargins(section.config, m),
-            })
-          }
-          animation={getSectionAnimation(section.config)}
-          onAnimationChange={a =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimation(section.config, a),
-            })
-          }
-          animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={i =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimationIntensity(section.config, i),
-            })
-          }
-        />
-      )}
       <div className="section-header">
         {canEdit ? (
           <>

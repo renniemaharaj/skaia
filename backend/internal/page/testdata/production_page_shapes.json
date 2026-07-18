@@ -1,0 +1,241 @@
+{
+  "fixture_version": 1,
+  "source_baseline": "2026-07-17",
+  "pages": [
+    {
+      "fixture": "seeded_object_config_and_string_ids",
+      "visibility": "public",
+      "content": [
+        {
+          "id": "gs-hero",
+          "display_order": 1,
+          "section_type": "hero",
+          "heading": "Welcome",
+          "subheading": "An anonymized seeded page",
+          "config": {
+            "layout": "wide",
+            "variant": 1
+          },
+          "items": []
+        },
+        {
+          "id": "gs-features",
+          "display_order": 2,
+          "section_type": "features",
+          "heading": "Features",
+          "subheading": "",
+          "config": {},
+          "items": [
+            {
+              "id": "gs-feature-1",
+              "section_id": "gs-features",
+              "display_order": 1,
+              "icon": "Star",
+              "heading": "Example feature",
+              "subheading": "Fixture content only",
+              "image_url": "",
+              "link_url": "",
+              "config": {}
+            }
+          ]
+        },
+        {
+          "id": "gs-cta",
+          "display_order": 3,
+          "section_type": "cta",
+          "heading": "Continue",
+          "subheading": "An anonymized call to action",
+          "config": {
+            "bg_color": "#223344"
+          },
+          "items": []
+        }
+      ]
+    },
+    {
+      "fixture": "encoded_configs_and_legacy_aliases",
+      "visibility": "",
+      "content": [
+        {
+          "id": 1700000000001,
+          "display_order": 1,
+          "section_type": "hero",
+          "heading": "Media",
+          "subheading": "",
+          "config": "{\"wide\":true,\"video_url\":\"/fixtures/legacy.mp4\",\"videos\":[\"/fixtures/one.mp4\",\"/fixtures/two.mp4\"],\"tint_color\":\"#112233\",\"tint_opacity\":0.4,\"variant\":2}",
+          "items": []
+        },
+        {
+          "id": 1700000000002,
+          "display_order": 2,
+          "section_type": "rich_text",
+          "heading": "Rich text",
+          "subheading": "",
+          "config": "{\"content\":\"<h2 style=\\\"color: #334455\\\">Fixture heading</h2><p>Fixture copy</p>\",\"layout\":\"left\",\"animation\":\"slide-up\",\"animationIntensity\":\"dramatic\",\"marginBottom\":-48,\"paddingTop\":8}",
+          "items": []
+        },
+        {
+          "id": 1700000000003,
+          "display_order": 3,
+          "section_type": "image_gallery",
+          "heading": "Gallery",
+          "subheading": "",
+          "config": "{\"albums\":[{\"key\":\"all\",\"label\":\"All\"},{\"key\":\"set-a\",\"label\":\"Set A\"}],\"default_card_width\":\"narrow\"}",
+          "items": [
+            {
+              "id": 1700000000101,
+              "section_id": 1700000000003,
+              "display_order": 1,
+              "icon": "",
+              "heading": "",
+              "subheading": "",
+              "image_url": "/fixtures/image.webp",
+              "link_url": "",
+              "config": "{\"album\":\"set-a\",\"wide\":true}"
+            }
+          ]
+        },
+        {
+          "id": 1700000000004,
+          "display_order": 4,
+          "section_type": "social_links",
+          "heading": "",
+          "subheading": "",
+          "config": "{\"links\":[{\"icon\":\"Globe\",\"url\":\"https://example.invalid\"}]}",
+          "items": []
+        },
+        {
+          "id": 1700000000005,
+          "display_order": 5,
+          "section_type": "profile_card",
+          "heading": "Profile",
+          "subheading": "",
+          "config": "{\"banner_url\":\"/fixtures/banner.webp\",\"avatar_url\":\"/fixtures/avatar.webp\",\"profile_name\":\"Example Person\",\"profile_subtitle\":\"Example role\",\"checklist\":[\"First\"],\"links\":[{\"label\":\"Site\",\"url\":\"https://example.invalid\"}]}",
+          "items": []
+        },
+        {
+          "id": 1700000000006,
+          "display_order": 6,
+          "section_type": "code_editor",
+          "heading": "Code",
+          "subheading": "",
+          "config": "{\"language\":\"markdown\",\"filename\":\"example.md\",\"code\":\"# Fixture\"}",
+          "items": []
+        },
+        {
+          "id": 1700000000007,
+          "display_order": 7,
+          "section_type": "poll",
+          "heading": "Poll",
+          "subheading": "",
+          "config": "{\"status\":\"open\",\"submit_label\":\"Submit vote\",\"success_text\":\"Recorded\",\"result_visibility\":\"after_participation\",\"response_limit\":1,\"fields\":[{\"key\":\"choice\",\"type\":\"radio\",\"label\":\"Choose\",\"required\":true,\"options\":[{\"key\":\"a\",\"label\":\"A\"},{\"key\":\"b\",\"label\":\"B\"}]}],\"records\":[]}",
+          "items": []
+        },
+        {
+          "id": 1700000000008,
+          "display_order": 8,
+          "section_type": "form",
+          "heading": "Form",
+          "subheading": "",
+          "config": "{\"status\":\"open\",\"submit_label\":\"Submit form\",\"success_text\":\"Recorded\",\"result_visibility\":\"never\",\"response_limit\":0,\"fields\":[{\"key\":\"message\",\"type\":\"textarea\",\"label\":\"Message\",\"required\":true}],\"records\":[]}",
+          "items": []
+        }
+      ]
+    },
+    {
+      "fixture": "page_scoped_duplicate_identity_source",
+      "visibility": "private",
+      "content": [
+        {
+          "id": 77,
+          "display_order": 1,
+          "section_type": "feature_grid",
+          "heading": "Source",
+          "subheading": "",
+          "config": "{}",
+          "items": []
+        }
+      ]
+    },
+    {
+      "fixture": "page_scoped_duplicate_identity_copy",
+      "visibility": "private",
+      "content": [
+        {
+          "id": 77,
+          "display_order": 1,
+          "section_type": "feature_grid",
+          "heading": "Copy",
+          "subheading": "",
+          "config": "{}",
+          "items": []
+        }
+      ]
+    },
+    {
+      "fixture": "empty_page",
+      "visibility": "",
+      "content": []
+    },
+    {
+      "fixture": "datasource_page_section_reference",
+      "visibility": "public",
+      "content": [
+        {
+          "id": 1700000000200,
+          "display_order": 1,
+          "section_type": "custom_section",
+          "heading": "Data view",
+          "subheading": "",
+          "config": "{\"custom_section_id\":5,\"row_key_column\":\"id\",\"column_map\":{\"heading\":\"title\"}}",
+          "items": []
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "fixture": "table_preset",
+      "section_type": "table",
+      "config": {
+        "columns": 3
+      }
+    },
+    {
+      "fixture": "cards_preset",
+      "section_type": "cards",
+      "config": {
+        "columns": 3,
+        "card_template": {
+          "cardWidth": "full",
+          "padding": 12,
+          "zones": []
+        }
+      }
+    },
+    {
+      "fixture": "component_preset",
+      "section_type": "component",
+      "config": {
+        "columns": 1,
+        "event_hooks": [],
+        "component_group": {
+          "gap": 8,
+          "max_width": 450,
+          "items": [
+            {
+              "id": "cg-fixture-1",
+              "order": 0,
+              "width": 100,
+              "component_type": "primitive.link",
+              "bindings": {
+                "title": "heading",
+                "href": "link_url"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -3,19 +3,7 @@ import { useEffect, useRef } from "react";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import type { PageItem, PageSection } from "../types";
 import "./ProfileCardBlock.css";
-import {
-  EditableText,
-  ImagePickerButton,
-  SectionToolbar,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  getSectionLayout,
-  getSectionMargins,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-  setSectionLayout,
-  setSectionMargins,
-} from "../EditControls";
+import { EditableText, ImagePickerButton } from "../EditControls";
 
 /** Parse section config for checklist items and links. */
 function getCfg(config: string): {
@@ -55,7 +43,7 @@ interface Props {
   onItemDelete: (id: number) => void;
 }
 
-export const ProfileCardBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
+export const ProfileCardBlock = ({ section, canEdit, onUpdate }: Props) => {
   const cfg = getCfg(section.config);
   const parsedCfg = JSON.parse(section.config || "{}");
   const bannerUrl = parsedCfg.banner_url || "/banner_7783x7783.png";
@@ -109,41 +97,6 @@ export const ProfileCardBlock = ({ section, canEdit, onUpdate, onDelete }: Props
 
   return (
     <section className="profile-card-section">
-      {canEdit && (
-        <SectionToolbar
-          onDelete={() => onDelete(section.id)}
-          label="Profile Card"
-          layout={getSectionLayout(section.config)}
-          onLayoutChange={nextLayout =>
-            onUpdate({
-              ...section,
-              config: setSectionLayout(section.config, nextLayout),
-            })
-          }
-          margins={getSectionMargins(section.config)}
-          onMarginsChange={m =>
-            onUpdate({
-              ...section,
-              config: setSectionMargins(section.config, m),
-            })
-          }
-          animation={getSectionAnimation(section.config)}
-          onAnimationChange={a =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimation(section.config, a),
-            })
-          }
-          animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={i =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimationIntensity(section.config, i),
-            })
-          }
-        />
-      )}
-
       <div className="section-header">
         {canEdit ? (
           <>

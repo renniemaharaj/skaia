@@ -1,0 +1,2241 @@
+root@s78:~/skaia# sudo chmod +x script.sh
+root@s78:~/skaia# ./script.sh
+Created: custom-pages-inventory-cueballcraft-20260717T210237Z.txt
+Created: custom-pages-inventory-thewriterco-20260717T210237Z.txt
+1fdeee1b20c5853bc655953664c2f4c472c071c1cb8d70aa29295f81d04aeccd  custom-pages-inventory-cueballcraft-20260717T210237Z.txt
+bcc8ff21dfd16bc2df72daf6e40956cefceb6788c83fc5d6e1d77503643cbd82  custom-pages-inventory-thewriterco-20260717T210237Z.txt
+root@s78:~/skaia# ls
+backend                                                   go.mod             pkg
+backends                                                  go.sum             postgres_data
+biome.json                                                grengo.service     README.md
+cli                                                       internal           redis_data
+compose.yml                                               LICENSE            router.go
+custom-pages-inventory-cueballcraft-20260717T210237Z.txt  main.go            script.sh
+custom-pages-inventory-thewriterco-20260717T210237Z.txt   nginx              SETUP.md
+exports                                                   package.json
+frontend                                                  package-lock.json
+root@s78:~/skaia# cat custom-pages-inventory-cueballcraft-20260717T210237Z.txt
+=== CLIENT ===
+cueballcraft
+cueballcraft
+=== RELEVANT TABLE COLUMNS ===
+[
+    {
+        "type": "bigint",
+        "table": "custom_sections",
+        "column": "id",
+        "default": "nextval('custom_sections_id_seq'::regclass)",
+        "nullable": "NO",
+        "position": 1
+    },
+    {
+        "type": "character varying",
+        "table": "custom_sections",
+        "column": "name",
+        "default": null,
+        "nullable": "NO",
+        "position": 2
+    },
+    {
+        "type": "text",
+        "table": "custom_sections",
+        "column": "description",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 3
+    },
+    {
+        "type": "bigint",
+        "table": "custom_sections",
+        "column": "datasource_id",
+        "default": null,
+        "nullable": "NO",
+        "position": 4
+    },
+    {
+        "type": "character varying",
+        "table": "custom_sections",
+        "column": "section_type",
+        "default": "'cards'::character varying",
+        "nullable": "NO",
+        "position": 5
+    },
+    {
+        "type": "jsonb",
+        "table": "custom_sections",
+        "column": "config",
+        "default": "'{}'::jsonb",
+        "nullable": "NO",
+        "position": 6
+    },
+    {
+        "type": "bigint",
+        "table": "custom_sections",
+        "column": "created_by",
+        "default": null,
+        "nullable": "YES",
+        "position": 7
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "custom_sections",
+        "column": "created_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 8
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "custom_sections",
+        "column": "updated_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 9
+    },
+    {
+        "type": "bigint",
+        "table": "page_items",
+        "column": "id",
+        "default": "nextval('page_items_id_seq'::regclass)",
+        "nullable": "NO",
+        "position": 1
+    },
+    {
+        "type": "bigint",
+        "table": "page_items",
+        "column": "page_section_id",
+        "default": null,
+        "nullable": "NO",
+        "position": 2
+    },
+    {
+        "type": "integer",
+        "table": "page_items",
+        "column": "display_order",
+        "default": "0",
+        "nullable": "NO",
+        "position": 3
+    },
+    {
+        "type": "character varying",
+        "table": "page_items",
+        "column": "icon",
+        "default": "''::character varying",
+        "nullable": "NO",
+        "position": 4
+    },
+    {
+        "type": "text",
+        "table": "page_items",
+        "column": "heading",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 5
+    },
+    {
+        "type": "text",
+        "table": "page_items",
+        "column": "subheading",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 6
+    },
+    {
+        "type": "text",
+        "table": "page_items",
+        "column": "image_url",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 7
+    },
+    {
+        "type": "text",
+        "table": "page_items",
+        "column": "link_url",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 8
+    },
+    {
+        "type": "jsonb",
+        "table": "page_items",
+        "column": "config",
+        "default": "'{}'::jsonb",
+        "nullable": "NO",
+        "position": 9
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "page_items",
+        "column": "created_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 10
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "page_items",
+        "column": "updated_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 11
+    },
+    {
+        "type": "bigint",
+        "table": "page_sections",
+        "column": "id",
+        "default": "nextval('page_sections_id_seq'::regclass)",
+        "nullable": "NO",
+        "position": 1
+    },
+    {
+        "type": "integer",
+        "table": "page_sections",
+        "column": "display_order",
+        "default": "0",
+        "nullable": "NO",
+        "position": 2
+    },
+    {
+        "type": "character varying",
+        "table": "page_sections",
+        "column": "section_type",
+        "default": null,
+        "nullable": "NO",
+        "position": 3
+    },
+    {
+        "type": "text",
+        "table": "page_sections",
+        "column": "heading",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 4
+    },
+    {
+        "type": "text",
+        "table": "page_sections",
+        "column": "subheading",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 5
+    },
+    {
+        "type": "jsonb",
+        "table": "page_sections",
+        "column": "config",
+        "default": "'{}'::jsonb",
+        "nullable": "NO",
+        "position": 6
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "page_sections",
+        "column": "created_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 7
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "page_sections",
+        "column": "updated_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 8
+    },
+    {
+        "type": "bigint",
+        "table": "pages",
+        "column": "id",
+        "default": "nextval('pages_id_seq'::regclass)",
+        "nullable": "NO",
+        "position": 1
+    },
+    {
+        "type": "character varying",
+        "table": "pages",
+        "column": "slug",
+        "default": null,
+        "nullable": "NO",
+        "position": 2
+    },
+    {
+        "type": "character varying",
+        "table": "pages",
+        "column": "title",
+        "default": "''::character varying",
+        "nullable": "NO",
+        "position": 3
+    },
+    {
+        "type": "text",
+        "table": "pages",
+        "column": "description",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 4
+    },
+    {
+        "type": "jsonb",
+        "table": "pages",
+        "column": "content",
+        "default": "'[]'::jsonb",
+        "nullable": "NO",
+        "position": 6
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "pages",
+        "column": "created_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 7
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "pages",
+        "column": "updated_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 8
+    },
+    {
+        "type": "bigint",
+        "table": "pages",
+        "column": "owner_id",
+        "default": null,
+        "nullable": "YES",
+        "position": 9
+    },
+    {
+        "type": "character varying",
+        "table": "pages",
+        "column": "visibility",
+        "default": "'public'::character varying",
+        "nullable": "NO",
+        "position": 11
+    }
+]
+=== TABLE COUNTS ===
+{
+    "pages": 4,
+    "custom_sections": 0,
+    "legacy_page_items": 0,
+    "legacy_page_sections": 0
+}
+=== SECTION TYPE SUMMARY ===
+[
+    {
+        "count": 2,
+        "section_type": "code_editor",
+        "config_storage": "string"
+    },
+    {
+        "count": 1,
+        "section_type": "cta",
+        "config_storage": "object"
+    },
+    {
+        "count": 1,
+        "section_type": "feature_grid",
+        "config_storage": "string"
+    },
+    {
+        "count": 1,
+        "section_type": "features",
+        "config_storage": "object"
+    },
+    {
+        "count": 1,
+        "section_type": "hero",
+        "config_storage": "object"
+    },
+    {
+        "count": 2,
+        "section_type": "hero",
+        "config_storage": "string"
+    },
+    {
+        "count": 1,
+        "section_type": "image_gallery",
+        "config_storage": "string"
+    },
+    {
+        "count": 1,
+        "section_type": "poll",
+        "config_storage": "string"
+    },
+    {
+        "count": 2,
+        "section_type": "rich_text",
+        "config_storage": "string"
+    },
+    {
+        "count": 2,
+        "section_type": "social_links",
+        "config_storage": "string"
+    }
+]
+=== CUSTOM PAGES WITH SANITIZED CONTENT ===
+{
+    "id": 1,
+    "slug": "belle",
+    "title": "belle",
+    "sections": [
+        {
+            "id": 1776213523321,
+            "items": [
+            ],
+            "config": "{\"language\":\"html\",\"filename\":\"html\",\"animation\":\"bounce\",\"code\":\"<h1>Do you know html??</h1>\"}",
+            "heading": "Code Editor",
+            "subheading": "",
+            "section_type": "code_editor",
+            "display_order": 1
+        },
+        {
+            "id": 1776212625331,
+            "items": [
+            ],
+            "config": "{\"layout\":\"wide\",\"variant\":1}",
+            "heading": "Hero Banner",
+            "subheading": "",
+            "section_type": "hero",
+            "display_order": 2
+        },
+        {
+            "id": 1776212707519,
+            "items": [
+                {
+                    "id": 1776212727096,
+                    "icon": "",
+                    "config": "{\"album\":\"all\",\"width\":\"regular\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/8/images/1776212746638861004.png",
+                    "section_id": 1776212707519,
+                    "subheading": "",
+                    "display_order": 1
+                },
+                {
+                    "id": 1776212769586,
+                    "icon": "",
+                    "config": "{\"album\":\"all\",\"width\":\"narrow\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/8/images/1776212784307591138.png",
+                    "section_id": 1776212707519,
+                    "subheading": "",
+                    "display_order": 2
+                },
+                {
+                    "id": 1776212797643,
+                    "icon": "",
+                    "config": "{\"album\":\"all\",\"width\":\"regular\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/8/images/1776212812385032952.png",
+                    "section_id": 1776212707519,
+                    "subheading": "",
+                    "display_order": 3
+                },
+                {
+                    "id": 1776213207529,
+                    "icon": "",
+                    "config": "{\"album\":\"all\",\"width\":\"narrow\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/8/images/1776213239014317444.png",
+                    "section_id": 1776212707519,
+                    "subheading": "",
+                    "display_order": 4
+                }
+            ],
+            "config": "{\"layout\":\"center\",\"default_card_width\":\"narrow\",\"marginTop\":0,\"marginBottom\":0,\"paddingLeft\":0,\"paddingRight\":0}",
+            "heading": "Image Gallery",
+            "subheading": "",
+            "section_type": "image_gallery",
+            "display_order": 3
+        }
+    ],
+    "created_at": "2026-04-15T00:23:46.13522",
+    "updated_at": "2026-04-15T09:49:15.650398",
+    "visibility": "public",
+    "description": ""
+}
+{
+    "id": 2,
+    "slug": "homepage",
+    "title": "Homepage",
+    "sections": [
+        {
+            "id": 1784318750261,
+            "items": [
+            ],
+            "config": "[REDACTED: interactive config can contain responses]",
+            "heading": "Skaiacraft quality check",
+            "subheading": "How has your experience with Skaiacraft been?",
+            "section_type": "poll",
+            "display_order": 1
+        },
+        {
+            "id": 1781131028696,
+            "items": [
+            ],
+            "config": "{\"layout\":\"wide\",\"background_image\":\"/uploads/users/1/images/1781131064685585287.webp\",\"tint_opacity\":0.41,\"variant\":1}",
+            "heading": "SkaiaCraft, Cueballcraft",
+            "subheading": "Professional Minecraft experience by Developers",
+            "section_type": "hero",
+            "display_order": 2
+        },
+        {
+            "id": 4,
+            "config": "{\"links\":[{\"url\":\"https://discord.gg/Ngt4RkNUNv\",\"icon\":\"MessageCircle\",\"name\":\"Discord\"},{\"url\":\"https://x.com/SkaiaGaming\",\"icon\":\"Twitter\",\"name\":\"X\"},{\"url\":\"https://www.instagram.com/skaiagram/\",\"icon\":\"Instagram\",\"name\":\"Instagram\"}],\"animation\":\"slide-left\",\"animationIntensity\":\"dramatic\",\"layout\":\"center\"}",
+            "heading": "",
+            "created_at": "2026-03-25T12:27:29.381867Z",
+            "subheading": "",
+            "updated_at": "2026-03-25T12:27:29.381867Z",
+            "section_type": "social_links",
+            "display_order": 3
+        },
+        {
+            "id": 6,
+            "items": [
+                {
+                    "id": 11,
+                    "icon": "Gamepad2",
+                    "config": "{}",
+                    "heading": "Semi-Vanilla",
+                    "link_url": "",
+                    "image_url": "",
+                    "created_at": "2026-03-25T12:27:29.386465Z",
+                    "section_id": 6,
+                    "subheading": "Enjoy authentic Minecraft gameplay with custom enhancements",
+                    "updated_at": "2026-03-25T12:27:29.386465Z",
+                    "display_order": 1
+                },
+                {
+                    "id": 12,
+                    "icon": "TrendingUp",
+                    "config": "{}",
+                    "heading": "Latest Versions",
+                    "link_url": "",
+                    "image_url": "",
+                    "created_at": "2026-03-25T12:27:29.386465Z",
+                    "section_id": 6,
+                    "subheading": "We use Purpur on the latest 1.21.11 version maintaining stable performance!",
+                    "updated_at": "2026-03-25T12:27:29.386465Z",
+                    "display_order": 2
+                },
+                {
+                    "id": 13,
+                    "icon": "Users",
+                    "config": "{}",
+                    "heading": "Loyal Community",
+                    "link_url": "",
+                    "image_url": "",
+                    "created_at": "2026-03-25T12:27:29.386465Z",
+                    "section_id": 6,
+                    "subheading": "Join a welcoming playerbase with experienced staff members",
+                    "updated_at": "2026-03-25T12:27:29.386465Z",
+                    "display_order": 3
+                },
+                {
+                    "id": 14,
+                    "icon": "Star",
+                    "config": "{}",
+                    "heading": "Custom Apps",
+                    "link_url": "",
+                    "image_url": "",
+                    "created_at": "2026-03-25T12:27:29.386465Z",
+                    "section_id": 6,
+                    "subheading": "Unique features and tools designed for enjoyment",
+                    "updated_at": "2026-03-25T12:27:29.386465Z",
+                    "display_order": 4
+                },
+                {
+                    "id": 15,
+                    "icon": "CheckCircle",
+                    "config": "{}",
+                    "heading": "Reliable Support",
+                    "link_url": "",
+                    "image_url": "",
+                    "created_at": "2026-03-25T12:27:29.386465Z",
+                    "section_id": 6,
+                    "subheading": "Helpful moderators ready to assist with any questions",
+                    "updated_at": "2026-03-25T12:27:29.386465Z",
+                    "display_order": 5
+                },
+                {
+                    "id": 16,
+                    "icon": "ShoppingCart",
+                    "config": "{}",
+                    "heading": "Premium Items",
+                    "link_url": "",
+                    "image_url": "",
+                    "created_at": "2026-03-25T12:27:29.386465Z",
+                    "section_id": 6,
+                    "subheading": "Shop for ranks, cosmetics, and exclusive content",
+                    "updated_at": "2026-03-25T12:27:29.386465Z",
+                    "display_order": 6
+                }
+            ],
+            "config": "{\"animation\":\"slide-right\",\"animationIntensity\":\"dramatic\"}",
+            "heading": "What can you expect from SkaiaCraft",
+            "created_at": "2026-03-25T12:27:29.385167Z",
+            "subheading": "Everything you need for the ultimate semi vanilla minecraft experience ",
+            "updated_at": "2026-03-25T12:27:29.385167Z",
+            "section_type": "feature_grid",
+            "display_order": 4
+        },
+        {
+            "id": 1782989665362,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h1 dir=\\\"auto\\\">Please remember to vote for our server daily!</h1><p dir=\\\"auto\\\"></p>\",\"animation\":\"slide-left\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 5
+        },
+        {
+            "id": 1782989156784,
+            "items": [
+            ],
+            "config": "{\"content\":\"<div class=\\\"columns\\\" cols=\\\"2\\\"><div class=\\\"column\\\" index=\\\"0\\\"><p dir=\\\"auto\\\"></p><iframe class=\\\"iframe\\\" width=\\\"1149\\\" height=\\\"817\\\" src=\\\"https://www.minerank.com/skaiacraft/vote#vote-now\\\" defaultshowpicker=\\\"false\\\" frameborder=\\\"0\\\"></iframe></div></div><p dir=\\\"auto\\\"></p>\",\"layout\":\"wide\",\"animation\":\"zoom-in\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 6
+        },
+        {
+            "id": 1782834424136,
+            "items": [
+            ],
+            "config": "{\"layout\":\"center\",\"links\":[{\"icon\":\"Link\",\"url\":\"https://thewriterco.com\"}]}",
+            "heading": "Social Links",
+            "subheading": "",
+            "section_type": "social_links",
+            "display_order": 7
+        }
+    ],
+    "created_at": "2026-04-17T12:50:26.350243",
+    "updated_at": "2026-07-17T20:21:45.946326",
+    "visibility": "",
+    "description": ""
+}
+{
+    "id": 8,
+    "slug": "get-started",
+    "title": "Get Started",
+    "sections": [
+        {
+            "id": "gs-hero",
+            "items": [
+            ],
+            "config": {
+            },
+            "heading": "Welcome to Your Site",
+            "subheading": "This is a sample landing page created by the seed. Customise or replace it from the page builder.",
+            "section_type": "hero",
+            "display_order": 1
+        },
+        {
+            "id": "gs-features",
+            "items": [
+                {
+                    "id": "gs-f1",
+                    "icon": "star",
+                    "heading": "Block Builder",
+                    "link_url": "",
+                    "image_url": "",
+                    "subheading": "Drag-and-drop sections to build pages visually.",
+                    "display_order": 1
+                },
+                {
+                    "id": "gs-f2",
+                    "icon": "users",
+                    "heading": "Community",
+                    "link_url": "",
+                    "image_url": "",
+                    "subheading": "Forums, comments, and real-time presence.",
+                    "display_order": 2
+                },
+                {
+                    "id": "gs-f3",
+                    "icon": "palette",
+                    "heading": "Theming",
+                    "link_url": "",
+                    "image_url": "",
+                    "subheading": "Full branding control from the admin panel.",
+                    "display_order": 3
+                }
+            ],
+            "config": {
+            },
+            "heading": "Feature Highlights",
+            "subheading": "Showcase what makes your community special.",
+            "section_type": "features",
+            "display_order": 2
+        },
+        {
+            "id": "gs-cta",
+            "items": [
+            ],
+            "config": {
+            },
+            "heading": "Ready to build?",
+            "subheading": "Head to the admin panel and start customising your pages.",
+            "section_type": "cta",
+            "display_order": 3
+        }
+    ],
+    "created_at": "2026-04-18T13:37:38.826554",
+    "updated_at": "2026-04-18T13:37:38.826554",
+    "visibility": "public",
+    "description": "A quick tour of the page builder blocks available on your site."
+}
+{
+    "id": 9,
+    "slug": "2ad3f596-740c-4242-b2aa-79bfd28b12c9",
+    "title": "",
+    "sections": [
+        {
+            "id": 1780121691270,
+            "items": [
+            ],
+            "config": "{\"language\":\"html\",\"code\":\"<div>TEST</div>\"}",
+            "heading": "Code Editor",
+            "subheading": "",
+            "section_type": "code_editor",
+            "display_order": 1
+        }
+    ],
+    "created_at": "2026-05-29T20:48:15.601474",
+    "updated_at": "2026-05-30T06:15:16.32952",
+    "visibility": "",
+    "description": ""
+}
+=== SAVED CUSTOM SECTIONS ===
+=== LEGACY PAGE SECTIONS ===
+=== LEGACY PAGE ITEMS ===
+root@s78:~/skaia# cat custom-pages-inventory-thewriterco-20260717T210237Z.txt
+=== CLIENT ===
+thewriterco
+thewriterco
+=== RELEVANT TABLE COLUMNS ===
+[
+    {
+        "type": "bigint",
+        "table": "custom_sections",
+        "column": "id",
+        "default": "nextval('custom_sections_id_seq'::regclass)",
+        "nullable": "NO",
+        "position": 1
+    },
+    {
+        "type": "character varying",
+        "table": "custom_sections",
+        "column": "name",
+        "default": null,
+        "nullable": "NO",
+        "position": 2
+    },
+    {
+        "type": "text",
+        "table": "custom_sections",
+        "column": "description",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 3
+    },
+    {
+        "type": "bigint",
+        "table": "custom_sections",
+        "column": "datasource_id",
+        "default": null,
+        "nullable": "NO",
+        "position": 4
+    },
+    {
+        "type": "character varying",
+        "table": "custom_sections",
+        "column": "section_type",
+        "default": "'cards'::character varying",
+        "nullable": "NO",
+        "position": 5
+    },
+    {
+        "type": "jsonb",
+        "table": "custom_sections",
+        "column": "config",
+        "default": "'{}'::jsonb",
+        "nullable": "NO",
+        "position": 6
+    },
+    {
+        "type": "bigint",
+        "table": "custom_sections",
+        "column": "created_by",
+        "default": null,
+        "nullable": "YES",
+        "position": 7
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "custom_sections",
+        "column": "created_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 8
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "custom_sections",
+        "column": "updated_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 9
+    },
+    {
+        "type": "bigint",
+        "table": "page_items",
+        "column": "id",
+        "default": "nextval('page_items_id_seq'::regclass)",
+        "nullable": "NO",
+        "position": 1
+    },
+    {
+        "type": "bigint",
+        "table": "page_items",
+        "column": "page_section_id",
+        "default": null,
+        "nullable": "NO",
+        "position": 2
+    },
+    {
+        "type": "integer",
+        "table": "page_items",
+        "column": "display_order",
+        "default": "0",
+        "nullable": "NO",
+        "position": 3
+    },
+    {
+        "type": "character varying",
+        "table": "page_items",
+        "column": "icon",
+        "default": "''::character varying",
+        "nullable": "NO",
+        "position": 4
+    },
+    {
+        "type": "text",
+        "table": "page_items",
+        "column": "heading",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 5
+    },
+    {
+        "type": "text",
+        "table": "page_items",
+        "column": "subheading",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 6
+    },
+    {
+        "type": "text",
+        "table": "page_items",
+        "column": "image_url",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 7
+    },
+    {
+        "type": "text",
+        "table": "page_items",
+        "column": "link_url",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 8
+    },
+    {
+        "type": "jsonb",
+        "table": "page_items",
+        "column": "config",
+        "default": "'{}'::jsonb",
+        "nullable": "NO",
+        "position": 9
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "page_items",
+        "column": "created_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 10
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "page_items",
+        "column": "updated_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 11
+    },
+    {
+        "type": "bigint",
+        "table": "page_sections",
+        "column": "id",
+        "default": "nextval('page_sections_id_seq'::regclass)",
+        "nullable": "NO",
+        "position": 1
+    },
+    {
+        "type": "integer",
+        "table": "page_sections",
+        "column": "display_order",
+        "default": "0",
+        "nullable": "NO",
+        "position": 2
+    },
+    {
+        "type": "character varying",
+        "table": "page_sections",
+        "column": "section_type",
+        "default": null,
+        "nullable": "NO",
+        "position": 3
+    },
+    {
+        "type": "text",
+        "table": "page_sections",
+        "column": "heading",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 4
+    },
+    {
+        "type": "text",
+        "table": "page_sections",
+        "column": "subheading",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 5
+    },
+    {
+        "type": "jsonb",
+        "table": "page_sections",
+        "column": "config",
+        "default": "'{}'::jsonb",
+        "nullable": "NO",
+        "position": 6
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "page_sections",
+        "column": "created_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 7
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "page_sections",
+        "column": "updated_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 8
+    },
+    {
+        "type": "bigint",
+        "table": "pages",
+        "column": "id",
+        "default": "nextval('pages_id_seq'::regclass)",
+        "nullable": "NO",
+        "position": 1
+    },
+    {
+        "type": "character varying",
+        "table": "pages",
+        "column": "slug",
+        "default": null,
+        "nullable": "NO",
+        "position": 2
+    },
+    {
+        "type": "character varying",
+        "table": "pages",
+        "column": "title",
+        "default": "''::character varying",
+        "nullable": "NO",
+        "position": 3
+    },
+    {
+        "type": "text",
+        "table": "pages",
+        "column": "description",
+        "default": "''::text",
+        "nullable": "NO",
+        "position": 4
+    },
+    {
+        "type": "jsonb",
+        "table": "pages",
+        "column": "content",
+        "default": "'[]'::jsonb",
+        "nullable": "NO",
+        "position": 6
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "pages",
+        "column": "created_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 7
+    },
+    {
+        "type": "timestamp without time zone",
+        "table": "pages",
+        "column": "updated_at",
+        "default": "CURRENT_TIMESTAMP",
+        "nullable": "YES",
+        "position": 8
+    },
+    {
+        "type": "bigint",
+        "table": "pages",
+        "column": "owner_id",
+        "default": null,
+        "nullable": "YES",
+        "position": 9
+    },
+    {
+        "type": "character varying",
+        "table": "pages",
+        "column": "visibility",
+        "default": "'public'::character varying",
+        "nullable": "NO",
+        "position": 11
+    }
+]
+=== TABLE COUNTS ===
+{
+    "pages": 12,
+    "custom_sections": 7,
+    "legacy_page_items": 0,
+    "legacy_page_sections": 0
+}
+=== SECTION TYPE SUMMARY ===
+[
+    {
+        "count": 1,
+        "section_type": "code_editor",
+        "config_storage": "string"
+    },
+    {
+        "count": 1,
+        "section_type": "cta",
+        "config_storage": "object"
+    },
+    {
+        "count": 1,
+        "section_type": "custom_section",
+        "config_storage": "string"
+    },
+    {
+        "count": 2,
+        "section_type": "feature_grid",
+        "config_storage": "string"
+    },
+    {
+        "count": 1,
+        "section_type": "features",
+        "config_storage": "object"
+    },
+    {
+        "count": 2,
+        "section_type": "form",
+        "config_storage": "string"
+    },
+    {
+        "count": 1,
+        "section_type": "hero",
+        "config_storage": "object"
+    },
+    {
+        "count": 2,
+        "section_type": "hero",
+        "config_storage": "string"
+    },
+    {
+        "count": 2,
+        "section_type": "image_gallery",
+        "config_storage": "string"
+    },
+    {
+        "count": 2,
+        "section_type": "profile_card",
+        "config_storage": "string"
+    },
+    {
+        "count": 30,
+        "section_type": "rich_text",
+        "config_storage": "string"
+    }
+]
+=== CUSTOM PAGES WITH SANITIZED CONTENT ===
+{
+    "id": 38,
+    "slug": "996dd19b-98ea-4535-bb8c-aed65f8d8815",
+    "title": "",
+    "sections": [
+        {
+            "id": 1776606237491,
+            "items": [
+            ],
+            "config": "{\"content\":\"<p dir=\\\"auto\\\"><span><span style=\\\"text-align: center;\\\" class=\\\"image\\\"><img height=\\\"auto\\\" style=\\\"\\\" src=\\\"/uploads/users/2/images/1776507468093941302.png\\\" alt=\\\"\\\" flipx=\\\"false\\\" flipy=\\\"false\\\" width=\\\"200\\\" align=\\\"center\\\" inline=\\\"true\\\"></span></span>The Writer Company - <span style=\\\"font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Oxygen, Ubuntu, Cantarell, &quot;Fira Sans&quot;, &quot;Droid Sans&quot;, &quot;Helvetica Neue&quot;, sans-serif; font-size: 15.2px; color: rgb(176, 176, 176)\\\">Writing, software, faith, and adventure; a concoction of all that makes up myself, the 'writer'. I love the details, don't you like my hand-crafted expressions? They're evenly placed, and all hoping with faith you'll feel the connection.</span></p>\",\"animation\":\"slide-up\",\"animationIntensity\":\"dramatic\",\"layout\":\"center\",\"marginTop\":0,\"marginRight\":0,\"marginBottom\":0,\"marginLeft\":0,\"paddingTop\":0,\"paddingRight\":0,\"paddingBottom\":0,\"paddingLeft\":0}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 1
+        },
+        {
+            "id": 1776520773867,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h2 dir=\\\"auto\\\">Are you interested in renting a website like mine?</h2><p dir=\\\"auto\\\">Consulting, custom development, deployment, and full coverage, expert solutions. We introduce you to our full-stack tenant-based app: React frontend + Go backend + PostgreSQL + Redis + nginx, containerized deployment—100% cloud-native infrastructure built to be paired with and positioned behind Cloudflare's bleeding-edge caching servers.</p><p dir=\\\"auto\\\"></p><ul><li><p dir=\\\"auto\\\">Enterprise-grade multi-tenant app platform</p></li><li><p dir=\\\"auto\\\">React frontend + Go backend</p></li><li><p dir=\\\"auto\\\">PostgreSQL + Redis storage</p></li><li><p dir=\\\"auto\\\">nginx reverse proxy</p></li><li><p dir=\\\"auto\\\">containerized deployment optimized for cloud-native environments</p></li><li><p dir=\\\"auto\\\">Built for seamless Cloudflare integration, with modern caching and edge-ready architecture for high performance, security, and scale.</p></li></ul><p dir=\\\"auto\\\"></p>\",\"animation\":\"slide-left\",\"animationIntensity\":\"dramatic\",\"layout\":\"left\",\"marginTop\":0,\"marginRight\":0,\"marginBottom\":0,\"marginLeft\":0,\"paddingTop\":0,\"paddingRight\":0,\"paddingBottom\":0,\"paddingLeft\":0}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 2
+        },
+        {
+            "id": 1776520829371,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h2 style=\\\"text-align: left\\\" dir=\\\"auto\\\">What you get for a yearly subscription of USD $20/y</h2><ul><li><p style=\\\"text-align: left\\\" dir=\\\"auto\\\">Landing page with UI page builder.</p></li><li><p style=\\\"text-align: left\\\" dir=\\\"auto\\\">User accounts, auth, inboxes, notifications.</p></li><li><p style=\\\"text-align: left\\\" dir=\\\"auto\\\">Page presence with global chat.</p></li><li><p style=\\\"text-align: left\\\" dir=\\\"auto\\\">Managed hosting with node-specific mobility, automatic backups,</p></li><li><p style=\\\"text-align: left\\\" dir=\\\"auto\\\">Server configuration portal for advanced hosting needs.</p></li><li><p style=\\\"text-align: left\\\" dir=\\\"auto\\\">Lifetime premium 24/7 support for training and configuration. </p></li></ul><p dir=\\\"auto\\\"></p>\",\"animation\":\"zoom-in\",\"animationIntensity\":\"dramatic\",\"layout\":\"right\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 3
+        },
+        {
+            "id": 1776520851076,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h2 dir=\\\"auto\\\">What you get for a monthly subscription as low as USD $20/m</h2><ul><li><p dir=\\\"auto\\\">Everything you get from the yearly subscription.</p></li><li><p dir=\\\"auto\\\">High-performance forum.</p></li><li><p dir=\\\"auto\\\">Professional shop</p></li><li><p dir=\\\"auto\\\">UI builder for unlimited custom pages</p></li><li><p dir=\\\"auto\\\">Dynamic custom sections based on datasources through a typescript runtime with securely injected environment variables, cached hits &amp; component registry with data bind points in complex layouts for rendering data rows.</p></li></ul><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">Feel free to check out the project's repository for source code and contributions <a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://github.com/renniemaharaj/skaia\\\">renniemaharaj</a></p><p dir=\\\"auto\\\"></p>\",\"animation\":\"slide-right\",\"animationIntensity\":\"dramatic\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 4
+        },
+        {
+            "id": 1776538834243,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h2 dir=\\\"auto\\\">What's going on in the world anyway?</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">The following are not necessarily 'news', some are viewpoints, ideologies, agendas &amp; propaganda, while others are pure AI slop. We intend to provide the varying sources at a glance, not to endorse any narrative, nor is any article marked as 'fact checked' by the author of TheWriterCo. Regardless, please interact with the sources to validate their narrative or compare it against your own observations in pure conscience.</p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\"></p>\",\"animation\":\"zoom-in\",\"animationIntensity\":\"dramatic\",\"layout\":\"left\",\"marginTop\":0,\"marginRight\":0,\"marginBottom\":-130,\"marginLeft\":0,\"paddingTop\":0,\"paddingRight\":0,\"paddingBottom\":0,\"paddingLeft\":0}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 5
+        },
+        {
+            "id": 1777378141400,
+            "items": [
+            ],
+            "config": "{\"content\":\"<p style=\\\"text-align: right\\\" dir=\\\"auto\\\">Powered by <a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://www.thewriterco.com\\\">Thewriterco, Skaia</a> - a premium, enterprise-grade, multitenant site factory and container orchestrator. Enjoy cloud-native infrastructure, built to abstract the hosting, engineering, and service maintenance, managing the entire infrastructure stack for you. It comes as a single, monolith in the cloud with remote management portals and a UI builder framework for displaying static and dynamically fetched content securely enriched with environment variables, and renders the results as components like the news section you see above. Try our sandbox mode and get in touch with us when you're ready for your own site to be deployed. It takes like five minutes!</p>\",\"animation\":\"slide-left\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 7
+        }
+    ],
+    "created_at": "2026-04-18T13:58:49.78294",
+    "updated_at": "2026-06-21T16:33:04.87681",
+    "visibility": "",
+    "description": ""
+}
+{
+    "id": 40,
+    "slug": "8b467a2e-2ba6-411b-b453-32c7bc67f39f",
+    "title": "",
+    "sections": [
+        {
+            "id": 1781125168346,
+            "items": [
+            ],
+            "config": "{\"tint_color\":\"#714169\"}",
+            "heading": "Hero Banner",
+            "subheading": "",
+            "section_type": "hero",
+            "display_order": 1
+        },
+        {
+            "id": 1781125359243,
+            "items": [
+                {
+                    "id": 1781125363387,
+                    "icon": "Star",
+                    "config": "{}",
+                    "heading": "New Feature",
+                    "link_url": "",
+                    "image_url": "",
+                    "section_id": 1781125359243,
+                    "subheading": "Feature description",
+                    "display_order": 1
+                }
+            ],
+            "config": "{}",
+            "heading": "Feature Grid (icon tiles)",
+            "subheading": "",
+            "section_type": "feature_grid",
+            "display_order": 2
+        }
+    ],
+    "created_at": "2026-04-18T14:51:44.209632",
+    "updated_at": "2026-06-10T21:02:43.532151",
+    "visibility": "",
+    "description": ""
+}
+{
+    "id": 41,
+    "slug": "get-started",
+    "title": "Get Started",
+    "sections": [
+        {
+            "id": "gs-hero",
+            "items": [
+            ],
+            "config": {
+            },
+            "heading": "Welcome to Your Site",
+            "subheading": "This is a sample landing page created by the seed. Customise or replace it from the page builder.",
+            "section_type": "hero",
+            "display_order": 1
+        },
+        {
+            "id": "gs-features",
+            "items": [
+                {
+                    "id": "gs-f1",
+                    "icon": "star",
+                    "heading": "Block Builder",
+                    "link_url": "",
+                    "image_url": "",
+                    "subheading": "Drag-and-drop sections to build pages visually.",
+                    "display_order": 1
+                },
+                {
+                    "id": "gs-f2",
+                    "icon": "users",
+                    "heading": "Community",
+                    "link_url": "",
+                    "image_url": "",
+                    "subheading": "Forums, comments, and real-time presence.",
+                    "display_order": 2
+                },
+                {
+                    "id": "gs-f3",
+                    "icon": "palette",
+                    "heading": "Theming",
+                    "link_url": "",
+                    "image_url": "",
+                    "subheading": "Full branding control from the admin panel.",
+                    "display_order": 3
+                }
+            ],
+            "config": {
+            },
+            "heading": "Feature Highlights",
+            "subheading": "Showcase what makes your community special.",
+            "section_type": "features",
+            "display_order": 2
+        },
+        {
+            "id": "gs-cta",
+            "items": [
+            ],
+            "config": {
+            },
+            "heading": "Ready to build?",
+            "subheading": "Head to the admin panel and start customising your pages.",
+            "section_type": "cta",
+            "display_order": 3
+        }
+    ],
+    "created_at": "2026-04-19T12:44:19.788659",
+    "updated_at": "2026-04-19T12:44:19.788659",
+    "visibility": "public",
+    "description": "A quick tour of the page builder blocks available on your site."
+}
+{
+    "id": 43,
+    "slug": "payroll",
+    "title": "payroll",
+    "sections": [
+        {
+            "id": 1777401470054,
+            "items": [
+            ],
+            "config": "{\"content\":\"<p dir=\\\"auto\\\"><div style=\\\"text-align: center;\\\" class=\\\"image\\\"><img height=\\\"auto\\\" style=\\\"\\\" src=\\\"/uploads/users/1/images/1777401981017774013.png\\\" alt=\\\"\\\" flipx=\\\"false\\\" flipy=\\\"false\\\" align=\\\"center\\\" inline=\\\"false\\\"></div></p>\",\"layout\":\"wide\",\"animation\":\"fade-in\",\"animationIntensity\":\"dramatic\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 1
+        },
+        {
+            "id": 1777379494667,
+            "items": [
+            ],
+            "config": "{\"content\":\"<p dir=\\\"auto\\\"><div style=\\\"text-align: center;\\\" class=\\\"image\\\"><img height=\\\"auto\\\" style=\\\"\\\" src=\\\"/uploads/users/1/images/1777402043988350160.png\\\" alt=\\\"\\\" flipx=\\\"false\\\" flipy=\\\"false\\\" align=\\\"center\\\" inline=\\\"false\\\"></div></p><h2 dir=\\\"auto\\\">Payroll, Trinidad and Tobago Statutory Deductions Compliance, and HRTM's expert solution.</h2><p dir=\\\"auto\\\"></p>\",\"animation\":\"bounce\",\"layout\":\"wide\",\"animationIntensity\":\"dramatic\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 2
+        },
+        {
+            "id": 1777482083463,
+            "items": [
+                {
+                    "id": 1777482086358,
+                    "icon": "CheckCircle",
+                    "config": "{}",
+                    "heading": "Health Surcharge",
+                    "link_url": "",
+                    "image_url": "",
+                    "section_id": 1777482083463,
+                    "subheading": "(employee's tax) Health Surcharge",
+                    "display_order": 1
+                },
+                {
+                    "id": 1777482197300,
+                    "icon": "CheckCircle",
+                    "config": "{}",
+                    "heading": "National Insurance",
+                    "link_url": "",
+                    "image_url": "",
+                    "section_id": 1777482083463,
+                    "subheading": "National Insurance (NIS) Contributions (employees' + employers' contribution per case per class)",
+                    "display_order": 2
+                },
+                {
+                    "id": 1777482246781,
+                    "icon": "CheckCircle",
+                    "config": "{}",
+                    "heading": "PAYE",
+                    "link_url": "",
+                    "image_url": "",
+                    "section_id": 1777482083463,
+                    "subheading": "\"PAYE is not a method of assessment of Income Tax. It is the system by which tax is withheld from emoluments (The PAYE System).\"",
+                    "display_order": 3
+                }
+            ],
+            "config": "{\"animation\":\"bounce\"}",
+            "heading": "Statutory Deductions - Trinidad Tobago",
+            "subheading": "HRTMPay Supports these regional taxes & more",
+            "section_type": "feature_grid",
+            "display_order": 3
+        },
+        {
+            "id": 1777379942083,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h2 dir=\\\"auto\\\">Statutory Deductions for Trinidad and Tobago:</h2><ol><li><p dir=\\\"auto\\\"><a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://www.ird.gov.tt/health-surcharge\\\">Health Surcharge</a> (employee's tax) Health Surcharge  Tags: health surcharge  Employees Health Surcharge MUST be deducted and remitted for all employees except those  Under the age of sixteen (16) years Sixty (60) years and over Whose only source of income is pension Employees whose monthly emoluments are more than $469.99 or whose weekly emoluments are more than $109.00 - the rate is $8.25 per week. All other employed persons - the rate is $4.80 per week.  Self-Employed/Sole Trader Where the total sales/receipts for the year average more than $469.99 per month - the rate is $8.25 per week. Where the total sales/receipts for the year average less than or equal to $469.99 per month, the rate is $4.80 per week.</p><p dir=\\\"auto\\\"></p></li><li><p dir=\\\"auto\\\">National Insurance (NIS) Contributions (employees' + employers' contribution per case per <a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://www.nibtt.net/Contribution_Rates/NISContributions_20260105.pdf\\\">class</a>)</p><p dir=\\\"auto\\\"></p></li><li><p dir=\\\"auto\\\">\\\"<a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://www.ird.gov.tt/PAYE\\\">PAYE</a> is not a method of assessment of Income Tax. It is the system by which tax is withheld from emoluments (The PAYE System).\\\"</p></li></ol><p dir=\\\"auto\\\"></p>\",\"animation\":\"zoom-in\",\"animationIntensity\":\"dramatic\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 4
+        },
+        {
+            "id": 1777481807641,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h3 dir=\\\"auto\\\">Assign salary structures in bulk</h3><p dir=\\\"auto\\\">Drill down to specific employee groups with advanced filters, update base &amp; variable amounts for multiple rows, and assign salary structures in bulk with the Salary Structure Assignment Tool.</p><div class=\\\"iframe-wrapper\\\" data-video=\\\"\\\"><div style=\\\"display: flex; justify-content: center;\\\"><div style=\\\"position: relative;overflow: hidden;display: flex;flex: 1;max-width: 100%;\\\"><div style=\\\"flex: 1;padding-bottom: 56.25%;\\\"></div><iframe src=\\\"/uploads/users/1/videos/1777481918985760033.mp4\\\" width=\\\"100%\\\" frameborder=\\\"0\\\" allowfullscreen=\\\"true\\\" align=\\\"center\\\" height=\\\"100%\\\"></iframe></div></div></div><p dir=\\\"auto\\\"></p>\",\"animation\":\"bounce\",\"animationIntensity\":\"dramatic\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 5
+        },
+        {
+            "id": 1777383670526,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h2 style=\\\"line-height: 23px\\\" dir=\\\"auto\\\"><strong>Timesheet-based payroll for the services sector with multi-currency normalization</strong></h2><p dir=\\\"auto\\\">Employees who need to track their hours can easily fill out timesheets with a breakdown of activities for each project or task. Create salary structures based on timesheets, define hourly rates, and manage payouts for the timesheet hours. You can run separate payroll entries for timesheet-based salaries.</p><div class=\\\"iframe-wrapper\\\" data-video=\\\"\\\"><div style=\\\"display: flex; justify-content: center;\\\"><div style=\\\"position: relative;overflow: hidden;display: flex;flex: 1;max-width: 100%;\\\"><div style=\\\"flex: 1;padding-bottom: 56.25%;\\\"></div><iframe src=\\\"/uploads/users/1/videos/1777427475449753120.mp4\\\" width=\\\"100%\\\" frameborder=\\\"0\\\" allowfullscreen=\\\"true\\\" align=\\\"center\\\" height=\\\"100%\\\"></iframe></div></div></div><p dir=\\\"auto\\\"></p>\",\"animation\":\"bounce\",\"marginTop\":0,\"marginRight\":0,\"marginBottom\":0,\"marginLeft\":0,\"paddingTop\":0,\"paddingRight\":0,\"paddingBottom\":0,\"paddingLeft\":0,\"animationIntensity\":\"dramatic\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 6
+        },
+        {
+            "id": 1777382745455,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h3 dir=\\\"auto\\\">YTD-First PAYE engine with various distribution functions for the period tax</h3><p dir=\\\"auto\\\"><div style=\\\"text-align: center;\\\" class=\\\"image\\\"><img height=\\\"auto\\\" style=\\\"\\\" src=\\\"/uploads/users/2/images/1777382804874245178.png\\\" alt=\\\"\\\" flipx=\\\"false\\\" flipy=\\\"false\\\" align=\\\"center\\\" inline=\\\"false\\\"></div></p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\"></p>\",\"animation\":\"bounce\",\"layout\":\"wide\",\"marginTop\":0,\"marginRight\":0,\"marginBottom\":-200,\"marginLeft\":0,\"paddingTop\":0,\"paddingRight\":0,\"paddingBottom\":0,\"paddingLeft\":0}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 7
+        },
+        {
+            "id": 1777383616406,
+            "items": [
+            ],
+            "config": "{\"content\":\"<p dir=\\\"auto\\\"><div style=\\\"text-align: center;\\\" class=\\\"image\\\"><img height=\\\"auto\\\" style=\\\"\\\" src=\\\"/uploads/users/2/images/1777383627985954506.png\\\" alt=\\\"\\\" flipx=\\\"false\\\" flipy=\\\"false\\\" align=\\\"center\\\" inline=\\\"false\\\"></div></p>\",\"layout\":\"wide\",\"animation\":\"zoom-in\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 8
+        },
+        {
+            "id": 1777382619888,
+            "items": [
+                {
+                    "id": 1777427997229,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777383910646\",\"width\":\"regular\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/1/images/1777428024647118608.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 1
+                },
+                {
+                    "id": 1777428000599,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777383910646\",\"width\":\"regular\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/1/images/1777428064204311509.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 2
+                },
+                {
+                    "id": 1777428002009,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777383910646\",\"width\":\"full\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/1/images/1777428085748856799.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 3
+                },
+                {
+                    "id": 1777428122419,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777383910646\",\"width\":\"full\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/1/images/1777428135599871567.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 4
+                },
+                {
+                    "id": 1777428176221,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777384207689\",\"width\":\"regular\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/1/images/1777428185434690849.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 5
+                },
+                {
+                    "id": 1777428188906,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777384207689\",\"width\":\"regular\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/1/images/1777428214848852566.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 6
+                },
+                {
+                    "id": 1777428218504,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777384207689\",\"width\":\"regular\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/1/images/1777428260327255833.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 7
+                },
+                {
+                    "id": 1777428271764,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777384207689\",\"width\":\"regular\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/1/images/1777428280341607032.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 8
+                },
+                {
+                    "id": 1777428347557,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777401205845\",\"width\":\"regular\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/1/images/1777428359879815625.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 9
+                },
+                {
+                    "id": 1777428377707,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777401205845\",\"width\":\"regular\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/1/images/1777428395406683843.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 10
+                },
+                {
+                    "id": 1777428398037,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777401205845\",\"width\":\"regular\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/1/images/1777428412751449683.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 11
+                },
+                {
+                    "id": 1777428419772,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777401205845\",\"width\":\"full\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/1/images/1777428451056142213.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 12
+                }
+            ],
+            "config": "{\"albums\":[{\"key\":\"all\",\"label\":\"All\"},{\"key\":\"album_1777383910646\",\"label\":\"Reports\"},{\"key\":\"album_1777384207689\",\"label\":\"UI\"},{\"key\":\"album_1777401205845\",\"label\":\"Material\"}],\"layout\":\"wide\",\"animation\":\"none\",\"animationIntensity\":\"dramatic\"}",
+            "heading": "Modern UI + Industry's leading enterprise relations management technology",
+            "subheading": "HRTMPAY",
+            "section_type": "image_gallery",
+            "display_order": 9
+        },
+        {
+            "id": 1777400778212,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h3 dir=\\\"auto\\\">Frappe HRMS Payroll Offering Structure</h3><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">This document separates the payroll system into <strong>Core Engine capabilities</strong>, <strong>Extended Operational features</strong>, <strong>UX/Product layer enhancements</strong>, and <strong>Enterprise services</strong>.</p>\",\"animation\":\"bounce\",\"layout\":\"wide\",\"animationIntensity\":\"dramatic\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 10
+        },
+        {
+            "id": 1777395871521,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h3 dir=\\\"auto\\\">Core Offering (Base Payroll Engine)</h3><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">This is the non-negotiable functional system required to run payroll correctly.</p><h3 dir=\\\"auto\\\">1. Accurate Payroll Calculation Engine</h3><p dir=\\\"auto\\\">* Automatic Tax Calculation (<strong>NIS</strong>, <strong>PAYE</strong>, <strong>HSG</strong>)<br>* Supports projected engine-based computation<br>* Handles gross-to-net processing logic</p><h3 dir=\\\"auto\\\">2. Payroll Frequency Support</h3><p dir=\\\"auto\\\">* <strong>Weekly</strong> payroll<br>* <strong>Fortnightly </strong>payroll<br>* <strong>Monthly</strong> payroll<br>* Normalized calculation across periods</p><h3 dir=\\\"auto\\\">3. PAYE Engine System</h3><p dir=\\\"auto\\\">* <strong>projected</strong><br>* <strong>cumulative_ytd<br></strong>* <strong>reconciled_hybrid</strong><br>* Configurable per salary component</p><h3 dir=\\\"auto\\\">4. Component-Based Payroll Configuration</h3><p dir=\\\"auto\\\">* JSON-driven salary component rules<br>* Deduction and contribution definitions<br>* Engine behavior per component</p><p dir=\\\"auto\\\"></p>\",\"layout\":\"wide\",\"animation\":\"fade-in\",\"animationIntensity\":\"dramatic\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 11
+        },
+        {
+            "id": 1777396429141,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h3 dir=\\\"auto\\\">Extended Offering (Operational &amp; Enterprise Layer)</h3><p dir=\\\"auto\\\">These features support governance, compliance, observability, and enterprise readiness.</p><h3 dir=\\\"auto\\\">1. Operational Logging &amp; Audit System</h3><p dir=\\\"auto\\\">* Full payroll calculation audit trails<br>* Period-by-period computation history<br>* Amount change tracking<br>* Debuggable payroll execution logs</p><h3 dir=\\\"auto\\\">2. System &amp; Process Logging</h3><p dir=\\\"auto\\\">* Execution status indicators<br>* Failure tracking per payroll run<br>* Calculation transparency logs</p>\",\"layout\":\"wide\",\"animation\":\"slide-right\",\"animationIntensity\":\"dramatic\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 13
+        },
+        {
+            "id": 1777400330244,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h3 dir=\\\"auto\\\">UX / Product Layer</h3><p dir=\\\"auto\\\">These features improve usability and localization but are not required for payroll correctness.</p><h3 dir=\\\"auto\\\">3. UI Localization &amp; Branding</h3><p dir=\\\"auto\\\">* Trinidad and Tobago-specific labels<br>* Local tax terminology (NIS, PAYE context)<br>* Branded payroll UI (logos, splash screens)<br>* Regional formatting (currency, date styles)</p>\",\"layout\":\"wide\",\"animation\":\"slide-left\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 14
+        },
+        {
+            "id": 1777400632885,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h2 dir=\\\"auto\\\">Enterprise-grade software solutions, support &amp; integration.</h2><p dir=\\\"auto\\\"></p>\",\"animation\":\"zoom-in\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 15
+        },
+        {
+            "id": 1777400372148,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h3 dir=\\\"auto\\\">Enterprise / Service Layer</h3><p dir=\\\"auto\\\">These are premium offerings focused on scaling, integration, and adoption.</p><h3 dir=\\\"auto\\\">4. Training &amp; Enablement</h3><p dir=\\\"auto\\\">* HR payroll training sessions<br>* System onboarding workshops<br>* Payroll configuration guidance</p><h3 dir=\\\"auto\\\">5. Integrations Layer</h3><p dir=\\\"auto\\\">* Accounting system integrations<br>* Bank file generation / export formats<br>* Government reporting exports<br>* API hooks for external payroll consumption<br>* BI / reporting integrations</p>\",\"layout\":\"wide\",\"animation\":\"slide-right\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 16
+        },
+        {
+            "id": 1777396236932,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h3 dir=\\\"auto\\\">Optional: Advanced Enterprise Extensions</h3><p dir=\\\"auto\\\">Additional capabilities for large-scale or complex deployments.</p><p dir=\\\"auto\\\">* Multi-company payroll consolidation<br>* Advanced reconciliation engine<br>* Scenario-based payroll simulation<br>* Backdated payroll correction engine<br>* Rule conflict detection system</p><h3 dir=\\\"auto\\\">Professional Add-ons</h3><p dir=\\\"auto\\\">* Logging &amp; audit system<br>* UI localization &amp; branding</p><h3 dir=\\\"auto\\\">Enterprise Services</h3><p dir=\\\"auto\\\">* Training &amp; onboarding<br>* Integrations &amp; API connectivity<br>* Custom compliance reporting</p>\",\"layout\":\"wide\",\"animation\":\"slide-left\",\"animationIntensity\":\"dramatic\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 17
+        }
+    ],
+    "created_at": "2026-04-28T12:31:34.796794",
+    "updated_at": "2026-04-29T17:33:30.743846",
+    "visibility": "public",
+    "description": ""
+}
+{
+    "id": 44,
+    "slug": "payroll-copy",
+    "title": "payroll (Copy)",
+    "sections": [
+        {
+            "id": 1777379494667,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h2 dir=\\\"auto\\\">Payroll, Trinidad and Tobago Statutory Deductions Compliance, and HRTM's expert solution.</h2><p dir=\\\"auto\\\"></p>\",\"animation\":\"zoom-in\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 1
+        },
+        {
+            "id": 1777379942083,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h2 dir=\\\"auto\\\">Statutory Deductions:</h2><ol><li><p dir=\\\"auto\\\"><a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://www.ird.gov.tt/health-surcharge\\\">Health Surcharge</a> (employee's tax)</p></li><li><p dir=\\\"auto\\\">National Insurance Contributions (employees' + employers' contribution per case per <a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://www.nibtt.net/Contribution_Rates/NISContributions_20260105.pdf\\\">class</a>)</p></li><li><p dir=\\\"auto\\\"><a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://www.ird.gov.tt/PAYE\\\">PAYE</a> is not a method of assessment of Income Tax. It is the system by which tax is withheld from emoluments (The PAYE System)</p></li></ol><p dir=\\\"auto\\\"></p>\",\"animation\":\"slide-left\",\"animationIntensity\":\"dramatic\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 2
+        },
+        {
+            "id": 1777383670526,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h2 dir=\\\"auto\\\">YTD-First PAYE engine with various distribution functions for the period tax</h2><p dir=\\\"auto\\\"></p>\",\"animation\":\"zoom-in\",\"marginTop\":0,\"marginRight\":0,\"marginBottom\":-100,\"marginLeft\":0,\"paddingTop\":0,\"paddingRight\":0,\"paddingBottom\":0,\"paddingLeft\":0}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 3
+        },
+        {
+            "id": 1777382745455,
+            "items": [
+            ],
+            "config": "{\"content\":\"<p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\"><div style=\\\"text-align: center;\\\" class=\\\"image\\\"><img height=\\\"auto\\\" style=\\\"\\\" src=\\\"/uploads/users/2/images/1777382804874245178.png\\\" alt=\\\"\\\" flipx=\\\"false\\\" flipy=\\\"false\\\" align=\\\"center\\\" inline=\\\"false\\\"></div></p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\"></p>\",\"animation\":\"bounce\",\"layout\":\"wide\",\"marginTop\":0,\"marginRight\":0,\"marginBottom\":-200,\"marginLeft\":0,\"paddingTop\":0,\"paddingRight\":0,\"paddingBottom\":0,\"paddingLeft\":0}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 4
+        },
+        {
+            "id": 1777383616406,
+            "items": [
+            ],
+            "config": "{\"content\":\"<p dir=\\\"auto\\\"><div style=\\\"text-align: center;\\\" class=\\\"image\\\"><img height=\\\"auto\\\" style=\\\"\\\" src=\\\"/uploads/users/2/images/1777383627985954506.png\\\" alt=\\\"\\\" flipx=\\\"false\\\" flipy=\\\"false\\\" align=\\\"center\\\" inline=\\\"false\\\"></div></p>\",\"layout\":\"wide\",\"animation\":\"zoom-in\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 5
+        },
+        {
+            "id": 1777382619888,
+            "items": [
+                {
+                    "id": 1777382627562,
+                    "icon": "",
+                    "config": "{\"album\":\"all\",\"width\":\"full\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/2/images/1777382634636909461.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 1
+                },
+                {
+                    "id": 1777383926147,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777383910646\",\"width\":\"full\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/2/images/1777383932265095331.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 2
+                },
+                {
+                    "id": 1777384052754,
+                    "icon": "",
+                    "config": "{\"album\":\"all\",\"width\":\"full\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/2/images/1777384060010576989.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 3
+                },
+                {
+                    "id": 1777384072051,
+                    "icon": "",
+                    "config": "{\"album\":\"all\",\"width\":\"full\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/2/images/1777384082216029084.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 4
+                },
+                {
+                    "id": 1777384218151,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777384207689\",\"width\":\"full\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/2/images/1777384224511302433.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 5
+                },
+                {
+                    "id": 1777384448679,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777384207689\",\"width\":\"full\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/2/images/1777384454479564613.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 6
+                },
+                {
+                    "id": 1777384458522,
+                    "icon": "",
+                    "config": "{\"album\":\"album_1777384207689\",\"width\":\"full\"}",
+                    "heading": "",
+                    "link_url": "",
+                    "image_url": "/uploads/users/2/images/1777384469250290441.png",
+                    "section_id": 1777382619888,
+                    "subheading": "",
+                    "display_order": 7
+                }
+            ],
+            "config": "{\"albums\":[{\"key\":\"all\",\"label\":\"All\"},{\"key\":\"album_1777383910646\",\"label\":\"Reports\"},{\"key\":\"album_1777384207689\",\"label\":\"UI\"}],\"layout\":\"wide\",\"animation\":\"zoom-in\",\"animationIntensity\":\"dramatic\"}",
+            "heading": "Modern UI + Industry's leading enterprise relations management technology",
+            "subheading": "HRTMPAY",
+            "section_type": "image_gallery",
+            "display_order": 6
+        },
+        {
+            "id": 1777383276544,
+            "items": [
+            ],
+            "config": "{\"code\":\"# Frappe HRMS Payroll Offering Structure\\n\\nThis document separates the payroll system into **Core Engine capabilities**, **Extended Operational features**, **UX/Product layer enhancements**, and **Enterprise services**.\\n\\n---\\n\\n# Core Offering (Base Payroll Engine)\\n\\nThis is the non-negotiable functional system required to run payroll correctly.\\n\\n## 1. Payroll Calculation Engine\\n\\n* Automatic Tax Calculation (NIS, PAYE, HSG)\\n* Supports projected engine-based computation\\n* Handles gross-to-net processing logic\\n\\n## 2. Payroll Frequency Support\\n\\n* Weekly payroll\\n* Fortnightly payroll\\n* Monthly payroll\\n* Normalized calculation across periods\\n\\n## 3. PAYE Engine System\\n\\n* projected\\n* cumulative_ytd\\n* reconciled_hybrid\\n* Configurable per salary component\\n\\n## 4. Component-Based Payroll Configuration\\n\\n* JSON-driven salary component rules\\n* Deduction and contribution definitions\\n* Engine behavior per component\\n\\n## 5. Manual Override Logic\\n\\n* Auto-fill only when fields are empty\\n* Preserves manual adjustments\\n* Deterministic recalculation behavior\\n\\n## 6. Frappe HRMS Integration Layer\\n\\n* Extends Salary Slip\\n* Extends Salary Structure\\n* No core doctypes modified (upgrade-safe design)\\n\\n---\\n\\n# Extended Offering (Operational & Enterprise Layer)\\n\\nThese features support governance, compliance, observability, and enterprise readiness.\\n\\n## 1. Operational Logging & Audit System\\n\\n* Full payroll calculation audit trails\\n* Period-by-period computation history\\n* Amount change tracking\\n* Debuggable payroll execution logs\\n\\n## 2. System & Process Logging\\n\\n* Execution status indicators\\n* Failure tracking per payroll run\\n* Calculation transparency logs\\n\\n---\\n\\n# UX / Product Layer\\n\\nThese features improve usability and localization but are not required for payroll correctness.\\n\\n## 3. UI Localization & Branding\\n\\n* Trinidad and Tobago-specific labels\\n* Local tax terminology (NIS, PAYE context)\\n* Branded payroll UI (logos, splash screens)\\n* Regional formatting (currency, date styles)\\n\\n---\\n\\n# Enterprise / Service Layer\\n\\nThese are premium offerings focused on scaling, integration, and adoption.\\n\\n## 4. Training & Enablement\\n\\n* HR payroll training sessions\\n* System onboarding workshops\\n* Payroll configuration guidance\\n* Admin/operator certification\\n\\n## 5. Integrations Layer\\n\\n* Accounting system integrations\\n* Bank file generation / export formats\\n* Government reporting exports\\n* API hooks for external payroll consumption\\n* BI / reporting integrations\\n\\n---\\n\\n# Optional: Advanced Enterprise Extensions\\n\\nAdditional capabilities for large-scale or complex deployments.\\n\\n* Multi-company payroll consolidation\\n* Advanced reconciliation engine\\n* Scenario-based payroll simulation\\n* Backdated payroll correction engine\\n* Rule conflict detection system\\n\\n---\\n\\n# Packaging Structure (Suggested)\\n\\n## Base Payroll Engine\\n\\nEverything required to calculate payroll correctly and consistently.\\n\\n## Professional Add-ons\\n\\n* Logging & audit system\\n* UI localization & branding\\n\\n## Enterprise Services\\n\\n* Training & onboarding\\n* Integrations & API connectivity\\n* Custom compliance reporting\\n\",\"language\":\"markdown\",\"animation\":\"none\",\"animationIntensity\":\"dramatic\",\"layout\":\"wide\"}",
+            "heading": "Code Editor",
+            "subheading": "",
+            "section_type": "code_editor",
+            "display_order": 7
+        }
+    ],
+    "created_at": "2026-04-28T14:28:12.967612",
+    "updated_at": "2026-04-28T16:58:38.24016",
+    "visibility": "private",
+    "description": ""
+}
+{
+    "id": 45,
+    "slug": "4ff52092-76aa-48d1-9be1-00e12d5676ee",
+    "title": "",
+    "sections": [
+        {
+            "id": 1781070906557,
+            "items": [
+            ],
+            "config": "{\"custom_section_id\":5}",
+            "heading": "Custom Section",
+            "subheading": "",
+            "section_type": "custom_section",
+            "display_order": 1
+        }
+    ],
+    "created_at": "2026-05-24T20:54:20.456483",
+    "updated_at": "2026-06-10T05:55:10.12256",
+    "visibility": "",
+    "description": ""
+}
+{
+    "id": 46,
+    "slug": "4eeb9cce-4748-4567-830f-37cce06e2f43",
+    "title": "",
+    "sections": [
+        {
+            "id": 1781360730680,
+            "items": [
+            ],
+            "config": "{\"background_image\":\"/uploads/users/1/images/1782303415610938461.png\",\"layout\":\"wide\",\"variant\":2,\"videos\":[\"/uploads/users/1/videos/1782303454950416259.mp4\",\"/uploads/users/1/videos/1782303585604856464.mp4\"]}",
+            "heading": "Premium Software Solutions",
+            "subheading": "See frappe's official website for educational material",
+            "section_type": "hero",
+            "display_order": 1
+        },
+        {
+            "id": 1782303346135,
+            "items": [
+            ],
+            "config": "{\"content\":\"<p style=\\\"text-align: left\\\" dir=\\\"auto\\\" data-indent=\\\"2\\\">We introduce you to our highly performant, multi-tenant, container-orchestrated, go backend powering a real-time, atomic-state model powered by jotai, server injected seo, React-rendered full-stack app with custom page builders, a forum, a full store with orders, wallet features based on debit and credit transactions, with professional, secure carting services, checkout, payment handling &amp; delivery</p><p style=\\\"text-align: left\\\" dir=\\\"auto\\\" data-indent=\\\"2\\\"></p><p style=\\\"text-align: left\\\" dir=\\\"auto\\\" data-indent=\\\"2\\\">We also have inboxes, push notifications, real-time global chat &amp; presence tracking across routes with live cursor interaction, defcon rate limiter with widget overlay, UI custom page builders, frappe framework deployments &amp; superset integration for business intelligence support.</p><p style=\\\"text-align: left\\\" dir=\\\"auto\\\"></p><p style=\\\"text-align: left\\\" dir=\\\"auto\\\">We're making this project open source, <a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://github.com/renniemaharaj/skaia\\\">skaia-repo</a>. Thank you for looking around and checking our current <a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://www.thewriterco.com/store\\\">store</a> offerings</p><p style=\\\"text-align: left\\\" dir=\\\"auto\\\"></p>\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 2
+        }
+    ],
+    "created_at": "2026-06-13T14:20:08.400276",
+    "updated_at": "2026-06-25T10:16:15.523688",
+    "visibility": "",
+    "description": ""
+}
+{
+    "id": 47,
+    "slug": "baaaff6d-938f-476c-a79e-ace47ec1c431",
+    "title": "",
+    "sections": [
+        {
+            "id": 1782741548410,
+            "items": [
+            ],
+            "config": "{\"banner_url\":\"/uploads/users/1/images/1782741689506000723.jpg\",\"profile_name\":\"TheWriterCO\",\"profile_subtitle\":\"\",\"animation\":\"slide-up\",\"checklist\":[\"Backend - Golang, Python\",\"Frontend - Typescript\",\"Real-time, professional voice, video & screen sharing\",\"Fully secure, fully comprehensive\"],\"description\":\"A key innovation in Skaia is our **WebSocket Rerouter** for REST endpoints. This completely bypasses traditional REST setup costs, enabling efficient, high-performance state updates. The result is an application that loads routes and synchronizes state at the raw speed of Go concurrency. Go ahead and refresh your tab.\"}",
+            "heading": "The Writer Company",
+            "subheading": "Where the architecture is first-class",
+            "section_type": "profile_card",
+            "display_order": 1
+        },
+        {
+            "id": 1782096275006,
+            "items": [
+            ],
+            "config": "{\"content\":\"<p dir=\\\"auto\\\">Welcome to <strong>TheWriterCo, Skaia!</strong></p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">Skaia is a highly performant, multi-tenant, container-orchestrated platform powered by Go, built around a real-time, atomic state architecture using Jotai. The frontend is a React-powered full-stack application featuring server-injected SEO, delivering both speed and search engine optimization without compromising the real-time experience.</p><p dir=\\\"auto\\\">The platform includes a powerful suite of integrated modules, including a customizable page builder, forums, a complete e-commerce solution with secure carting, checkout, payment handling, delivery management, order tracking, and a wallet system built around debit and credit transactions.</p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">Beyond commerce, Skaia offers real-time inbox messaging, push notifications, room-based chat, voice chat, video calls, screen sharing, live presence tracking across routes, shared cursor interaction, and DEFCON rate limiter with a live widget overlay. Organizations can also build rich interfaces using the integrated UI page builder and extend the platform through Frappe Framework deployments and Apache Superset integration for enterprise business intelligence and reporting.</p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">We're excited to make this project open source as <a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://github.com/renniemaharaj/skaia\\\">skaia-repo</a>.</p><p dir=\\\"auto\\\">Thank you for taking the time to explore the platform and browse our current <a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://www.thewriterco.com/store\\\">store</a> offerings 🙏</p><p style=\\\"text-align: left\\\" dir=\\\"auto\\\"></p>\",\"animation\":\"bounce\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 2
+        },
+        {
+            "id": 1784265529608,
+            "items": [
+            ],
+            "config": "[REDACTED: interactive config can contain responses]",
+            "heading": "Get a quote for your business",
+            "subheading": "",
+            "section_type": "form",
+            "display_order": 3
+        }
+    ],
+    "created_at": "2026-06-22T02:44:02.030434",
+    "updated_at": "2026-07-17T05:29:13.643946",
+    "visibility": "",
+    "description": ""
+}
+{
+    "id": 48,
+    "slug": "b3c286ed-bef0-4f9f-83b1-df5666798fa2",
+    "title": "",
+    "sections": [
+    ],
+    "created_at": "2026-06-24T12:29:50.130612",
+    "updated_at": "2026-06-28T18:29:15.949194",
+    "visibility": "",
+    "description": ""
+}
+{
+    "id": 49,
+    "slug": "privacy",
+    "title": "privacy",
+    "sections": [
+        {
+            "id": 1782933902277,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h1 dir=\\\"auto\\\">Privacy Policy</h1><p dir=\\\"auto\\\"><strong>Effective Date:</strong> July 1, 2026</p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">The Writer Company (\\\"we,\\\" \\\"our,\\\" or \\\"us\\\") is committed to protecting your privacy. This Privacy Policy explains what information we collect, how we use it, and the choices you have regarding your data when using our websites, applications, and services, including the Skaia platform.</p><h2 dir=\\\"auto\\\">Information We Collect</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">Depending on how you use our services, we may collect:</p><p dir=\\\"auto\\\">* Account information such as your name, username, email address, profile details, and account preferences.</p><p dir=\\\"auto\\\">* Authentication and security information required to manage your account and protect our services.</p><p dir=\\\"auto\\\">* Billing and payment information necessary to process purchases, subscriptions, and invoices. Trusted payment providers may process payment information and it is not stored by us unless required for billing records.</p><p dir=\\\"auto\\\">* User-generated content, including posts, messages, comments, uploads, product listings, and other content you choose to submit.</p><p dir=\\\"auto\\\">* Technical information such as your IP address, browser type, operating system, device information, language preferences, and approximate location derived from your IP address.</p><p dir=\\\"auto\\\">* Usage information, including pages visited, features used, session activity, error reports, and performance metrics.</p><p dir=\\\"auto\\\">* Cookies and browser storage, including cookies, local storage, session storage, IndexedDB, and similar technologies used to maintain sessions, remember preferences, improve performance, and provide personalized experiences.</p><p dir=\\\"auto\\\"></p><h2 dir=\\\"auto\\\">How We Use Your Information</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">We use your information to:</p><ul><li><p dir=\\\"auto\\\">Create and manage your account.</p></li><li><p dir=\\\"auto\\\">Authenticate users and secure our platform.</p></li><li><p dir=\\\"auto\\\">Process orders, subscriptions, and payments.</p></li><li><p dir=\\\"auto\\\">Deliver products, services, and platform features.</p></li><li><p dir=\\\"auto\\\">Personalize your experience and remember your preferences.</p></li><li><p dir=\\\"auto\\\">Improve the performance, reliability, and functionality of our services.</p></li><li><p dir=\\\"auto\\\">Detect, prevent, and investigate fraud, abuse, unauthorized access, and other security issues.</p></li><li><p dir=\\\"auto\\\">Communicate important account, billing, and service-related information.</p></li><li><p dir=\\\"auto\\\">Comply with applicable legal obligations.</p></li></ul><p dir=\\\"auto\\\"></p><h2 dir=\\\"auto\\\">Cookies and Similar Technologies</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">Our services use cookies and other browser storage technologies to:</p><ul><li><p dir=\\\"auto\\\">Keep you signed in.</p></li><li><p dir=\\\"auto\\\">Store your preferences and settings.</p></li><li><p dir=\\\"auto\\\">Improve website performance.</p></li><li><p dir=\\\"auto\\\">Enable security features.</p></li><li><p dir=\\\"auto\\\">Remember user interface preferences.</p></li><li><p dir=\\\"auto\\\">Support application functionality.</p></li></ul><p dir=\\\"auto\\\">Disabling cookies or browser storage may cause parts of our services to function incorrectly or become unavailable.</p><p dir=\\\"auto\\\"></p><h2 dir=\\\"auto\\\">Data Sharing</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">We do <strong>not</strong> sell your personal information.</p><p dir=\\\"auto\\\">We do <strong>not</strong> share your personal information with third parties for advertising or marketing purposes.</p><p dir=\\\"auto\\\">We may share limited information only when necessary to:</p><ul><li><p dir=\\\"auto\\\">Process payments through payment providers.</p></li><li><p dir=\\\"auto\\\">Comply with legal obligations or valid legal requests.</p></li><li><p dir=\\\"auto\\\">Protect our rights, users, or services.</p></li><li><p dir=\\\"auto\\\">Operate essential infrastructure or service providers acting on our behalf under appropriate confidentiality obligations.</p></li></ul><p dir=\\\"auto\\\"></p><h2 dir=\\\"auto\\\">Data Security, Retention &amp; Your Rights</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">We implement reasonable administrative, technical, and organizational safeguards designed to protect your information from unauthorized access, disclosure, alteration, or destruction. While we strive to protect your data, no method of electronic storage or transmission over the Internet can be guaranteed to be completely secure.</p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">We retain personal information only for as long as necessary to provide our services, comply with legal obligations, resolve disputes, enforce our agreements, and maintain legitimate business records.</p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">Depending on your jurisdiction, you may have the right to:</p><ul><li><p dir=\\\"auto\\\">Access your personal information.</p></li><li><p dir=\\\"auto\\\">Update or correct inaccurate information.</p></li><li><p dir=\\\"auto\\\">Request deletion of your account or personal information where permitted by law.</p></li><li><p dir=\\\"auto\\\">Request a copy of your personal data.</p></li><li><p dir=\\\"auto\\\">Object to or restrict certain processing activities.</p></li></ul><p dir=\\\"auto\\\">Some information may be retained where required by law or for legitimate business purposes.</p><p dir=\\\"auto\\\"></p><h2 dir=\\\"auto\\\">Children's Privacy, Privacy Policy &amp; Contact</h2><p dir=\\\"auto\\\">Our services are not intended for children under the age required by applicable law. We do not knowingly collect personal information from children without appropriate legal authorization.</p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">We may update this Privacy Policy from time to time. Changes become effective when posted. Continued use of our services after changes are published constitutes acceptance of the updated Privacy Policy.</p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">If you have questions regarding this Privacy Policy or your personal information, don't hesitate to get in touch with The Writer Company through the support or contact methods provided on our website.</p><p dir=\\\"auto\\\"></p>\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 1
+        }
+    ],
+    "created_at": "2026-07-01T19:25:02.346289",
+    "updated_at": "2026-07-01T19:44:04.433093",
+    "visibility": "public",
+    "description": ""
+}
+{
+    "id": 50,
+    "slug": "tos",
+    "title": "tos",
+    "sections": [
+        {
+            "id": 1782935004086,
+            "items": [
+            ],
+            "config": "{\"content\":\"<h1 dir=\\\"auto\\\">Terms of Service</h1><p dir=\\\"auto\\\"><strong>Effective Date:</strong> July 1, 2026</p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">Welcome to The Writer Company. These Terms of Service (\\\"Terms\\\") govern your access to and use of our websites, applications, products, and services, including the Skaia platform. By creating an account or using our services, you agree to be bound by these Terms.</p><h2 dir=\\\"auto\\\">Use of Our Services</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">You agree to use our services only for lawful purposes and in accordance with these Terms. You are responsible for all activity that occurs under your account and for maintaining the security of your login credentials.</p><p dir=\\\"auto\\\">You agree not to:</p><ul><li><p dir=\\\"auto\\\">Violate any applicable law or regulation.</p></li><li><p dir=\\\"auto\\\">Attempt to gain unauthorized access to accounts, systems, or networks.</p></li><li><p dir=\\\"auto\\\">Interfere with or disrupt the operation or security of our services.</p></li><li><p dir=\\\"auto\\\">Upload or distribute malicious software or harmful content.</p></li><li><p dir=\\\"auto\\\">Abuse, harass, threaten, or impersonate other users.</p></li><li><p dir=\\\"auto\\\">Circumvent platform restrictions, security measures, or rate limits.</p></li><li><p dir=\\\"auto\\\">Use automated systems or bots in a manner that negatively impacts the platform or other users.</p></li></ul><h2 dir=\\\"auto\\\">Accounts</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">You are responsible for providing accurate information when creating an account and for keeping that information up to date. We reserve the right to suspend or terminate accounts that violate these Terms or pose a risk to the platform or its users.</p><h2 dir=\\\"auto\\\">User Content</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">You retain ownership of the content you create and submit through our services.</p><p dir=\\\"auto\\\">By submitting content, you grant The Writer Company a non-exclusive, worldwide, royalty-free license to store, process, reproduce, display, and distribute that content solely as necessary to operate, improve, and provide the services you have chosen to use.</p><p dir=\\\"auto\\\">You are solely responsible for the content you upload, publish, or otherwise make available through the platform.</p><h2 dir=\\\"auto\\\">Purchases and Billing</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">Certain features may require payment, subscriptions, or recurring billing. By purchasing a paid service, you authorize the applicable charges and agree to provide accurate billing information.</p><p dir=\\\"auto\\\">Fees are generally non-refundable unless required by law or otherwise stated at the time of purchase.</p><h2 dir=\\\"auto\\\">Availability</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">We strive to provide reliable, uninterrupted service, but we do not guarantee continuous availability. Maintenance, updates, technical issues, or circumstances beyond our control may temporarily interrupt access.</p><p dir=\\\"auto\\\">We reserve the right to modify, suspend, discontinue, or replace any feature or service at any time.</p><h2 dir=\\\"auto\\\">Intellectual Property</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">Unless otherwise stated, all software, designs, trademarks, branding, logos, documentation, and other materials provided by The Writer Company remain our property or the property of their respective owners.</p><p dir=\\\"auto\\\">These Terms do not grant you ownership of our intellectual property.</p><h2 dir=\\\"auto\\\">Termination</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">We may suspend or terminate access to our services at our discretion if we reasonably believe you have violated these Terms, abused the platform, compromised security, or engaged in unlawful activity.</p><p dir=\\\"auto\\\">You may stop using our services and close your account at any time.</p><h2 dir=\\\"auto\\\">Disclaimer</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">Our services are provided on an \\\"as is\\\" and \\\"as available\\\" basis. To the fullest extent permitted by law, we make no warranties regarding uninterrupted availability, accuracy, reliability, or fitness for a particular purpose.</p><h2 dir=\\\"auto\\\">Limitation of Liability</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">To the maximum extent permitted by law, The Writer Company shall not be liable for any indirect, incidental, consequential, special, or punitive damages arising from your use of, or inability to use, our services.</p><p dir=\\\"auto\\\">Our total liability for any claim relating to the services shall not exceed the amount you paid to us for the applicable service during the twelve (12) months preceding the claim, where permitted by law.</p><h2 dir=\\\"auto\\\">Changes, Governing Law &amp; Contact</h2><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">We may update these Terms from time to time. Updated versions become effective when posted. Continued use of our services after changes are published constitutes acceptance of the revised Terms.</p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">These Terms shall be governed by and interpreted in accordance with the laws applicable to The Writer Company's principal place of business, unless otherwise required by applicable law.</p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">If you have questions regarding these Terms of Service, don't hesitate to contact The Writer Company using the support or contact methods provided on our website.</p>\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 1
+        }
+    ],
+    "created_at": "2026-07-01T19:43:24.176764",
+    "updated_at": "2026-07-01T20:22:42.572304",
+    "visibility": "public",
+    "description": ""
+}
+{
+    "id": 51,
+    "slug": "76509d2e-93f0-4c67-a7a5-e3c22e501599",
+    "title": "",
+    "sections": [
+        {
+            "id": 1784284164742,
+            "items": [
+            ],
+            "config": "{\"banner_url\":\"/uploads/users/1/images/1782741689506000723.jpg\",\"profile_name\":\"TheWriterCO\",\"profile_subtitle\":\"\",\"animation\":\"slide-up\",\"checklist\":[\"Backend - Golang, Python\",\"Frontend - Typescript\",\"Real-time, professional voice, video & screen sharing\",\"Fully secure, fully comprehensive\"],\"description\":\"A key innovation in Skaia is our **WebSocket Rerouter** for REST endpoints. This completely bypasses traditional REST setup costs, enabling efficient, high-performance state updates. The result is an application that loads routes and synchronizes state at the raw speed of Go concurrency. Go ahead and refresh your tab.\"}",
+            "heading": "The Writer Company",
+            "subheading": "Where the architecture is first-class",
+            "section_type": "profile_card",
+            "display_order": 1
+        },
+        {
+            "id": 1784284195060,
+            "items": [
+            ],
+            "config": "{\"content\":\"<p dir=\\\"auto\\\">Welcome to <strong>TheWriterCo, Skaia!</strong></p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">Skaia is a highly performant, multi-tenant, container-orchestrated platform powered by Go, built around a real-time, atomic state architecture using Jotai. The frontend is a React-powered full-stack application featuring server-injected SEO, delivering both speed and search engine optimization without compromising the real-time experience.</p><p dir=\\\"auto\\\">The platform includes a powerful suite of integrated modules, including a customizable page builder, forums, a complete e-commerce solution with secure carting, checkout, payment handling, delivery management, order tracking, and a wallet system built around debit and credit transactions.</p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">Beyond commerce, Skaia offers real-time inbox messaging, push notifications, room-based chat, voice chat, video calls, screen sharing, live presence tracking across routes, shared cursor interaction, and DEFCON rate limiter with a live widget overlay. Organizations can also build rich interfaces using the integrated UI page builder and extend the platform through Frappe Framework deployments and Apache Superset integration for enterprise business intelligence and reporting.</p><p dir=\\\"auto\\\"></p><p dir=\\\"auto\\\">We're excited to make this project open source as <a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://github.com/renniemaharaj/skaia\\\">skaia-repo</a>.</p><p dir=\\\"auto\\\">Thank you for taking the time to explore the platform and browse our current <a target=\\\"_blank\\\" rel=\\\"noopener noreferrer nofollow\\\" class=\\\"link\\\" href=\\\"https://www.thewriterco.com/store\\\">store</a> offerings 🙏</p><p style=\\\"text-align: left\\\" dir=\\\"auto\\\"></p>\",\"animation\":\"bounce\"}",
+            "heading": "Rich Text",
+            "subheading": "",
+            "section_type": "rich_text",
+            "display_order": 2
+        },
+        {
+            "id": 1784294261872,
+            "items": [
+            ],
+            "config": "[REDACTED: interactive config can contain responses]",
+            "heading": "Request a quote",
+            "subheading": "The Writer Company quote overview form for signed in users",
+            "section_type": "form",
+            "display_order": 3
+        }
+    ],
+    "created_at": "2026-07-17T10:28:34.178944",
+    "updated_at": "2026-07-17T17:34:33.947903",
+    "visibility": "",
+    "description": ""
+}
+=== SAVED CUSTOM SECTIONS ===
+{
+    "id": 1,
+    "name": "Table",
+    "config": {
+        "columns": 3
+    },
+    "created_at": "2026-04-15T01:20:35.989257",
+    "updated_at": "2026-04-15T01:20:35.989257",
+    "description": "Futurama table",
+    "section_type": "table",
+    "datasource_id": 1
+}
+{
+    "id": 2,
+    "name": "New table section",
+    "config": {
+        "columns": 3
+    },
+    "created_at": "2026-04-17T15:22:09.122537",
+    "updated_at": "2026-04-17T15:22:09.122537",
+    "description": "New table section",
+    "section_type": "table",
+    "datasource_id": 1
+}
+{
+    "id": 3,
+    "name": "News Section",
+    "config": {
+        "columns": 3,
+        "card_template": {
+            "gap": 12,
+            "zones": [
+                {
+                    "size": "lg",
+                    "align": "center",
+                    "field": "image_url",
+                    "visible": true
+                },
+                {
+                    "size": "md",
+                    "align": "center",
+                    "field": "icon",
+                    "visible": false
+                },
+                {
+                    "size": "md",
+                    "align": "left",
+                    "field": "heading",
+                    "visible": true
+                },
+                {
+                    "size": "sm",
+                    "align": "left",
+                    "field": "subheading",
+                    "visible": true
+                },
+                {
+                    "size": "sm",
+                    "align": "left",
+                    "field": "link_url",
+                    "visible": false
+                }
+            ],
+            "gridGap": 24,
+            "overflow": "hidden",
+            "cardStyle": "minimal",
+            "cardWidth": "full",
+            "customCss": ".dcard--custom-css{\n    padding:0;\n    padding-top: 5px;\n    gap:0;\n}",
+            "marginTop": 0,
+            "marginLeft": 0,
+            "paddingTop": 0,
+            "tableHover": true,
+            "aspectRatio": "3/4",
+            "marginRight": 0,
+            "paddingLeft": 16,
+            "borderRadius": 16,
+            "contentAlign": "start",
+            "marginBottom": 0,
+            "paddingRight": 16,
+            "tableCompact": false,
+            "tableStriped": true,
+            "imagePosition": "bottom",
+            "paddingBottom": 16,
+            "tableBordered": false
+        }
+    },
+    "created_at": "2026-04-18T17:53:58.991502",
+    "updated_at": "2026-04-18T17:53:58.991502",
+    "description": "A section on the latest configured news to show",
+    "section_type": "cards",
+    "datasource_id": 1
+}
+{
+    "id": 4,
+    "name": "Flex News",
+    "config": {
+        "columns": 1,
+        "event_hooks": [
+        ],
+        "component_group": {
+            "gap": 16,
+            "items": [
+                {
+                    "id": "cg-1781070426062-1",
+                    "order": 0,
+                    "width": 100,
+                    "bindings": {
+                        "href": "link_url",
+                        "title": "heading"
+                    },
+                    "component_type": "primitive.link"
+                },
+                {
+                    "id": "cg-1781070446563-2",
+                    "order": 1,
+                    "width": 100,
+                    "bindings": {
+                        "body": "subheading"
+                    },
+                    "component_type": "primitive.text"
+                },
+                {
+                    "id": "cg-1781070469590-3",
+                    "order": 2,
+                    "width": 100,
+                    "bindings": {
+                        "url": "link_url"
+                    },
+                    "component_type": "compound.mediascraper"
+                }
+            ],
+            "max_width": 800
+        }
+    },
+    "created_at": "2026-06-10T05:50:38.171878",
+    "updated_at": "2026-06-10T05:50:38.171878",
+    "description": "Flex News",
+    "section_type": "component",
+    "datasource_id": 1
+}
+{
+    "id": 5,
+    "name": "Flex News 2",
+    "config": {
+        "columns": 1,
+        "event_hooks": [
+        ],
+        "component_group": {
+            "gap": 8,
+            "items": [
+                {
+                    "id": "cg-1781070735929-4",
+                    "order": 0,
+                    "width": 100,
+                    "bindings": {
+                        "href": "link_url",
+                        "title": "heading"
+                    },
+                    "component_type": "primitive.link"
+                },
+                {
+                    "id": "cg-1781070741142-5",
+                    "order": 1,
+                    "width": 100,
+                    "bindings": {
+                        "body": "heading"
+                    },
+                    "component_type": "primitive.text"
+                },
+                {
+                    "id": "cg-1781070744763-6",
+                    "order": 2,
+                    "width": 100,
+                    "bindings": {
+                        "url": "link_url"
+                    },
+                    "component_type": "compound.mediascraper"
+                }
+            ],
+            "max_width": 450
+        }
+    },
+    "created_at": "2026-06-10T05:54:26.353762",
+    "updated_at": "2026-06-10T05:54:26.353762",
+    "description": "Flex News 2",
+    "section_type": "component",
+    "datasource_id": 1
+}
+{
+    "id": 6,
+    "name": "Flex News 4",
+    "config": {
+        "columns": 1,
+        "event_hooks": [
+        ],
+        "component_group": {
+            "gap": 8,
+            "items": [
+                {
+                    "id": "cg-1781071777934-7",
+                    "order": 0,
+                    "width": 100,
+                    "bindings": {
+                        "href": "link_url",
+                        "title": "heading"
+                    },
+                    "component_type": "primitive.link"
+                },
+                {
+                    "id": "cg-1781071779828-8",
+                    "order": 1,
+                    "width": 100,
+                    "bindings": {
+                        "body": "subheading"
+                    },
+                    "component_type": "primitive.text"
+                },
+                {
+                    "id": "cg-1781071780460-9",
+                    "order": 2,
+                    "width": 100,
+                    "bindings": {
+                    },
+                    "component_type": "compound.mediascraper"
+                }
+            ],
+            "max_width": 450
+        }
+    },
+    "created_at": "2026-06-10T06:11:16.725035",
+    "updated_at": "2026-06-10T06:11:16.725035",
+    "description": "Flex News 4",
+    "section_type": "component",
+    "datasource_id": 1
+}
+{
+    "id": 7,
+    "name": "Flex News Final",
+    "config": {
+        "columns": 1,
+        "event_hooks": [
+        ],
+        "component_group": {
+            "gap": 16,
+            "items": [
+                {
+                    "id": "cg-1781071949179-1",
+                    "order": 0,
+                    "width": 100,
+                    "bindings": {
+                        "href": "link_url",
+                        "title": "heading"
+                    },
+                    "component_type": "primitive.link"
+                },
+                {
+                    "id": "cg-1781071949572-2",
+                    "order": 1,
+                    "width": 100,
+                    "bindings": {
+                        "body": "subheading"
+                    },
+                    "component_type": "primitive.text"
+                },
+                {
+                    "id": "cg-1781071950346-3",
+                    "order": 2,
+                    "width": 100,
+                    "bindings": {
+                        "url": "link_url"
+                    },
+                    "component_type": "compound.mediascraper"
+                }
+            ],
+            "max_width": 450
+        }
+    },
+    "created_at": "2026-06-10T06:13:57.406982",
+    "updated_at": "2026-06-10T06:13:57.406982",
+    "description": "Flex News FInal",
+    "section_type": "component",
+    "datasource_id": 1
+}
+=== LEGACY PAGE SECTIONS ===
+=== LEGACY PAGE ITEMS ===

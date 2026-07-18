@@ -17,17 +17,7 @@ import { toast } from "sonner";
 import { apiRequest } from "../../../utils/api";
 import { cacheTTLLabel, formatTimeAgo } from "../../../utils/cache";
 import { ColumnMapper } from "../ColumnMapper";
-import {
-  SectionToolbar,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  getSectionLayout,
-  getSectionMargins,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-  setSectionLayout,
-  setSectionMargins,
-} from "../EditControls";
+import { SectionToolbarActions } from "../EditControls";
 import { detectColumns, mapRowsToItems } from "../mapRows";
 import type { RawRow } from "../mapRows";
 
@@ -104,8 +94,7 @@ async function evaluateDataSource(
   };
 }
 
-export const DerivedSectionBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
-  const layout = getSectionLayout(section.config);
+export const DerivedSectionBlock = ({ section, canEdit, onUpdate }: Props) => {
   const cfg = parseConfig(section.config);
 
   const [dataSources, setDataSources] = useState<DataSource[]>([]);
@@ -253,51 +242,19 @@ export const DerivedSectionBlock = ({ section, canEdit, onUpdate, onDelete }: Pr
   return (
     <section className="derived-section-block">
       {canEdit && (
-        <SectionToolbar
-          onDelete={() => onDelete(section.id)}
-          label="Derived Section"
-          layout={layout}
-          onLayoutChange={l =>
-            onUpdate({
-              ...section,
-              config: setSectionLayout(section.config, l),
-            })
-          }
-          margins={getSectionMargins(section.config)}
-          onMarginsChange={m =>
-            onUpdate({
-              ...section,
-              config: setSectionMargins(section.config, m),
-            })
-          }
-          animation={getSectionAnimation(section.config)}
-          onAnimationChange={a =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimation(section.config, a),
-            })
-          }
-          animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={i =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimationIntensity(section.config, i),
-            })
-          }
-          extra={
-            <Button
-              unstyled
-              type="button"
-              className="pb-section-toolbar-btn"
-              onClick={runEvaluation}
-              disabled={evaluating || !cfg.datasource_id}
-              title="Re-evaluate data source"
-            >
-              <RefreshCw size={14} className={evaluating ? "spin" : ""} />
-              {evaluating ? " Running…" : " Refresh"}
-            </Button>
-          }
-        />
+        <SectionToolbarActions>
+          <Button
+            unstyled
+            type="button"
+            className="pb-section-toolbar-btn"
+            onClick={runEvaluation}
+            disabled={evaluating || !cfg.datasource_id}
+            title="Re-evaluate data source"
+          >
+            <RefreshCw size={14} className={evaluating ? "spin" : ""} />
+            {evaluating ? " Running…" : " Refresh"}
+          </Button>
+        </SectionToolbarActions>
       )}
 
       {/* Controls bar */}

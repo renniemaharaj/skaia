@@ -40,8 +40,9 @@ over time. Per-slug fetches keep URL and resource identity aligned.
 
 Live page changes bypass CDN through WebSocket:
 
-- `page:update landing_page_changed` carries the full page.
-- `page:update page_updated` carries the full page.
+- `page:update landing_page_changed` carries page identity only.
+- `page:update page_updated` carries a content-free invalidation; typed writes
+  may add affected section IDs/revisions or a theme revision.
 - `config:update landing_page_updated` carries `{ slug }` as a fallback/UI signal.
 
 ## Anti-patterns

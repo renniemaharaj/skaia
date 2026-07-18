@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skaia.dev/schemas/page-sections/shared-section-shell.v1.schema.json",
+  "title": "Skaia shared page section shell v1",
+  "type": "object",
+  "additionalProperties": false,
+  "default": {
+    "layout": "center",
+    "container_width": "content",
+    "margin_top": 0,
+    "margin_right": 0,
+    "margin_bottom": 0,
+    "margin_left": 0,
+    "padding_top": 0,
+    "padding_right": 0,
+    "padding_bottom": 0,
+    "padding_left": 0,
+    "animation": "none",
+    "animation_intensity": "normal",
+    "background_color": { "mode": "inherit" },
+    "text_color": { "mode": "inherit" },
+    "h1_color": { "mode": "inherit" },
+    "h2_color": { "mode": "inherit" },
+    "h3_color": { "mode": "inherit" },
+    "content_scale": 1,
+    "collapsible": false,
+    "default_collapsed": false
+  },
+  "$defs": {
+    "paletteTokenKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_-]*$"
+    },
+    "colorSource": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "inherit"
+            }
+          },
+          "required": ["mode"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "palette"
+            },
+            "token": {
+              "$ref": "#/$defs/paletteTokenKey"
+            }
+          },
+          "required": ["mode", "token"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "literal"
+            },
+            "value": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "format": "css-color"
+            }
+          },
+          "required": ["mode", "value"]
+        }
+      ]
+    },
+    "margin": {
+      "type": "number",
+      "minimum": -512,
+      "maximum": 512,
+      "default": 0
+    },
+    "padding": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 512,
+      "default": 0
+    }
+  },
+  "properties": {
+    "layout": {
+      "enum": ["left", "center", "right", "wide"],
+      "default": "center"
+    },
+    "container_width": {
+      "enum": ["narrow", "content", "wide", "full"],
+      "default": "content"
+    },
+    "margin_top": {
+      "$ref": "#/$defs/margin"
+    },
+    "margin_right": {
+      "$ref": "#/$defs/margin"
+    },
+    "margin_bottom": {
+      "$ref": "#/$defs/margin"
+    },
+    "margin_left": {
+      "$ref": "#/$defs/margin"
+    },
+    "padding_top": {
+      "$ref": "#/$defs/padding"
+    },
+    "padding_right": {
+      "$ref": "#/$defs/padding"
+    },
+    "padding_bottom": {
+      "$ref": "#/$defs/padding"
+    },
+    "padding_left": {
+      "$ref": "#/$defs/padding"
+    },
+    "animation": {
+      "enum": ["none", "fade-in", "slide-up", "slide-left", "slide-right", "zoom-in", "bounce"],
+      "default": "none"
+    },
+    "animation_intensity": {
+      "enum": ["subtle", "normal", "dramatic"],
+      "default": "normal"
+    },
+    "background_color": {
+      "$ref": "#/$defs/colorSource"
+    },
+    "text_color": {
+      "$ref": "#/$defs/colorSource"
+    },
+    "h1_color": {
+      "$ref": "#/$defs/colorSource"
+    },
+    "h2_color": {
+      "$ref": "#/$defs/colorSource"
+    },
+    "h3_color": {
+      "$ref": "#/$defs/colorSource"
+    },
+    "content_scale": {
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 2,
+      "default": 1
+    },
+    "collapsible": {
+      "type": "boolean",
+      "default": false
+    },
+    "default_collapsed": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "layout",
+    "container_width",
+    "margin_top",
+    "margin_right",
+    "margin_bottom",
+    "margin_left",
+    "padding_top",
+    "padding_right",
+    "padding_bottom",
+    "padding_left",
+    "animation",
+    "animation_intensity",
+    "background_color",
+    "text_color",
+    "h1_color",
+    "h2_color",
+    "h3_color",
+    "content_scale",
+    "collapsible",
+    "default_collapsed"
+  ]
+}

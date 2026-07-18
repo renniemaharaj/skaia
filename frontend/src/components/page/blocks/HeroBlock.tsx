@@ -7,11 +7,9 @@ import {
   ColorPickerButton,
   EditableText,
   ImagePickerButton,
-  SectionToolbar,
+  SectionToolbarActions,
   VariantCycler,
   VideoPickerButton,
-  getSectionLayout,
-  setSectionLayout,
 } from "../EditControls";
 
 const HERO_VARIANTS = 2;
@@ -48,7 +46,7 @@ interface Props {
   onDelete: (id: number) => void;
 }
 
-export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
+export const HeroBlock = ({ section, canEdit, onUpdate }: Props) => {
   const cfg = parseCfg(section.config);
   const bgImage = cfg.background_image || "/banner_7783x7783.png";
   const videos = getVideos(cfg);
@@ -157,47 +155,36 @@ export const HeroBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
         <div className="banner-content">
           {canEdit ? (
             <>
-              <SectionToolbar
-                onDelete={() => onDelete(section.id)}
-                label="Hero"
-                layout={getSectionLayout(section.config)}
-                onLayoutChange={nextLayout =>
-                  onUpdate({
-                    ...section,
-                    config: setSectionLayout(section.config, nextLayout),
-                  })
-                }
-                extra={
-                  <div className="hero-toolbar-row">
-                    <VariantCycler
-                      current={variant}
-                      total={HERO_VARIANTS}
-                      onCycle={v => updateCfg({ variant: v })}
-                      label="Hero"
+              <SectionToolbarActions>
+                <div className="hero-toolbar-row">
+                  <VariantCycler
+                    current={variant}
+                    total={HERO_VARIANTS}
+                    onCycle={v => updateCfg({ variant: v })}
+                    label="Hero"
+                  />
+                  <ImagePickerButton onUploaded={url => updateCfg({ background_image: url })} />
+                  {isVideo && <VideoPickerButton onUploaded={addVideo} />}
+                  <ColorPickerButton
+                    value={tintColor}
+                    onChange={c => updateCfg({ tint_color: c })}
+                    title="Tint color"
+                  />
+                  <label className="hero-opacity-slider" title="Tint opacity">
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={Math.round(tintOpacity * 100)}
+                      onChange={e =>
+                        updateCfg({
+                          tint_opacity: Number(e.target.value) / 100,
+                        })
+                      }
                     />
-                    <ImagePickerButton onUploaded={url => updateCfg({ background_image: url })} />
-                    {isVideo && <VideoPickerButton onUploaded={addVideo} />}
-                    <ColorPickerButton
-                      value={tintColor}
-                      onChange={c => updateCfg({ tint_color: c })}
-                      title="Tint color"
-                    />
-                    <label className="hero-opacity-slider" title="Tint opacity">
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={Math.round(tintOpacity * 100)}
-                        onChange={e =>
-                          updateCfg({
-                            tint_opacity: Number(e.target.value) / 100,
-                          })
-                        }
-                      />
-                    </label>
-                  </div>
-                }
-              />
+                  </label>
+                </div>
+              </SectionToolbarActions>
 
               {/* Video list for managing multiple videos */}
               {isVideo && videos.length > 0 && (

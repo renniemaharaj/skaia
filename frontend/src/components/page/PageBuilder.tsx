@@ -20,6 +20,17 @@ import PageComments from "./PageComments";
 import PageOwnershipPanel from "./PageOwnershipPanel";
 import { PageSkeleton } from "./PageSkeleton";
 import { SaveStatusBar } from "./SaveStatusBar";
+import {
+  createTypedSection,
+  deleteTypedSection,
+  loadTypedSections,
+  reorderTypedSections,
+  typedLegacyKey,
+  typedSectionMap,
+  updateTypedSection,
+  type TypedSectionMutationResponse,
+  type TypedSectionState,
+} from "./typedSectionApi";
 import type { PageItem, PageSection, SectionEditor } from "./types";
 import "./PageBuilder.css";
 import "../ui/FeatureCard.css";
@@ -70,6 +81,13 @@ function mergeSections(current: PageSection[], incoming: PageSection[]): PageSec
   return changed ? merged : current;
 }
 
+function mutationFailureMessage(error: unknown): string {
+  if (error instanceof Error && (error as Error & { status?: number }).status === 409) {
+    return "This section changed in another editor. The latest version has been reloaded.";
+  }
+  return "Failed to save changes — reloading page";
+}
+
 interface PageBuilderProps {
   /** Optional slug to load. Falls back to the URL :slug param, then index. */
   slug?: string;
@@ -93,6 +111,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     createPage,
     deletePage,
     pendingIncoming,
+    applyMutationPage,
   } = usePageData(editingCount > 0);
 
   const setContextUser = useSetAtom(contextUserAtom);
@@ -290,6 +309,43 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const isNewPage = !!(slug && error && guestSandboxMode);
   const pageRef = useRef<PageBuilderDoc | null>(page);
   pageRef.current = page;
+  const typedStatesRef = useRef<Map<string, TypedSectionState>>(new Map());
+  const typedReadyPageRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    typedStatesRef.current = new Map();
+    typedReadyPageRef.current = null;
+    if (!page?.id || !page.typed_section_mutations || !isEditable) return;
+    let cancelled = false;
+    loadTypedSections(page.id)
+      .then(serverSections => {
+        if (cancelled) return;
+        typedStatesRef.current = typedSectionMap(serverSections);
+        typedReadyPageRef.current = page.id;
+      })
+      .catch(() => {
+        if (!cancelled) typedReadyPageRef.current = null;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [page?.id, page?.typed_section_mutations, isEditable]);
+
+  const applyTypedMutation = useCallback(
+    (response: TypedSectionMutationResponse) => {
+      typedStatesRef.current = typedSectionMap(response.sections);
+      typedReadyPageRef.current = response.page.id;
+      pageRef.current = response.page;
+      applyMutationPage(response.page);
+    },
+    [applyMutationPage]
+  );
+
+  const typedMutationReady = useCallback((pageId: number) => {
+    if (typedReadyPageRef.current !== pageId) {
+      throw new Error("Typed section revisions are still loading");
+    }
+  }, []);
 
   /**
    * Ensure the page entity exists in the backend, creating it on the fly if
@@ -401,13 +457,41 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         await ensurePage(updatedSections);
         return;
       }
+      if (pageRef.current.typed_section_mutations) {
+        const pageId = pageRef.current.id;
+        typedMutationReady(pageId);
+        let persisted: PageSection[] = [];
+        try {
+          const parsed = JSON.parse(pageRef.current.content);
+          if (Array.isArray(parsed)) persisted = parsed;
+        } catch {
+          throw new Error("The authoritative page document is invalid");
+        }
+        const persistedByID = new Map(
+          persisted.map(section => [typedLegacyKey(section.id), section])
+        );
+        const changed = updatedSections.filter(section => {
+          const previous = persistedByID.get(typedLegacyKey(section.id));
+          return (
+            !previous ||
+            stableStringify({ ...previous, items: previous.items ?? [] }) !==
+              stableStringify({ ...section, items: section.items ?? [] })
+          );
+        });
+        for (const section of changed) {
+          const state = typedStatesRef.current.get(typedLegacyKey(section.id));
+          if (!state) throw new Error("Section revision state is unavailable");
+          applyTypedMutation(await updateTypedSection(pageId, state, section));
+        }
+        return;
+      }
       const saved = await updatePage({
         ...pageRef.current,
         content: JSON.stringify(updatedSections),
       });
       if (saved) pageRef.current = saved;
     },
-    [ensurePage, updatePage]
+    [applyTypedMutation, ensurePage, typedMutationReady, updatePage]
   );
 
   // Stable ref so timer callbacks always call the latest version.
@@ -425,9 +509,9 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       await savePageContentRef.current(sections);
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus(s => (s === "saved" ? "idle" : s)), 2000);
-    } catch {
+    } catch (error) {
       setSaveStatus("error");
-      toast.error("Failed to save changes — reloading page");
+      toast.error(mutationFailureMessage(error));
       refreshRef.current(slugRef.current);
       setTimeout(() => setSaveStatus(s => (s === "error" ? "idle" : s)), 3000);
     }
@@ -486,13 +570,37 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       await savePageContentRef.current(sections);
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus(s => (s === "saved" ? "idle" : s)), 2000);
-    } catch {
+    } catch (error) {
       setSaveStatus("error");
-      toast.error("Failed to save changes — reloading page");
+      toast.error(mutationFailureMessage(error));
       refreshRef.current(slugRef.current);
       setTimeout(() => setSaveStatus(s => (s === "error" ? "idle" : s)), 3000);
     }
   }, []);
+
+  const commitTypedStructuralMutation = useCallback(
+    async (operation: () => Promise<TypedSectionMutationResponse>) => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      const pending = pendingSectionsRef.current;
+      pendingSectionsRef.current = null;
+      setSaveStatus("saving");
+      try {
+        if (pending) await savePageContentRef.current(pending);
+        applyTypedMutation(await operation());
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus(status => (status === "saved" ? "idle" : status)), 2000);
+      } catch (error) {
+        setSaveStatus("error");
+        toast.error(mutationFailureMessage(error));
+        await refreshRef.current(slugRef.current);
+        setTimeout(() => setSaveStatus(status => (status === "error" ? "idle" : status)), 3000);
+      }
+    },
+    [applyTypedMutation]
+  );
 
   // Flush any pending save when the component unmounts.
   useEffect(() => {
@@ -541,9 +649,18 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       }));
 
       setSections(normalized);
+      const currentPage = pageRef.current;
+      if (currentPage?.typed_section_mutations) {
+        const created = normalized.find(section => section.id === newSection.id) ?? newSection;
+        void commitTypedStructuralMutation(() => {
+          typedMutationReady(currentPage.id);
+          return createTypedSection(currentPage.id, created);
+        });
+        return;
+      }
       void immediateSave(normalized);
     },
-    [immediateSave]
+    [commitTypedStructuralMutation, immediateSave, typedMutationReady]
   );
 
   const deleteSectionWrapper = useCallback(
@@ -551,9 +668,19 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       const updated = sectionsRef.current.filter(section => section.id !== id);
       const ordered = sortSections(updated);
       setSections(ordered);
+      const currentPage = pageRef.current;
+      if (currentPage?.typed_section_mutations) {
+        void commitTypedStructuralMutation(() => {
+          typedMutationReady(currentPage.id);
+          const state = typedStatesRef.current.get(typedLegacyKey(id));
+          if (!state) throw new Error("Section revision state is unavailable");
+          return deleteTypedSection(currentPage.id, state);
+        });
+        return;
+      }
       void immediateSave(ordered);
     },
-    [immediateSave]
+    [commitTypedStructuralMutation, immediateSave, typedMutationReady]
   );
 
   const createItemWrapper = useCallback(
@@ -628,9 +755,17 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       }));
 
       setSections(normalized);
+      const currentPage = pageRef.current;
+      if (currentPage?.typed_section_mutations) {
+        await commitTypedStructuralMutation(() => {
+          typedMutationReady(currentPage.id);
+          return reorderTypedSections(currentPage.id, normalized, typedStatesRef.current);
+        });
+        return;
+      }
       await immediateSave(normalized);
     },
-    [immediateSave]
+    [commitTypedStructuralMutation, immediateSave, typedMutationReady]
   );
 
   if (loading || !sectionsSourced) {
@@ -678,6 +813,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
             onUpdateItem={updateItemWrapper}
             onDeleteItem={deleteItemWrapper}
             onMoveSection={moveSectionWrapper}
+            pageKey={slug ?? "new-page"}
+            theme={page?.theme}
           />
           <SaveStatusBar />
         </div>
@@ -929,6 +1066,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
           onUpdateItem={updateItemWrapper}
           onDeleteItem={deleteItemWrapper}
           onMoveSection={moveSectionWrapper}
+          pageKey={page?.slug ?? slug ?? "landing"}
+          theme={page?.theme}
         />
 
         {/* Comments section */}

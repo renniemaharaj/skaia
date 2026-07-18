@@ -123,6 +123,29 @@ func (h *Hub) BroadcastPageExceptUser(userID int64, action string, data interfac
 	h.BroadcastExceptUser(userID, &Message{Type: PageUpdate, Payload: payload})
 }
 
+// PropagatePageExceptUser sends a content-free page invalidation only to
+// clients actively subscribed to that page. The sender already receives the
+// authoritative HTTP response.
+func (h *Hub) PropagatePageExceptUser(pageID, userID int64, action string, data interface{}) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	clients := h.subscriptions[subscriptionKey("page", pageID)]
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": action,
+		"id":     pageID,
+		"data":   data,
+	})
+	message := &Message{Type: PageUpdate, Payload: payload}
+	for _, client := range clients {
+		if userID > 0 && client.UserID == userID {
+			continue
+		}
+		if !client.queueMessage(message) {
+			log.Printf("ws: send buffer full, dropping page update for userID=%d", client.UserID)
+		}
+	}
+}
+
 // BroadcastEvent sends a new audit event to every connected client.
 func (h *Hub) BroadcastEvent(data interface{}) {
 	payload, _ := json.Marshal(map[string]interface{}{

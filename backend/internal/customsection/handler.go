@@ -2,6 +2,7 @@ package customsection
 
 import (
 	"encoding/json"
+	"errors"
 	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"strconv"
@@ -53,9 +54,15 @@ func (h *Handler) enrich(cs *models.CustomSection) CustomSectionResponse {
 	return resp
 }
 
-// Mount registers custom-section routes under /config/custom-sections.
+// Mount registers the preferred preset route and the legacy custom-section
+// alias for the compatibility window.
 func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
-	r.Route("/config/custom-sections", func(r chi.Router) {
+	h.mountRoute(r, jwt, "/config/section-presets")
+	h.mountRoute(r, jwt, "/config/custom-sections")
+}
+
+func (h *Handler) mountRoute(r chi.Router, jwt func(http.Handler) http.Handler, path string) {
+	r.Route(path, func(r chi.Router) {
 		r.Get("/", h.list)
 		r.Get("/{id}", h.get)
 
@@ -66,15 +73,6 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 			r.Delete("/{id}", h.delete)
 		})
 	})
-}
-
-func (h *Handler) requireHomeManage(r *http.Request) bool {
-	uid, ok := utils.UserIDFromCtx(r)
-	if !ok {
-		return false
-	}
-	has, _ := h.userSvc.HasPermission(uid, "home.manage")
-	return has
 }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
@@ -118,10 +116,6 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
 	var cs models.CustomSection
 	if err := json.NewDecoder(r.Body).Decode(&cs); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
@@ -136,8 +130,12 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if cs.SectionType == "" {
+		cs.SectionType = cs.PresetType
+	}
+	if cs.SectionType == "" {
 		cs.SectionType = "cards"
 	}
+	cs.PresetType = cs.SectionType
 	if cs.Config == "" {
 		cs.Config = "{}"
 	}
@@ -145,7 +143,11 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	if uid != 0 {
 		cs.CreatedBy = &uid
 	}
-	if err := h.svc.Create(&cs); err != nil {
+	if err := h.svc.Create(uid, &cs); err != nil {
+		if errors.Is(err, ErrPresetMutationForbidden) {
+			utils.WriteError(w, http.StatusForbidden, "forbidden")
+			return
+		}
 		log.Printf("customsection.create: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "create failed")
 		return
@@ -154,10 +156,6 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid id")
@@ -169,7 +167,12 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	cs.ID = id
-	if err := h.svc.Update(&cs); err != nil {
+	uid, _ := utils.UserIDFromCtx(r)
+	if err := h.svc.Update(uid, &cs); err != nil {
+		if errors.Is(err, ErrPresetMutationForbidden) {
+			utils.WriteError(w, http.StatusForbidden, "forbidden")
+			return
+		}
 		log.Printf("customsection.update: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "update failed")
 		return
@@ -183,16 +186,17 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-	if err := h.svc.Delete(id); err != nil {
+	uid, _ := utils.UserIDFromCtx(r)
+	if err := h.svc.Delete(uid, id); err != nil {
+		if errors.Is(err, ErrPresetMutationForbidden) {
+			utils.WriteError(w, http.StatusForbidden, "forbidden")
+			return
+		}
 		log.Printf("customsection.delete: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "delete failed")
 		return

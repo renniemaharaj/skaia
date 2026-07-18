@@ -6,17 +6,7 @@ import { Copy, Download, FileCode } from "lucide-react";
 import { toast } from "sonner";
 import { useThemeContext } from "../../../hooks/theme/useThemeContext";
 import Select from "../../input/Select";
-import {
-  SectionToolbar,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  getSectionLayout,
-  getSectionMargins,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-  setSectionLayout,
-  setSectionMargins,
-} from "../EditControls";
+import { SectionToolbarActions } from "../EditControls";
 
 /** Lazy-load the project's Monaco wrapper (inherits theme) and ViewThread for md/html. */
 const MonacoEditor = lazy(() => import("../../monaco/Editor"));
@@ -132,9 +122,8 @@ function handleDownload(code: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export const CodeEditorBlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
+export const CodeEditorBlock = ({ section, canEdit, onUpdate }: Props) => {
   const cfg = parseConfig(section.config);
-  const layout = getSectionLayout(section.config);
   const [editing, setEditing] = useState(false);
   const { enterEdit, leaveEdit } = usePageBuilderContext();
   // Hold saves in PageBuilder while this editor is active.
@@ -209,58 +198,26 @@ export const CodeEditorBlock = ({ section, canEdit, onUpdate, onDelete }: Props)
   return (
     <section className="code-editor-block">
       {canEdit && (
-        <SectionToolbar
-          onDelete={() => onDelete(section.id)}
-          label="Code Editor"
-          layout={layout}
-          onLayoutChange={nextLayout =>
-            onUpdate({
-              ...section,
-              config: setSectionLayout(section.config, nextLayout),
-            })
-          }
-          margins={getSectionMargins(section.config)}
-          onMarginsChange={m =>
-            onUpdate({
-              ...section,
-              config: setSectionMargins(section.config, m),
-            })
-          }
-          animation={getSectionAnimation(section.config)}
-          onAnimationChange={a =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimation(section.config, a),
-            })
-          }
-          animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={i =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimationIntensity(section.config, i),
-            })
-          }
-          extra={
-            <>
+        <SectionToolbarActions>
+          <>
+            <button
+              className="pb-section-toolbar-btn"
+              onClick={() => setEditing(!editing)}
+              title={editing ? "Preview" : "Edit code"}
+            >
+              {editing ? "Preview" : "Edit"}
+            </button>
+            {isRenderable && !editing && localCode && (
               <button
                 className="pb-section-toolbar-btn"
-                onClick={() => setEditing(!editing)}
-                title={editing ? "Preview" : "Edit code"}
+                onClick={() => setShowRendered(v => !v)}
+                title={showRendered ? "Show source" : "Render content"}
               >
-                {editing ? "Preview" : "Edit"}
+                {showRendered ? "Source" : "Render"}
               </button>
-              {isRenderable && !editing && localCode && (
-                <button
-                  className="pb-section-toolbar-btn"
-                  onClick={() => setShowRendered(v => !v)}
-                  title={showRendered ? "Show source" : "Render content"}
-                >
-                  {showRendered ? "Source" : "Render"}
-                </button>
-              )}
-            </>
-          }
-        />
+            )}
+          </>
+        </SectionToolbarActions>
       )}
 
       {/* Controls bar - visible only when editing */}

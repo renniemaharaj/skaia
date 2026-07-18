@@ -1,0 +1,421 @@
+{
+  "hero": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/hero-config.v1.schema.json",
+    "x-skaia-section-type": "hero",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {},
+    "properties": {
+      "background_image": { "type": "string", "maxLength": 4096 },
+      "videos": { "type": "array", "maxItems": 20, "items": { "type": "string", "maxLength": 4096 } },
+      "tint_color": { "type": "string", "maxLength": 128, "format": "css-color", "default": "#000000" },
+      "tint_opacity": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.45 },
+      "variant": { "type": "integer", "minimum": 1, "maximum": 10, "default": 1 }
+    }
+  },
+  "card_group": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/card-group-config.v1.schema.json",
+    "x-skaia-section-type": "card_group",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {},
+    "properties": {}
+  },
+  "stat_cards": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/stat-cards-config.v1.schema.json",
+    "x-skaia-section-type": "stat_cards",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {},
+    "properties": {}
+  },
+  "social_links": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/social-links-config.v1.schema.json",
+    "x-skaia-section-type": "social_links",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": { "links": [] },
+    "properties": {
+      "links": {
+        "type": "array",
+        "maxItems": 100,
+        "default": [],
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "icon": { "type": "string", "maxLength": 120 },
+            "url": { "type": "string", "maxLength": 4096 }
+          },
+          "required": ["icon", "url"]
+        }
+      }
+    },
+    "required": ["links"]
+  },
+  "image_gallery": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/image-gallery-config.v1.schema.json",
+    "x-skaia-section-type": "image_gallery",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": { "albums": [{ "key": "all", "label": "All" }], "default_card_width": "regular" },
+    "properties": {
+      "albums": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 100,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "key": { "type": "string", "minLength": 1, "maxLength": 80 },
+            "label": { "type": "string", "minLength": 1, "maxLength": 160 }
+          },
+          "required": ["key", "label"]
+        }
+      },
+      "default_card_width": {
+        "enum": ["narrow", "regular", "wide", "halfway", "full"],
+        "default": "regular"
+      }
+    },
+    "required": ["albums", "default_card_width"]
+  },
+  "feature_grid": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/feature-grid-config.v1.schema.json",
+    "x-skaia-section-type": "feature_grid",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {},
+    "properties": {}
+  },
+  "cta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/cta-config.v1.schema.json",
+    "x-skaia-section-type": "cta",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {},
+    "properties": {}
+  },
+  "event_highlights": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/event-highlights-config.v1.schema.json",
+    "x-skaia-section-type": "event_highlights",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {},
+    "properties": {}
+  },
+  "profile_card": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/profile-card-config.v1.schema.json",
+    "x-skaia-section-type": "profile_card",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": { "checklist": [], "links": [] },
+    "properties": {
+      "banner_url": { "type": "string", "maxLength": 4096 },
+      "avatar_url": { "type": "string", "maxLength": 4096 },
+      "profile_name": { "type": "string", "maxLength": 500 },
+      "profile_subtitle": { "type": "string", "maxLength": 1000 },
+      "description": { "type": "string", "maxLength": 10000 },
+      "checklist": { "type": "array", "maxItems": 100, "items": { "type": "string", "maxLength": 1000 } },
+      "links": {
+        "type": "array",
+        "maxItems": 100,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": { "type": "string", "minLength": 1, "maxLength": 500 },
+            "url": { "type": "string", "maxLength": 4096 }
+          },
+          "required": ["label", "url"]
+        }
+      }
+    },
+    "required": ["checklist", "links"]
+  },
+  "rich_text": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/rich-text-config.v1.schema.json",
+    "x-skaia-section-type": "rich_text",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": { "content": "" },
+    "properties": { "content": { "type": "string", "maxLength": 1000000, "default": "" } },
+    "required": ["content"]
+  },
+  "code_editor": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/code-editor-config.v1.schema.json",
+    "x-skaia-section-type": "code_editor",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": { "code": "", "language": "typescript", "filename": "" },
+    "properties": {
+      "code": { "type": "string", "maxLength": 1000000, "default": "" },
+      "language": { "type": "string", "minLength": 1, "maxLength": 80, "default": "typescript" },
+      "filename": { "type": "string", "maxLength": 500, "default": "" }
+    },
+    "required": ["code", "language", "filename"]
+  },
+  "data_sources": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/data-sources-config.v1.schema.json",
+    "x-skaia-section-type": "data_sources",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {},
+    "properties": {}
+  },
+  "derived_section": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/derived-section-config.v1.schema.json",
+    "x-skaia-section-type": "derived_section",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {},
+    "$defs": {
+      "stringMap": { "type": "object", "additionalProperties": { "type": "string" } },
+      "componentGroup": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": { "type": "array", "maxItems": 50, "items": { "type": "object" } },
+          "gap": { "type": "number", "minimum": 0, "maximum": 256 },
+          "max_width": { "type": "number", "minimum": 0, "maximum": 10000 },
+          "wrapper": { "type": "object" }
+        },
+        "required": ["items", "gap", "max_width"]
+      }
+    },
+    "properties": {
+      "datasource_id": { "type": "integer", "minimum": 1 },
+      "render_as": { "enum": ["card_group", "feature_grid", "stat_cards", "event_highlights", "image_cards", "designed_card"] },
+      "column_map": { "$ref": "#/$defs/stringMap" },
+      "row_overrides": { "type": "object" },
+      "columns": { "type": "integer", "minimum": 1, "maximum": 12 },
+      "row_key_column": { "type": "string", "maxLength": 160 },
+      "card_template": { "type": "object" },
+      "component_type": { "type": "string", "maxLength": 160 },
+      "component_version": { "type": "integer", "minimum": 1 },
+      "bindings": { "$ref": "#/$defs/stringMap" },
+      "style_overrides": { "type": "object" },
+      "component_group": { "$ref": "#/$defs/componentGroup" },
+      "event_hooks": { "type": "array", "maxItems": 100, "items": { "type": "object" } }
+    }
+  },
+  "custom_section": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/custom-section-config.v1.schema.json",
+    "x-skaia-section-type": "custom_section",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {},
+    "$defs": {
+      "stringMap": { "type": "object", "additionalProperties": { "type": "string" } }
+    },
+    "properties": {
+      "custom_section_id": { "type": "integer", "minimum": 1 },
+      "datasource_id": { "type": "integer", "minimum": 1 },
+      "render_as": { "enum": ["card_group", "feature_grid", "stat_cards", "event_highlights", "image_cards", "designed_card"] },
+      "column_map": { "$ref": "#/$defs/stringMap" },
+      "row_overrides": { "type": "object" },
+      "columns": { "type": "integer", "minimum": 1, "maximum": 12 },
+      "row_key_column": { "type": "string", "maxLength": 160 },
+      "card_template": { "type": "object" },
+      "component_type": { "type": "string", "maxLength": 160 },
+      "component_version": { "type": "integer", "minimum": 1 },
+      "bindings": { "$ref": "#/$defs/stringMap" },
+      "style_overrides": { "type": "object" },
+      "component_group": { "type": "object" },
+      "event_hooks": { "type": "array", "maxItems": 100, "items": { "type": "object" } }
+    }
+  },
+  "form": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/form-config.v1.schema.json",
+    "x-skaia-section-type": "form",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {
+      "status": "open",
+      "submit_label": "Submit form",
+      "success_text": "Thank you. Your response has been recorded.",
+      "result_visibility": "never",
+      "response_limit": 0,
+      "fields": [
+        { "key": "name", "type": "text", "label": "Full name", "required": true },
+        { "key": "email", "type": "email", "label": "Email", "required": true },
+        { "key": "message", "type": "textarea", "label": "Message", "required": true }
+      ]
+    },
+    "$defs": {
+      "field": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "type": { "enum": ["text", "textarea", "email", "phone", "url", "number", "date", "time", "select", "multi_select", "radio", "checkbox", "consent", "rating", "scale", "nps"] },
+          "label": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "description": { "type": "string", "maxLength": 2000 },
+          "placeholder": { "type": "string", "maxLength": 1000 },
+          "required": { "type": "boolean" },
+          "options": { "type": "array", "maxItems": 100, "items": { "type": "object" } },
+          "min": { "type": "number" },
+          "max": { "type": "number" }
+        },
+        "required": ["key", "type", "label"]
+      }
+    },
+    "properties": {
+      "status": { "enum": ["open", "closed"] },
+      "submit_label": { "type": "string", "minLength": 1, "maxLength": 500 },
+      "success_text": { "type": "string", "maxLength": 5000 },
+      "result_visibility": { "enum": ["never", "after_participation", "always"] },
+      "response_limit": { "type": "integer", "minimum": 0, "maximum": 1000 },
+      "fields": { "type": "array", "minItems": 1, "maxItems": 50, "items": { "$ref": "#/$defs/field" } }
+    },
+    "required": ["status", "submit_label", "success_text", "result_visibility", "response_limit", "fields"]
+  },
+  "qa": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/qa-config.v1.schema.json",
+    "x-skaia-section-type": "qa",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {
+      "status": "open",
+      "submit_label": "Ask question",
+      "success_text": "Thank you. Your response has been recorded.",
+      "result_visibility": "never",
+      "response_limit": 0,
+      "moderation": true,
+      "fields": [{ "key": "question", "type": "textarea", "label": "Your question", "required": true }]
+    },
+    "properties": {
+      "status": { "enum": ["open", "closed"] },
+      "submit_label": { "type": "string", "minLength": 1, "maxLength": 500 },
+      "success_text": { "type": "string", "maxLength": 5000 },
+      "result_visibility": { "enum": ["never", "after_participation", "always"] },
+      "response_limit": { "type": "integer", "minimum": 0, "maximum": 1000 },
+      "moderation": { "type": "boolean" },
+      "fields": { "type": "array", "minItems": 1, "maxItems": 50, "items": { "type": "object" } }
+    },
+    "required": ["status", "submit_label", "success_text", "result_visibility", "response_limit", "moderation", "fields"]
+  },
+  "survey": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/survey-config.v1.schema.json",
+    "x-skaia-section-type": "survey",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {
+      "status": "open",
+      "submit_label": "Complete survey",
+      "success_text": "Thank you. Your response has been recorded.",
+      "result_visibility": "after_participation",
+      "response_limit": 1,
+      "fields": [
+        { "key": "satisfaction", "type": "scale", "label": "How satisfied are you?", "required": true, "min": 1, "max": 5 },
+        { "key": "feedback", "type": "textarea", "label": "Tell us more", "required": false }
+      ]
+    },
+    "properties": {
+      "status": { "enum": ["open", "closed"] },
+      "submit_label": { "type": "string", "minLength": 1, "maxLength": 500 },
+      "success_text": { "type": "string", "maxLength": 5000 },
+      "result_visibility": { "enum": ["never", "after_participation", "always"] },
+      "response_limit": { "type": "integer", "minimum": 0, "maximum": 1000 },
+      "fields": { "type": "array", "minItems": 1, "maxItems": 50, "items": { "type": "object" } }
+    },
+    "required": ["status", "submit_label", "success_text", "result_visibility", "response_limit", "fields"]
+  },
+  "poll": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/poll-config.v1.schema.json",
+    "x-skaia-section-type": "poll",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {
+      "status": "open",
+      "submit_label": "Submit vote",
+      "success_text": "Thank you. Your response has been recorded.",
+      "result_visibility": "after_participation",
+      "response_limit": 1,
+      "fields": [{
+        "key": "choice",
+        "type": "radio",
+        "label": "Choose one",
+        "required": true,
+        "options": [{ "key": "option-1", "label": "Option one" }, { "key": "option-2", "label": "Option two" }]
+      }]
+    },
+    "properties": {
+      "status": { "enum": ["open", "closed"] },
+      "submit_label": { "type": "string", "minLength": 1, "maxLength": 500 },
+      "success_text": { "type": "string", "maxLength": 5000 },
+      "result_visibility": { "enum": ["never", "after_participation", "always"] },
+      "response_limit": { "const": 1 },
+      "fields": { "type": "array", "minItems": 1, "maxItems": 50, "items": { "type": "object" } }
+    },
+    "required": ["status", "submit_label", "success_text", "result_visibility", "response_limit", "fields"]
+  },
+  "vote": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://skaia.dev/schemas/page-sections/vote-config.v1.schema.json",
+    "x-skaia-section-type": "vote",
+    "x-skaia-config-version": 1,
+    "type": "object",
+    "additionalProperties": false,
+    "default": {
+      "status": "open",
+      "submit_label": "Confirm ballot",
+      "success_text": "Thank you. Your response has been recorded.",
+      "result_visibility": "after_participation",
+      "response_limit": 1,
+      "fields": [{
+        "key": "candidate",
+        "type": "radio",
+        "label": "Select a candidate",
+        "required": true,
+        "options": [{ "key": "candidate-1", "label": "Candidate one" }, { "key": "candidate-2", "label": "Candidate two" }]
+      }]
+    },
+    "properties": {
+      "status": { "enum": ["open", "closed"] },
+      "submit_label": { "type": "string", "minLength": 1, "maxLength": 500 },
+      "success_text": { "type": "string", "maxLength": 5000 },
+      "result_visibility": { "enum": ["never", "after_participation", "always"] },
+      "response_limit": { "const": 1 },
+      "fields": { "type": "array", "minItems": 1, "maxItems": 50, "items": { "type": "object" } }
+    },
+    "required": ["status", "submit_label", "success_text", "result_visibility", "response_limit", "fields"]
+  }
+}

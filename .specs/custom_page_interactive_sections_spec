@@ -9,21 +9,24 @@ custom-page block builder.
 
 - Interactive types are ordinary `PageSection` values: `form`, `qa`, `survey`,
   `poll`, and `vote`.
-- Definitions, settings, and submitted records are serialized in that section's
-  `config` inside the existing `pages.content` JSONB document.
-- There is no interactive-section table, response table, projection, alternate
-  section model, or secondary rendering shell.
-- `BlockRenderer` remains the only section host. Every interactive block receives
-  the same `SectionToolbar`, layout, margin/padding, animation, copy/cut, move,
-  and delete behavior as legacy blocks.
+- Definitions and settings use the typed section source when its per-page gate is
+  ready. `pages.content` remains the compatibility/read projection.
+- `PAGE_NORMALIZED_INTERACTIVE_RESPONSES=1|true` selects normalized response
+  authority only for pages with both matched definition parity and a matched
+  `page_section_response_migrations` run. Other pages retain document authority.
+- `BlockRenderer` remains the dispatch host and every interactive block renders
+  through the same `SectionFrame`, shared toolbar, layout, margin/padding,
+  animation, copy/cut, move, and delete behavior as other blocks.
 - The existing page registry validates interactive types and config bounds.
   No migration is required.
 
 ## Persistence and concurrency
 
-- Participant writes address an existing page ID and numeric section ID, lock
-  the page row, mutate only that section's `config.records`, and update
-  `pages.content` transactionally.
+- Participant writes address an existing page ID and numeric section ID. On a
+  migrated page they lock the page and normalized section, mutate
+  `page_section_responses`, then rebuild that section's rollback projection in
+  `pages.content` in the same transaction. Non-migrated pages retain the legacy
+  locked-document mutation.
 - Normal builder saves lock the same page row and preserve the current interactive
   records while applying definition and presentation changes. A stale autosave
   must not erase a response submitted concurrently.
@@ -36,6 +39,9 @@ custom-page block builder.
   records on page create/update and owns every record mutation.
 - Idempotency keys are scoped to the authenticated participant and section. A retry
   may return only that participant's existing authorized record.
+- Normalized storage retains only a SHA-256 idempotency hash and a stable
+  respondent identity key. Neither raw keys nor hashes are exposed through REST,
+  page reads, result projections, logs, audit metadata, or WebSockets.
 - The participant client retains one idempotency key for an unchanged logical
   submission until it receives success; changing answers starts a new key.
 - Polls and votes allow one record per authenticated user. Other types use their
@@ -93,8 +99,24 @@ custom-page block builder.
 - `PATCH /api/pages/{pageId}/sections/{sectionId}/responses/{recordId}`
 - `DELETE /api/pages/{pageId}/sections/{sectionId}/responses/{recordId}`
 
-These routes mutate the existing page document. They do not represent a separate
-interactive-section resource or persistence model.
+These routes retain their response contract across storage modes. Migrated pages
+use normalized response authority; the document is a rollback projection.
+Definition-type checks are repeated against the locked normalized row so a
+concurrent type change cannot turn Q&A moderation into another section mutation.
+
+## Migration and rollback
+
+- `page-interactive-response-backfill --after-id N --limit 1..500` processes
+  pages in ID order and is safe to resume or rerun.
+- A matched run verifies response count plus canonical response key, respondent,
+  answers, status, moderator answer, pinned state, timestamps, and idempotency
+  hash parity. Operational output contains counts and mismatch codes only.
+- The command replaces raw rollback-document idempotency keys with one-way
+  hashes. Answers remain in the rollback projection through the Phase 7 release
+  window but are always authorization-filtered before REST serialization.
+- A normalized page read loads interactive records from
+  `page_section_responses`, never from the rollback document. The cutover audit
+  verifies response parity before recording a successful rollback drill.
 
 ## Verify
 
@@ -109,5 +131,7 @@ interactive-section resource or persistence model.
 
 - `.todo/interactive_sections_audit_remediation.tip`
 - `backend/internal/page/interactive.go`
+- `backend/internal/page/interactive_normalized.go`
+- `backend/internal/page/interactive_repository.go`
 - `backend/internal/s_registry/interactive.go`
 - `frontend/src/components/page/blocks/InteractiveSectionBlock.tsx`

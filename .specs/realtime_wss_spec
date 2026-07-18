@@ -96,7 +96,7 @@ limit/error WS messages.
 | `store_product:{id}` | reserved/product detail |
 | `store_category:{id}` | reserved/category detail |
 | `order:{id}` | live order detail/cards for buyers, admins, and vendors |
-| `page:{slug}` | page content |
+| `page:{id}` | content-free custom-page invalidations and authoritative revisions |
 
 ## Action Registry
 
@@ -123,9 +123,13 @@ shared mutations converge through WS:
 - Subscribe on mount/resource load; unsubscribe on unmount.
 - Do not poll for entities covered by WS projections.
 - Reconnect must replay every active subscription.
+- A WebSocket reconnect emits a local reconnect signal after subscription replay;
+  custom-page consumers refetch through REST to recover any missed revisions.
 - Direct/private messages must be authorized server-side.
 - Store cart updates target the owner; catalog updates broadcast.
 - Page updates exclude the sender when the HTTP response is already authoritative.
+- Typed page mutations propagate only to `page:{id}` subscribers and carry page
+  identity, affected section IDs/revisions, or theme revision—never documents.
 - Interactive response mutations and landing-page changes use content-free partial
   page invalidations. Clients refetch through REST; full `pages.content` documents
   are never broadcast because they can contain authorization-scoped records.

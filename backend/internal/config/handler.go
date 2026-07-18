@@ -105,6 +105,7 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 		r.Get("/features", h.getFeatures)
 		r.Get("/feature/{feature}", h.getFeature)
 		r.Get("/sections", h.listSectionTypes)
+		r.Get("/section-contracts", h.getSectionContracts)
 		r.Get("/section-types/{type}", h.getSectionType)
 		r.Get("/components", h.listComponents)
 		r.Get("/components/{type}", h.getComponent)
@@ -139,6 +140,10 @@ func parseID(r *http.Request, param string) (int64, error) {
 
 func (h *Handler) listSectionTypes(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, s_registry.List())
+}
+
+func (h *Handler) getSectionContracts(w http.ResponseWriter, r *http.Request) {
+	utils.WriteJSON(w, http.StatusOK, s_registry.ContractSchemas())
 }
 
 func (h *Handler) getSectionType(w http.ResponseWriter, r *http.Request) {

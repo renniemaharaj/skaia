@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "contracts:generate": "go -C ../backend generate ./internal/s_registry",
+    "contracts:check": "go -C ../backend run ./cmd/section-contract-gen -check -output ../frontend/src/components/page/sectionContracts.generated.ts -go-output internal/s_registry/section_configs_generated.go",
     "lint": "biome lint .",
     "format": "biome format --write .",
     "preview": "vite preview",

@@ -39,6 +39,8 @@ import {
  */
 let _globalWs: WebSocket | null = null;
 let _globalConnecting = false;
+let _globalHasOpened = false;
+const _globalSubscriptions = new Set<string>();
 
 export const getGlobalWs = () => _globalWs;
 
@@ -69,7 +71,7 @@ export const useWebSocketSync = () => {
   const wsUrl = useAtomValue(wsBaseUrlAtom);
 
   // Tracks all active subscriptions so they can be replayed on reconnect.
-  const subscriptionsRef = useRef<Set<string>>(new Set());
+  const subscriptionsRef = useRef<Set<string>>(_globalSubscriptions);
   const currentUser = useAtomValue(currentUserAtom);
   const currentUserIdRef = useRef<string | null>(null);
   currentUserIdRef.current = currentUser?.id ?? null;
@@ -98,6 +100,8 @@ export const useWebSocketSync = () => {
       ws.binaryType = "arraybuffer";
 
       ws.onopen = () => {
+        const reconnected = _globalHasOpened;
+        _globalHasOpened = true;
         _globalConnecting = false;
         console.log("WebSocket connected for change propagation");
         _globalWs = ws;
@@ -112,6 +116,7 @@ export const useWebSocketSync = () => {
           });
           console.log(`[reconnect] Re-subscribed to ${key}`);
         }
+        if (reconnected) window.dispatchEvent(new CustomEvent("ws:reconnected"));
       };
 
       ws.onmessage = async event => {

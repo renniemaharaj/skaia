@@ -4,7 +4,9 @@
 DO $$ BEGIN
   CREATE ROLE skaia_user WITH LOGIN PASSWORD '{{PGPASSWORD}}';
 EXCEPTION WHEN DUPLICATE_OBJECT THEN
-  ALTER ROLE skaia_user PASSWORD '{{PGPASSWORD}}';
+  -- Rerunning schema migrations must never rotate an existing cluster role to
+  -- a template value. Credential rotation is an explicit deployment action.
+  NULL;
 END $$;
 
 DO $$ BEGIN
@@ -354,14 +356,19 @@ CREATE INDEX IF NOT EXISTS idx_thread_editors_user ON thread_editors(user_id);
 -- Inbox
 CREATE TABLE IF NOT EXISTS inbox_conversations (
     id         BIGSERIAL PRIMARY KEY,
-    user1_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    user2_id   BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    is_group   BOOLEAN NOT NULL DEFAULT FALSE,
+    title      VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user1_id, user2_id)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX IF NOT EXISTS idx_inbox_conversations_user1 ON inbox_conversations(user1_id);
-CREATE INDEX IF NOT EXISTS idx_inbox_conversations_user2 ON inbox_conversations(user2_id);
+
+CREATE TABLE IF NOT EXISTS inbox_conversation_participants (
+    conversation_id BIGINT NOT NULL REFERENCES inbox_conversations(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_read_message_id BIGINT DEFAULT 0,
+    PRIMARY KEY (conversation_id, user_id)
+);
 
 CREATE TABLE IF NOT EXISTS inbox_messages (
     id              BIGSERIAL PRIMARY KEY,
@@ -565,6 +572,219 @@ CREATE INDEX IF NOT EXISTS idx_user_page_alloc_user ON user_page_allocations(use
 ALTER TABLE user_page_allocations ADD COLUMN IF NOT EXISTS max_pages  INT NOT NULL DEFAULT 5;
 ALTER TABLE user_page_allocations ADD COLUMN IF NOT EXISTS used_pages INT NOT NULL DEFAULT 0;
 
+-- Normalized custom-page sections. pages.content remains authoritative while
+-- these tables run in shadow mode; see 030_page_section_shadow_storage.sql for
+-- the incremental migration applied to existing deployments.
+CREATE TABLE IF NOT EXISTS page_themes (
+    page_id BIGINT PRIMARY KEY REFERENCES pages(id) ON DELETE CASCADE,
+    schema_version INT NOT NULL DEFAULT 1 CHECK (schema_version = 1),
+    revision BIGINT NOT NULL DEFAULT 1 CHECK (revision >= 1),
+    created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    updated_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS page_theme_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    page_id BIGINT NOT NULL REFERENCES page_themes(page_id) ON DELETE CASCADE,
+    token_key VARCHAR(64) NOT NULL CHECK (token_key ~ '^[a-z][a-z0-9_-]*$'),
+    label VARCHAR(120) NOT NULL,
+    color_value VARCHAR(128) NOT NULL CHECK (length(btrim(color_value)) > 0),
+    display_order INT NOT NULL DEFAULT 0 CHECK (display_order BETWEEN 0 AND 63),
+    revision BIGINT NOT NULL DEFAULT 1 CHECK (revision >= 1),
+    created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    updated_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (page_id, token_key),
+    UNIQUE (page_id, display_order)
+);
+
+CREATE TABLE IF NOT EXISTS page_section_instances (
+    id BIGSERIAL PRIMARY KEY,
+    page_id BIGINT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+    source_index INT NOT NULL CHECK (source_index >= 0),
+    legacy_key_kind VARCHAR(8) NOT NULL CHECK (legacy_key_kind IN ('number', 'string')),
+    legacy_key TEXT NOT NULL CHECK (length(legacy_key) > 0),
+    original_section_type VARCHAR(80) NOT NULL,
+    section_type VARCHAR(80) NOT NULL CHECK (section_type IN ('hero','card_group','stat_cards','social_links','image_gallery','feature_grid','cta','event_highlights','profile_card','rich_text','code_editor','data_sources','derived_section','custom_section','form','qa','survey','poll','vote')),
+    display_order INT NOT NULL DEFAULT 0 CHECK (display_order >= 0),
+    heading TEXT NOT NULL DEFAULT '',
+    subheading TEXT NOT NULL DEFAULT '',
+    shell_version INT NOT NULL DEFAULT 1 CHECK (shell_version = 1),
+    layout VARCHAR(16) NOT NULL DEFAULT 'center' CHECK (layout IN ('left', 'center', 'right', 'wide')),
+    container_width VARCHAR(16) NOT NULL DEFAULT 'content' CHECK (container_width IN ('narrow', 'content', 'wide', 'full')),
+    margin_top DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK (margin_top BETWEEN -512 AND 512),
+    margin_right DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK (margin_right BETWEEN -512 AND 512),
+    margin_bottom DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK (margin_bottom BETWEEN -512 AND 512),
+    margin_left DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK (margin_left BETWEEN -512 AND 512),
+    padding_top DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK (padding_top BETWEEN 0 AND 512),
+    padding_right DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK (padding_right BETWEEN 0 AND 512),
+    padding_bottom DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK (padding_bottom BETWEEN 0 AND 512),
+    padding_left DOUBLE PRECISION NOT NULL DEFAULT 0 CHECK (padding_left BETWEEN 0 AND 512),
+    animation VARCHAR(24) NOT NULL DEFAULT 'none' CHECK (animation IN ('none', 'fade-in', 'slide-up', 'slide-left', 'slide-right', 'zoom-in', 'bounce')),
+    animation_intensity VARCHAR(16) NOT NULL DEFAULT 'normal' CHECK (animation_intensity IN ('subtle', 'normal', 'dramatic')),
+    background_color JSONB NOT NULL DEFAULT '{"mode":"inherit"}',
+    text_color JSONB NOT NULL DEFAULT '{"mode":"inherit"}',
+    h1_color JSONB NOT NULL DEFAULT '{"mode":"inherit"}',
+    h2_color JSONB NOT NULL DEFAULT '{"mode":"inherit"}',
+    h3_color JSONB NOT NULL DEFAULT '{"mode":"inherit"}',
+    content_scale DOUBLE PRECISION NOT NULL DEFAULT 1 CHECK (content_scale BETWEEN 0.5 AND 2),
+    collapsible BOOLEAN NOT NULL DEFAULT FALSE,
+    default_collapsed BOOLEAN NOT NULL DEFAULT FALSE,
+    config_version INT NOT NULL DEFAULT 1 CHECK (config_version >= 1),
+    config JSONB NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(config) = 'object'),
+    config_encoding VARCHAR(8) NOT NULL DEFAULT 'string' CHECK (config_encoding IN ('string', 'object')),
+    quarantined_config JSONB NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(quarantined_config) = 'object'),
+    quarantined_section JSONB NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(quarantined_section) = 'object'),
+    alias_repairs JSONB NOT NULL DEFAULT '[]',
+    revision BIGINT NOT NULL DEFAULT 1 CHECK (revision >= 1),
+    created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    updated_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (page_id, source_index),
+    UNIQUE (page_id, legacy_key_kind, legacy_key),
+    UNIQUE (id, page_id)
+);
+CREATE INDEX IF NOT EXISTS idx_page_section_instances_page_order ON page_section_instances(page_id, display_order, source_index);
+CREATE INDEX IF NOT EXISTS idx_page_section_instances_type ON page_section_instances(section_type);
+
+CREATE TABLE IF NOT EXISTS page_section_color_references (
+    section_id BIGINT NOT NULL,
+    page_id BIGINT NOT NULL,
+    color_role VARCHAR(16) NOT NULL CHECK (color_role IN ('background', 'text', 'h1', 'h2', 'h3')),
+    token_key VARCHAR(64) NOT NULL,
+    PRIMARY KEY (section_id, color_role),
+    FOREIGN KEY (section_id, page_id) REFERENCES page_section_instances(id, page_id) ON DELETE CASCADE,
+    FOREIGN KEY (page_id, token_key) REFERENCES page_theme_tokens(page_id, token_key) ON DELETE RESTRICT
+);
+CREATE INDEX IF NOT EXISTS idx_page_section_color_refs_token ON page_section_color_references(page_id, token_key);
+
+CREATE TABLE IF NOT EXISTS page_section_instance_items (
+    id BIGSERIAL PRIMARY KEY,
+    section_id BIGINT NOT NULL REFERENCES page_section_instances(id) ON DELETE CASCADE,
+    source_index INT NOT NULL CHECK (source_index >= 0),
+    legacy_key_kind VARCHAR(8) NOT NULL CHECK (legacy_key_kind IN ('number', 'string')),
+    legacy_key TEXT NOT NULL CHECK (length(legacy_key) > 0),
+    display_order INT NOT NULL DEFAULT 0 CHECK (display_order >= 0),
+    icon VARCHAR(120) NOT NULL DEFAULT '',
+    heading TEXT NOT NULL DEFAULT '',
+    subheading TEXT NOT NULL DEFAULT '',
+    image_url TEXT NOT NULL DEFAULT '',
+    link_url TEXT NOT NULL DEFAULT '',
+    config_version INT NOT NULL DEFAULT 1 CHECK (config_version = 1),
+    config JSONB NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(config) = 'object'),
+    config_encoding VARCHAR(8) NOT NULL DEFAULT 'string' CHECK (config_encoding IN ('string', 'object')),
+    quarantined_item JSONB NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(quarantined_item) = 'object'),
+    revision BIGINT NOT NULL DEFAULT 1 CHECK (revision >= 1),
+    created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    updated_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (section_id, source_index),
+    UNIQUE (section_id, legacy_key_kind, legacy_key)
+);
+CREATE INDEX IF NOT EXISTS idx_page_section_instance_items_order ON page_section_instance_items(section_id, display_order, source_index);
+
+CREATE TABLE IF NOT EXISTS page_section_presets (
+    id BIGSERIAL PRIMARY KEY,
+    owner_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    source_page_id BIGINT REFERENCES pages(id) ON DELETE SET NULL,
+    legacy_key TEXT,
+    name VARCHAR(160) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    section_type VARCHAR(80) NOT NULL CHECK (section_type IN ('hero','card_group','stat_cards','social_links','image_gallery','feature_grid','cta','event_highlights','profile_card','rich_text','code_editor','data_sources','derived_section','custom_section','form','qa','survey','poll','vote')),
+    shell_version INT NOT NULL DEFAULT 1 CHECK (shell_version = 1),
+    shell JSONB NOT NULL CHECK (jsonb_typeof(shell) = 'object'),
+    config_version INT NOT NULL DEFAULT 1 CHECK (config_version >= 1),
+    config JSONB NOT NULL CHECK (jsonb_typeof(config) = 'object'),
+    items JSONB NOT NULL DEFAULT '[]' CHECK (jsonb_typeof(items) = 'array'),
+    revision BIGINT NOT NULL DEFAULT 1 CHECK (revision >= 1),
+    created_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    updated_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_page_section_presets_owner_legacy ON page_section_presets(owner_id, legacy_key) WHERE legacy_key IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_page_section_presets_owner ON page_section_presets(owner_id, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS page_section_responses (
+    id BIGSERIAL PRIMARY KEY,
+    section_id BIGINT NOT NULL REFERENCES page_section_instances(id) ON DELETE CASCADE,
+    response_key VARCHAR(160) NOT NULL,
+    respondent_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    respondent_user_key BIGINT NOT NULL DEFAULT 0 CHECK (respondent_user_key >= 0),
+    idempotency_key_hash BYTEA,
+    answers JSONB NOT NULL CHECK (jsonb_typeof(answers) = 'object'),
+    respondent_name TEXT NOT NULL DEFAULT '',
+    status VARCHAR(24) NOT NULL DEFAULT 'submitted' CHECK (status IN ('submitted', 'pending', 'published', 'answered', 'archived')),
+    moderator_answer TEXT NOT NULL DEFAULT '',
+    pinned BOOLEAN NOT NULL DEFAULT FALSE,
+    revision BIGINT NOT NULL DEFAULT 1 CHECK (revision >= 1),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (section_id, response_key)
+);
+ALTER TABLE page_section_responses
+    ADD COLUMN IF NOT EXISTS respondent_user_key BIGINT NOT NULL DEFAULT 0
+        CHECK (respondent_user_key >= 0);
+UPDATE page_section_responses
+SET respondent_user_key = respondent_user_id
+WHERE respondent_user_key = 0 AND respondent_user_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_page_section_responses_idempotency ON page_section_responses(section_id, respondent_user_key, idempotency_key_hash) WHERE idempotency_key_hash IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_page_section_responses_section_created ON page_section_responses(section_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS page_section_response_migrations (
+    page_id BIGINT PRIMARY KEY REFERENCES pages(id) ON DELETE CASCADE,
+    source_hash VARCHAR(64) NOT NULL,
+    normalized_hash VARCHAR(64) NOT NULL,
+    status VARCHAR(24) NOT NULL CHECK (status IN ('matched', 'mismatch')),
+    response_count INT NOT NULL DEFAULT 0 CHECK (response_count >= 0),
+    interactive_sections INT NOT NULL DEFAULT 0 CHECK (interactive_sections >= 0),
+    mismatch_codes JSONB NOT NULL DEFAULT '[]' CHECK (jsonb_typeof(mismatch_codes) = 'array'),
+    run_count BIGINT NOT NULL DEFAULT 1 CHECK (run_count >= 1),
+    last_run_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_page_section_response_migrations_status ON page_section_response_migrations(status, last_run_at);
+
+CREATE TABLE IF NOT EXISTS page_section_quarantine (
+    id BIGSERIAL PRIMARY KEY,
+    page_id BIGINT NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+    source_index INT NOT NULL CHECK (source_index >= 0),
+    legacy_key_kind VARCHAR(8),
+    legacy_key TEXT,
+    reason_code VARCHAR(80) NOT NULL,
+    safe_payload JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_page_section_quarantine_page ON page_section_quarantine(page_id, source_index);
+
+CREATE TABLE IF NOT EXISTS page_section_shadow_runs (
+    page_id BIGINT PRIMARY KEY REFERENCES pages(id) ON DELETE CASCADE,
+    source_hash VARCHAR(64) NOT NULL,
+    projection_hash VARCHAR(64) NOT NULL,
+    status VARCHAR(24) NOT NULL CHECK (status IN ('matched', 'quarantined', 'mismatch')),
+    section_count INT NOT NULL DEFAULT 0 CHECK (section_count >= 0),
+    item_count INT NOT NULL DEFAULT 0 CHECK (item_count >= 0),
+    quarantine_count INT NOT NULL DEFAULT 0 CHECK (quarantine_count >= 0),
+    alias_repairs JSONB NOT NULL DEFAULT '[]',
+    default_repairs JSONB NOT NULL DEFAULT '[]',
+    mismatch_codes JSONB NOT NULL DEFAULT '[]',
+    last_source_updated TIMESTAMP,
+    run_count BIGINT NOT NULL DEFAULT 1 CHECK (run_count >= 1),
+    last_run_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    consecutive_matched_runs BIGINT NOT NULL DEFAULT 0 CHECK (consecutive_matched_runs >= 0),
+    matched_since TIMESTAMP,
+    rollback_status VARCHAR(24) NOT NULL DEFAULT 'pending' CHECK (rollback_status IN ('pending', 'matched', 'mismatch')),
+    rollback_drilled_at TIMESTAMP,
+    cutover_ready_at TIMESTAMP,
+    legacy_write_count BIGINT NOT NULL DEFAULT 0 CHECK (legacy_write_count >= 0),
+    last_legacy_write_at TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_page_section_shadow_runs_status ON page_section_shadow_runs(status, last_run_at);
+
 -- Events (audit log for all user / system activity)
 CREATE TABLE IF NOT EXISTS events (
     id          BIGSERIAL    PRIMARY KEY,
@@ -657,3 +877,28 @@ CREATE TABLE IF NOT EXISTS media_history (
 );
 CREATE INDEX IF NOT EXISTS idx_media_history_route ON media_history(route);
 CREATE INDEX IF NOT EXISTS idx_media_history_created_at ON media_history(created_at);
+
+-- Client backend provisioning. These baseline tables must precede the
+-- blueprint rows in 002_seed.sql; migration 029 remains the idempotent bridge
+-- for existing deployments created before provisioning was introduced.
+CREATE TABLE IF NOT EXISTS app_blueprints (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT NOT NULL DEFAULT '',
+    supported_versions JSONB NOT NULL DEFAULT '[]'::jsonb,
+    config_schema JSONB NOT NULL DEFAULT '{}'::jsonb,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS provisioned_instances (
+    id BIGSERIAL PRIMARY KEY,
+    client_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    blueprint_id BIGINT NOT NULL REFERENCES app_blueprints(id) ON DELETE RESTRICT,
+    version_tag VARCHAR(100) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'queued',
+    config_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);

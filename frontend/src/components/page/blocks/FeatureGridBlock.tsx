@@ -2,21 +2,7 @@ import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import { ICON_MAP } from "../iconMap";
 import type { PageItem, PageSection } from "../types";
 import "./FeatureGridBlock.css";
-import {
-  AddItemButton,
-  DeleteItemButton,
-  EditableText,
-  IconPicker,
-  SectionToolbar,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  getSectionLayout,
-  getSectionMargins,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-  setSectionLayout,
-  setSectionMargins,
-} from "../EditControls";
+import { AddItemButton, DeleteItemButton, EditableText, IconPicker } from "../EditControls";
 
 interface Props {
   section: PageSection;
@@ -32,7 +18,6 @@ export const FeatureGridBlock = ({
   section,
   canEdit,
   onUpdate,
-  onDelete,
   onItemCreate,
   onItemUpdate,
   onItemDelete,
@@ -41,40 +26,6 @@ export const FeatureGridBlock = ({
 
   return (
     <section className="features">
-      {canEdit && (
-        <SectionToolbar
-          onDelete={() => onDelete(section.id)}
-          label="Feature Grid"
-          layout={getSectionLayout(section.config)}
-          onLayoutChange={nextLayout =>
-            onUpdate({
-              ...section,
-              config: setSectionLayout(section.config, nextLayout),
-            })
-          }
-          margins={getSectionMargins(section.config)}
-          onMarginsChange={m =>
-            onUpdate({
-              ...section,
-              config: setSectionMargins(section.config, m),
-            })
-          }
-          animation={getSectionAnimation(section.config)}
-          onAnimationChange={a =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimation(section.config, a),
-            })
-          }
-          animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={i =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimationIntensity(section.config, i),
-            })
-          }
-        />
-      )}
       <div className="section-header">
         {canEdit ? (
           <>

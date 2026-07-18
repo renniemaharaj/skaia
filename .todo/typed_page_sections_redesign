@@ -1,0 +1,387 @@
+# Typed Custom Page Sections Redesign
+
+## Context
+
+Custom pages currently serialize an array of sections into `pages.content`, and
+each section serializes `config` a second time as a JSON string. The frontend
+duplicates section metadata and parses configs independently inside block
+components, while the backend registry has complete validation only for
+interactive and integration sections. Shared layout, spacing, animation, and
+background behavior is read by `BlockRenderer`, but every block still embeds its
+own toolbar and config mutations.
+
+The database also contains legacy global `page_sections` and `page_items` tables
+used by dormant `internal/config` repository methods. They are not the storage
+model for custom pages and must not be repurposed without an explicit data audit.
+
+This plan intentionally supersedes only the future section-storage and typing
+parts of `.todo/ui_component_refactor_plan`; component rendering/bind-point work
+remains there. The implemented JSON-backed interactive behavior in
+`.specs/custom_page_interactive_sections_spec` remains authoritative until a
+verified migration changes it.
+
+## Production Baseline (2026-07-17)
+
+The sanitized `cueballcraft` and `thewriterco` inventory in local `output.txt`
+establishes the migration baseline. The raw export contains production page
+content and must not be committed; derive minimal anonymized compatibility
+fixtures from these shapes.
+
+- The two tenants contain 16 pages and 59 section instances. `cueballcraft` has
+  4 pages/14 sections and no saved custom sections; `thewriterco` has 12
+  pages/45 sections and 7 saved custom sections.
+- Both legacy global `page_sections` and `page_items` tables are empty in both
+  tenants. A migration must still recheck every tenant and fail closed if rows
+  appear before those tables are renamed or retired.
+- Production section config is heterogeneous: 53 sections store `config` as a
+  JSON-encoded string and 6 seeded sections store it as a JSON object. Adapters
+  must accept both forms and emit one canonical object without double encoding.
+- The seeded `get-started` page exists in both tenants with string section/item
+  IDs (`gs-*`), object configs, and legacy section type `features`. Other pages
+  use a mix of small imported integers and timestamp-sized integers.
+- Section IDs are page-scoped in practice, not globally unique. Duplicated pages
+  reuse source section IDs, including the `payroll`/`payroll-copy` pair. New
+  storage needs a server-owned primary key plus a `(page_id, legacy_key)` mapping;
+  a direct cast into a globally unique numeric ID is invalid.
+- Nine existing pages use an empty visibility string, which current read logic
+  effectively treats as non-private. Migration must preserve access behavior and
+  normalize it explicitly to `public` only through a verified compatibility rule.
+  One page is intentionally empty and must remain valid.
+- Production uses 12 page section types, including unsupported legacy
+  `features`, and includes rich-text HTML with inline styles, negative spacing,
+  uploaded media/iframes, gallery albums/widths, multi-video heroes, profile
+  data, code/markdown, social links, interactive sections, and datasource-backed
+  custom sections.
+- Saved `custom_sections` are a distinct datasource-preset domain. Their live
+  `section_type` values are `table`, `cards`, and `component`; component presets
+  contain string component-group IDs, bind maps, event-hook arrays, max widths,
+  and constrained custom CSS. A page `custom_section` currently references saved
+  preset ID 5. These values must not be validated as page `SectionType`s or
+  conflated with page section instances during renaming.
+
+## Goal
+
+- Give every page block one shared, typed section shell and a discriminated,
+  versioned section-specific config.
+- Make the backend registry the canonical runtime authority for type metadata,
+  defaults, schema versions, capabilities, validation, and migration.
+- Normalize page-owned section identity, order, shared presentation, revisions,
+  and reusable items into relational tables without creating a table per block.
+- Move data with an independent security/concurrency lifecycle, especially
+  interactive responses, out of presentation config.
+- Preserve live propagation as a mandatory correctness property: every page,
+  palette, section, item, preset, and interactive mutation must converge across
+  active clients through backend-authoritative, revision-guarded REST writes and
+  content-free WebSocket invalidations.
+- Give every section the same palette-aware background and typography controls,
+  bounded content scaling, and accessible collapse behavior through the shared
+  shell contract.
+- Preserve every current section type, visual behavior, editor operation,
+  permission boundary, copy/duplicate rule, and realtime behavior through an
+  expand/migrate/contract rollout with a rollback path.
+
+## Non-Goals
+
+- Rewriting all block renderers at once or replacing `BlockRenderer` with a
+  second rendering system.
+- Creating one database table per section type or an EAV property table.
+- Making registry definitions or validation schemas freely mutable production
+  data.
+- Combining this work with AI page generation, arbitrary component execution,
+  or a broad design-system rewrite.
+- Removing the legacy `pages.content` projection before parity and rollback
+  requirements have been met.
+
+## Target Contract
+
+1. **Canonical schemas and generated types**
+   - Define one versioned schema per supported section type plus shared shell and
+     item schemas. Generate or drift-check TypeScript discriminated unions and Go
+     DTO/validation bindings from the same canonical contracts.
+   - Registry entries expose `type`, label/group/description, current
+     `config_version`, defaults, capabilities, config schema, item schema, and
+     supported migrations.
+   - Frontend code uses `PageSection<T>` / `SectionConfigByType[T]`; no public
+     section boundary exposes `section_type: string`, `config: string`, `any`, or
+     `as never` casts.
+   - Compatibility decoding accepts object configs and legacy JSON-encoded
+     strings, maps `features` to canonical `feature_grid`, and preserves unknown
+     fields in a quarantined round-trip representation until a type migration
+     explicitly owns them.
+
+2. **One section shell**
+   - `SectionFrame` owns the toolbar, layout/container width, spacing,
+     background, animation, edit/move/copy/cut/delete states, suspense,
+     unknown/error state, and accessibility hooks. Renderers retain semantic
+     heading/subheading placement and inline content editing where their DOM
+     structures differ; they do not recreate shared shell controls.
+   - Every section toolbar exposes the same background, ordinary text, `h1`,
+     `h2`, and `h3` color controls. Each override can explicitly inherit, refer
+     to a page palette token, or use a validated section-local color without
+     changing the shared palette.
+   - `SectionFrame` applies a schema-bounded `content_scale` only to an inner
+     content wrapper. Scaling must use responsive sizing variables/layout rather
+     than transforming the outer section box; it may increase section height but
+     must not create horizontal page overflow, clipped controls, or unreachable
+     content.
+   - The shell supports `collapsible` and an authored `default_collapsed` state
+     with an accessible `aria-expanded` trigger. Editors may persist these shell
+     settings. A viewer without edit permission keeps expand/collapse state only
+     in current-page memory keyed by page, section, and revision: React rerenders
+     retain it, while reload, navigation, or an authoritative section revision
+     resets it to the authored default and never writes to the backend.
+   - A typed registry maps each section type to its lazy renderer, editor,
+     defaults, capabilities, and clipboard sanitizer. Block renderers receive
+     typed section-specific config and content callbacks only.
+   - Shared presentation is separated from section config so block-specific
+     updates cannot accidentally erase shell fields.
+
+3. **Unified custom-page palette and safe color resolution**
+   - A page owns a versioned palette of stable, validated token keys and CSS color
+     values. The renderer exposes only namespaced generated CSS variables; user
+     input cannot choose arbitrary CSS variable names, properties, or declarations.
+   - Shared section color fields store either a palette-token reference or a
+     validated literal value with explicit inherit/clear semantics. Palette token
+     deletion must be rejected while referenced or require an explicit atomic
+     replacement/fallback operation.
+   - Palette and per-section color editors provide previews, reset/inherit
+     controls, keyboard labels, and contrast warnings for background/text pairs.
+     Backend validation remains authoritative and blocks unsafe or malformed CSS.
+   - Define and test color precedence for rich-text inline styles and constrained
+     custom-section CSS. A section-level typography override must have explicit
+     documented semantics; migration may not strip or silently override existing
+     inline author colors.
+   - Palette edits carry a page-theme revision and propagate live to every open
+     instance of that page without broadcasting private page content.
+
+4. **Hybrid relational persistence**
+   - Add page-owned section tables under unambiguous names until the legacy
+     `page_sections`/`page_items` data is audited. The section row contains
+     `page_id`, server-owned ID, order key, section type, heading/subheading,
+     typed shared presentation columns (including color references/literals,
+     bounded content scale, and collapse settings), `config JSONB`,
+     `config_version`, revision, audit columns, and timestamps.
+   - Give each normalized section/item a new server-owned primary key and retain
+     the original numeric-or-string identity as a page/section-scoped legacy key
+     for compatibility projection, idempotent backfill, interactive-route
+     mapping, and rollback. Never assume copied legacy IDs are globally unique.
+   - Add page palette/theme tables with stable token keys, validated color values,
+     deterministic order, page ownership, audit metadata, and revisions. Palette
+     references must retain referential integrity across section mutations.
+   - Store reusable list/card/gallery entries as page-section items with stable
+     server IDs, order, common content/media/link columns, versioned item config,
+     and a section foreign key.
+   - Keep section-specific config in validated JSONB. Promote only fields that
+     need constraints, joins, authorization, independent writes, or operational
+     queries; do not proliferate per-type tables.
+   - Store interactive records in response tables with section/user/idempotency
+     constraints and JSONB answers. Definitions remain section config; raw
+     records never enter page render, clipboard, duplicate, cache, or WebSocket
+     projections.
+   - Model reusable saved designs as versioned section presets containing a
+     section type, shell defaults, config, and item templates. Insertion creates
+     a page-owned snapshot by default so later preset edits do not silently alter
+     published pages.
+
+5. **Fine-grained API, live propagation, and concurrency**
+   - Add typed palette, section CRUD, reorder, item, preset, and interactive
+     endpoints while keeping the current page response adapter during migration.
+   - Use server-generated IDs, per-section revisions/optimistic concurrency, and
+     transactional ordering. Return conflict payloads suitable for builder merge
+     UI instead of relying on whole-document last-writer-wins saves.
+   - Live propagation is non-negotiable for both legacy and normalized modes:
+     `REST mutation -> backend policy/validation -> transaction with expected
+     revision -> cache/SEO invalidation -> content-free WebSocket invalidation ->
+     authorized REST refetch -> merge by stable ID and revision`.
+   - Realtime payloads include page identity, affected palette/section/item IDs,
+     and authoritative revisions but never raw page documents, response records,
+     answers, private config, or idempotency keys. Concurrent edits to different
+     sections converge independently; same-revision conflicts fail explicitly
+     instead of silently overwriting either editor.
+   - WebSocket reconnect replays the page subscription and refetches revisions so
+     a disconnected editor cannot miss palette or section changes.
+
+## Steps
+
+1. **Freeze the existing behavior contract**
+   - Inventory all 19 section types, every shell/config/item field and default,
+     legacy aliases (`wide`, `video_url`, unified padding), edit controls, empty
+     states, clipboard/duplicate behavior, datasource bindings, and interactive
+     privacy rules.
+   - Export representative production-safe fixtures and add golden round-trip
+     render/save/copy/duplicate tests before changing storage.
+   - Collect a sanitized cross-client inventory from `cueballcraft` and
+     `thewriterco`: page/section/item counts, section-type counts, config key/type
+     histograms, schema/table metadata, ID/order anomalies, legacy aliases, and
+     invalid payload counts. Do not dump interactive `records`/answers,
+     respondent data, idempotency keys, datasource environment values, secrets,
+     or unrelated user content.
+   - Treat the 2026-07-17 inventory as the initial baseline and repeat the same
+     sanitized count/shape checks immediately before backfill and cutover so
+     newly created pages/config variants cannot be missed.
+   - Inventory every existing page WebSocket producer/consumer, subscription,
+     cache/SEO invalidation, edit guard, reconnect path, and merge behavior as a
+     baseline live-propagation contract.
+   - Audit whether legacy `page_sections`/`page_items` contain required data;
+     the two current tenants are empty, but the migration must assert emptiness
+     transactionally and stop for manual review if any tenant has gained rows
+     before renaming or retiring them.
+
+2. **Establish the schema package and registry authority**
+   - Use JSON Schema 2020-12 as the checked-in canonical source. The embedded v1
+     page-theme, shared-shell, normalized item/preset, and all 19 per-type config
+     contracts are public through `GET /config/section-contracts`. They define
+     explicit defaults, bounds, formats, required fields, and unknown-key policy.
+     The shell schema includes typed color sources, background/text/heading
+     overrides, bounded content scale, `collapsible`, and `default_collapsed`.
+   - Model legacy string/object config storage, `gs-*` identities, `features`,
+     empty visibility, optional embedded timestamps, negative spacing, and item
+     configs at the compatibility boundary. The checked-in fixtures, adapter
+     input types, and round-trip tests own these permissive legacy shapes; the
+     normalized JSON Schemas remain strict.
+   - `s_registry.Definition` derives version/default/capability/item metadata from
+     the canonical contracts. `ValidateContractValue` resolves only embedded
+     references and validates every normalized contract/default; safe CSS colors
+     receive explicit validation because JSON Schema format annotations are not
+     assertions. Typed mutation services must call it only after the legacy
+     compatibility adapter separates shared shell and runtime records.
+   - Add generation/drift checks so frontend types, backend DTOs, defaults, and
+     registry API fixtures cannot diverge. The frontend section-type/config map,
+     versions, defaults, and capabilities plus normalized Go discriminators/config
+     DTOs are generated from backend contracts. The Go decode factory performs
+     bounded duplicate-key-safe JSON parsing, schema validation, and typed decode;
+     the frontend now exposes generated shared-shell/config types through the
+     generic normalized `PageSection<T>` boundary. This completes the schema and
+     typed-registry phase; typed mutation-service wiring belongs to Phase 5 after
+     normalized persistence exists.
+
+3. **Refactor the frontend shell without changing persistence**
+   - The compatibility adapter now parses object/string config, resolves legacy
+     type and config aliases, separates shell/config/runtime fields, retains
+     page-scoped numeric-or-string keys, quarantines unknown input, and projects
+     normalized sections back to the current `pages.content` envelope. Existing
+     renderers keep the default `LegacyPageSection` save envelope during the
+     compatibility window while `SectionFrame` consumes generated
+     `SharedSectionShell` values and projects edits back through the adapter.
+   - One `SectionFrame` toolbar now covers every registered and unsupported
+     section. All 15 block-local shared toolbars are removed; six renderer
+     families portal only their type-specific actions into the frame toolbar.
+   - An exhaustive typed renderer registry owns lazy renderers, generated
+     versions/defaults/capabilities, and clipboard sanitizers without `as never`
+     dispatch casts. The visible unsupported/error fallback remains framed.
+   - The shared appearance editor owns safe literal/palette/inherit colors,
+     contrast warnings, container width, bounded overflow-safe content scaling,
+     and permission-aware accessible collapse state. Palette values resolve only
+     through declared namespaced variables.
+   - Renderer families retain their existing semantic heading/subheading
+     placement and inline editing because their DOM structures differ. Shared
+     presentation and actions live exclusively in the frame, preserving the
+     compatibility snapshots while completing Phase 3.
+
+4. **Add normalized storage in shadow mode**
+   - Migration 030 and the fresh schema now define page themes/tokens, section
+     instances, palette references, items, presets, responses, quarantine, and
+     shadow-run telemetry with foreign keys, constraints, indexes, revisions,
+     stable server IDs, and audit ownership columns.
+   - Page creates and builder updates transactionally maintain normalized shadow
+     rows while `pages.content` remains authoritative. Projectors preserve
+     page-scoped numeric/string legacy keys, source order, display order,
+     object/string config encoding, media, rich HTML, items, unknown fields, and
+     alias/default audit facts.
+   - Invalid/unsupported inputs are quarantined without logging values. Runtime
+     interactive records and summaries are excluded from section config and are
+     not copied into the response table before the Phase 6 sensitive migration.
+   - The bounded `page-section-shadow-backfill` command resumes by page ID and
+     records hashes, counts, repair/quarantine counts, mismatch codes, and run
+     counters. Canonical definition projection parity is covered by sanitized
+     production fixtures and real PostgreSQL tests; Phase 4 is complete.
+
+5. **Move to typed APIs behind feature flags**
+   - Add section-scoped mutations and update the builder to use them while the
+     service transactionally maintains the legacy document projection for old
+     clients and rollback.
+   - Preserve page visibility, owner/editor/admin policies, cache invalidation,
+     SEO invalidation, realtime refresh, response management, and allocation
+     behavior.
+   - Add explicit revision conflicts and verify concurrent edits to different
+     sections no longer overwrite one another.
+   - Route palette/color/scale/collapse writes through the same service policy,
+     transaction, revision, invalidation, WebSocket, and reconciliation path as
+     every other section mutation; feature flags must not create a propagation
+     bypass in either storage mode.
+
+6. **Migrate sensitive and reusable domains**
+   - Move interactive records last through a verified, resumable migration with
+     count/idempotency/user/answer parity and negative-disclosure tests.
+   - Introduce presets as a compatibility evolution of current reusable
+     `custom_sections`; retain route/type aliases until references are migrated
+     and terminology no longer collides with page section instances.
+
+7. **Cut over and contract**
+   - Require a sustained zero-diff shadow-read window, successful rollback drill,
+     complete fixture migration, and full authorization/concurrency test matrix.
+   - Switch reads to normalized storage, keep the legacy projection for one
+     release window, then remove document writes only after telemetry confirms no
+     old clients or jobs depend on them.
+   - Update `.specs/custom_page_interactive_sections_spec`, frontend/backend
+     specs, migration docs, and overlapping todos only when implementation truth
+     changes; then retire superseded code and plans.
+   - Phase closure delivers the guarded cutover and non-destructive retirement
+     preflight. Production document-write/table retirement remains forbidden until
+     the real release-window telemetry and external dependency attestation pass;
+     do not simulate that evidence in development or migration SQL.
+
+## Verification
+
+- Schema drift: generated artifacts are clean and all 19 types have defaults,
+  current version, backend validation, typed frontend registration, and fixtures.
+- Migration: old -> new -> old canonical round trips produce zero semantic diff;
+  row counts, IDs, order, media, item config, and interactive record ownership
+  match; reruns are idempotent.
+- Production compatibility fixtures cover string and object configs, `gs-*`
+  section/item IDs, copied page-scoped ID collisions, legacy `features`, empty
+  visibility, empty pages, negative spacing, inline rich-text styles, gallery
+  albums, multi-video heroes, and `table`/`cards`/`component` datasource presets.
+- Backend: full Go suite plus DB-backed migration, concurrent section edit,
+  reorder, palette referential-integrity, color-validation, scale-bound,
+  collapse-permission, duplicate, preset snapshot, response idempotency, and
+  rollback tests.
+- Frontend: lint/build plus exhaustive registry, parser/migrator, shell capability,
+  renderer parity, editor, clipboard, unknown type, and conflict-state tests.
+- Shared presentation: every section type exposes background/text/`h1`/`h2`/`h3`
+  controls; palette references and literals resolve identically after reload;
+  invalid colors are rejected; contrast warnings remain usable; bounded scaling
+  causes no horizontal overflow at supported breakpoints.
+- Collapse behavior: authored defaults persist and propagate only for authorized
+  editors; unauthorized viewer toggles survive ordinary rerenders but make no
+  mutation and reset on reload, navigation, or authoritative section revision.
+- Live propagation: two-browser and reconnect tests cover page metadata, palette,
+  all shared shell fields, section config, items, reorder, copy/delete, presets,
+  and interactive mutations. Different-section edits converge, same-section
+  stale revisions return a conflict, and no live path broadcasts private content.
+- Security: guest/participant/other participant/editor/owner/admin matrix proves
+  raw responses and privileged config never leak through page reads, caches,
+  presets, duplicates, exports, logs, or WebSocket messages.
+- Operations: shadow-read mismatch metrics, migration progress/quarantine counts,
+  feature flags, and rollback runbook are exercised before cutover.
+
+## References
+
+- `.specs/custom_page_section_compatibility_spec`
+- `.specs/custom_page_interactive_sections_spec`
+- `.specs/custom_pages_multiplayer_spec`
+- `.specs/frontend_spec`
+- `.specs/backend_spec`
+- `.specs/migrations_spec`
+- `.todo/ui_component_refactor_plan`
+- `.todo/ai_page_builder`
+- `.routines/worker`
+- `.routines/auditor`
+- `.routines/correctness`
+- `frontend/src/components/page/types.ts`
+- `frontend/src/components/page/BlockRenderer.tsx`
+- `frontend/src/components/page/EditControls.tsx`
+- `backend/internal/s_registry/`
+- `backend/internal/page/`
+- `backend/internal/config/`
+- `backend/internal/migrations/001_schema.sql`

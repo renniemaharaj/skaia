@@ -28,6 +28,34 @@ auth, store, cache, WebSocket emission, uploads, SSR, or grengo proxy behavior.
   does, and avoid business logic.
 - Interfaces live per domain in `interface.go` for test substitution.
 - Redis caches are best-effort, tenant-prefixed, read-through, and invalidated on writes.
+- Normalized page-section values use the embedded Draft 2020-12 contracts through
+  `s_registry.ValidateContractValue`; external schema references are forbidden,
+  CSS colors receive explicit checks, and validation errors do not echo config.
+- `backend/cmd/section-contract-gen` generates frontend and Go section config
+  types/metadata; its check mode is part of backend/frontend drift verification.
+- `s_registry.DecodeNormalizedSectionConfig` bounds input size/depth, rejects
+  duplicate keys, validates the canonical schema, then returns a generated DTO.
+- `pages.content` remains the custom-page read authority while
+  `PAGE_NORMALIZED_SECTION_READS` is disabled or a page has not passed its
+  cutover gate. Ready pages project reads only from normalized definition and
+  response rows; projection/readiness failures fail closed instead of silently
+  falling back after cutover.
+- Shadow projection preserves page-scoped legacy identities and config encoding,
+  records content-free parity/quarantine telemetry, and never copies interactive
+  records or result summaries before the dedicated sensitive-data migration.
+- `PAGE_TYPED_SECTION_MUTATIONS=1|true` enables typed writes only for pages whose
+  latest shadow run is `matched`. The page service applies the centralized page
+  editor policy, validates generated shell/config/item contracts, and the SQL
+  repository checks expected revisions on locked rows before updating both the
+  normalized source and legacy rollback projection in one transaction.
+- `PAGE_NORMALIZED_INTERACTIVE_RESPONSES=1|true` enables normalized response
+  authority only after matched page definition and response-migration runs.
+  Reads inject normalized rows into a temporary authorization-filtered page
+  projection; storage or readiness failures remove runtime data and deny writes.
+- `PAGE_NORMALIZED_SECTION_READS=1|true` requires matched definition and response
+  migration state, no quarantine, the configured consecutive zero-diff window,
+  and a successful rollback drill for each page. Defaults are three observations
+  and 24 hours; disabling the flag immediately restores compatibility reads.
 
 ## Middleware Contracts
 
@@ -87,6 +115,10 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 | `POST` | `/pages/claim` | Claim/create allocated page |
 | `GET` | `/pages/my-allocation` | Current user's allocation |
 | `PUT/DELETE` | `/pages/{id}` | Update/delete page |
+| `GET/POST` | `/pages/{id}/sections` | List/create typed sections when the per-page gate is ready |
+| `PUT/DELETE` | `/pages/{id}/sections/{sectionId}` | Revision-guarded typed section/item snapshot mutation |
+| `PUT` | `/pages/{id}/sections/reorder` | Transactional exact-set reorder with expected revisions |
+| `PUT` | `/pages/{id}/theme` | Revision-guarded page palette replacement |
 | `POST` | `/pages/{id}/duplicate` | Duplicate page |
 | `PUT/DELETE` | `/pages/{id}/owner` | Set/clear owner |
 | `POST/DELETE` | `/pages/{id}/editors` | Add/remove editor |
@@ -94,6 +126,17 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 | `POST/PUT/DELETE` | `/pages/.../comments` | Comments and comment likes |
 | `GET/PUT/DELETE` | `/pages/allocations...` | Page allocation admin |
 | `POST` | `/pages/{id}/set-homepage` | Set `landing_page_slug` by page id |
+
+## Config Registry Routes
+
+| Method | Path | Contract |
+| --- | --- | --- |
+| `GET` | `/config/sections` | Registered page-section metadata |
+| `GET` | `/config/section-types/{type}` | One registered section definition |
+| `GET` | `/config/section-contracts` | Embedded immutable page-theme, shell, item/preset, and per-type JSON Schema contracts |
+| `GET/POST/PUT/DELETE` | `/config/section-presets...` | Preferred datasource-backed reusable preset routes; writes require service-level `home.manage` |
+| Alias | `/config/custom-sections...` | Compatibility alias for section presets |
+| `GET` | `/config/components`, `/config/components/{type}` | Registered render components |
 
 ## Store Contracts
 
@@ -148,6 +191,24 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 - Key tables include users/auth/session/RBAC, forum, products/cart/orders/payments,
   wallet/cards/reference payouts, inbox, notifications, site_config, pages,
   page comments, data sources, uploads/media history, analytics.
+- Normalized custom-page shadow tables are `page_themes`, `page_theme_tokens`,
+  `page_section_instances`, `page_section_color_references`,
+  `page_section_instance_items`, `page_section_presets`,
+  `page_section_responses`, `page_section_response_migrations`,
+  `page_section_quarantine`, and `page_section_shadow_runs`.
+- Typed section mutations keep interactive runtime records in `pages.content`,
+  rebuild that document from normalized definitions for rollback, and reject
+  whole-document definition changes while a page is in typed mode. Palette
+  writes preserve referenced keys and use deferrable display-order uniqueness.
+- `backend/cmd/page-section-shadow-backfill` processes 1-500 pages per ID-ordered
+  batch and returns a resumable cursor plus parity counts.
+- `backend/cmd/page-interactive-response-backfill` performs the sensitive,
+  response-only migration with bounded ID-order resumption, parity hashes, stable
+  identities, rerun idempotency, and content-free operational output.
+- Migration 033 adds content-free cutover observations, rollback-drill state, and
+  compatibility-endpoint write telemetry. `backend/cmd/page-section-cutover`
+  audits normalized -> compatibility -> normalized parity and reports the
+  release-window retirement preflight. It never removes legacy data or writes.
 
 ## Upload/SSR Contracts
 

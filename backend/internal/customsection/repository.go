@@ -25,6 +25,7 @@ func (r *sqlRepository) scan(row interface{ Scan(...any) error }) (*models.Custo
 	if createdBy.Valid {
 		cs.CreatedBy = &createdBy.Int64
 	}
+	cs.PresetType = cs.SectionType
 	return cs, nil
 }
 
@@ -67,6 +68,7 @@ func (r *sqlRepository) collectRows(rows *sql.Rows) ([]*models.CustomSection, er
 }
 
 func (r *sqlRepository) Create(cs *models.CustomSection) error {
+	normalizePresetType(cs)
 	return r.db.QueryRow(
 		`INSERT INTO custom_sections (name, description, datasource_id, section_type, config, created_by)
 		 VALUES ($1, $2, $3, $4, $5, $6)
@@ -77,6 +79,7 @@ func (r *sqlRepository) Create(cs *models.CustomSection) error {
 }
 
 func (r *sqlRepository) Update(cs *models.CustomSection) error {
+	normalizePresetType(cs)
 	_, err := r.db.Exec(
 		`UPDATE custom_sections SET name = $1, description = $2, datasource_id = $3,
 		        section_type = $4, config = $5, updated_at = NOW()
@@ -84,6 +87,16 @@ func (r *sqlRepository) Update(cs *models.CustomSection) error {
 		cs.Name, cs.Description, cs.DataSourceID, cs.SectionType, cs.Config, cs.ID,
 	)
 	return err
+}
+
+func normalizePresetType(cs *models.CustomSection) {
+	if cs == nil {
+		return
+	}
+	if cs.SectionType == "" {
+		cs.SectionType = cs.PresetType
+	}
+	cs.PresetType = cs.SectionType
 }
 
 func (r *sqlRepository) Delete(id int64) error {

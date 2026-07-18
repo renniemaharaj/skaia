@@ -1,4 +1,4 @@
-CREATE TABLE product_reviews (
+CREATE TABLE IF NOT EXISTS product_reviews (
     id SERIAL PRIMARY KEY,
     product_id BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

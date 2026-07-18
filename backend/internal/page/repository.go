@@ -86,12 +86,18 @@ func (r *sqlRepository) List() ([]*models.Page, error) {
 // writes
 
 func (r *sqlRepository) Create(p *models.Page) error {
-	return r.db.QueryRow(
-		`INSERT INTO pages (slug, title, description, content, owner_id, visibility)
-		 VALUES ($1, $2, $3, $4::jsonb, $5, $6)
-		 RETURNING id, created_at, updated_at`,
-		p.Slug, p.Title, p.Description, p.Content, p.OwnerID, p.Visibility,
-	).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
+	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		if err := exec.QueryRow(
+			`INSERT INTO pages (slug, title, description, content, owner_id, visibility)
+			 VALUES ($1, $2, $3, $4::jsonb, $5, $6)
+			 RETURNING id, created_at, updated_at`,
+			p.Slug, p.Title, p.Description, p.Content, p.OwnerID, p.Visibility,
+		).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return err
+		}
+		_, err := syncPageSectionShadow(exec, p)
+		return err
+	})
 }
 
 // UpdatePreservingInteractive serializes an ordinary page-builder save with
@@ -107,19 +113,31 @@ func (r *sqlRepository) UpdatePreservingInteractive(p *models.Page) error {
 			return err
 		}
 		p.Content = merged
-		return exec.QueryRow(
+		if err := exec.QueryRow(
 			`UPDATE pages
 			 SET slug = $2, title = $3, description = $4,
 			     content = $5::jsonb, visibility = $6, updated_at = CURRENT_TIMESTAMP
 			 WHERE id = $1
 			 RETURNING updated_at`,
 			p.ID, p.Slug, p.Title, p.Description, p.Content, p.Visibility,
-		).Scan(&p.UpdatedAt)
+		).Scan(&p.UpdatedAt); err != nil {
+			return err
+		}
+		_, err = syncPageSectionShadow(exec, p)
+		if err != nil {
+			return err
+		}
+		_, err = exec.Exec(
+			`UPDATE page_section_shadow_runs
+			 SET legacy_write_count=legacy_write_count+1, last_legacy_write_at=CURRENT_TIMESTAMP
+			 WHERE page_id=$1`, p.ID,
+		)
+		return err
 	})
 }
 
-// MutateContent locks and rewrites the existing pages.content document. It is
-// the persistence primitive for interactive records; no secondary table exists.
+// MutateContent locks and rewrites pages.content for pages that have not passed
+// the normalized interactive-response migration gate.
 func (r *sqlRepository) MutateContent(pageID int64, mutate func(string) (string, error)) error {
 	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
 		var current string
@@ -130,9 +148,17 @@ func (r *sqlRepository) MutateContent(pageID int64, mutate func(string) (string,
 		if err != nil {
 			return err
 		}
-		_, err = exec.Exec(
+		if _, err = exec.Exec(
 			`UPDATE pages SET content = $2::jsonb, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
 			pageID, next,
+		); err != nil {
+			return err
+		}
+		_, err = exec.Exec(
+			`UPDATE page_section_shadow_runs
+			 SET last_source_updated = (SELECT updated_at FROM pages WHERE id = $1)
+			 WHERE page_id = $1`,
+			pageID,
 		)
 		return err
 	})

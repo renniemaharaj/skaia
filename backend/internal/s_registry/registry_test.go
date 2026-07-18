@@ -1,7 +1,9 @@
 package s_registry
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -42,6 +44,66 @@ func TestRegistryDefinitionsIncludeInteractivePageSections(t *testing.T) {
 		if _, ok := Get(typ); !ok {
 			t.Fatalf("expected %s definition", typ)
 		}
+	}
+}
+
+func TestRegistryContainsExactlyTheNineteenPageSectionTypes(t *testing.T) {
+	expected := map[string]bool{
+		"hero": true, "card_group": true, "stat_cards": true, "social_links": true,
+		"image_gallery": true, "feature_grid": true, "cta": true, "event_highlights": true,
+		"profile_card": true, "rich_text": true, "code_editor": true, "data_sources": true,
+		"derived_section": true, "custom_section": true, "form": true, "qa": true,
+		"survey": true, "poll": true, "vote": true,
+	}
+	definitions := List()
+	if len(definitions) != len(expected) {
+		t.Fatalf("expected %d definitions, got %d", len(expected), len(definitions))
+	}
+	for _, definition := range definitions {
+		if !expected[definition.Type] {
+			t.Errorf("unexpected registry section type %q", definition.Type)
+		}
+		delete(expected, definition.Type)
+	}
+	if len(expected) != 0 {
+		t.Fatalf("registry is missing section types: %#v", expected)
+	}
+}
+
+func TestRegistryDefinitionsExposeVersionDefaultsCapabilitiesAndItemContracts(t *testing.T) {
+	itemTypes := map[string]bool{
+		"card_group": true, "stat_cards": true, "image_gallery": true,
+		"feature_grid": true, "event_highlights": true,
+	}
+	itemContract := ContractSchemas()[PageItemV1]
+	for _, definition := range List() {
+		if definition.ConfigVersion != 1 {
+			t.Errorf("%s has config version %d", definition.Type, definition.ConfigVersion)
+		}
+		var defaultConfig map[string]interface{}
+		if err := json.Unmarshal(definition.DefaultConfig, &defaultConfig); err != nil {
+			t.Errorf("%s has invalid default config: %v", definition.Type, err)
+		}
+		if len(definition.Capabilities) == 0 || definition.Capabilities[0] != "shared_shell" {
+			t.Errorf("%s is missing shared-shell capability", definition.Type)
+		}
+		if definition.SupportedMigrations == nil {
+			t.Errorf("%s must expose an empty migration list rather than null", definition.Type)
+		}
+		if itemTypes[definition.Type] != bytes.Equal(definition.ItemSchema, itemContract) {
+			t.Errorf("%s item contract presence does not match item capability", definition.Type)
+		}
+	}
+}
+
+func TestRegistryDefinitionsAreReturnedAsIndependentCopies(t *testing.T) {
+	first, _ := Get("hero")
+	first.Capabilities[0] = "mutated"
+	first.ConfigSchema[0] = 'x'
+
+	second, _ := Get("hero")
+	if second.Capabilities[0] != "shared_shell" || second.ConfigSchema[0] != '{' {
+		t.Fatal("registry definition mutation leaked into canonical metadata")
 	}
 }
 

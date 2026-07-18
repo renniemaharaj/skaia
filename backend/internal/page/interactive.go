@@ -23,16 +23,17 @@ var (
 )
 
 type InteractiveRecord struct {
-	ID             string                 `json:"id"`
-	UserID         int64                  `json:"user_id,omitempty"`
-	RespondentName string                 `json:"respondent_name,omitempty"`
-	Answers        map[string]interface{} `json:"answers"`
-	Status         string                 `json:"status"`
-	Answer         string                 `json:"answer,omitempty"`
-	Pinned         bool                   `json:"pinned,omitempty"`
-	IdempotencyKey string                 `json:"idempotency_key,omitempty"`
-	SubmittedAt    time.Time              `json:"submitted_at"`
-	UpdatedAt      time.Time              `json:"updated_at,omitempty"`
+	ID                 string                 `json:"id"`
+	UserID             int64                  `json:"user_id,omitempty"`
+	RespondentName     string                 `json:"respondent_name,omitempty"`
+	Answers            map[string]interface{} `json:"answers"`
+	Status             string                 `json:"status"`
+	Answer             string                 `json:"answer,omitempty"`
+	Pinned             bool                   `json:"pinned,omitempty"`
+	IdempotencyKey     string                 `json:"idempotency_key,omitempty"`
+	IdempotencyKeyHash string                 `json:"-"`
+	SubmittedAt        time.Time              `json:"submitted_at"`
+	UpdatedAt          time.Time              `json:"updated_at,omitempty"`
 }
 
 type InteractiveRecordPatch struct {
@@ -320,8 +321,19 @@ func (s *Service) SubmitInteractive(pageID, targetSectionID, userID int64, respo
 	if len(idempotencyKey) > 200 {
 		return nil, fmt.Errorf("idempotency key is too long")
 	}
+	page, err := s.repo.GetByID(pageID)
+	if err != nil {
+		return nil, err
+	}
+	useNormalized, err := s.normalizedInteractiveForPage(pageID)
+	if err != nil {
+		return nil, err
+	}
+	if useNormalized {
+		return s.submitNormalizedInteractive(page, targetSectionID, userID, respondentName, idempotencyKey, answers)
+	}
 	var created *InteractiveRecord
-	err := s.repo.MutateContent(pageID, func(content string) (string, error) {
+	err = s.repo.MutateContent(pageID, func(content string) (string, error) {
 		sections, err := decodePageSections(content)
 		if err != nil {
 			return "", err
@@ -352,7 +364,9 @@ func (s *Service) SubmitInteractive(pageID, targetSectionID, userID int64, respo
 		for _, raw := range records {
 			record, _ := raw.(map[string]interface{})
 			recordUserID, _ := record["user_id"].(float64)
-			if key, _ := record["idempotency_key"].(string); idempotencyKey != "" && int64(recordUserID) == userID && key == idempotencyKey {
+			key, _ := record["idempotency_key"].(string)
+			storedHash, _ := record["idempotency_key_hash"].(string)
+			if idempotencyKey != "" && int64(recordUserID) == userID && (key == idempotencyKey || storedHash == interactiveIdempotencyHash(idempotencyKey)) {
 				blob, _ := json.Marshal(record)
 				var existing InteractiveRecord
 				_ = json.Unmarshal(blob, &existing)
@@ -399,7 +413,14 @@ func (s *Service) DeleteInteractiveRecord(pageID, targetSectionID int64, recordI
 	if err := s.requireInteractiveManager(pageID, actorID); err != nil {
 		return err
 	}
-	err := s.repo.MutateContent(pageID, func(content string) (string, error) {
+	useNormalized, err := s.normalizedInteractiveForPage(pageID)
+	if err != nil {
+		return err
+	}
+	if useNormalized {
+		return s.deleteNormalizedInteractiveRecord(pageID, targetSectionID, recordID)
+	}
+	err = s.repo.MutateContent(pageID, func(content string) (string, error) {
 		sections, err := decodePageSections(content)
 		if err != nil {
 			return "", err
@@ -442,7 +463,14 @@ func (s *Service) PatchInteractiveRecord(pageID, targetSectionID int64, recordID
 	if err := s.requireInteractiveManager(pageID, actorID); err != nil {
 		return err
 	}
-	err := s.repo.MutateContent(pageID, func(content string) (string, error) {
+	useNormalized, err := s.normalizedInteractiveForPage(pageID)
+	if err != nil {
+		return err
+	}
+	if useNormalized {
+		return s.patchNormalizedInteractiveRecord(pageID, targetSectionID, recordID, patch)
+	}
+	err = s.repo.MutateContent(pageID, func(content string) (string, error) {
 		sections, err := decodePageSections(content)
 		if err != nil {
 			return "", err
@@ -579,7 +607,7 @@ func ClearInteractiveRecords(content string) string {
 func SanitizeInteractiveContent(content string, userID int64, canManage bool) string {
 	sections, err := decodePageSections(content)
 	if err != nil {
-		return content
+		return "[]"
 	}
 	for _, section := range sections {
 		typ, _ := section["section_type"].(string)
@@ -588,7 +616,7 @@ func SanitizeInteractiveContent(content string, userID int64, canManage bool) st
 		}
 		cfg, err := sectionConfig(section)
 		if err != nil {
-			continue
+			return "[]"
 		}
 		allRecords := recordsFromConfig(cfg)
 		cfg["result_summary"] = interactiveResultSummary(cfg)
@@ -601,6 +629,7 @@ func SanitizeInteractiveContent(content string, userID int64, canManage bool) st
 					copyRecord[key] = value
 				}
 				delete(copyRecord, "idempotency_key")
+				delete(copyRecord, "idempotency_key_hash")
 				visible = append(visible, copyRecord)
 			}
 			cfg["records"] = visible
@@ -620,6 +649,7 @@ func SanitizeInteractiveContent(content string, userID int64, canManage bool) st
 					copyRecord[key] = value
 				}
 				delete(copyRecord, "idempotency_key")
+				delete(copyRecord, "idempotency_key_hash")
 				if !own {
 					delete(copyRecord, "user_id")
 				}
@@ -632,11 +662,13 @@ func SanitizeInteractiveContent(content string, userID int64, canManage bool) st
 				delete(cfg, "result_summary")
 			}
 		}
-		_ = setSectionConfig(section, cfg)
+		if err := setSectionConfig(section, cfg); err != nil {
+			return "[]"
+		}
 	}
 	raw, err := json.Marshal(sections)
 	if err != nil {
-		return content
+		return "[]"
 	}
 	return string(raw)
 }
@@ -663,7 +695,11 @@ func (s *Service) InteractiveConfig(pageID, targetSectionID, userID int64, canMa
 	if err != nil {
 		return "", err
 	}
-	return extractInteractiveConfig(SanitizeInteractiveContent(p.Content, userID, canManage), targetSectionID)
+	content, err := s.sanitizedInteractiveContent(pageID, p.Content, userID, canManage)
+	if err != nil {
+		return "", err
+	}
+	return extractInteractiveConfig(content, targetSectionID)
 }
 
 func (s *Service) invalidateSEOByID(pageID int64) {

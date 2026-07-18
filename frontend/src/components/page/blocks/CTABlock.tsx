@@ -1,20 +1,6 @@
 import type { PageSection } from "../types";
 import "./CTABlock.css";
-import {
-  ColorPickerButton,
-  EditableText,
-  SectionToolbar,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  getSectionBgColor,
-  getSectionLayout,
-  getSectionMargins,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-  setSectionBgColor,
-  setSectionLayout,
-  setSectionMargins,
-} from "../EditControls";
+import { EditableText, getSectionBgColor } from "../EditControls";
 
 interface Props {
   section: PageSection;
@@ -23,58 +9,12 @@ interface Props {
   onDelete: (id: number) => void;
 }
 
-export const CTABlock = ({ section, canEdit, onUpdate, onDelete }: Props) => {
+export const CTABlock = ({ section, canEdit, onUpdate }: Props) => {
   const sectionBgColor = getSectionBgColor(section.config);
   const ctaStyle = sectionBgColor ? { background: sectionBgColor } : undefined;
 
   return (
     <section className="cta" style={ctaStyle}>
-      {canEdit && (
-        <SectionToolbar
-          onDelete={() => onDelete(section.id)}
-          label="CTA"
-          layout={getSectionLayout(section.config)}
-          onLayoutChange={nextLayout =>
-            onUpdate({
-              ...section,
-              config: setSectionLayout(section.config, nextLayout),
-            })
-          }
-          margins={getSectionMargins(section.config)}
-          onMarginsChange={m =>
-            onUpdate({
-              ...section,
-              config: setSectionMargins(section.config, m),
-            })
-          }
-          animation={getSectionAnimation(section.config)}
-          onAnimationChange={a =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimation(section.config, a),
-            })
-          }
-          animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={i =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimationIntensity(section.config, i),
-            })
-          }
-          extra={
-            <ColorPickerButton
-              value={sectionBgColor}
-              onChange={(c: string) =>
-                onUpdate({
-                  ...section,
-                  config: setSectionBgColor(section.config, c),
-                })
-              }
-              title="Primary color"
-            />
-          }
-        />
-      )}
       <div className="cta-content">
         {canEdit ? (
           <>

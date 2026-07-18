@@ -57,6 +57,9 @@ is not an architectural invariant and must not be treated as one.
 - Interactive page response moderation/deletion uses `security.PagePolicy` through
   a required page-service dependency; owner, editor, and `home.manage` decisions
   fail closed on missing dependencies or lookup errors.
+- Section-preset create/update/delete calls a required service-level
+  `home.manage` policy. JWT route grouping and handler checks are not the
+  authorization boundary, and permission-store failures deny mutation.
 
 ### Step-up and session trust
 
@@ -99,6 +102,31 @@ is not an architectural invariant and must not be treated as one.
 - Tenant data is isolated by database, Redis namespace, upload root, runtime env,
   and host routing. Cross-tenant identifiers and cache keys are never accepted
   without resolving the current tenant boundary.
+- Normalized custom-page contracts resolve only embedded schemas. User config
+  cannot trigger remote schema fetches; CSS colors require explicit safe-value
+  validation, and contract errors never echo page config or response values.
+  Typed config decoding is size/depth bounded and rejects duplicate JSON keys.
+- Custom-page shadow telemetry contains hashes, counts, field names, and bounded
+  reason codes only. It never stores page content, config values, answers,
+  respondent data, or idempotency keys. Phase 4 projectors strip interactive
+  records/result summaries. Response migration telemetry likewise contains only
+  parity hashes, counts, and mismatch codes; answers, respondents, record IDs,
+  raw idempotency keys, and idempotency hashes never enter logs or API payloads.
+  Normalized-response readiness or storage failures strip runtime projections
+  and deny mutations instead of falling back to potentially stale sensitive data.
+  After normalized read cutover, definition/response projection or readiness
+  failures fail the read rather than consulting `pages.content`; authorization
+  filtering remains identical across storage modes. Cutover telemetry is also
+  content-free, and external-job absence requires explicit operator review
+  because application request telemetry cannot prove it.
+- Palette references use page-scoped foreign keys; deleting a referenced token
+  fails closed. A token reference that has no declared page token is quarantined
+  rather than becoming an unconstrained CSS variable reference.
+- Typed page definition and palette writes call the centralized
+  `PagePolicy.RequirePageEditor` service gate. Missing policy, page/editor lookup
+  failure, permission lookup failure, an unmatched shadow, missing expected
+  revision, or stale revision all deny before mutation. Conflict and validation
+  responses contain no section config or interactive runtime data.
 
 ### Audit and observability
 

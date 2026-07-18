@@ -1,76 +1,16 @@
-import type { PageItem, PageSection, SectionType } from "./types";
-import { SECTION_TYPE_GROUPS, SECTION_TYPE_LABELS } from "./types";
+import type { PageItem, PageSection, PageTheme, SectionType } from "./types";
+import { SECTION_TYPE_GROUPS, SECTION_TYPE_LABELS, canonicalSectionType } from "./types";
 import {
   clearInteractiveRecords,
   configForNewSection,
   isInteractiveSectionType,
-  sectionForClipboard,
 } from "./interactiveTypes";
+import { SectionFrame } from "./SectionFrame";
+import { SECTION_RENDERER_REGISTRY, SECTION_RENDERER_TYPES } from "./sectionRendererRegistry";
 import "./page-builder-core.css";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import React, {
-  Suspense,
-  lazy,
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import {
-  SectionMoveContext,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  getSectionBgColor,
-  getSectionLayout,
-  getSectionMargins,
-} from "./EditControls";
-const CTABlock = lazy(() => import("./blocks/CTABlock").then(m => ({ default: m.CTABlock })));
-const CardGroupBlock = lazy(() =>
-  import("./blocks/CardGroupBlock").then(m => ({ default: m.CardGroupBlock }))
-);
-const CustomSectionBlock = lazy(() =>
-  import("./blocks/CustomSectionBlock").then(m => ({ default: m.CustomSectionBlock }))
-);
-const DataSourcesBlock = lazy(() =>
-  import("./blocks/DataSourcesBlock").then(m => ({ default: m.DataSourcesBlock }))
-);
-const DerivedSectionBlock = lazy(() =>
-  import("./blocks/DerivedSectionBlock").then(m => ({ default: m.DerivedSectionBlock }))
-);
-const EventHighlightsBlock = lazy(() =>
-  import("./blocks/EventHighlightsBlock").then(m => ({ default: m.EventHighlightsBlock }))
-);
-const FeatureGridBlock = lazy(() =>
-  import("./blocks/FeatureGridBlock").then(m => ({ default: m.FeatureGridBlock }))
-);
-const HeroBlock = lazy(() => import("./blocks/HeroBlock").then(m => ({ default: m.HeroBlock })));
-const ProfileCardBlock = lazy(() =>
-  import("./blocks/ProfileCardBlock").then(m => ({ default: m.ProfileCardBlock }))
-);
-const RichTextBlock = lazy(() =>
-  import("./blocks/RichTextBlock").then(m => ({ default: m.RichTextBlock }))
-);
-const SocialLinksBlock = lazy(() =>
-  import("./blocks/SocialLinksBlock").then(m => ({ default: m.SocialLinksBlock }))
-);
-const StatCardsBlock = lazy(() =>
-  import("./blocks/StatCardsBlock").then(m => ({ default: m.StatCardsBlock }))
-);
-const InteractiveSectionBlock = lazy(() =>
-  import("./blocks/InteractiveSectionBlock").then(m => ({ default: m.InteractiveSectionBlock }))
-);
-
-// Heavy blocks — lazy-loaded so they don't bloat the initial bundle.
-// Each will suspend (and show a skeleton fallback) only until its chunk lands.
-const ImageGalleryBlock = lazy(() =>
-  import("./blocks/ImageGalleryBlock").then(m => ({ default: m.ImageGalleryBlock }))
-);
-const CodeEditorBlock = lazy(() =>
-  import("./blocks/CodeEditorBlock").then(m => ({ default: m.CodeEditorBlock }))
-);
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 
 interface BlockRendererProps {
   sections: PageSection[];
@@ -82,42 +22,11 @@ interface BlockRendererProps {
   onUpdateItem: (item: PageItem) => void;
   onDeleteItem: (id: number) => void;
   onMoveSection: (sourceSectionId: number, targetSectionId: number) => void;
+  pageKey?: string;
+  theme?: PageTheme;
 }
 
-/** Maps section_type => block component. Typed as ComponentType so lazy()
- *  wrappers (which return LazyExoticComponent) are accepted without casting. */
-const BLOCK_MAP: Record<
-  string,
-  React.ComponentType<{
-    section: PageSection;
-    canEdit: boolean;
-    onUpdate: (s: PageSection) => void;
-    onDelete: (id: number) => void;
-    onItemCreate: (sectionId: number, item: Omit<PageItem, "id">) => void;
-    onItemUpdate: (item: PageItem) => void;
-    onItemDelete: (id: number) => void;
-  }>
-> = {
-  hero: HeroBlock as never,
-  card_group: CardGroupBlock,
-  stat_cards: StatCardsBlock,
-  social_links: SocialLinksBlock as never,
-  image_gallery: ImageGalleryBlock,
-  feature_grid: FeatureGridBlock,
-  cta: CTABlock as never,
-  event_highlights: EventHighlightsBlock,
-  profile_card: ProfileCardBlock as never,
-  rich_text: RichTextBlock as never,
-  code_editor: CodeEditorBlock as never,
-  data_sources: DataSourcesBlock as never,
-  derived_section: DerivedSectionBlock as never,
-  custom_section: CustomSectionBlock as never,
-  form: InteractiveSectionBlock as never,
-  qa: InteractiveSectionBlock as never,
-  survey: InteractiveSectionBlock as never,
-  poll: InteractiveSectionBlock as never,
-  vote: InteractiveSectionBlock as never,
-};
+export const BLOCK_RENDERER_TYPES = SECTION_RENDERER_TYPES;
 
 /**
  * Memoised wrapper for a single section block.  When the parent re-renders
@@ -137,6 +46,8 @@ interface SectionBlockProps {
   onItemCreate: (sectionId: number, item: Omit<PageItem, "id">) => void;
   onItemUpdate: (item: PageItem) => void;
   onItemDelete: (id: number) => void;
+  pageKey?: string;
+  theme?: PageTheme;
 }
 
 /** Minimal skeleton shown while a heavy block chunk is fetching. */
@@ -158,111 +69,63 @@ const SectionBlock = memo(function SectionBlock({
   onItemCreate,
   onItemUpdate,
   onItemDelete,
+  pageKey,
+  theme,
 }: SectionBlockProps) {
-  const Block = BLOCK_MAP[section.section_type];
-  if (!Block) return null;
-
-  const layout = getSectionLayout(section.config);
-  const margins = getSectionMargins(section.config);
-  const animation = getSectionAnimation(section.config);
-  const intensity = getSectionAnimationIntensity(section.config);
-  const bgColor = getSectionBgColor(section.config);
-
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(animation === "none");
-  const [outView, setOutView] = useState(false);
-
-  useEffect(() => {
-    if (animation === "none") {
-      setInView(true);
-      setOutView(false);
-      return;
-    }
-    const el = sectionRef.current;
-    if (!el) return;
-    const observer = new window.IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          setOutView(false);
-        } else {
-          setOutView(true);
-          setInView(false);
-        }
-      },
-      { threshold: 0.15 }
+  const canonicalType = canonicalSectionType(section.section_type);
+  const Block = canonicalType ? SECTION_RENDERER_REGISTRY[canonicalType].component : null;
+  if (!Block) {
+    return (
+      <SectionFrame
+        section={section}
+        isFirst={isFirst}
+        isLast={isLast}
+        canEdit={canEdit}
+        onMove={onMove}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+        pageKey={pageKey}
+        theme={theme}
+      >
+        <section
+          className="pb-section-unsupported"
+          role="alert"
+          data-section-type={section.section_type}
+        >
+          <div>
+            <strong>Unsupported section</strong>
+            <span>
+              Section type <code>{section.section_type || "(missing)"}</code> is not registered.
+            </span>
+          </div>
+        </section>
+      </SectionFrame>
     );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [animation]);
-
-  const sectionStyle: React.CSSProperties = {
-    ...(margins.marginTop ? { marginTop: `${margins.marginTop}px` } : {}),
-    ...(margins.marginRight ? { marginRight: `${margins.marginRight}px` } : {}),
-    ...(margins.marginBottom ? { marginBottom: `${margins.marginBottom}px` } : {}),
-    ...(margins.marginLeft ? { marginLeft: `${margins.marginLeft}px` } : {}),
-    ...(margins.paddingTop ? { paddingTop: `${margins.paddingTop}px` } : {}),
-    ...(margins.paddingRight ? { paddingRight: `${margins.paddingRight}px` } : {}),
-    ...(margins.paddingBottom ? { paddingBottom: `${margins.paddingBottom}px` } : {}),
-    ...(margins.paddingLeft ? { paddingLeft: `${margins.paddingLeft}px` } : {}),
-    ...(bgColor ? { backgroundColor: bgColor } : {}),
-  };
-
-  const onCopy = useCallback(async () => {
-    try {
-      const payload = JSON.stringify({ isSkaiaBlock: true, section: sectionForClipboard(section) });
-      await navigator.clipboard.writeText(payload);
-      toast.success("Section copied to clipboard");
-    } catch {
-      toast.error("Failed to copy section");
-    }
-  }, [section]);
-
-  const onCut = useCallback(async () => {
-    await onCopy();
-    onDelete(section.id);
-  }, [onCopy, onDelete, section.id]);
-
-  // Memoise the context value so SectionMoveButtons consumers don't re-render
-  // unless the section's position actually changed.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const moveCtx = useMemo(
-    () => ({
-      onMoveUp: () => onMove(section.id, "up"),
-      onMoveDown: () => onMove(section.id, "down"),
-      canMoveUp: !isFirst,
-      canMoveDown: !isLast,
-      lastEditedBy: section.last_edited_by,
-      onCopy,
-      onCut,
-    }),
-    [section.id, isFirst, isLast, onMove, section.last_edited_by, onCopy, onCut]
-  );
+  }
 
   return (
-    <SectionMoveContext.Provider value={moveCtx}>
-      <div
-        ref={sectionRef}
-        className={`pb-section-layout pb-section-layout-${layout}`}
-        style={sectionStyle}
-        data-animation={animation !== "none" ? animation : undefined}
-        data-intensity={animation !== "none" ? intensity : undefined}
-        data-in-view={inView ? "" : undefined}
-        data-out-view={outView && !inView ? "" : undefined}
-      >
-        <Suspense fallback={<SectionBlockSkeleton />}>
-          <Block
-            section={section}
-            canEdit={canEdit}
-            onUpdate={onUpdate}
-            onDelete={onDelete}
-            onItemCreate={onItemCreate}
-            onItemUpdate={onItemUpdate}
-            onItemDelete={onItemDelete}
-          />
-        </Suspense>
-      </div>
-    </SectionMoveContext.Provider>
+    <SectionFrame
+      section={section}
+      isFirst={isFirst}
+      isLast={isLast}
+      canEdit={canEdit}
+      onMove={onMove}
+      onUpdate={onUpdate}
+      onDelete={onDelete}
+      pageKey={pageKey}
+      theme={theme}
+      fallback={<SectionBlockSkeleton />}
+    >
+      <Block
+        section={section}
+        canEdit={canEdit}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+        onItemCreate={onItemCreate}
+        onItemUpdate={onItemUpdate}
+        onItemDelete={onItemDelete}
+      />
+    </SectionFrame>
   );
 });
 
@@ -276,6 +139,8 @@ export const BlockRenderer = memo(function BlockRenderer({
   onUpdateItem,
   onDeleteItem,
   onMoveSection,
+  pageKey,
+  theme,
 }: BlockRendererProps) {
   const [activeAddIndex, setActiveAddIndex] = useState<number | null>(null);
 
@@ -507,6 +372,8 @@ export const BlockRenderer = memo(function BlockRenderer({
               onItemCreate={onCreateItem}
               onItemUpdate={onUpdateItem}
               onItemDelete={onDeleteItem}
+              pageKey={pageKey}
+              theme={theme}
             />
             {canEdit && renderAddSectionTrigger(i + 1)}
           </React.Fragment>

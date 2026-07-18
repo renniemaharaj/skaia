@@ -65,18 +65,29 @@ func TestClearInteractiveRecordsForDuplicate(t *testing.T) {
 }
 
 func TestSanitizeInteractiveContentFailsClosedAndRemovesIdempotencyKeys(t *testing.T) {
-	content := interactiveContent(`{"fields":[{"key":"choice","type":"radio","options":[{"key":"a","label":"A"}]}],"records":[{"id":"r1","user_id":2,"idempotency_key":"secret-key","answers":{"choice":"a"}}]}`)
+	content := interactiveContent(`{"fields":[{"key":"choice","type":"radio","options":[{"key":"a","label":"A"}]}],"records":[{"id":"r1","user_id":2,"idempotency_key":"secret-key","idempotency_key_hash":"secret-hash","answers":{"choice":"a"}}]}`)
 	for _, sanitized := range []string{
 		SanitizeInteractiveContent(content, 2, false),
 		SanitizeInteractiveContent(content, 2, true),
 	} {
-		if strings.Contains(sanitized, "secret-key") {
-			t.Fatalf("idempotency key leaked from sanitized content: %s", sanitized)
+		if strings.Contains(sanitized, "secret-key") || strings.Contains(sanitized, "secret-hash") {
+			t.Fatalf("idempotency material leaked from sanitized content: %s", sanitized)
 		}
 	}
 	viewer := SanitizeInteractiveContent(content, 2, false)
 	if strings.Contains(viewer, "result_summary") {
 		t.Fatalf("missing result visibility exposed aggregates: %s", viewer)
+	}
+}
+
+func TestSanitizeInteractiveContentFailsClosedOnMalformedDocuments(t *testing.T) {
+	for _, content := range []string{
+		`not-json-with-private-answer`,
+		`[{"id":7,"section_type":"form","config":42}]`,
+	} {
+		if sanitized := SanitizeInteractiveContent(content, 2, true); sanitized != "[]" {
+			t.Fatalf("malformed content was returned to a manager: %s", sanitized)
+		}
 	}
 }
 

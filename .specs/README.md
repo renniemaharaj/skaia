@@ -22,7 +22,7 @@ Full rules live in `.specs/PROTOCOL.md`. Short form:
 | Frontend UI, state, routes, cart/store pages | `frontend_spec`, `realtime_wss_spec`, `route_resolution_spec` |
 | WebSocket, presence, voice, media, push delivery | `realtime_wss_spec`, `voice_chat_architecture.md` |
 | Clipmaker, frame streaming, ffmpeg export | `clipmaker_export_spec` |
-| Custom pages, landing page, page builder | `route_resolution_spec`, `custom_pages_multiplayer_spec`, `custom_page_interactive_sections_spec`, `caching_cdn_spec` |
+| Custom pages, landing page, page builder | `route_resolution_spec`, `custom_pages_multiplayer_spec`, `custom_page_section_compatibility_spec`, `custom_page_interactive_sections_spec`, `caching_cdn_spec` |
 | Forms, Q&A, surveys, polls, voting | `custom_page_interactive_sections_spec`, `custom_pages_multiplayer_spec`, `security_architecture_spec`, `realtime_wss_spec`, `migrations_spec` |
 | Deploy, tenancy, grengo, nginx, cache headers | `infrastructure_spec`, `caching_cdn_spec`, `migrations_spec` |
 
@@ -34,6 +34,7 @@ Full rules live in `.specs/PROTOCOL.md`. Short form:
 - `realtime_wss_spec` - WebSocket message registry and delivery invariants.
 - `route_resolution_spec` - landing page and page route resolution.
 - `custom_pages_multiplayer_spec` - page-builder multiplayer reconciliation.
+- `custom_page_section_compatibility_spec` - frozen legacy section, item, shell, fixture, and migration-input contracts.
 - `custom_page_interactive_sections_spec` - designed interactive sections, records, moderation, results, and ballots.
 - `caching_cdn_spec` - no-store APIs, static caching, CDN-safe flows.
 - `migrations_spec` - idempotent migration policy and current migration list.

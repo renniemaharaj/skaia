@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/skaia/backend/internal/s_registry"
@@ -25,6 +26,10 @@ type CustomSectionGetter interface {
 
 type InteractivePolicy interface {
 	RequireInteractiveResponseManager(pageID, actorID int64) error
+}
+
+type PageMutationPolicy interface {
+	RequirePageEditor(pageID, actorID int64) error
 }
 
 type contentResolver struct {
@@ -83,18 +88,61 @@ func WithInteractivePolicy(policy InteractivePolicy) Option {
 	}
 }
 
+func WithPageMutationPolicy(policy PageMutationPolicy) Option {
+	return func(s *Service) {
+		s.pageMutationPolicy = policy
+	}
+}
+
+func WithTypedSectionMutations(enabled bool) Option {
+	return func(s *Service) {
+		s.typedSectionMutations = enabled
+	}
+}
+
+func WithNormalizedInteractiveResponses(enabled bool) Option {
+	return func(s *Service) {
+		s.normalizedInteractiveResponses = enabled
+	}
+}
+
+func WithNormalizedSectionReads(enabled bool, minimumMatchedRuns int, minimumWindow time.Duration) Option {
+	return func(s *Service) {
+		s.normalizedSectionReads = enabled
+		s.cutoverMatchedRuns, s.cutoverMatchWindow = normalizeCutoverThresholds(minimumMatchedRuns, minimumWindow)
+	}
+}
+
 // Service wraps the page repository with business logic.
 type Service struct {
-	repo              Repository
-	inboxSender       models.InboxSender
-	contentResolver   s_registry.Resolver
-	rdb               *redis.Client
-	interactivePolicy InteractivePolicy
+	repo                           Repository
+	inboxSender                    models.InboxSender
+	contentResolver                s_registry.Resolver
+	rdb                            *redis.Client
+	interactivePolicy              InteractivePolicy
+	pageMutationPolicy             PageMutationPolicy
+	typedRepo                      TypedSectionRepository
+	interactiveRepo                InteractiveResponseRepository
+	normalizedReadRepo             NormalizedPageReadRepository
+	typedSectionMutations          bool
+	normalizedInteractiveResponses bool
+	normalizedSectionReads         bool
+	cutoverMatchedRuns             int
+	cutoverMatchWindow             time.Duration
 }
 
 // NewService creates a new page Service.
 func NewService(repo Repository, inboxSender models.InboxSender, opts ...Option) *Service {
 	s := &Service{repo: repo, inboxSender: inboxSender}
+	if typedRepo, ok := repo.(TypedSectionRepository); ok {
+		s.typedRepo = typedRepo
+	}
+	if interactiveRepo, ok := repo.(InteractiveResponseRepository); ok {
+		s.interactiveRepo = interactiveRepo
+	}
+	if normalizedReadRepo, ok := repo.(NormalizedPageReadRepository); ok {
+		s.normalizedReadRepo = normalizedReadRepo
+	}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -102,15 +150,53 @@ func NewService(repo Repository, inboxSender models.InboxSender, opts ...Option)
 }
 
 func (s *Service) GetBySlug(slug string) (*models.Page, error) {
-	return s.repo.GetBySlug(slug)
+	p, err := s.repo.GetBySlug(slug)
+	if err != nil {
+		return nil, err
+	}
+	return s.projectNormalizedRead(p)
 }
 
 func (s *Service) GetByID(id int64) (*models.Page, error) {
-	return s.repo.GetByID(id)
+	p, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	return s.projectNormalizedRead(p)
 }
 
 func (s *Service) List() ([]*models.Page, error) {
-	return s.repo.List()
+	pages, err := s.repo.List()
+	if err != nil {
+		return nil, err
+	}
+	for index := range pages {
+		pages[index], err = s.projectNormalizedRead(pages[index])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return pages, nil
+}
+
+func (s *Service) projectNormalizedRead(p *models.Page) (*models.Page, error) {
+	if !s.normalizedSectionReads || s.normalizedReadRepo == nil {
+		return p, nil
+	}
+	ready, err := s.normalizedReadRepo.NormalizedPageReadReady(p.ID, s.cutoverMatchedRuns, s.cutoverMatchWindow)
+	if err != nil {
+		return nil, fmt.Errorf("check normalized page read readiness: %w", err)
+	}
+	if !ready {
+		return p, nil
+	}
+	content, err := s.normalizedReadRepo.LoadNormalizedPageContent(p.ID)
+	if err != nil {
+		return nil, fmt.Errorf("load normalized page content: %w", err)
+	}
+	projected := *p
+	projected.Content = content
+	return &projected, nil
 }
 
 func (s *Service) DeleteAll() error {
@@ -148,6 +234,22 @@ func (s *Service) Update(p *models.Page) error {
 		p.Content = "[]"
 	}
 	p.Content = ClearInteractiveRecords(p.Content)
+	typedReady := false
+	if s.TypedSectionMutationsEnabled() {
+		typedReady, _ = s.typedRepo.TypedSectionPageReady(p.ID)
+	}
+	if typedReady {
+		current, err := s.repo.GetByID(p.ID)
+		if err != nil {
+			return err
+		}
+		if !sameNormalizedDefinition(current.Content, p.Content) {
+			return ErrLegacySectionMutationDisabled
+		}
+		// Preserve the database-owned runtime projection; this endpoint is
+		// metadata-only while typed section mutations are enabled.
+		p.Content = current.Content
+	}
 	if err := s.validateContent(p.Content); err != nil {
 		return err
 	}
@@ -167,7 +269,7 @@ func (s *Service) validateContent(content string) error {
 
 // Duplicate creates a copy of an existing page under a new slug.
 func (s *Service) Duplicate(fromID int64, newSlug, newTitle string) (*models.Page, error) {
-	src, err := s.repo.GetByID(fromID)
+	src, err := s.GetByID(fromID)
 	if err != nil {
 		return nil, fmt.Errorf("source page not found: %w", err)
 	}
@@ -237,7 +339,17 @@ func (s *Service) IsEditor(pageID, userID int64) (bool, error) {
 }
 
 func (s *Service) ListWithOwnership() ([]*models.Page, error) {
-	return s.repo.ListWithOwnership()
+	pages, err := s.repo.ListWithOwnership()
+	if err != nil {
+		return nil, err
+	}
+	for index := range pages {
+		pages[index], err = s.projectNormalizedRead(pages[index])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return pages, nil
 }
 
 // EnrichPage populates Owner and Editors on the given page.
@@ -254,6 +366,15 @@ func (s *Service) EnrichPage(p *models.Page) {
 
 	if p.Editors == nil {
 		p.Editors = []*models.PageUser{}
+	}
+	p.TypedSectionMutations = false
+	if s.typedRepo != nil {
+		if theme, err := s.typedRepo.GetPageTheme(p.ID); err == nil {
+			p.Theme = theme
+		}
+		if ready, err := s.typedRepo.TypedSectionPageReady(p.ID); err == nil {
+			p.TypedSectionMutations = s.typedSectionMutations && ready
+		}
 	}
 }
 

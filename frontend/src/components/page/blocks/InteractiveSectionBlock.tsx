@@ -1,15 +1,17 @@
-import { useAtomValue } from "jotai";
 import { Field, FieldArray, Form, Formik, type FormikHelpers, useField } from "formik";
+import { useAtomValue } from "jotai";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { currentUserAtom, isAuthenticatedAtom } from "../../../atoms/auth";
+import { apiRequest } from "../../../utils/api";
 import FormikSelect from "../../formik/FormikSelect";
 import Button from "../../input/Button";
-import { TableView, type TableColumn } from "../../ui/TableView/TableView";
 import { customConfirm } from "../../ui/Prompt";
 import StarRating from "../../ui/StarRating";
-import { apiRequest } from "../../../utils/api";
+import { type TableColumn, TableView } from "../../ui/TableView/TableView";
+import { EditableText } from "../EditControls";
+import { usePageBuilderContext } from "../PageBuilderContext";
 import {
   INTERACTIVE_FIELD_TYPES,
   type InteractiveConfig,
@@ -24,20 +26,7 @@ import {
   parseInteractiveConfig,
   validateInteractiveValues,
 } from "../interactiveTypes";
-import { usePageBuilderContext } from "../PageBuilderContext";
 import type { PageSection } from "../types";
-import {
-  EditableText,
-  SectionToolbar,
-  getSectionAnimation,
-  getSectionAnimationIntensity,
-  getSectionLayout,
-  getSectionMargins,
-  setSectionAnimation,
-  setSectionAnimationIntensity,
-  setSectionLayout,
-  setSectionMargins,
-} from "../EditControls";
 import "./InteractiveSectionBlock.css";
 
 interface Props {
@@ -436,7 +425,7 @@ function DesignView({
   );
 }
 
-export function InteractiveSectionBlock({ section, canEdit, onUpdate, onDelete }: Props) {
+export function InteractiveSectionBlock({ section, canEdit, onUpdate }: Props) {
   const type = section.section_type as InteractiveSectionType;
   const initialConfig = useMemo(
     () => parseInteractiveConfig(section.config, type),
@@ -627,33 +616,6 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate, onDelete }
 
   return (
     <section className="interactive-section">
-      {canEdit && (
-        <SectionToolbar
-          onDelete={() => onDelete(section.id)}
-          label={
-            type === "qa" ? "Questions & Answers" : type.charAt(0).toUpperCase() + type.slice(1)
-          }
-          layout={getSectionLayout(section.config)}
-          onLayoutChange={layout =>
-            onUpdate({ ...section, config: setSectionLayout(section.config, layout) })
-          }
-          margins={getSectionMargins(section.config)}
-          onMarginsChange={margins =>
-            onUpdate({ ...section, config: setSectionMargins(section.config, margins) })
-          }
-          animation={getSectionAnimation(section.config)}
-          onAnimationChange={animation =>
-            onUpdate({ ...section, config: setSectionAnimation(section.config, animation) })
-          }
-          animationIntensity={getSectionAnimationIntensity(section.config)}
-          onAnimationIntensityChange={intensity =>
-            onUpdate({
-              ...section,
-              config: setSectionAnimationIntensity(section.config, intensity),
-            })
-          }
-        />
-      )}
       <header className="interactive-heading">
         <div>
           <span>{type === "qa" ? "Questions & answers" : type}</span>

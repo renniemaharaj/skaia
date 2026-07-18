@@ -25,13 +25,30 @@ type Page struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 
 	// Enriched fields (not stored directly in pages table)
-	Owner        *PageUser   `json:"owner,omitempty"`
-	Editors      []*PageUser `json:"editors,omitempty"`
-	Likes        int         `json:"likes"`
-	IsLiked      bool        `json:"is_liked,omitempty"`
-	CommentCount int         `json:"comment_count"`
-	CanEdit      bool        `json:"can_edit,omitempty"`
-	CanDelete    bool        `json:"can_delete,omitempty"`
+	Owner                 *PageUser   `json:"owner,omitempty"`
+	Editors               []*PageUser `json:"editors,omitempty"`
+	Likes                 int         `json:"likes"`
+	IsLiked               bool        `json:"is_liked,omitempty"`
+	CommentCount          int         `json:"comment_count"`
+	CanEdit               bool        `json:"can_edit,omitempty"`
+	CanDelete             bool        `json:"can_delete,omitempty"`
+	Theme                 *PageTheme  `json:"theme,omitempty"`
+	TypedSectionMutations bool        `json:"typed_section_mutations"`
+}
+
+// PageTheme is the safe, page-owned palette exposed to section renderers.
+type PageTheme struct {
+	Version  int              `json:"version"`
+	Revision int64            `json:"revision"`
+	Tokens   []PageThemeToken `json:"tokens"`
+}
+
+type PageThemeToken struct {
+	Key          string `json:"key"`
+	Label        string `json:"label"`
+	Value        string `json:"value"`
+	DisplayOrder int    `json:"display_order"`
+	Revision     int64  `json:"revision"`
 }
 
 // PageSection is an ordered block on a custom page (not just the landing page).
@@ -83,9 +100,9 @@ type Branding struct {
 
 // SEO holds meta tag information from site_config.
 type SEO struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	OGImage     string `json:"og_image"`
+	Title         string `json:"title"`
+	Description   string `json:"description"`
+	OGImage       string `json:"og_image"`
 	DomSkin       string `json:"dom_skin"`
 	DomVideo      string `json:"dom_video"`
 	ParticleStyle string `json:"particle_style"`
@@ -137,13 +154,13 @@ type PageComment struct {
 
 // PageUser is a lightweight user representation for page ownership/editor lists.
 type PageUser struct {
-	ID          int64  `json:"id"`
-	Username    string `json:"username"`
-	DisplayName string `json:"display_name"`
-	AvatarURL            string `json:"avatar_url"`
-	BackgroundVideoURL   string `json:"background_video_url,omitempty"`
-	BackgroundImageURL   string `json:"background_image_url,omitempty"`
-	BackgroundPosition   string `json:"background_position,omitempty"`
+	ID                 int64  `json:"id"`
+	Username           string `json:"username"`
+	DisplayName        string `json:"display_name"`
+	AvatarURL          string `json:"avatar_url"`
+	BackgroundVideoURL string `json:"background_video_url,omitempty"`
+	BackgroundImageURL string `json:"background_image_url,omitempty"`
+	BackgroundPosition string `json:"background_position,omitempty"`
 }
 
 // PageEditor is a junction row granting edit access to a user on a page.
