@@ -114,9 +114,21 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-07-18T08:51:53-04:00
+- 2026-07-18T14:33:24-04:00
 
 ## Last Run Remarks
+
+- Completed the final `typed_page_sections_redesign` UX hardening pass: the
+  Appearance editor now uses a measured body portal with viewport collision
+  handling and all five literal shell colors use the shared native precise
+  picker while inherit/palette semantics remain intact.
+- Added focused placement/accessibility/color tests, restored generated-contract
+  reproducibility, repaired the four stale frontend baseline assertions, and
+  finished with the complete backend suite plus frontend contracts, lint,
+  TypeScript, production build, and all 119 frontend tests passing.
+- The affected-scope production audit found no material code issue. Deployment
+  remains distinct from normalized-read enablement or legacy retirement, which
+  still require the production observation window and operator attestation.
 
 - Completed `typed_page_sections_redesign` Phase 1 and started Phase 2 with the
   checked-in 19-type

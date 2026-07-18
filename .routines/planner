@@ -103,13 +103,20 @@ operational policies.
 
 ## Last Ran
 
-- 2026-07-17
+- 2026-07-18
 
 ## Last Run Remarks
 
-- Retired the completed but contradictory interactive-section plan pair, preserved
-  its durable JSON-backed architecture in the spec, and created the focused
-  `interactive_sections_audit_remediation` worker handoff.
+- Reconciled the two final Appearance UX findings into the completed
+  `typed_page_sections_redesign` plan/tip and durable compatibility spec. The plan
+  remains complete after worker verification; deployment does not waive its
+  production cutover/retirement evidence gates.
+
+## Previous Run Remarks (2026-07-17)
+
+- Retired the completed but contradictory interactive-section plan pair,
+  preserved its durable JSON-backed architecture in the spec, and created the
+  focused `interactive_sections_audit_remediation` worker handoff.
 
 ## Next Steps
 

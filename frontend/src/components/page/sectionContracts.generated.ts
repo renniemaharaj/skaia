@@ -25,122 +25,107 @@ export const SECTION_TYPES = [
 export type SectionType = (typeof SECTION_TYPES)[number];
 
 export type SharedSectionShell = {
-  animation: "none" | "fade-in" | "slide-up" | "slide-left" | "slide-right" | "zoom-in" | "bounce";
-  animation_intensity: "subtle" | "normal" | "dramatic";
-  background_color:
-    | {
-        mode: "inherit";
-      }
-    | {
-        mode: "palette";
-        token: string;
-      }
-    | {
-        mode: "literal";
-        value: string;
-      };
-  collapsible: boolean;
-  container_width: "narrow" | "content" | "wide" | "full";
-  content_scale: number;
-  default_collapsed: boolean;
-  h1_color:
-    | {
-        mode: "inherit";
-      }
-    | {
-        mode: "palette";
-        token: string;
-      }
-    | {
-        mode: "literal";
-        value: string;
-      };
-  h2_color:
-    | {
-        mode: "inherit";
-      }
-    | {
-        mode: "palette";
-        token: string;
-      }
-    | {
-        mode: "literal";
-        value: string;
-      };
-  h3_color:
-    | {
-        mode: "inherit";
-      }
-    | {
-        mode: "palette";
-        token: string;
-      }
-    | {
-        mode: "literal";
-        value: string;
-      };
-  layout: "left" | "center" | "right" | "wide";
-  margin_bottom: number;
-  margin_left: number;
-  margin_right: number;
-  margin_top: number;
-  padding_bottom: number;
-  padding_left: number;
-  padding_right: number;
-  padding_top: number;
-  text_color:
-    | {
-        mode: "inherit";
-      }
-    | {
-        mode: "palette";
-        token: string;
-      }
-    | {
-        mode: "literal";
-        value: string;
-      };
+  "animation": "none" | "fade-in" | "slide-up" | "slide-left" | "slide-right" | "zoom-in" | "bounce";
+  "animation_intensity": "subtle" | "normal" | "dramatic";
+  "background_color": {
+      "mode": "inherit";
+    } | {
+      "mode": "palette";
+      "token": string;
+    } | {
+      "mode": "literal";
+      "value": string;
+    };
+  "collapsible": boolean;
+  "container_width": "narrow" | "content" | "wide" | "full";
+  "content_scale": number;
+  "default_collapsed": boolean;
+  "h1_color": {
+      "mode": "inherit";
+    } | {
+      "mode": "palette";
+      "token": string;
+    } | {
+      "mode": "literal";
+      "value": string;
+    };
+  "h2_color": {
+      "mode": "inherit";
+    } | {
+      "mode": "palette";
+      "token": string;
+    } | {
+      "mode": "literal";
+      "value": string;
+    };
+  "h3_color": {
+      "mode": "inherit";
+    } | {
+      "mode": "palette";
+      "token": string;
+    } | {
+      "mode": "literal";
+      "value": string;
+    };
+  "layout": "left" | "center" | "right" | "wide";
+  "margin_bottom": number;
+  "margin_left": number;
+  "margin_right": number;
+  "margin_top": number;
+  "padding_bottom": number;
+  "padding_left": number;
+  "padding_right": number;
+  "padding_top": number;
+  "text_color": {
+      "mode": "inherit";
+    } | {
+      "mode": "palette";
+      "token": string;
+    } | {
+      "mode": "literal";
+      "value": string;
+    };
 };
 
 export const DEFAULT_SECTION_SHELL = {
-  animation: "none",
-  animation_intensity: "normal",
-  background_color: {
-    mode: "inherit",
+  "animation": "none",
+  "animation_intensity": "normal",
+  "background_color": {
+    "mode": "inherit"
   },
-  collapsible: false,
-  container_width: "content",
-  content_scale: 1,
-  default_collapsed: false,
-  h1_color: {
-    mode: "inherit",
+  "collapsible": false,
+  "container_width": "content",
+  "content_scale": 1,
+  "default_collapsed": false,
+  "h1_color": {
+    "mode": "inherit"
   },
-  h2_color: {
-    mode: "inherit",
+  "h2_color": {
+    "mode": "inherit"
   },
-  h3_color: {
-    mode: "inherit",
+  "h3_color": {
+    "mode": "inherit"
   },
-  layout: "center",
-  margin_bottom: 0,
-  margin_left: 0,
-  margin_right: 0,
-  margin_top: 0,
-  padding_bottom: 0,
-  padding_left: 0,
-  padding_right: 0,
-  padding_top: 0,
-  text_color: {
-    mode: "inherit",
-  },
+  "layout": "center",
+  "margin_bottom": 0,
+  "margin_left": 0,
+  "margin_right": 0,
+  "margin_top": 0,
+  "padding_bottom": 0,
+  "padding_left": 0,
+  "padding_right": 0,
+  "padding_top": 0,
+  "text_color": {
+    "mode": "inherit"
+  }
 } satisfies SharedSectionShell;
 
 export type HeroConfig = {
-  background_image?: string;
-  tint_color?: string;
-  tint_opacity?: number;
-  variant?: number;
-  videos?: Array<string>;
+  "background_image"?: string;
+  "tint_color"?: string;
+  "tint_opacity"?: number;
+  "variant"?: number;
+  "videos"?: Array<string>;
 };
 
 export type CardGroupConfig = Record<string, never>;
@@ -148,18 +133,18 @@ export type CardGroupConfig = Record<string, never>;
 export type StatCardsConfig = Record<string, never>;
 
 export type SocialLinksConfig = {
-  links: Array<{
-    icon: string;
-    url: string;
-  }>;
+  "links": Array<{
+      "icon": string;
+      "url": string;
+    }>;
 };
 
 export type ImageGalleryConfig = {
-  albums: Array<{
-    key: string;
-    label: string;
-  }>;
-  default_card_width: "narrow" | "regular" | "wide" | "halfway" | "full";
+  "albums": Array<{
+      "key": string;
+      "label": string;
+    }>;
+  "default_card_width": "narrow" | "regular" | "wide" | "halfway" | "full";
 };
 
 export type FeatureGridConfig = Record<string, never>;
@@ -169,442 +154,362 @@ export type CtaConfig = Record<string, never>;
 export type EventHighlightsConfig = Record<string, never>;
 
 export type ProfileCardConfig = {
-  avatar_url?: string;
-  banner_url?: string;
-  checklist: Array<string>;
-  description?: string;
-  links: Array<{
-    label: string;
-    url: string;
-  }>;
-  profile_name?: string;
-  profile_subtitle?: string;
+  "avatar_url"?: string;
+  "banner_url"?: string;
+  "checklist": Array<string>;
+  "description"?: string;
+  "links": Array<{
+      "label": string;
+      "url": string;
+    }>;
+  "profile_name"?: string;
+  "profile_subtitle"?: string;
 };
 
 export type RichTextConfig = {
-  content: string;
+  "content": string;
 };
 
 export type CodeEditorConfig = {
-  code: string;
-  filename: string;
-  language: string;
+  "code": string;
+  "filename": string;
+  "language": string;
 };
 
 export type DataSourcesConfig = Record<string, never>;
 
 export type DerivedSectionConfig = {
-  bindings?: Record<string, string>;
-  card_template?: Record<string, unknown>;
-  column_map?: Record<string, string>;
-  columns?: number;
-  component_group?: {
-    gap: number;
-    items: Array<Record<string, unknown>>;
-    max_width: number;
-    wrapper?: Record<string, unknown>;
-  };
-  component_type?: string;
-  component_version?: number;
-  datasource_id?: number;
-  event_hooks?: Array<Record<string, unknown>>;
-  render_as?:
-    | "card_group"
-    | "feature_grid"
-    | "stat_cards"
-    | "event_highlights"
-    | "image_cards"
-    | "designed_card";
-  row_key_column?: string;
-  row_overrides?: Record<string, unknown>;
-  style_overrides?: Record<string, unknown>;
+  "bindings"?: Record<string, string>;
+  "card_template"?: Record<string, unknown>;
+  "column_map"?: Record<string, string>;
+  "columns"?: number;
+  "component_group"?: {
+      "gap": number;
+      "items": Array<Record<string, unknown>>;
+      "max_width": number;
+      "wrapper"?: Record<string, unknown>;
+    };
+  "component_type"?: string;
+  "component_version"?: number;
+  "datasource_id"?: number;
+  "event_hooks"?: Array<Record<string, unknown>>;
+  "render_as"?: "card_group" | "feature_grid" | "stat_cards" | "event_highlights" | "image_cards" | "designed_card";
+  "row_key_column"?: string;
+  "row_overrides"?: Record<string, unknown>;
+  "style_overrides"?: Record<string, unknown>;
 };
 
 export type CustomSectionConfig = {
-  bindings?: Record<string, string>;
-  card_template?: Record<string, unknown>;
-  column_map?: Record<string, string>;
-  columns?: number;
-  component_group?: Record<string, unknown>;
-  component_type?: string;
-  component_version?: number;
-  custom_section_id?: number;
-  datasource_id?: number;
-  event_hooks?: Array<Record<string, unknown>>;
-  render_as?:
-    | "card_group"
-    | "feature_grid"
-    | "stat_cards"
-    | "event_highlights"
-    | "image_cards"
-    | "designed_card";
-  row_key_column?: string;
-  row_overrides?: Record<string, unknown>;
-  style_overrides?: Record<string, unknown>;
+  "bindings"?: Record<string, string>;
+  "card_template"?: Record<string, unknown>;
+  "column_map"?: Record<string, string>;
+  "columns"?: number;
+  "component_group"?: Record<string, unknown>;
+  "component_type"?: string;
+  "component_version"?: number;
+  "custom_section_id"?: number;
+  "datasource_id"?: number;
+  "event_hooks"?: Array<Record<string, unknown>>;
+  "render_as"?: "card_group" | "feature_grid" | "stat_cards" | "event_highlights" | "image_cards" | "designed_card";
+  "row_key_column"?: string;
+  "row_overrides"?: Record<string, unknown>;
+  "style_overrides"?: Record<string, unknown>;
 };
 
 export type FormConfig = {
-  fields: Array<{
-    description?: string;
-    key: string;
-    label: string;
-    max?: number;
-    min?: number;
-    options?: Array<Record<string, unknown>>;
-    placeholder?: string;
-    required?: boolean;
-    type:
-      | "text"
-      | "textarea"
-      | "email"
-      | "phone"
-      | "url"
-      | "number"
-      | "date"
-      | "time"
-      | "select"
-      | "multi_select"
-      | "radio"
-      | "checkbox"
-      | "consent"
-      | "rating"
-      | "scale"
-      | "nps";
-  }>;
-  response_limit: number;
-  result_visibility: "never" | "after_participation" | "always";
-  status: "open" | "closed";
-  submit_label: string;
-  success_text: string;
+  "fields": Array<{
+      "description"?: string;
+      "key": string;
+      "label": string;
+      "max"?: number;
+      "min"?: number;
+      "options"?: Array<Record<string, unknown>>;
+      "placeholder"?: string;
+      "required"?: boolean;
+      "type": "text" | "textarea" | "email" | "phone" | "url" | "number" | "date" | "time" | "select" | "multi_select" | "radio" | "checkbox" | "consent" | "rating" | "scale" | "nps";
+    }>;
+  "response_limit": number;
+  "result_visibility": "never" | "after_participation" | "always";
+  "status": "open" | "closed";
+  "submit_label": string;
+  "success_text": string;
 };
 
 export type QaConfig = {
-  fields: Array<Record<string, unknown>>;
-  moderation: boolean;
-  response_limit: number;
-  result_visibility: "never" | "after_participation" | "always";
-  status: "open" | "closed";
-  submit_label: string;
-  success_text: string;
+  "fields": Array<Record<string, unknown>>;
+  "moderation": boolean;
+  "response_limit": number;
+  "result_visibility": "never" | "after_participation" | "always";
+  "status": "open" | "closed";
+  "submit_label": string;
+  "success_text": string;
 };
 
 export type SurveyConfig = {
-  fields: Array<Record<string, unknown>>;
-  response_limit: number;
-  result_visibility: "never" | "after_participation" | "always";
-  status: "open" | "closed";
-  submit_label: string;
-  success_text: string;
+  "fields": Array<Record<string, unknown>>;
+  "response_limit": number;
+  "result_visibility": "never" | "after_participation" | "always";
+  "status": "open" | "closed";
+  "submit_label": string;
+  "success_text": string;
 };
 
 export type PollConfig = {
-  fields: Array<Record<string, unknown>>;
-  response_limit: 1;
-  result_visibility: "never" | "after_participation" | "always";
-  status: "open" | "closed";
-  submit_label: string;
-  success_text: string;
+  "fields": Array<Record<string, unknown>>;
+  "response_limit": 1;
+  "result_visibility": "never" | "after_participation" | "always";
+  "status": "open" | "closed";
+  "submit_label": string;
+  "success_text": string;
 };
 
 export type VoteConfig = {
-  fields: Array<Record<string, unknown>>;
-  response_limit: 1;
-  result_visibility: "never" | "after_participation" | "always";
-  status: "open" | "closed";
-  submit_label: string;
-  success_text: string;
+  "fields": Array<Record<string, unknown>>;
+  "response_limit": 1;
+  "result_visibility": "never" | "after_participation" | "always";
+  "status": "open" | "closed";
+  "submit_label": string;
+  "success_text": string;
 };
 
 export interface SectionConfigByType {
-  hero: HeroConfig;
-  card_group: CardGroupConfig;
-  stat_cards: StatCardsConfig;
-  social_links: SocialLinksConfig;
-  image_gallery: ImageGalleryConfig;
-  feature_grid: FeatureGridConfig;
-  cta: CtaConfig;
-  event_highlights: EventHighlightsConfig;
-  profile_card: ProfileCardConfig;
-  rich_text: RichTextConfig;
-  code_editor: CodeEditorConfig;
-  data_sources: DataSourcesConfig;
-  derived_section: DerivedSectionConfig;
-  custom_section: CustomSectionConfig;
-  form: FormConfig;
-  qa: QaConfig;
-  survey: SurveyConfig;
-  poll: PollConfig;
-  vote: VoteConfig;
+  "hero": HeroConfig;
+  "card_group": CardGroupConfig;
+  "stat_cards": StatCardsConfig;
+  "social_links": SocialLinksConfig;
+  "image_gallery": ImageGalleryConfig;
+  "feature_grid": FeatureGridConfig;
+  "cta": CtaConfig;
+  "event_highlights": EventHighlightsConfig;
+  "profile_card": ProfileCardConfig;
+  "rich_text": RichTextConfig;
+  "code_editor": CodeEditorConfig;
+  "data_sources": DataSourcesConfig;
+  "derived_section": DerivedSectionConfig;
+  "custom_section": CustomSectionConfig;
+  "form": FormConfig;
+  "qa": QaConfig;
+  "survey": SurveyConfig;
+  "poll": PollConfig;
+  "vote": VoteConfig;
 }
 
 export type SectionConfig<T extends SectionType> = SectionConfigByType[T];
 
 export const SECTION_CONFIG_VERSIONS = {
-  hero: 1,
-  card_group: 1,
-  stat_cards: 1,
-  social_links: 1,
-  image_gallery: 1,
-  feature_grid: 1,
-  cta: 1,
-  event_highlights: 1,
-  profile_card: 1,
-  rich_text: 1,
-  code_editor: 1,
-  data_sources: 1,
-  derived_section: 1,
-  custom_section: 1,
-  form: 1,
-  qa: 1,
-  survey: 1,
-  poll: 1,
-  vote: 1,
+  "hero": 1,
+  "card_group": 1,
+  "stat_cards": 1,
+  "social_links": 1,
+  "image_gallery": 1,
+  "feature_grid": 1,
+  "cta": 1,
+  "event_highlights": 1,
+  "profile_card": 1,
+  "rich_text": 1,
+  "code_editor": 1,
+  "data_sources": 1,
+  "derived_section": 1,
+  "custom_section": 1,
+  "form": 1,
+  "qa": 1,
+  "survey": 1,
+  "poll": 1,
+  "vote": 1,
 } as const satisfies Record<SectionType, number>;
 
 export const SECTION_CONFIG_KEYS = {
-  hero: ["background_image", "tint_color", "tint_opacity", "variant", "videos"],
-  card_group: [],
-  stat_cards: [],
-  social_links: ["links"],
-  image_gallery: ["albums", "default_card_width"],
-  feature_grid: [],
-  cta: [],
-  event_highlights: [],
-  profile_card: [
-    "avatar_url",
-    "banner_url",
-    "checklist",
-    "description",
-    "links",
-    "profile_name",
-    "profile_subtitle",
-  ],
-  rich_text: ["content"],
-  code_editor: ["code", "filename", "language"],
-  data_sources: [],
-  derived_section: [
-    "bindings",
-    "card_template",
-    "column_map",
-    "columns",
-    "component_group",
-    "component_type",
-    "component_version",
-    "datasource_id",
-    "event_hooks",
-    "render_as",
-    "row_key_column",
-    "row_overrides",
-    "style_overrides",
-  ],
-  custom_section: [
-    "bindings",
-    "card_template",
-    "column_map",
-    "columns",
-    "component_group",
-    "component_type",
-    "component_version",
-    "custom_section_id",
-    "datasource_id",
-    "event_hooks",
-    "render_as",
-    "row_key_column",
-    "row_overrides",
-    "style_overrides",
-  ],
-  form: ["fields", "response_limit", "result_visibility", "status", "submit_label", "success_text"],
-  qa: [
-    "fields",
-    "moderation",
-    "response_limit",
-    "result_visibility",
-    "status",
-    "submit_label",
-    "success_text",
-  ],
-  survey: [
-    "fields",
-    "response_limit",
-    "result_visibility",
-    "status",
-    "submit_label",
-    "success_text",
-  ],
-  poll: ["fields", "response_limit", "result_visibility", "status", "submit_label", "success_text"],
-  vote: ["fields", "response_limit", "result_visibility", "status", "submit_label", "success_text"],
+  "hero": ["background_image","tint_color","tint_opacity","variant","videos"],
+  "card_group": [],
+  "stat_cards": [],
+  "social_links": ["links"],
+  "image_gallery": ["albums","default_card_width"],
+  "feature_grid": [],
+  "cta": [],
+  "event_highlights": [],
+  "profile_card": ["avatar_url","banner_url","checklist","description","links","profile_name","profile_subtitle"],
+  "rich_text": ["content"],
+  "code_editor": ["code","filename","language"],
+  "data_sources": [],
+  "derived_section": ["bindings","card_template","column_map","columns","component_group","component_type","component_version","datasource_id","event_hooks","render_as","row_key_column","row_overrides","style_overrides"],
+  "custom_section": ["bindings","card_template","column_map","columns","component_group","component_type","component_version","custom_section_id","datasource_id","event_hooks","render_as","row_key_column","row_overrides","style_overrides"],
+  "form": ["fields","response_limit","result_visibility","status","submit_label","success_text"],
+  "qa": ["fields","moderation","response_limit","result_visibility","status","submit_label","success_text"],
+  "survey": ["fields","response_limit","result_visibility","status","submit_label","success_text"],
+  "poll": ["fields","response_limit","result_visibility","status","submit_label","success_text"],
+  "vote": ["fields","response_limit","result_visibility","status","submit_label","success_text"],
 } as const satisfies Record<SectionType, readonly string[]>;
 
 export const SECTION_DEFAULT_CONFIGS = {
-  hero: {},
-  card_group: {},
-  stat_cards: {},
-  social_links: {
-    links: [],
+  "hero": {},
+  "card_group": {},
+  "stat_cards": {},
+  "social_links": {
+    "links": []
   },
-  image_gallery: {
-    albums: [
+  "image_gallery": {
+    "albums": [
       {
-        key: "all",
-        label: "All",
-      },
+        "key": "all",
+        "label": "All"
+      }
     ],
-    default_card_width: "regular",
+    "default_card_width": "regular"
   },
-  feature_grid: {},
-  cta: {},
-  event_highlights: {},
-  profile_card: {
-    checklist: [],
-    links: [],
+  "feature_grid": {},
+  "cta": {},
+  "event_highlights": {},
+  "profile_card": {
+    "checklist": [],
+    "links": []
   },
-  rich_text: {
-    content: "",
+  "rich_text": {
+    "content": ""
   },
-  code_editor: {
-    code: "",
-    language: "typescript",
-    filename: "",
+  "code_editor": {
+    "code": "",
+    "language": "typescript",
+    "filename": ""
   },
-  data_sources: {},
-  derived_section: {},
-  custom_section: {},
-  form: {
-    status: "open",
-    submit_label: "Submit form",
-    success_text: "Thank you. Your response has been recorded.",
-    result_visibility: "never",
-    response_limit: 0,
-    fields: [
+  "data_sources": {},
+  "derived_section": {},
+  "custom_section": {},
+  "form": {
+    "status": "open",
+    "submit_label": "Submit form",
+    "success_text": "Thank you. Your response has been recorded.",
+    "result_visibility": "never",
+    "response_limit": 0,
+    "fields": [
       {
-        key: "name",
-        type: "text",
-        label: "Full name",
-        required: true,
+        "key": "name",
+        "type": "text",
+        "label": "Full name",
+        "required": true
       },
       {
-        key: "email",
-        type: "email",
-        label: "Email",
-        required: true,
+        "key": "email",
+        "type": "email",
+        "label": "Email",
+        "required": true
       },
       {
-        key: "message",
-        type: "textarea",
-        label: "Message",
-        required: true,
-      },
-    ],
+        "key": "message",
+        "type": "textarea",
+        "label": "Message",
+        "required": true
+      }
+    ]
   },
-  qa: {
-    status: "open",
-    submit_label: "Ask question",
-    success_text: "Thank you. Your response has been recorded.",
-    result_visibility: "never",
-    response_limit: 0,
-    moderation: true,
-    fields: [
+  "qa": {
+    "status": "open",
+    "submit_label": "Ask question",
+    "success_text": "Thank you. Your response has been recorded.",
+    "result_visibility": "never",
+    "response_limit": 0,
+    "moderation": true,
+    "fields": [
       {
-        key: "question",
-        type: "textarea",
-        label: "Your question",
-        required: true,
-      },
-    ],
+        "key": "question",
+        "type": "textarea",
+        "label": "Your question",
+        "required": true
+      }
+    ]
   },
-  survey: {
-    status: "open",
-    submit_label: "Complete survey",
-    success_text: "Thank you. Your response has been recorded.",
-    result_visibility: "after_participation",
-    response_limit: 1,
-    fields: [
+  "survey": {
+    "status": "open",
+    "submit_label": "Complete survey",
+    "success_text": "Thank you. Your response has been recorded.",
+    "result_visibility": "after_participation",
+    "response_limit": 1,
+    "fields": [
       {
-        key: "satisfaction",
-        type: "scale",
-        label: "How satisfied are you?",
-        required: true,
-        min: 1,
-        max: 5,
+        "key": "satisfaction",
+        "type": "scale",
+        "label": "How satisfied are you?",
+        "required": true,
+        "min": 1,
+        "max": 5
       },
       {
-        key: "feedback",
-        type: "textarea",
-        label: "Tell us more",
-        required: false,
-      },
-    ],
+        "key": "feedback",
+        "type": "textarea",
+        "label": "Tell us more",
+        "required": false
+      }
+    ]
   },
-  poll: {
-    status: "open",
-    submit_label: "Submit vote",
-    success_text: "Thank you. Your response has been recorded.",
-    result_visibility: "after_participation",
-    response_limit: 1,
-    fields: [
+  "poll": {
+    "status": "open",
+    "submit_label": "Submit vote",
+    "success_text": "Thank you. Your response has been recorded.",
+    "result_visibility": "after_participation",
+    "response_limit": 1,
+    "fields": [
       {
-        key: "choice",
-        type: "radio",
-        label: "Choose one",
-        required: true,
-        options: [
+        "key": "choice",
+        "type": "radio",
+        "label": "Choose one",
+        "required": true,
+        "options": [
           {
-            key: "option-1",
-            label: "Option one",
+            "key": "option-1",
+            "label": "Option one"
           },
           {
-            key: "option-2",
-            label: "Option two",
-          },
-        ],
-      },
-    ],
+            "key": "option-2",
+            "label": "Option two"
+          }
+        ]
+      }
+    ]
   },
-  vote: {
-    status: "open",
-    submit_label: "Confirm ballot",
-    success_text: "Thank you. Your response has been recorded.",
-    result_visibility: "after_participation",
-    response_limit: 1,
-    fields: [
+  "vote": {
+    "status": "open",
+    "submit_label": "Confirm ballot",
+    "success_text": "Thank you. Your response has been recorded.",
+    "result_visibility": "after_participation",
+    "response_limit": 1,
+    "fields": [
       {
-        key: "candidate",
-        type: "radio",
-        label: "Select a candidate",
-        required: true,
-        options: [
+        "key": "candidate",
+        "type": "radio",
+        "label": "Select a candidate",
+        "required": true,
+        "options": [
           {
-            key: "candidate-1",
-            label: "Candidate one",
+            "key": "candidate-1",
+            "label": "Candidate one"
           },
           {
-            key: "candidate-2",
-            label: "Candidate two",
-          },
-        ],
-      },
-    ],
+            "key": "candidate-2",
+            "label": "Candidate two"
+          }
+        ]
+      }
+    ]
   },
 } satisfies { [T in SectionType]: SectionConfigByType[T] };
 
 export const SECTION_CAPABILITIES = {
-  hero: ["shared_shell", "media"],
-  card_group: ["shared_shell", "items"],
-  stat_cards: ["shared_shell", "items"],
-  social_links: ["shared_shell", "config_list"],
-  image_gallery: ["shared_shell", "items"],
-  feature_grid: ["shared_shell", "items"],
-  cta: ["shared_shell"],
-  event_highlights: ["shared_shell", "items"],
-  profile_card: ["shared_shell"],
-  rich_text: ["shared_shell", "rich_text"],
-  code_editor: ["shared_shell", "code_preview"],
-  data_sources: ["shared_shell", "datasource_management"],
-  derived_section: ["shared_shell", "datasource", "component_registry"],
-  custom_section: ["shared_shell", "preset", "datasource", "component_registry"],
-  form: ["shared_shell", "interactive", "sensitive_responses"],
-  qa: ["shared_shell", "interactive", "sensitive_responses"],
-  survey: ["shared_shell", "interactive", "sensitive_responses"],
-  poll: ["shared_shell", "interactive", "sensitive_responses"],
-  vote: ["shared_shell", "interactive", "sensitive_responses"],
+  "hero": ["shared_shell","media"],
+  "card_group": ["shared_shell","items"],
+  "stat_cards": ["shared_shell","items"],
+  "social_links": ["shared_shell","config_list"],
+  "image_gallery": ["shared_shell","items"],
+  "feature_grid": ["shared_shell","items"],
+  "cta": ["shared_shell"],
+  "event_highlights": ["shared_shell","items"],
+  "profile_card": ["shared_shell"],
+  "rich_text": ["shared_shell","rich_text"],
+  "code_editor": ["shared_shell","code_preview"],
+  "data_sources": ["shared_shell","datasource_management"],
+  "derived_section": ["shared_shell","datasource","component_registry"],
+  "custom_section": ["shared_shell","preset","datasource","component_registry"],
+  "form": ["shared_shell","interactive","sensitive_responses"],
+  "qa": ["shared_shell","interactive","sensitive_responses"],
+  "survey": ["shared_shell","interactive","sensitive_responses"],
+  "poll": ["shared_shell","interactive","sensitive_responses"],
+  "vote": ["shared_shell","interactive","sensitive_responses"],
 } as const satisfies Record<SectionType, readonly string[]>;

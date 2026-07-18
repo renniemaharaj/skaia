@@ -119,6 +119,10 @@ fixtures from these shapes.
      `h2`, and `h3` color controls. Each override can explicitly inherit, refer
      to a page palette token, or use a validated section-local color without
      changing the shared palette.
+   - The shared appearance editor is portaled outside section/toolbar overflow,
+     follows its trigger during scroll and resize, flips above or below according
+     to available space, and remains reachable within the viewport. Literal
+     fields use the shared native color picker for visual and precise entry.
    - `SectionFrame` applies a schema-bounded `content_scale` only to an inner
      content wrapper. Scaling must use responsive sizing variables/layout rather
      than transforming the outer section box; it may increase section height but
@@ -351,7 +355,8 @@ fixtures from these shapes.
 - Shared presentation: every section type exposes background/text/`h1`/`h2`/`h3`
   controls; palette references and literals resolve identically after reload;
   invalid colors are rejected; contrast warnings remain usable; bounded scaling
-  causes no horizontal overflow at supported breakpoints.
+  causes no horizontal overflow at supported breakpoints; the appearance editor
+  remains viewport-bounded above and below its anchor at supported breakpoints.
 - Collapse behavior: authored defaults persist and propagate only for authorized
   editors; unauthorized viewer toggles survive ordinary rerenders but make no
   mutation and reset on reload, navigation, or authoritative section revision.

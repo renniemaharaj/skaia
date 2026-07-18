@@ -289,10 +289,9 @@ describe("Header Component", () => {
 
   describe("Responsive Behavior", () => {
     it("renders header element", () => {
-      const { container } = renderHeader();
+      renderHeader();
 
-      const header = container.querySelector(".header");
-      expect(header).toBeInTheDocument();
+      expect(screen.getByRole("banner")).toBeInTheDocument();
     });
 
     it("maintains functionality with high cart count", () => {

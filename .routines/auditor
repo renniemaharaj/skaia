@@ -89,9 +89,18 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Ran
 
-- 2026-07-17
+- 2026-07-18
 
 ## Last Run Remarks
+
+- Completed the final affected-scope production audit for
+  `typed_page_sections_redesign`: no Critical, High, or Medium issue remains in
+  the implementation. Restored the exact contract-generation gate and removed
+  four stale false-negative frontend assertions. Code deployment is green;
+  normalized reads and legacy retirement remain guarded by real production
+  parity, rollback, quiet-window, and external-dependency evidence.
+
+## Previous Run Remarks (2026-07-17)
 
 - Audited `b3867355..a33fc6c9` across JSON persistence, HTTP/WS privacy,
   authorization, idempotency, validation, copy/duplicate safety, realtime state,

@@ -1024,33 +1024,55 @@ export const ColorPickerButton = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const [localValue, setLocalValue] = useState(value);
   const isActiveRef = useRef(false);
-  const debouncedOnChange = useRef(debounce((c: string) => onChange(c), 150));
+  const onChangeRef = useRef(onChange);
+  const debouncedOnChange = useRef(debounce((c: string) => onChangeRef.current(c), 150));
   const { enterEdit, leaveEdit } = usePageBuilderContext();
+
+  const nativeColorValue = (() => {
+    const match = /^#([0-9a-f]{3,8})$/i.exec(localValue);
+    if (!match) return "#000000";
+    const hex = match[1];
+    if (hex.length === 3 || hex.length === 4) {
+      return `#${[...hex.slice(0, 3)].map(char => char + char).join("")}`;
+    }
+    if (hex.length === 6 || hex.length === 8) return `#${hex.slice(0, 6)}`;
+    return "#000000";
+  })();
 
   // Keep the swatch in sync with external prop when not actively picking
   useEffect(() => {
     if (!isActiveRef.current) setLocalValue(value);
   }, [value]);
 
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => () => debouncedOnChange.current.cancel(), []);
+
   return (
-    <button
-      className={`pb-action-btn pb-color-picker ${className}`}
-      onClick={e => {
-        e.stopPropagation();
-        inputRef.current?.click();
-      }}
-      title={title}
-      style={{ position: "relative" }}
-    >
-      <Palette size={14} />
-      <span
-        className="pb-color-swatch"
-        style={{ backgroundColor: localValue || "rgba(0,0,0,0.5)" }}
-      />
+    <span className="pb-color-picker-wrap">
+      <button
+        type="button"
+        className={`pb-action-btn pb-color-picker ${className}`}
+        onClick={e => {
+          e.stopPropagation();
+          inputRef.current?.click();
+        }}
+        title={title}
+        aria-label={title}
+      >
+        <Palette size={14} />
+        <span
+          className="pb-color-swatch"
+          style={{ backgroundColor: localValue || "rgba(0,0,0,0.5)" }}
+        />
+      </button>
       <input
         ref={inputRef}
         type="color"
-        value={localValue || "#000000"}
+        value={nativeColorValue}
+        aria-label={`${title} value`}
         onFocus={() => {
           isActiveRef.current = true;
           enterEdit();
@@ -1072,7 +1094,7 @@ export const ColorPickerButton = ({
           overflow: "hidden",
         }}
       />
-    </button>
+    </span>
   );
 };
 

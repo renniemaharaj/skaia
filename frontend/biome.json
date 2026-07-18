@@ -48,6 +48,7 @@
     }
   },
   "files": {
-    "ignoreUnknown": true
+    "ignoreUnknown": true,
+    "ignore": ["src/components/page/sectionContracts.generated.ts"]
   }
 }

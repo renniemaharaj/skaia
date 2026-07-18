@@ -336,42 +336,64 @@
 }
 
 .section-shell-controls {
-  position: relative;
-}
-
-.section-shell-controls > summary {
   display: inline-flex;
-  align-items: center;
-  list-style: none;
 }
 
-.section-shell-controls > summary::-webkit-details-marker {
-  display: none;
+.section-shell-controls-trigger[aria-expanded="true"] {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .section-shell-controls-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 80;
+  position: fixed;
+  z-index: 10000;
   display: grid;
   gap: 8px;
-  width: min(360px, 80vw);
+  width: min(360px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
   padding: 12px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   background: var(--bg-secondary);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-lg);
   color: var(--text-primary);
+  animation: sectionShellControlsIn 150ms ease-out;
+}
+
+@keyframes sectionShellControlsIn {
+  from {
+    opacity: 0;
+    transform: scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.section-shell-controls-panel[data-placement="bottom"] {
+  transform-origin: top right;
+}
+
+.section-shell-controls-panel[data-placement="top"] {
+  transform-origin: bottom right;
 }
 
 .section-shell-controls-panel > label,
 .section-shell-color-row {
   display: grid;
-  grid-template-columns: minmax(80px, 1fr) minmax(100px, 1fr) auto;
+  grid-template-columns: minmax(82px, 0.75fr) minmax(92px, 0.85fr) minmax(0, 1fr);
   align-items: center;
   gap: 6px;
   font-size: 0.75rem;
+}
+
+.section-shell-control-label {
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .section-shell-controls-panel select,
@@ -388,6 +410,45 @@
   min-width: 100px;
 }
 
+.section-shell-color-value {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+}
+
+.section-shell-color-value select {
+  width: 100%;
+}
+
+.section-shell-color-value output {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section-shell-palette-swatch {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.section-shell-inherit-hint {
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+}
+
+.section-shell-controls-divider {
+  height: 1px;
+  background: var(--border-color);
+}
+
 .section-shell-controls-panel .section-shell-check {
   display: flex;
   grid-template-columns: none;
@@ -397,6 +458,13 @@
   margin: 0;
   color: var(--warning-color);
   font-size: 0.75rem;
+}
+
+@media (max-width: 480px) {
+  .section-shell-controls-panel > label,
+  .section-shell-color-row {
+    grid-template-columns: minmax(72px, 0.65fr) minmax(88px, 0.85fr) minmax(0, 1fr);
+  }
 }
 
 .section-layout-controls {
@@ -780,6 +848,11 @@
 }
 
 /* Color Picker / Swatch */
+
+.pb-color-picker-wrap {
+  position: relative;
+  display: inline-flex;
+}
 
 .pb-color-picker {
   display: flex;

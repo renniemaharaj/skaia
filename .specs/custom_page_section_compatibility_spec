@@ -79,7 +79,11 @@ data. It is keyed by page, section, and authoritative revision so rerenders
 retain the local choice while reload, navigation, or a revision change restores
 the authored default. Literal colors use a safe CSS subset; palette references
 resolve only to declared page tokens through namespaced CSS variables. Resolvable
-background/text pairs surface an editor contrast warning.
+background/text pairs surface an editor contrast warning. The appearance editor
+is a fixed, body-portaled popover that follows its toolbar anchor, flips above or
+below according to available space, and remains bounded within the viewport.
+Literal colors use the shared native color picker while inherit and palette-token
+sources retain explicit controls.
 
 ## Section-specific compatibility matrix
 

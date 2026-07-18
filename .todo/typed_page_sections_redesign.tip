@@ -11,6 +11,7 @@
 - **Phase 5: Typed APIs and concurrency cutover** — ✅ Complete
 - **Phase 6: Sensitive-data and preset migration** — ✅ Complete
 - **Phase 7: Cutover, rollback window, and cleanup** — ✅ Complete
+- **Final UX hardening and production audit** — ✅ Complete
 
 ### Completed Work (Phases 1-3)
 
@@ -319,6 +320,33 @@ now owns the page-specific normalized response cutover described below.
       correctly refuses retirement while pages remain unready and the external
       dependency review has not been attested; dormant legacy tables are empty.
 
+### Final UX Hardening and Production Audit (2026-07-18)
+
+- [x] Replace the toolbar-contained Appearance dropdown with an accessible,
+      body-portaled fixed popover using the established GlassMenu placement model.
+      It follows scroll/resize, measures its rendered dimensions, flips above or
+      below the trigger, clamps horizontally, bounds its height, closes on outside
+      click/Escape, and restores trigger focus.
+- [x] Replace literal color text boxes for background/text/`h1`/`h2`/`h3` with
+      the shared Hero/CTA native color picker while retaining explicit inherit and
+      palette-token modes, visible values/swatches, and contrast warnings.
+- [x] Add direct placement, portal, Escape-focus, and color-update regression
+      tests; retain the existing single-toolbar and shared-shell projection tests.
+- [x] Restore exact generated-contract reproducibility with the canonical
+      generator and exclude its output from automatic Biome reformatting so
+      `contracts:check` cannot be invalidated by `npm run format`.
+- [x] Repair the four stale baseline assertions for semantic MFA eyebrow copy and
+      the renamed semantic Header element; no application behavior changed.
+- [x] Verification passed: full backend `go test ./...`; frontend contract drift,
+      lint, TypeScript, production build, all 119 frontend tests, focused
+      Appearance/SectionFrame tests, formatting checks, and `git diff --check`.
+- [x] Final affected-scope audit found no Critical, High, or Medium issues. The
+      application code is deployable with the three page-section feature flags
+      retaining their default-off behavior. Normalized-read enablement and legacy
+      write/table retirement remain separately blocked until real production
+      parity/rollback observations, the seven-day quiet window, and explicit
+      external-client/job attestation pass the existing runbook.
+
 ### Phase 1-7 Outputs
 
 - `.specs/custom_page_section_compatibility_spec`
@@ -362,6 +390,7 @@ now owns the page-specific normalized response cutover described below.
 - `frontend/src/components/page/SectionFrame.tsx`
 - `frontend/src/components/page/SectionFrame.test.tsx`
 - `frontend/src/components/page/SectionShellControls.tsx`
+- `frontend/src/components/page/SectionShellControls.test.tsx`
 - `frontend/src/components/page/sectionRendererRegistry.tsx`
 - `frontend/src/components/page/sectionTheme.ts`
 - `frontend/src/components/page/sectionTheme.test.ts`
@@ -370,5 +399,6 @@ now owns the page-specific normalized response cutover described below.
 - `frontend/src/components/page/sectionCompatibility.test.ts`
 - `frontend/src/components/page/typedSectionApi.ts`
 - `frontend/src/components/page/typedSectionApi.test.ts`
+- `frontend/biome.json`
 
 <--/------->
