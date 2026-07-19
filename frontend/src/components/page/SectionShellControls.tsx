@@ -4,7 +4,6 @@ import { createPortal } from "react-dom";
 import { ColorPickerButton } from "./EditControls";
 import { isSafeSectionColor } from "./sectionTheme";
 import type { PageTheme, SharedSectionShell } from "./types";
-import Select from "../input/Select";
 
 type ColorSource = SharedSectionShell["background_color"];
 type ColorField = "background_color" | "text_color" | "h1_color" | "h2_color" | "h3_color";
@@ -88,7 +87,7 @@ function ColorSourceControl({
   return (
     <div className="section-shell-color-row">
       <span className="section-shell-control-label">{label}</span>
-      <Select
+      <select
         aria-label={`${label} color source`}
         value={value.mode}
         onChange={event => {
@@ -109,7 +108,7 @@ function ColorSourceControl({
         <option value="inherit">Inherit</option>
         <option value="literal">Custom</option>
         {theme.tokens.length > 0 && <option value="palette">Palette</option>}
-      </Select>
+      </select>
       {value.mode === "literal" && (
         <div className="section-shell-color-value">
           <ColorPickerButton
@@ -127,7 +126,7 @@ function ColorSourceControl({
             style={{ backgroundColor: resolvedColor }}
             aria-hidden="true"
           />
-          <Select
+          <select
             aria-label={`${label} palette token`}
             value={value.token}
             onChange={event => onChange({ mode: "palette", token: event.target.value })}
@@ -137,7 +136,7 @@ function ColorSourceControl({
                 {token.label}
               </option>
             ))}
-          </Select>
+          </select>
         </div>
       )}
       {value.mode === "inherit" && <span className="section-shell-inherit-hint">From page</span>}
@@ -193,7 +192,7 @@ export function SectionShellControls({ shell, theme, onChange }: SectionShellCon
     setPanelPosition(null);
     updatePanelPosition();
     panelRef.current
-      ?.querySelector<HTMLElement>("Select, input:not([disabled]), button:not([disabled])")
+      ?.querySelector<HTMLElement>("select, input:not([disabled]), button:not([disabled])")
       ?.focus();
   }, [open, updatePanelPosition]);
 
@@ -272,7 +271,7 @@ export function SectionShellControls({ shell, theme, onChange }: SectionShellCon
           >
             <label>
               <span className="section-shell-control-label">Container</span>
-              <Select
+              <select
                 aria-label="Section container width"
                 value={shell.container_width}
                 onChange={event =>
@@ -286,7 +285,7 @@ export function SectionShellControls({ shell, theme, onChange }: SectionShellCon
                 <option value="content">Content</option>
                 <option value="wide">Wide</option>
                 <option value="full">Full</option>
-              </Select>
+              </select>
             </label>
             <label>
               <span className="section-shell-control-label">Content scale</span>
