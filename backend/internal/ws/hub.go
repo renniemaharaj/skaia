@@ -25,11 +25,17 @@ var pkgLog = log.New("WebSocket")
 // HubConfig holds runtime-tunable WebSocket hub settings read from the
 // environment at startup. Use loadHubConfig() to populate.
 type HubConfig struct {
-	MaxConnections   int64
-	MaxWorkers       int
-	SessionSize      int
-	ChatRingSize     int
-	PresenceInterval time.Duration
+	MaxConnections       int64
+	MaxWorkers           int
+	SessionSize          int
+	ChatRingSize         int
+	MaxSubscriptions     int
+	PresenceInterval     time.Duration
+	APIBridgeEnabled     bool
+	APIConcurrency       int
+	APIGlobalConcurrency int
+	APIRequestTimeout    time.Duration
+	APIResponseBytes     int
 }
 
 // envInt reads key from the environment, returning def when absent or invalid.
@@ -48,14 +54,25 @@ func envInt(key string, def int) int {
 
 // loadHubConfig reads hub tuning knobs from the environment.
 func loadHubConfig() HubConfig {
+	maxWorkers := envInt("WS_MAX_WORKERS", workers.Budget(workers.DomainWS))
 	return HubConfig{
-		MaxConnections:   int64(envInt("WS_MAX_CONNECTIONS", 100_000)),
-		MaxWorkers:       envInt("WS_MAX_WORKERS", workers.Budget(workers.DomainWS)),
-		SessionSize:      envInt("WS_SESSION_SIZE", 100),
-		ChatRingSize:     envInt("WS_CHAT_RING_SIZE", 100),
-		PresenceInterval: time.Duration(envInt("WS_PRESENCE_INTERVAL_MS", 1000)) * time.Millisecond,
+		MaxConnections:       int64(envInt("WS_MAX_CONNECTIONS", 100_000)),
+		MaxWorkers:           maxWorkers,
+		SessionSize:          envInt("WS_SESSION_SIZE", 100),
+		ChatRingSize:         envInt("WS_CHAT_RING_SIZE", 100),
+		MaxSubscriptions:     envInt("WS_MAX_SUBSCRIPTIONS_PER_CLIENT", 256),
+		PresenceInterval:     time.Duration(envInt("WS_PRESENCE_INTERVAL_MS", 1000)) * time.Millisecond,
+		APIBridgeEnabled:     envBoolDefault("WS_API_BRIDGE_ENABLED", false),
+		APIConcurrency:       envInt("WS_API_CONCURRENCY", 4),
+		APIGlobalConcurrency: envInt("WS_API_GLOBAL_CONCURRENCY", maxWorkers),
+		APIRequestTimeout:    time.Duration(envInt("WS_API_REQUEST_TIMEOUT_SEC", 15)) * time.Second,
+		APIResponseBytes:     envInt("WS_API_RESPONSE_MAX_BYTES", 4<<20),
 	}
 }
+
+// SubscriptionAuthorizer is the transport-independent policy hook used before
+// adding a client to a resource subscription. Missing policy fails closed.
+type SubscriptionAuthorizer func(client *Client, resourceType string, resourceID int64) error
 
 // ClientPresence carries a presence announcement from a client, processed in Run.
 type ClientPresence struct {
@@ -155,8 +172,6 @@ type Hub struct {
 	unregister      chan *Client
 	subscriptions   map[string][]*Client        // key: "resource_type:resource_id"
 	clientSubs      map[*Client]map[string]bool // reverse index: client => subscription keys
-	subscribe       chan ResourceSubscription
-	unsubscribe     chan ResourceSubscription
 	presenceUpdates chan ClientPresence
 	teleport        chan TeleportRequest
 	cursorUpdates   chan CursorBroadcast
@@ -203,8 +218,10 @@ type Hub struct {
 	chatSlowModeInterval atomic.Int64 // seconds; 0 means use default burst rate
 
 	mediaRepo *MediaHistoryRepo
+	apiSem    chan struct{}
 
-	ApiDispatcher http.Handler
+	ApiDispatcher          http.Handler
+	SubscriptionAuthorizer SubscriptionAuthorizer
 }
 
 // NewHub creates and initialises a Hub ready to be started with Run.
@@ -220,8 +237,6 @@ func NewHub() *Hub {
 		unregister:      make(chan *Client, 2048),
 		subscriptions:   make(map[string][]*Client),
 		clientSubs:      make(map[*Client]map[string]bool),
-		subscribe:       make(chan ResourceSubscription, 1024),
-		unsubscribe:     make(chan ResourceSubscription, 1024),
 		presenceUpdates: make(chan ClientPresence, 4096),
 		teleport:        make(chan TeleportRequest, 256),
 		globalChat:      make(chan GlobalChatMessage, 1024),
@@ -238,12 +253,19 @@ func NewHub() *Hub {
 			SetMaxWorkers(cfg.MaxWorkers).
 			SetSafeQueueLength(4096),
 		mediaRepo: &MediaHistoryRepo{},
+		apiSem:    make(chan struct{}, cfg.APIGlobalConcurrency),
 	}
 }
 
 // SetDB sets the database for the hub.
 func (h *Hub) SetDB(db *sql.DB) {
 	h.mediaRepo.DB = db
+}
+
+// SetSubscriptionAuthorizer installs the fail-closed resource subscription
+// policy. It must be configured before clients are accepted.
+func (h *Hub) SetSubscriptionAuthorizer(authorizer SubscriptionAuthorizer) {
+	h.SubscriptionAuthorizer = authorizer
 }
 
 // SetChatSlowMode updates the global chat slow-mode configuration.
@@ -259,9 +281,6 @@ func (h *Hub) SetChatSlowMode(enabled bool, intervalSeconds int) {
 func clientLabel(c *Client) string {
 	if c.UserID == 0 {
 		return fmt.Sprintf("guest (conn=%d)", c.ClientID)
-	}
-	if c.UserName != "" {
-		return fmt.Sprintf("%q (id=%d)", c.UserName, c.UserID)
 	}
 	return fmt.Sprintf("id=%d", c.UserID)
 }
@@ -308,26 +327,29 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.register:
-			h.dispatch(func() {
-				h.handleRegister(client)
-				h.sendChatHistory(client)
-				h.sendNotificationBootstrap(client)
-				h.markPresenceDirty()
-			})
+			registered := h.handleRegister(client)
+			if client.registered != nil {
+				client.registered <- registered
+			}
+			if registered {
+				h.dispatch(func() {
+					h.sendChatHistory(client)
+					h.sendNotificationBootstrap(client)
+					h.markPresenceDirty()
+				})
+			}
 		case client := <-h.unregister:
-			h.dispatch(func() {
-				h.handleUnregister(client)
-				h.markPresenceDirty()
-			})
-		case sub := <-h.subscribe:
-			h.handleSubscribe(sub) // fast map write - run inline
-		case unsub := <-h.unsubscribe:
-			h.handleUnsubscribe(unsub) // fast map write - run inline
+			h.handleUnregister(client)
+			h.markPresenceDirty()
 		case msg := <-h.broadcast:
 			h.dispatch(func() { h.handleBroadcast(msg) })
 		case cp := <-h.presenceUpdates:
 			h.dispatch(func() {
 				h.mu.Lock()
+				if !h.clients[cp.Client] {
+					h.mu.Unlock()
+					return
+				}
 				cp.Client.Route = cp.Route
 				cp.Client.UserName = cp.UserName
 				cp.Client.Avatar = cp.Avatar
@@ -491,8 +513,8 @@ func (h *Hub) SendToGuestSession(guestSessionID string, msg *Message) bool {
 		return false
 	}
 	delivered := false
-	h.mu.RLock()
-	defer h.mu.RUnlock()
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	for client := range h.clients {
 		if client.UserID != 0 || client.GuestSessionID != guestSessionID {
 			continue
@@ -518,30 +540,24 @@ func (h *Hub) RegisterClient(client *Client) {
 	}
 }
 
-// Subscribe requests that client receives updates for the given resource.
-func (h *Hub) Subscribe(client *Client, resourceType string, resourceID int64) {
-	sub := ResourceSubscription{
+// Subscribe requests that client receives updates for the given resource. The
+// authorizer is mandatory so missing policy can never become subscription access.
+func (h *Hub) Subscribe(client *Client, resourceType string, resourceID int64) bool {
+	if h.SubscriptionAuthorizer == nil || h.SubscriptionAuthorizer(client, resourceType, resourceID) != nil {
+		return false
+	}
+	return h.handleSubscribe(ResourceSubscription{
 		Client:       client,
 		ResourceType: resourceType,
 		ResourceID:   resourceID,
-	}
-	select {
-	case h.subscribe <- sub:
-	default:
-		log.Println("ws: subscribe channel full, request dropped")
-	}
+	})
 }
 
 // Unsubscribe removes client's subscription for the given resource.
 func (h *Hub) Unsubscribe(client *Client, resourceType string, resourceID int64) {
-	unsub := ResourceSubscription{
+	h.handleUnsubscribe(ResourceSubscription{
 		Client:       client,
 		ResourceType: resourceType,
 		ResourceID:   resourceID,
-	}
-	select {
-	case h.unsubscribe <- unsub:
-	default:
-		log.Println("ws: unsubscribe channel full, request dropped")
-	}
+	})
 }

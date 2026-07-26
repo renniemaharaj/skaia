@@ -24,7 +24,7 @@ import {
   handleStoreUpdate,
   handleUserUpdate,
 } from "./handlers";
-import { resolveWsApiResponse } from "../utils/api";
+import { rejectAllWsApiRequests, resolveWsApiResponse } from "../utils/api";
 import "../utils/wsResources";
 import {
   WS_PROTO_SUBPROTOCOL,
@@ -85,7 +85,7 @@ export const useWebSocketSync = () => {
 
   const setupWebSocket = useCallback(() => {
     // Global singleton guard - only one WS connection per browser context.
-    if (_globalWs && _globalWs.readyState === WebSocket.OPEN) {
+    if (_globalWs && _globalWs.readyState !== WebSocket.CLOSED) {
       return;
     }
     if (_globalConnecting) {
@@ -221,6 +221,7 @@ export const useWebSocketSync = () => {
       };
 
       ws.onclose = () => {
+        rejectAllWsApiRequests();
         _globalConnecting = false;
         _globalWs = null;
         console.log("WebSocket disconnected");
@@ -248,20 +249,20 @@ export const useWebSocketSync = () => {
     wsUrl,
   ]);
 
-  // Reconnect only when the *user identity* changes (login / logout),
-  // NOT on every token refresh.  Permission propagation updates the token
-  // in-place - that must NOT tear down the socket or we create a
-  // disconnect/reconnect loop that drops messages.
+  // Reconnect whenever authentication or the access token changes so the
+  // server-side connection identity and permission snapshot stay current.
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const prevAuthRef = useRef(isAuthenticated);
+  const prevAccessTokenRef = useRef(accessToken);
   useEffect(() => {
-    // Only reconnect when auth state actually flips (logged-in <-> logged-out).
-    if (prevAuthRef.current === isAuthenticated) return;
+    const authChanged = prevAuthRef.current !== isAuthenticated;
+    const tokenChanged = prevAccessTokenRef.current !== accessToken;
     prevAuthRef.current = isAuthenticated;
+    prevAccessTokenRef.current = accessToken;
+    if (!authChanged && !tokenChanged) return;
     if (!_globalWs) return;
     _globalWs.close();
-    _globalWs = null;
-  }, [isAuthenticated]);
+  }, [accessToken, isAuthenticated]);
 
   /**
    * Subscribe to a specific resource so client receives propagated updates.

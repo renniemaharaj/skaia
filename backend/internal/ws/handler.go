@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"context"
 	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"os"
@@ -99,6 +100,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 	}
 
 	conn.SetReadLimit(maxMessageSize)
+	clientCtx, cancelClient := context.WithCancel(context.Background())
 
 	chatRate := 5.0
 	chatBurst := 5.0
@@ -117,6 +119,13 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 		RealIP:         utils.RealIP(r),
 		Permissions:    permissions,
 		Roles:          roles,
+		AuthToken:      tokenStr,
+		Host:           r.Host,
+		ctx:            clientCtx,
+		cancel:         cancelClient,
+		done:           make(chan struct{}),
+		registered:     make(chan bool, 1),
+		apiSem:         make(chan struct{}, hub.cfg.APIConcurrency),
 		chatLimit:      newRateBucket(chatRate, chatBurst),
 		cursorLimit:    newRateBucket(30, 30),
 		presenceLimit:  newRateBucket(5, 5),
@@ -125,6 +134,11 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 	}
 
 	hub.register <- client
+	if !<-client.registered {
+		client.close()
+		_ = conn.Close()
+		return
+	}
 
 	go client.ReadPump()
 	go client.WritePump()

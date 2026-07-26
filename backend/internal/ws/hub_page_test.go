@@ -7,6 +7,9 @@ func TestPropagatePageExceptUserTargetsSubscribersWithoutEcho(t *testing.T) {
 	sender := &Client{UserID: 7, Send: make(chan []byte, 1)}
 	recipient := &Client{UserID: 8, Send: make(chan []byte, 1)}
 	otherPage := &Client{UserID: 9, Send: make(chan []byte, 1)}
+	hub.clients[sender] = true
+	hub.clients[recipient] = true
+	hub.clients[otherPage] = true
 	hub.handleSubscribe(ResourceSubscription{Client: sender, ResourceType: "page", ResourceID: 42})
 	hub.handleSubscribe(ResourceSubscription{Client: recipient, ResourceType: "page", ResourceID: 42})
 	hub.handleSubscribe(ResourceSubscription{Client: otherPage, ResourceType: "page", ResourceID: 99})

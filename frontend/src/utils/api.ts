@@ -6,6 +6,8 @@ import { createRequestBatcher } from "./requestBatcher";
 
 const API_BASE_URL = getDefaultStore()?.get(apiBaseUrlAtom) ?? "/api"; // should be "" or "/" for same-origin
 const API_READ_COALESCE_WINDOW_MS = 8;
+const WS_API_REQUEST_TIMEOUT_MS = 15_000;
+const WS_API_BRIDGE_ENABLED = import.meta.env.VITE_WS_API_BRIDGE_ENABLED === "true";
 
 export interface RateLimitDefconInfo {
   ips_jailed?: number;
@@ -183,7 +185,11 @@ function headersKey(headers?: HeadersInit): string {
 }
 
 function requestCoalesceKey(endpoint: string, options: RequestInit): string {
-  return [normalizedMethod(options), endpoint, headersKey(options.headers)].join(" ");
+  return [
+    normalizedMethod(options),
+    endpoint,
+    headersKey(mergeHeaders(getAuthHeaders(false), options.headers)),
+  ].join(" ");
 }
 
 import { getGlobalWs } from "../hooks/useWebSocketSync";
@@ -193,11 +199,27 @@ import type { ApiRequestProto } from "./wsProtobuf";
 interface PendingWsRequest<T> {
   resolve: (value: T) => void;
   reject: (reason: any) => void;
+  timer: ReturnType<typeof setTimeout>;
 }
 const pendingWsRequests = new Map<number, PendingWsRequest<any>>();
-let nextRequestId = 1;
 
-export function resolveWsApiResponse(rawPayload: Uint8Array) {
+function allocateWsRequestId(): number {
+  const values = new Uint32Array(1);
+  do {
+    crypto.getRandomValues(values);
+  } while (values[0] === 0 || pendingWsRequests.has(values[0]));
+  return values[0];
+}
+
+export function rejectAllWsApiRequests(reason = "WebSocket disconnected") {
+  for (const pending of pendingWsRequests.values()) {
+    clearTimeout(pending.timer);
+    pending.reject(new Error(reason));
+  }
+  pendingWsRequests.clear();
+}
+
+export function resolveWsApiResponse(rawPayload: Uint8Array): boolean {
   try {
     const response = decodeApiResponse(rawPayload);
     const reqId =
@@ -206,8 +228,9 @@ export function resolveWsApiResponse(rawPayload: Uint8Array) {
         : Number((response.requestId as any).toString());
 
     const pending = pendingWsRequests.get(reqId);
-    if (!pending) return;
+    if (!pending) return false;
     pendingWsRequests.delete(reqId);
+    clearTimeout(pending.timer);
 
     if (response.status >= 400) {
       let errorData;
@@ -220,15 +243,20 @@ export function resolveWsApiResponse(rawPayload: Uint8Array) {
       const err = new Error(errorMessage) as any;
       err.status = response.status;
       err.details = errorData;
+      const retryAfter = response.headers?.["Retry-After"] ?? response.headers?.["retry-after"];
+      if (retryAfter) {
+        const parsed = Number.parseInt(retryAfter, 10);
+        if (!Number.isNaN(parsed)) err.retryAfter = parsed;
+      }
       pending.reject(err);
-      return;
+      return true;
     }
 
     try {
       const text = new TextDecoder().decode(response.body);
       if (!text) {
         pending.resolve(null);
-        return;
+        return true;
       }
       try {
         pending.resolve(JSON.parse(text));
@@ -238,14 +266,22 @@ export function resolveWsApiResponse(rawPayload: Uint8Array) {
     } catch (err) {
       pending.resolve(null);
     }
+    return true;
   } catch (error) {
     console.error("Failed to decode api response", error);
+    return false;
   }
 }
 
 function queueWsRequest<T>(reqProto: ApiRequestProto): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    pendingWsRequests.set(reqProto.requestId, { resolve, reject });
+    const timer = setTimeout(() => {
+      const pending = pendingWsRequests.get(reqProto.requestId);
+      if (!pending) return;
+      pendingWsRequests.delete(reqProto.requestId);
+      pending.reject(new Error("Timed out waiting for WebSocket API response"));
+    }, WS_API_REQUEST_TIMEOUT_MS);
+    pendingWsRequests.set(reqProto.requestId, { resolve, reject, timer });
 
     const ws = getGlobalWs();
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -255,6 +291,7 @@ function queueWsRequest<T>(reqProto: ApiRequestProto): Promise<T> {
         payload: payload,
       });
     } else {
+      clearTimeout(timer);
       pendingWsRequests.delete(reqProto.requestId);
       reject(new Error("WebSocket disconnected"));
     }
@@ -276,6 +313,7 @@ export async function apiRequest<T>(
   const ws = getGlobalWs();
 
   const useWs =
+    WS_API_BRIDGE_ENABLED &&
     ws &&
     ws.readyState === WebSocket.OPEN &&
     !options.signal &&
@@ -284,7 +322,7 @@ export async function apiRequest<T>(
     !(options.body instanceof ArrayBuffer);
 
   if (useWs) {
-    const reqId = nextRequestId++;
+    const reqId = allocateWsRequestId();
     let bodyBytes = new Uint8Array();
     if (typeof options.body === "string") {
       bodyBytes = new TextEncoder().encode(options.body);

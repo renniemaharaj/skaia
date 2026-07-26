@@ -51,6 +51,9 @@ func (r *MediaHistoryRepo) LoadHistory(route string) ([]MediaItem, error) {
 		item.CreatedAt = createdAt.Format(time.RFC3339)
 		history = append(history, item)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return history, nil
 }
 

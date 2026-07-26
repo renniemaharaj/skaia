@@ -114,9 +114,21 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-07-18T14:33:24-04:00
+- 2026-07-26T07:59:09-04:00
 
 ## Last Run Remarks
+
+- Completed `websocket_ingress_trust_boundary_hardening`: client ingress is an
+  explicit allowlist, private subscriptions are service-authorized and bounded,
+  credential updates are direct-only, and recovery auth is bound to the exact
+  guest session plus browser-tab request.
+- The REST bridge is disabled by default and now has connection-bound identity,
+  route/method/header validation, per-client/global concurrency limits,
+  cancellation, deadlines, bounded response metadata/body, and safe teardown.
+- Verification passed: full backend suite; WS/page race detector; all 124
+  frontend tests; frontend lint, production build, and contract drift check.
+
+## Previous Run Remarks (2026-07-18)
 
 - Completed the final `typed_page_sections_redesign` UX hardening pass: the
   Appearance editor now uses a measured body portal with viewport collision

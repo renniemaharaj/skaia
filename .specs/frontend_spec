@@ -26,6 +26,10 @@ WebSocket consumers, or page-builder UX.
 - Jotai atoms are the cross-page state boundary.
 - REST is used for initial reads and mutations; mutable shared state converges
   through WebSocket pushes into atoms.
+- REST is also the default API transport. The experimental WebSocket REST bridge
+  is used only when `VITE_WS_API_BRIDGE_ENABLED=true` and a socket is open;
+  disconnect rejects all pending requests, responses resolve only matching
+  random request IDs, and read coalescing includes the effective auth headers.
 - `useWebSocketSync` is mounted by `Layout.tsx` and can be called by consumers
   for `subscribe`/`unsubscribe`; it must remain a singleton per browser context.
 - Route pages live under `src/pages`; reusable domain UI lives under
@@ -88,7 +92,8 @@ WebSocket consumers, or page-builder UX.
 - Store chrome may show live wallet balance and pending-order badges fetched from
   `/store/wallet` and `/store/orders`; wallet badges compact thousands as `$1.2k`
   or `$12k`, pending counts include open vendor line status, and loaded user
-  orders should be subscribed to for live badge updates.
+  orders converge through buyer/manager direct delivery or seller-filtered direct
+  delivery. Clients do not create generic order subscriptions.
 - Cart page supports authenticated carts and guest checkout from local cart items.
 - Empty cart state uses the compact storefront empty-state treatment with
   "No products added" copy, not a large CTA card.
@@ -193,6 +198,9 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 - Do not duplicate token definitions in component CSS.
 - Do not persist sensitive card CVV-like data in frontend local storage.
 - Backend permissions are authoritative; frontend permission checks are UX only.
+- Password-recovery auth pushes require the exact browser-local guest session and
+  tab-local pending recovery request ID. Mismatched or unsolicited credentials
+  never update auth atoms.
 
 ## Verify
 

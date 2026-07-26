@@ -1051,6 +1051,48 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		provRepo := iprovisioning.NewRepository(db)
 		provSvc := iprovisioning.NewService(provRepo, conveyorManager, hub, grengoSvc)
+		subscriptionPolicy := ws.SubscriptionPolicy{
+			CanViewPage: func(resourceID, userID int64) error {
+				page, err := pageSvc.GetByID(resourceID)
+				if err != nil || page == nil {
+					return ws.ErrSubscriptionDenied
+				}
+				if page.Visibility == "public" || page.Visibility == "unlisted" {
+					return nil
+				}
+				if pagePolicy.RequirePageEditor(resourceID, userID) == nil {
+					return nil
+				}
+				return ws.ErrSubscriptionDenied
+			},
+			CanJoinConversation: func(resourceID, userID int64) error {
+				if _, err := inboxSvc.GetConversation(resourceID, userID); err == nil {
+					return nil
+				}
+				return ws.ErrSubscriptionDenied
+			},
+			CanViewOrder: func(resourceID, userID int64) error {
+				order, err := storeSvc.GetOrder(resourceID)
+				if err != nil || order == nil {
+					return ws.ErrSubscriptionDenied
+				}
+				if order.UserID != nil && *order.UserID == userID {
+					return nil
+				}
+				if allowed, err := userSvc.HasPermission(userID, "store.manageOrders"); err == nil && allowed {
+					return nil
+				}
+				return ws.ErrSubscriptionDenied
+			},
+			CanViewProvisioning: func(resourceID, userID int64) error {
+				if allowed, err := provSvc.CanAccessInstance(resourceID, userID); err == nil && allowed {
+					return nil
+				}
+				return ws.ErrSubscriptionDenied
+			},
+			HasPermission: userSvc.HasPermission,
+		}
+		hub.SetSubscriptionAuthorizer(subscriptionPolicy.Authorize)
 		iprovisioning.NewHandler(provSvc).Mount(api, imw.JWTAuthMiddleware)
 		istreammeta.NewHandler(istreammeta.DefaultStore).Mount(api, imw.JWTAuthMiddleware)
 	})

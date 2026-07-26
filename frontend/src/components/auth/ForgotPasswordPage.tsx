@@ -10,7 +10,7 @@ import {
   listRecoveryRequests,
   rejectRecoveryRequest,
 } from "../../utils/api";
-import { getGuestSessionId } from "../../utils/guestSession";
+import { getGuestSessionId, rememberPendingRecoveryRequest } from "../../utils/guestSession";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import Button from "../input/Button";
@@ -101,9 +101,13 @@ export default function ForgotPasswordPage() {
     setError(null);
     setLoading(true);
     try {
-      const data = await forgotPassword(email, getGuestSessionId());
+      const guestSessionId = getGuestSessionId();
+      const data = await forgotPassword(email, guestSessionId);
       setSent(true);
       setOwnRequest(data.request ?? null);
+      if (data.request?.id) {
+        rememberPendingRecoveryRequest(data.request.id, guestSessionId);
+      }
       setOwnRequestMessage(
         data.status === "already_pending"
           ? "You already have a request pending."

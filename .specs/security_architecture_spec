@@ -60,6 +60,12 @@ is not an architectural invariant and must not be treated as one.
 - Section-preset create/update/delete calls a required service-level
   `home.manage` policy. JWT route grouping and handler checks are not the
   authorization boundary, and permission-store failures deny mutation.
+- WebSocket ingress uses an explicit client-originated message allowlist.
+  Unknown or server-only event types are rejected rather than broadcast.
+- Every WebSocket resource subscription is authorized from the validated
+  connection identity. Unknown resource types, cross-user identifiers, missing
+  policy adapters, and lookup failures deny; private credential/session payloads
+  use direct-user or exact guest-session delivery, never generic subscriptions.
 
 ### Step-up and session trust
 
@@ -87,6 +93,9 @@ is not an architectural invariant and must not be treated as one.
 - Turnstile may precede TOTP for anomalous sessions but never replaces TOTP for a
   sensitive action that requires it.
 - Access JWTs remain short lived and session state remains revocable server side.
+- A recovery acceptance push changes browser authentication only when its guest
+  session and request ID match the pending recovery request held by that browser
+  tab. Unsolicited or mismatched pushes fail closed.
 
 ### Availability and containment
 
@@ -127,6 +136,11 @@ is not an architectural invariant and must not be treated as one.
   failure, permission lookup failure, an unmatched shadow, missing expected
   revision, or stale revision all deny before mutation. Conflict and validation
   responses contain no section config or interactive runtime data.
+- REST-over-WebSocket is disabled by default. If explicitly enabled, it binds
+  authentication and source metadata to the connection, restricts
+  methods/routes/headers, caps per-connection and global concurrent work plus
+  response bytes, applies a deadline, and cancels work on disconnect.
+  Unsupported HTTP semantics remain on ordinary HTTP.
 
 ### Audit and observability
 

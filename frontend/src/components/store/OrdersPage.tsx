@@ -27,7 +27,6 @@ import { type TableColumn, TableView } from "../../components/ui/TableView/Table
 import UserAvatar from "../../components/user/UserAvatar";
 import UserInlineCard from "../../components/user/UserInlineCard";
 import UserProfileOverlay from "../../components/user/UserProfileOverlay";
-import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 import { formatCents } from "../../utils/money";
 import Button from "../input/Button";
@@ -83,7 +82,6 @@ export const OrdersPage = () => {
     x: number;
     y: number;
   } | null>(null);
-  const { subscribe, unsubscribe } = useWebSocketSync();
   const FOCUS_KEY = "orderFocusId";
 
   useEffect(() => {
@@ -128,17 +126,6 @@ export const OrdersPage = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    for (const order of orders) {
-      subscribe("order", order.id);
-    }
-    return () => {
-      for (const order of orders) {
-        unsubscribe("order", order.id);
-      }
-    };
-  }, [orders, subscribe, unsubscribe]);
 
   useEffect(() => {
     const map: Record<string, Payment> = {};

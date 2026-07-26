@@ -5,9 +5,16 @@ import (
 	log "github.com/skaia/backend/internal/syslog"
 )
 
-// PropagateUser sends updated user data to all clients subscribed to that user.
+// PropagateUser sends private user/session updates only to connections owned by
+// that user. User payloads may contain credential material and must never travel
+// through generic resource subscriptions.
 func (h *Hub) PropagateUser(userID int64, userData interface{}) {
-	h.propagate("user", userID, UserUpdate, "user_updated", userData)
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action": "user_updated",
+		"id":     userID,
+		"data":   userData,
+	})
+	h.SendToUser(userID, &Message{Type: UserUpdate, Payload: payload})
 }
 
 // PropagateForumCategories sends forum category data to subscribed clients.

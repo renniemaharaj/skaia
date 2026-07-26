@@ -10,19 +10,20 @@ import (
 // presence and cursor fan-out - existing sessions with capacity are reused
 // before a new one is created. Rejects the connection if the server is at
 // capacity.
-func (h *Hub) handleRegister(client *Client) {
-	if h.connCount.Load() >= h.cfg.MaxConnections {
-		log.Printf("ws: connection limit (%d) reached, rejecting %s", h.cfg.MaxConnections, clientLabel(client))
-		close(client.Send)
-		return
+func (h *Hub) handleRegister(client *Client) bool {
+	h.mu.Lock()
+	if _, exists := h.clients[client]; exists {
+		h.mu.Unlock()
+		return true
 	}
-	h.connCount.Add(1)
+	if h.connCount.Load() >= h.cfg.MaxConnections {
+		h.mu.Unlock()
+		log.Printf("ws: connection limit (%d) reached, rejecting %s", h.cfg.MaxConnections, clientLabel(client))
+		client.close()
+		return false
+	}
 
 	client.ClientID = h.nextClientID.Add(1)
-
-	h.mu.Lock()
-	h.clients[client] = true
-	h.mu.Unlock()
 
 	// Assign the client to a session with available capacity, or open a new one.
 	h.sessionMu.Lock()
@@ -50,16 +51,28 @@ func (h *Hub) handleRegister(client *Client) {
 	h.chatMu.Unlock()
 
 	h.sessionMu.Unlock()
+	h.clients[client] = true
+	h.connCount.Add(1)
+	h.mu.Unlock()
 
 	log.Printf("ws: joined  %s (session %d)", clientLabel(client), client.SessionID)
 	h.sendJoinLeaveChat(client, "join")
+	return true
 }
 
 // handleUnregister releases a client's session slot, removes it from all
-// subscriptions, closes its send channel, and decrements the connection counter.
+// subscriptions, cancels its lifetime context, and decrements the connection counter.
 func (h *Hub) handleUnregister(client *Client) {
-	// Decrement the connection counter so new connections can take this slot.
+	h.mu.Lock()
+	if _, ok := h.clients[client]; !ok {
+		h.mu.Unlock()
+		client.close()
+		return
+	}
+	delete(h.clients, client)
 	h.connCount.Add(-1)
+	h.mu.Unlock()
+	client.close()
 
 	// Release session slot before acquiring the main lock.
 	h.sessionMu.Lock()
@@ -77,15 +90,6 @@ func (h *Hub) handleUnregister(client *Client) {
 	h.sessionMu.Unlock()
 
 	h.mu.Lock()
-
-	if _, ok := h.clients[client]; !ok {
-		h.mu.Unlock()
-		return
-	}
-
-	delete(h.clients, client)
-	close(client.Send)
-
 	// Use the reverse index for O(subscribed-keys) cleanup instead of
 	// scanning every subscription key in the map.
 	if keys, ok := h.clientSubs[client]; ok {
@@ -107,9 +111,13 @@ func (h *Hub) handleUnregister(client *Client) {
 	}
 	h.mu.Unlock()
 
+	h.mu.RLock()
+	guestSessionID := client.GuestSessionID
+	recoveryAccepted := client.RecoveryAccepted
+	h.mu.RUnlock()
 	log.Printf("ws: left    %s", clientLabel(client))
-	if client.UserID == 0 && client.GuestSessionID != "" && !client.RecoveryAccepted && h.OnGuestSessionClosed != nil {
-		go h.OnGuestSessionClosed(client.GuestSessionID)
+	if client.UserID == 0 && guestSessionID != "" && !recoveryAccepted && h.OnGuestSessionClosed != nil {
+		go h.OnGuestSessionClosed(guestSessionID)
 	}
 	h.sendJoinLeaveChat(client, "leave")
 }
@@ -120,7 +128,11 @@ func (h *Hub) sendJoinLeaveChat(client *Client, kind string) {
 	}
 	isGuest := client.UserID == 0
 	userID := client.UserID
+	h.mu.RLock()
 	name := client.UserName
+	avatar := client.Avatar
+	guestSessionID := client.GuestSessionID
+	h.mu.RUnlock()
 	if isGuest {
 		userID = -client.ClientID
 		if name == "" {
@@ -136,27 +148,40 @@ func (h *Hub) sendJoinLeaveChat(client *Client, kind string) {
 	h.SendGlobalChat(GlobalChatMessage{
 		UserID:         userID,
 		UserName:       name,
-		Avatar:         client.Avatar,
+		Avatar:         avatar,
 		Roles:          client.Roles,
 		Content:        name + " has " + action,
 		CreatedAt:      time.Now().UTC().Format(time.RFC3339),
 		IsGuest:        isGuest,
 		Kind:           kind,
-		GuestSessionID: client.GuestSessionID,
+		GuestSessionID: guestSessionID,
 		SessionID:      client.SessionID,
 	})
 }
 
-func (h *Hub) handleSubscribe(sub ResourceSubscription) {
+func (h *Hub) handleSubscribe(sub ResourceSubscription) bool {
 	h.mu.Lock()
+	if !h.clients[sub.Client] {
+		h.mu.Unlock()
+		return false
+	}
 	key := subscriptionKey(sub.ResourceType, sub.ResourceID)
-	h.subscriptions[key] = append(h.subscriptions[key], sub.Client)
 	if h.clientSubs[sub.Client] == nil {
 		h.clientSubs[sub.Client] = make(map[string]bool)
 	}
+	if h.clientSubs[sub.Client][key] {
+		h.mu.Unlock()
+		return true
+	}
+	if len(h.clientSubs[sub.Client]) >= h.cfg.MaxSubscriptions {
+		h.mu.Unlock()
+		return false
+	}
+	h.subscriptions[key] = append(h.subscriptions[key], sub.Client)
 	h.clientSubs[sub.Client][key] = true
 	h.mu.Unlock()
 	log.Printf("ws: sub     %s => %s", clientLabel(sub.Client), key)
+	return true
 }
 
 func (h *Hub) handleUnsubscribe(unsub ResourceSubscription) {

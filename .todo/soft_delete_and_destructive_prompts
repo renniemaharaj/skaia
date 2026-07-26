@@ -1,0 +1,280 @@
+# Soft Delete and Destructive Prompt Safety
+
+## Context
+
+Skaia currently hard-deletes records across forum, pages, store, inbox,
+notifications, configuration, provisioning, auth/session, and relationship
+repositories. Several parent deletes rely on PostgreSQL cascades; store
+category/product deletion also deletes historical `order_items` explicitly.
+Custom-page factory reset, typed section synchronization, and shadow projection
+contain additional bulk/stale-row deletes.
+
+The checked-in tenant schema contains about 65 active/dormant tables, while the
+current `home` database contains 71. The extra
+`page_interaction_*`/`page_interactive_sections` tables are orphaned remnants of
+a retired design: current code and specs use `page_section_instances` and
+`page_section_responses`. Two orphan tables already have `deleted_at` and
+`deleted_by`; they must not be treated as an authoritative convention or
+repurposed without the existing page cutover/retirement preflight.
+
+The frontend already mounts `PromptContainer` and uses `customConfirm`,
+`customPrompt`, and `customAlert`. Native browser dialogs remain in five places:
+three `confirm()` calls in store order/reference-code/card deletion and two
+`alert()` calls in upload failure handling. Several destructive actions,
+including forum, store catalog, page comment/section, and notification deletion,
+currently have no confirmation.
+
+## Goal
+
+- Make logical removal the default for every application database record that
+  can be deleted, excluding user-upload/file contents and filesystem cleanup.
+- Hide deleted records from normal reads, mutations, counts, search, cache, SEO,
+  and realtime state while retaining enough data and attribution for authorized
+  restoration and audit.
+- Preserve containment correctly: deleting a category/page/thread/conversation
+  hides its contained records without erasing independently deleted child state;
+  restoration must not resurrect a child that was deleted separately.
+- Preserve immutable financial, audit, analytics, and migration evidence by
+  forbidding user-facing deletion rather than inventing a destructive path.
+- Replace every browser-native `confirm`, `prompt`, `alert`, or unload prompt
+  with Skaia UI, and require the shared destructive prompt before user-facing
+  destructive commands.
+- Ship migrations, repository/service/API changes, restore workflows, realtime
+  convergence, tests, rollout controls, and durable specs as one verified policy.
+
+## Non-Goals
+
+- Do not soft-delete or retain the bytes of user uploads, exports, archives, or
+  other files. Their existing physical deletion remains permanent, but must use
+  Skaia confirmation/error UI.
+- Do not promise restoration of external infrastructure destroyed during site,
+  app, or provisioned-instance teardown. Retain the database lifecycle record
+  and make the permanent external effect explicit.
+- Do not expose deleted records through normal public APIs or add a generic
+  endpoint that bypasses domain authorization.
+- Do not add an automatic hard-purge job in this feature. Any future retention
+  purge requires a separate policy, legal/security review, and restore drill.
+- Do not revive or build against orphaned `page_interaction_*` tables.
+
+## Coverage Contract
+
+Before implementation, turn this grouping into a checked table/operation ledger
+covering fresh migrations, every deployed tenant, and the `grengo` control
+database. No table or runtime `DELETE FROM` may remain unclassified.
+
+| Strategy | Records |
+| --- | --- |
+| Restorable entity tombstone | `users`, `roles`, `permissions`, `site_config`, `forum_categories`, `forum_threads`, `thread_comments`, `store_categories`, `products`, `orders`, `subscription_plans`, `subscriptions`, `user_cards`, `product_reviews`, `store_reference_codes`, `inbox_conversations`, `inbox_messages`, `notifications`, `pages`, `page_comments`, `data_sources`, `custom_sections`, `user_page_allocations`, `page_sections`, `page_items`, `page_themes`, `page_theme_tokens`, `page_section_instances`, `page_section_instance_items`, `page_section_presets`, `page_section_responses`, `app_blueprints`, `provisioned_instances`, `media_history` |
+| Reversible relationship state | `role_permissions`, `user_roles`, `user_permissions`, `superuser_demotion_votes`, `cart_items`, `thread_likes`, `thread_comment_likes`, `thread_editors`, `inbox_conversation_participants`, `user_blocks`, `page_editors`, `page_likes`, `page_comment_likes`, `page_section_color_references` |
+| Revoke/expire or scrub secrets | `user_sessions`, `sessions`, `email_verification_tokens`, `password_reset_tokens`, `auth_backup_codes`, `auth_credentials`, `auth_totp_secrets`, `mfa_challenge_required`; clearing a secret removes secret material while retaining only safe lifecycle metadata |
+| Immutable/no delete API | `payments`, `order_items`, `user_wallet_transactions`, `store_reference_code_payouts`, `events`, `resource_views`; corrections use compensating/status records |
+| Operational lifecycle/history | `page_section_quarantine` resolves rather than deletes; `page_section_response_migrations` and `page_section_shadow_runs` are retained/upserted; stale normalized rows use tombstones rather than hard deletion |
+| Orphaned deployed tables | `page_interactive_sections`, `page_interaction_participation`, `page_interaction_qa_items`, `page_interaction_qa_upvotes`, `page_interaction_responses`, `page_interaction_selections`; verify usage/counts per tenant and route retirement through the existing page cutover gate |
+| Control-plane lifecycle | `frappe_sites` and `frappe_clusters` use deleted/retired status plus timestamps; `grengo_api_keys` keeps `revoked_at`; `grengo_api_key_permissions` deactivate; `grengo_passcodes` scrub secret values and retain safe cleared metadata |
+| Explicit exception | Filesystem uploads, incomplete upload chunks, exported archives, and temporary files may be physically removed; no application database row is hard-deleted as a side effect |
+
+The ledger must also classify migration-only data cleanup separately from
+runtime behavior. Existing guarded historical migrations may contain `DELETE`,
+but new runtime code must pass a strict allowlist check.
+
+## Behavioral Decisions
+
+- Standard entity metadata is nullable `deleted_at TIMESTAMPTZ` and
+  `deleted_by BIGINT REFERENCES users(id) ON DELETE SET NULL`; lifecycle tables
+  may use a more precise existing timestamp such as `revoked_at` or `resolved_at`.
+- Normal reads and writes require `deleted_at IS NULL`. Deleted direct lookups
+  return the same not-found response as missing records to avoid enumeration.
+- Restore and trash reads use explicit repository methods and the same or
+  stronger service policy as delete. Handlers never query around policy.
+- Container deletion marks the container, not every descendant. Descendants are
+  hidden through active-ancestor predicates; restoring the container reveals
+  only descendants whose own tombstone is null.
+- User deletion revokes authentication and memberships but does not erase
+  attributed historical/public content. Rendering uses a safe deleted-user
+  identity where needed; secrets are scrubbed, not retained for restoration.
+- Relationship removal marks the existing unique row inactive. Re-adding a like,
+  membership, permission, block, cart entry, editor, or color reference revives
+  that row with an atomic upsert instead of creating duplicates.
+- Delete and restore transitions are transactional and idempotent. The first
+  delete actor/time is preserved; restore clears the tombstone and records an
+  append-only audit event.
+- User-facing unique values need an explicit per-index decision. Identity and
+  security keys remain reserved. Reusable domain names/slugs may use partial
+  unique indexes on active rows; restore returns `409` with a non-sensitive
+  conflict code if a live replacement now owns the value.
+- Deleting the homepage clears `landing_page_slug` transactionally. Restoring a
+  page never silently makes it the homepage. Allocation counts, reply counts,
+  catalog counts, badges, and analytics exclude deleted records and are
+  reconciled from active data rather than blindly incremented/decremented.
+- Existing `*_deleted` realtime actions remain the removal projection even
+  though storage is retained. Restoration adds explicit `*_restored` actions or
+  content-free resource invalidations; private deleted content is never pushed.
+
+## Steps
+
+1. **Freeze the deletion inventory and resolve schema drift**
+   - Record every checked-in/live table, FK delete rule, unique constraint,
+     repository `DELETE FROM`, HTTP delete route, bulk reset, filesystem side
+     effect, cache invalidation, WS event, and frontend destructive control.
+   - Compare `001_schema.sql`, incremental migrations, `home`, other tenants,
+     test databases, and `internal/app/migrations`.
+   - Confirm the orphaned interactive tables have no code/job clients and link
+     their eventual retirement to `typed_page_sections_redesign`; do not block
+     active-table soft delete on production retirement evidence.
+   - Identify API methods using HTTP `DELETE` for reversible semantics such as
+     unlike, unblock, unsuspend, logout, cart removal, or permission toggles so
+     prompt policy follows user intent rather than HTTP method alone.
+
+2. **Add idempotent schema foundations**
+   - Add the next tenant migration and update `001_schema.sql`; add a separate
+     sorted control-plane migration for `grengo`.
+   - Add tombstone/lifecycle columns, actor FKs, active-read indexes, and
+     relationship revive constraints from the coverage ledger.
+   - Replace only the unique constraints approved for active-value reuse with
+     partial unique indexes. Verify restore conflicts before dropping any
+     existing constraint.
+   - Add safe columns/statuses for secret scrubbing and external teardown
+     lifecycle. Never retain passcodes, API keys, reset tokens, TOTP material,
+     card secrets, or backup-code hashes merely to make a row restorable.
+   - After all repositories are converted, add a database-level hard-delete
+     guard for soft-deletable tables with an explicit migration/operator bypass;
+     application connections must not be able to bypass it.
+
+3. **Make active scope authoritative in backend reads**
+   - Extend domain models only where deleted metadata is needed by authorized
+     restore/admin DTOs; do not leak it into public payloads by default.
+   - Audit every `SELECT`, join, count, search, list, feed, ownership check,
+     update, duplicate, backfill, SEO/sitemap query, and analytics aggregation.
+   - Require active ancestors for contained records and active target rows for
+     mutations. Preserve historical order/payment lines when products, users,
+     categories, or orders are removed.
+   - Add explicit `GetIncludingDeleted`, `ListDeleted`, and `Restore` repository
+     methods rather than boolean flags on ordinary reads.
+   - Ensure page compatibility projection, normalized cutover readiness, shadow
+     parity, interactive response reads, and typed revision checks cannot expose
+     or mutate tombstoned pages/sections/items/responses.
+
+4. **Convert mutations domain by domain**
+   - Replace hard deletes in user/RBAC/auth/session, forum, store, inbox,
+     notification, config/datasource/preset, page, provisioning, media history,
+     and control-plane repositories.
+   - Replace page factory reset and delete-all operations with one transaction
+     that tombstones active rows, clears homepage state, reconciles allocations,
+     emits bounded audit metadata, and remains retry-safe.
+   - Replace normalized section/item/token/response synchronization deletes with
+     tombstone/revive logic while preserving stable IDs, expected revisions,
+     ordering uniqueness, rollback projection, and parity hashes.
+   - Replace projection cleanup deletes with resolved/superseded lifecycle state
+     where the record is evidence; keep immutable financial/audit rows intact.
+   - For external teardown, commit a `deleting` state before work, finalize a
+     retained `deleted` tombstone after success, and expose retry/failure state.
+
+5. **Add restoration and trash workflows**
+   - Add domain-owned restore endpoints such as
+     `POST /{resource}/{id}/restore`, protected by service-level policy and audit.
+   - Add bounded/paginated deleted-item reads for authorized owners/managers.
+     A shared admin trash screen may aggregate service DTOs, but must not issue
+     generic SQL or bypass domain rules.
+   - Support single and bulk restore where the matching bulk delete exists.
+     Surface uniqueness/parent-deleted conflicts as stable `409` codes.
+   - Restore caches, counts, search visibility, page allocations, and realtime
+     state only after the transaction succeeds. External teardowns are displayed
+     as retained history/reprovision actions, not restorable resources.
+
+6. **Complete realtime, cache, and observability behavior**
+   - Evict active caches on delete/restore and prevent tombstoned cache fills.
+   - Update forum/store/order/page/inbox/notification reducers for restore or
+     authoritative refetch, including reconnect behavior.
+   - Emit append-only delete/restore events with actor, resource type/id, result,
+     and bulk correlation only; never log secrets or private response bodies.
+   - Add metrics for delete, restore, conflict, hard-delete-guard rejection, and
+     rows hidden by active scope. Alert on unexpected runtime hard-delete attempts.
+
+7. **Standardize Skaia prompts and guard destructive controls**
+   - Evolve `components/ui/Prompt.tsx` to accept structured title/body,
+     destructive confirm label/variant, pending/disabled state, and optional
+     typed-name confirmation for bulk/permanent operations. Preserve the
+     promise API or provide a narrow `confirmDestructiveAction` wrapper.
+   - Make the dialog accessible: `role="alertdialog"`/`aria-modal`, labelled
+     title/description, initial focus, focus trap/restore, Escape/cancel behavior,
+     and serialized requests so concurrent prompts never strand promises.
+   - Replace the three store `confirm()` calls with the shared prompt and the two
+     upload `alert()` calls with `customAlert` or a Skaia toast.
+   - Add confirmation to user-facing record deletion: forum
+     category/thread/comment; store category/product/order/reference code/card;
+     page/page section/item/comment/interactive response; data source/preset;
+     conversation/message; notification/clear-all; role/user; allocation;
+     provisioning/site/export; and every bulk reset/clear action.
+   - Keep high-frequency reversible intent such as unlike, cart removal,
+     unblock, unsuspend, logout/session lock, and role/permission toggles out of
+     delete confirmation unless the UX labels the action as destructive. They
+     still use the backend lifecycle strategy assigned in the ledger.
+   - Update old irreversible copy such as "cannot be undone" when restoration is
+     actually available. Permanent upload/file/external teardown copy remains
+     explicit.
+   - Add a source-level CI check forbidding `window.confirm`, `confirm`,
+     `window.prompt`, `prompt`, `window.alert`, `alert`, `beforeunload`, and
+     `onbeforeunload` outside the shared test harness.
+
+8. **Roll out in guarded releases**
+   - Release additive schema first, then active-read predicates, then soft-delete
+     writes/restores, then the database hard-delete guard and trash UI.
+   - Use a backend feature flag until every tenant passes schema and query
+     readiness checks. Do not mix hard and soft delete behavior within a domain.
+   - Run a production-like delete/restore drill for page with sections and
+     responses, forum category with threads/comments, store category with
+     products and historical orders, user attribution/auth revocation, inbox
+     conversation, and bulk notification/page reset.
+   - Keep rollback non-destructive: disabling new writes must never hard-delete
+     tombstoned rows. Document how old binaries are prevented from running once
+     the hard-delete guard is enabled.
+   - Update specs only after implementation truth changes, then record commands,
+     tenant preflights, and rollout evidence in the `.tip`.
+
+## Verification
+
+- Schema: run fresh tenant and `grengo` migrations twice; upgrade populated test
+  schemas; confirm every classified table has its required lifecycle columns,
+  indexes, constraints, and hard-delete protection.
+- Backend: run
+  `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
+  from `backend`, plus root Go tests for control-plane repository changes.
+- Repository matrix: for every restorable entity prove create -> visible ->
+  delete -> hidden from direct/list/search/count/update -> retained in SQL ->
+  restore -> visible, including separate child tombstones and active-name
+  conflicts.
+- Security: prove ordinary callers cannot include/restore deleted records,
+  deleted auth cannot log in, secrets are scrubbed, public 404 behavior does not
+  reveal tombstones, and immutable ledger/audit rows cannot be deleted.
+- Realtime/cache: prove delete and restore converge across two clients and after
+  reconnect without leaking deleted content or serving stale cache/SEO results.
+- Frontend: add Prompt accessibility/queue/cancel/confirm tests and focused
+  destructive-handler tests proving cancel sends no request and confirm sends
+  exactly one request.
+- Static gates:
+  `rg -n "\\b(window\\.)?(confirm|prompt|alert)\\s*\\(|onbeforeunload|beforeunload" frontend/src`
+  must return no application hits; runtime `DELETE FROM` must match only the
+  reviewed migration/test/file exception allowlist.
+- Build/lint: run frontend tests, lint, TypeScript build, and production build.
+- Docs: update `.specs/backend_spec`, `.specs/frontend_spec`,
+  `.specs/migrations_spec`, `.specs/realtime_wss_spec`,
+  `.specs/route_resolution_spec`, page interactive/compatibility specs, and
+  control-plane/infrastructure specs with verified final contracts.
+
+## References
+
+- `.routines/worker`
+- `.routines/correctness`
+- `.specs/backend_spec`
+- `.specs/frontend_spec`
+- `.specs/migrations_spec`
+- `.specs/realtime_wss_spec`
+- `.specs/route_resolution_spec`
+- `.specs/custom_page_section_compatibility_spec`
+- `.specs/custom_page_interactive_sections_spec`
+- `.todo/typed_page_sections_redesign`
+- `backend/internal/migrations/001_schema.sql`
+- `backend/internal/{forum,store,inbox,page,user,notification,config,datasource,customsection,provisioning}`
+- `internal/app/migrations/001_grengo_management.sql`
+- `frontend/src/components/ui/Prompt.tsx`
+- `frontend/src/pages/Layout.tsx`

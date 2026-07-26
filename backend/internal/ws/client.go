@@ -2,13 +2,15 @@ package ws
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
-	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -28,6 +30,14 @@ type Client struct {
 	Permissions []string
 	Roles       []string
 	SessionID   int64 // session bucket for chat, presence & cursor fan-out
+	AuthToken   string
+	Host        string
+	ctx         context.Context
+	cancel      context.CancelFunc
+	done        chan struct{}
+	closeOnce   sync.Once
+	registered  chan bool
+	apiSem      chan struct{}
 	// Presence fields - written under Hub.mu.Lock via presenceUpdates.
 	Route            string
 	UserName         string
@@ -63,12 +73,16 @@ const (
 	pingPeriod = 10 * time.Second
 	// writeWait is the deadline for any individual write (message or ping).
 	writeWait = 10 * time.Second
+	// maxAPIHeaderBytes bounds the protobuf metadata map independently from
+	// the response body cap.
+	maxAPIHeaderBytes = 16 << 10
 )
 
 // ReadPump pumps inbound messages from the connection to the hub.
 // It runs in its own goroutine for each client.
 func (c *Client) ReadPump() {
 	defer func() {
+		c.close()
 		c.Hub.unregister <- c
 		c.Conn.Close()
 	}()
@@ -142,16 +156,36 @@ func (c *Client) encodeOutboundMessage(msg *Message) ([]byte, error) {
 }
 
 func (c *Client) queueMessage(msg *Message) bool {
+	if c.done != nil {
+		select {
+		case <-c.done:
+			return false
+		default:
+		}
+	}
 	data, err := c.encodeOutboundMessage(msg)
 	if err != nil {
 		return false
 	}
 	select {
+	case <-c.done:
+		return false
 	case c.Send <- data:
 		return true
 	default:
 		return false
 	}
+}
+
+func (c *Client) close() {
+	c.closeOnce.Do(func() {
+		if c.cancel != nil {
+			c.cancel()
+		}
+		if c.done != nil {
+			close(c.done)
+		}
+	})
 }
 
 func (c *Client) handleMessage(msg Message) {
@@ -194,69 +228,226 @@ func (c *Client) handleMessage(msg Message) {
 	case ApiRequest:
 		c.handleApiRequest(msg)
 	default:
-		if c.broadcastLimit.allow() {
-			c.Hub.Broadcast(&msg)
-		}
+		c.sendClientErrorAction("unsupported_message", "Unsupported WebSocket message type.", 0)
 	}
 }
 
 func (c *Client) handleApiRequest(msg Message) {
-	if c.Hub.ApiDispatcher == nil {
-		pkgLog.Printf("[DEBUG] ApiDispatcher is nil")
-		return
-	}
-
 	var req wspb.ApiRequest
 	if err := proto.Unmarshal(msg.Payload, &req); err != nil {
-		pkgLog.Printf("[ERROR] Failed to unmarshal ApiRequest: %v", err)
+		c.sendAPIError(0, http.StatusBadRequest, "invalid WebSocket API request")
+		return
+	}
+	if c.Hub.ApiDispatcher == nil || !c.Hub.cfg.APIBridgeEnabled {
+		c.sendAPIError(req.RequestId, http.StatusServiceUnavailable, "WebSocket API bridge is disabled")
 		return
 	}
 
-	go c.dispatchApiRequest(&req)
+	select {
+	case c.apiSem <- struct{}{}:
+	default:
+		c.sendAPIError(req.RequestId, http.StatusTooManyRequests, "too many concurrent WebSocket API requests")
+		return
+	}
+	select {
+	case c.Hub.apiSem <- struct{}{}:
+		go func() {
+			defer func() {
+				<-c.Hub.apiSem
+				<-c.apiSem
+			}()
+			c.dispatchApiRequest(&req)
+		}()
+	default:
+		<-c.apiSem
+		c.sendAPIError(req.RequestId, http.StatusServiceUnavailable, "WebSocket API bridge is at capacity")
+	}
 }
 
 func (c *Client) dispatchApiRequest(req *wspb.ApiRequest) {
-	route := req.Route
-	if !strings.HasPrefix(route, "/api") {
-		route = "/api" + route
+	method := strings.ToUpper(strings.TrimSpace(req.Method))
+	switch method {
+	case http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+	default:
+		c.sendAPIError(req.RequestId, http.StatusMethodNotAllowed, "unsupported WebSocket API method")
+		return
 	}
-
-	pkgLog.Printf("[DEBUG] Dispatching WS API request: %s %s (requestId: %d)", req.Method, route, req.RequestId)
-
-	httpReq, err := http.NewRequest(req.Method, route, bytes.NewReader(req.Body))
+	route, err := normalizeAPIRoute(req.Route)
 	if err != nil {
-		pkgLog.Printf("[ERROR] Failed to create http request for route %s: %v", route, err)
+		c.sendAPIError(req.RequestId, http.StatusBadRequest, "invalid WebSocket API route")
 		return
 	}
 
-	for k, v := range req.Headers {
-		lk := strings.ToLower(k)
-		if lk == "x-real-ip" || lk == "x-forwarded-for" || lk == "cf-connecting-ip" || lk == "x-forwarded-host" || lk == "x-forwarded-proto" {
-			continue
-		}
-		httpReq.Header.Set(k, v)
+	requestCtx := c.ctx
+	if requestCtx == nil {
+		requestCtx = context.Background()
+	}
+	requestCtx, cancel := context.WithTimeout(requestCtx, c.Hub.cfg.APIRequestTimeout)
+	defer cancel()
+
+	httpReq, err := http.NewRequestWithContext(requestCtx, method, route, bytes.NewReader(req.Body))
+	if err != nil {
+		c.sendAPIError(req.RequestId, http.StatusBadRequest, "invalid WebSocket API request")
+		return
 	}
 
+	if err := copyAllowedAPIHeaders(httpReq.Header, req.Headers); err != nil {
+		c.sendAPIError(req.RequestId, http.StatusBadRequest, "invalid WebSocket API headers")
+		return
+	}
+
+	if c.AuthToken != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+c.AuthToken)
+	}
 	if c.RealIP != "" {
 		httpReq.Header.Set("X-Real-IP", c.RealIP)
 	}
+	httpReq.Host = c.Host
 
-	// Important: Do not carry over cookies from websocket upgrade directly, 
-	// because chi mux handles CORS/Auth via headers which frontend injects in the batch.
-	rec := httptest.NewRecorder()
+	rec := newBoundedResponseRecorder(c.Hub.cfg.APIResponseBytes)
 	c.Hub.ApiDispatcher.ServeHTTP(rec, httpReq)
+	if rec.overflow {
+		c.sendAPIError(req.RequestId, http.StatusBadGateway, "WebSocket API response exceeded the configured limit")
+		return
+	}
 
+	headers, err := responseHeaders(rec.header)
+	if err != nil {
+		c.sendAPIError(req.RequestId, http.StatusBadGateway, "WebSocket API response headers exceeded the configured limit")
+		return
+	}
+	body := rec.body.Bytes()
+	if method == http.MethodHead {
+		body = nil
+	}
 	res := &wspb.ApiResponse{
 		RequestId: req.RequestId,
 		Status:    uint32(rec.Code),
-		Body:      rec.Body.Bytes(),
+		Body:      body,
+		Headers:   headers,
 	}
 	resBytes, _ := proto.Marshal(res)
 
 	c.queueMessage(&Message{
-		Type:    "api:response",
+		Type:    ApiResponse,
 		Payload: resBytes,
 	})
+}
+
+func normalizeAPIRoute(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || strings.Contains(raw, "\\") {
+		return "", errors.New("invalid route")
+	}
+	parsed, err := url.ParseRequestURI(raw)
+	if err != nil || parsed.IsAbs() || parsed.Host != "" || parsed.User != nil {
+		return "", errors.New("invalid route")
+	}
+	path := parsed.Path
+	if path == "" || !strings.HasPrefix(path, "/") {
+		return "", errors.New("invalid route")
+	}
+	if strings.Contains(path, "..") {
+		return "", errors.New("invalid route")
+	}
+	if path != "/api" && !strings.HasPrefix(path, "/api/") {
+		path = "/api" + path
+	}
+	parsed.Path = path
+	parsed.RawPath = ""
+	return parsed.RequestURI(), nil
+}
+
+func copyAllowedAPIHeaders(dst http.Header, headers map[string]string) error {
+	total := 0
+	for key, value := range headers {
+		switch strings.ToLower(key) {
+		case "accept", "content-type", "idempotency-key", "if-match", "x-totp-code":
+			if !validAPIHeaderValue(value) {
+				return errors.New("invalid header value")
+			}
+			total += len(key) + len(value)
+			if total > maxAPIHeaderBytes {
+				return errors.New("headers exceed limit")
+			}
+			dst.Set(key, value)
+		}
+	}
+	return nil
+}
+
+func validAPIHeaderValue(value string) bool {
+	for i := 0; i < len(value); i++ {
+		if value[i] == '\t' {
+			continue
+		}
+		if value[i] < 0x20 || value[i] == 0x7f {
+			return false
+		}
+	}
+	return true
+}
+
+func (c *Client) sendAPIError(requestID uint64, status int, message string) {
+	body, _ := json.Marshal(map[string]string{"error": message})
+	resBytes, _ := proto.Marshal(&wspb.ApiResponse{
+		RequestId: requestID,
+		Status:    uint32(status),
+		Body:      body,
+		Headers:   map[string]string{"Content-Type": "application/json"},
+	})
+	c.queueMessage(&Message{Type: ApiResponse, Payload: resBytes})
+}
+
+type boundedResponseRecorder struct {
+	Code        int
+	header      http.Header
+	body        bytes.Buffer
+	limit       int
+	overflow    bool
+	wroteHeader bool
+}
+
+func newBoundedResponseRecorder(limit int) *boundedResponseRecorder {
+	return &boundedResponseRecorder{Code: http.StatusOK, header: make(http.Header), limit: limit}
+}
+
+func (r *boundedResponseRecorder) Header() http.Header {
+	return r.header
+}
+
+func (r *boundedResponseRecorder) WriteHeader(status int) {
+	if r.wroteHeader {
+		return
+	}
+	r.wroteHeader = true
+	r.Code = status
+}
+
+func (r *boundedResponseRecorder) Write(data []byte) (int, error) {
+	if !r.wroteHeader {
+		r.WriteHeader(http.StatusOK)
+	}
+	if r.body.Len()+len(data) > r.limit {
+		r.overflow = true
+		return 0, errors.New("response exceeds WebSocket API limit")
+	}
+	return r.body.Write(data)
+}
+
+func responseHeaders(headers http.Header) (map[string]string, error) {
+	out := make(map[string]string)
+	total := 0
+	for _, key := range []string{"Content-Type", "ETag", "Location", "Retry-After", "X-RateLimit-Reason"} {
+		if value := headers.Get(key); value != "" {
+			total += len(key) + len(value)
+			if total > maxAPIHeaderBytes || !validAPIHeaderValue(value) {
+				return nil, errors.New("response headers exceed limit")
+			}
+			out[key] = value
+		}
+	}
+	return out, nil
 }
 
 func (c *Client) handleGrengoJobAction(msg Message) {
@@ -303,12 +494,9 @@ func (c *Client) WritePump() {
 	}()
 	for {
 		select {
-		case data, ok := <-c.Send:
-			if !ok {
-				// Hub closed the channel.
-				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
+		case <-c.done:
+			return
+		case data := <-c.Send:
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.Conn.WriteMessage(websocket.BinaryMessage, data); err != nil {
 				return
@@ -337,7 +525,10 @@ func (c *Client) handleSubscribe(msg Message) {
 	if !ok {
 		return
 	}
-	c.Hub.Subscribe(c, resourceType, rid)
+	if !c.Hub.Subscribe(c, resourceType, rid) {
+		c.sendClientErrorAction("subscription_forbidden", "You are not authorized to subscribe to this resource.", 0)
+		return
+	}
 	log.Printf("ws: client %p subscribed to %s:%d", c, resourceType, rid)
 }
 
@@ -464,7 +655,11 @@ func (c *Client) handleGlobalChat(msg Message) {
 		userID = -c.ClientID
 	}
 
+	c.Hub.mu.RLock()
 	name := c.UserName
+	avatar := c.Avatar
+	guestSessionID := c.GuestSessionID
+	c.Hub.mu.RUnlock()
 	if name == "" {
 		if isGuest {
 			name = "Guest"
@@ -477,13 +672,13 @@ func (c *Client) handleGlobalChat(msg Message) {
 	c.Hub.SendGlobalChat(GlobalChatMessage{
 		UserID:         userID,
 		UserName:       name,
-		Avatar:         c.Avatar,
+		Avatar:         avatar,
 		Roles:          c.Roles,
 		Content:        p.Content,
 		CreatedAt:      now.UTC().Format(time.RFC3339),
 		IsGuest:        isGuest,
 		Kind:           "message",
-		GuestSessionID: c.GuestSessionID,
+		GuestSessionID: guestSessionID,
 		SessionID:      c.SessionID,
 	})
 }

@@ -35,6 +35,7 @@ type Service interface {
 	GetBlueprints() ([]*models.AppBlueprint, error)
 	ProvisionInstance(ctx context.Context, clientID int64, req ProvisionRequest) (*models.ProvisionedInstance, error)
 	GetClientInstances(clientID int64) ([]*models.ProvisionedInstance, error)
+	CanAccessInstance(id, clientID int64) (bool, error)
 	StartInstance(id int64) error
 	StopInstance(id int64) error
 	RestartInstance(id int64) error
@@ -275,6 +276,17 @@ func (s *service) GetClientInstances(clientID int64) ([]*models.ProvisionedInsta
 	return s.repo.ListInstancesByClient(clientID)
 }
 
+func (s *service) CanAccessInstance(id, clientID int64) (bool, error) {
+	if clientID <= 0 {
+		return false, nil
+	}
+	instance, err := s.repo.GetInstanceByID(id)
+	if err != nil {
+		return false, err
+	}
+	return instance != nil && instance.ClientID == clientID, nil
+}
+
 func (s *service) StartInstance(id int64) error {
 	isFrappe, err := s.isFrappe(id)
 	if err != nil {
@@ -387,7 +399,6 @@ func (s *service) isFrappe(id int64) (bool, error) {
 	}
 	return true, nil
 }
-
 
 func (s *service) updateInstanceAppList(id int64, appName string, installed bool) error {
 	inst, err := s.repo.GetInstanceByID(id)

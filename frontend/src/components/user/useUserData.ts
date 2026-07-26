@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 import type { Permission, ProfileUser, Role } from "./types";
 
@@ -20,7 +19,6 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
   const [user, setUser] = useState<ProfileUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { subscribe, unsubscribe } = useWebSocketSync();
 
   const [allPermissions, setAllPermissions] = useState<Permission[]>([]);
   const [allRoles, setAllRoles] = useState<Role[]>([]);
@@ -45,8 +43,6 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
             roles: data.roles ?? [],
             permissions: data.permissions ?? [],
           });
-          // Subscribe so profile changes propagate live to anyone viewing this profile
-          subscribe("user", Number(userId));
         } else {
           setError("User not found");
         }
@@ -57,11 +53,7 @@ export function useUserData(userId: string | undefined, canManage: boolean) {
       }
     };
     fetchUser();
-
-    return () => {
-      if (userId) unsubscribe("user", Number(userId));
-    };
-  }, [userId, subscribe, unsubscribe]);
+  }, [userId]);
 
   // Mirror real-time updates broadcast via WebSocket (avatar, banner, roles, etc.)
   useEffect(() => {

@@ -29,7 +29,10 @@ limit/error WS messages.
   carries only `voice:signal` SDP/ICE control messages for WebRTC. See
   `voice_chat_architecture.md`.
 - Reconnect uses a 3 second timer and replays all tracked subscriptions.
-- Auth changes close/reopen the socket; permission-only token pushes patch atoms.
+- Auth or access-token changes close/reopen the socket so the connection-bound
+  identity and permission snapshot cannot become stale.
+- The connection identity comes only from the validated handshake JWT. Client
+  envelope `user_id` fields and bridge-supplied authorization headers are ignored.
 
 ## Delivery Modes
 
@@ -44,8 +47,9 @@ limit/error WS messages.
 
 | Type | Payload | Contract |
 | --- | --- | --- |
-| `subscribe` | `{ resource_type, resource_id }` | Add resource key |
+| `subscribe` | `{ resource_type, resource_id }` | Add an authorized resource key or receive `subscription_forbidden` |
 | `unsubscribe` | `{ resource_type, resource_id }` | Remove resource key |
+| `api:request` | protobuf `ApiRequest` | Experimental REST bridge; rejected unless both bridge feature gates are enabled |
 | `ping` | none | Heartbeat |
 | `presence` | `{ route, user_name, avatar }` | Current route presence |
 | `global:chat` | `{ content }` | Global chat send |
@@ -60,6 +64,7 @@ limit/error WS messages.
 | Type | Payload contract | Frontend effect |
 | --- | --- | --- |
 | `error` | `{ message, action? }` | toast / stop processing |
+| `api:response` | protobuf `ApiResponse` with matching request ID | Resolve only the pending request with that ID |
 | `forum:update` | `{ action, id?, data? }` | forum atoms |
 | `store:update` | `{ action, data }` | products/categories/cart + checkout toast |
 | `order:update` | `{ action, data }` | buyer/admin/seller order atoms |
@@ -84,6 +89,7 @@ limit/error WS messages.
 | `activity:event` | `ActivityEvent` | activity feed |
 | `grengo:*` | job/stats/storage/hardware payload | custom browser events |
 | `mediascraper:*` | job/result payloads | custom browser events |
+| `recovery_request:accepted` | `{ request, auth }` | Authenticate only the browser tab holding the same pending request and guest-session IDs |
 
 ## Resource Keys
 
@@ -91,12 +97,37 @@ limit/error WS messages.
 | --- | --- |
 | `forum_category:{id}` | category thread feed |
 | `thread:{id}` | thread + comments |
-| `user:{id}` | profile/user updates |
+| `user:{id}` | authenticated self-only non-credential resource compatibility |
 | `inbox_conversation:{id}` | conversation messages |
 | `store_product:{id}` | reserved/product detail |
 | `store_category:{id}` | reserved/category detail |
-| `order:{id}` | live order detail/cards for buyers, admins, and vendors |
+| `order:{id}` | authorized buyer/manager compatibility; normal order delivery is direct |
 | `page:{id}` | content-free custom-page invalidations and authoritative revisions |
+
+Subscription authorization is mandatory and fail-closed:
+
+- Public positive-ID keys: forum category/thread and store product/category.
+- Page keys require public/unlisted visibility or editor policy.
+- User/inbox keys require an authenticated connection whose user ID equals the
+  resource ID; credential-bearing user updates use direct-user delivery only.
+- Conversation membership, order buyer/manager access, and provisioning
+  ownership/admin access are service-backed lookups. Logs require `admin.general`.
+- Unknown resource types, invalid IDs, missing callbacks, and lookup failures deny.
+- Duplicate keys are idempotent and each connection is capped by
+  `WS_MAX_SUBSCRIPTIONS_PER_CLIENT` (default 256).
+
+## REST Bridge Containment
+
+- Ordinary HTTP remains the default. Both `WS_API_BRIDGE_ENABLED` and
+  `VITE_WS_API_BRIDGE_ENABLED` default off; endpoints needing streaming, upload,
+  refresh/MFA retry, or unsupported HTTP semantics stay on HTTP.
+- When explicitly enabled, requests are limited per connection and globally,
+  canceled on disconnect, deadline-bound, response-size-bound, and restricted to
+  `GET|HEAD|POST|PUT|PATCH|DELETE` under `/api`.
+- Incoming headers are allowlisted. Authorization, real IP, and host are bound
+  from the connection; forwarded/client credentials never override them.
+- Responses preserve only the supported metadata (`Content-Type`, `ETag`,
+  `Location`, `Retry-After`, `X-RateLimit-Reason`) and always echo the request ID.
 
 ## Action Registry
 
@@ -126,6 +157,10 @@ shared mutations converge through WS:
 - A WebSocket reconnect emits a local reconnect signal after subscription replay;
   custom-page consumers refetch through REST to recover any missed revisions.
 - Direct/private messages must be authorized server-side.
+- Client message dispatch is an explicit allowlist. Unknown and server-only
+  message types receive an error and are never rebroadcast.
+- Recovery credentials require both the connection-targeted guest session and
+  the browser-tab pending request ID before frontend auth state changes.
 - Store cart updates target the owner; catalog updates broadcast.
 - Page updates exclude the sender when the HTTP response is already authoritative.
 - Typed page mutations propagate only to `page:{id}` subscribers and carry page
@@ -134,6 +169,8 @@ shared mutations converge through WS:
   page invalidations. Clients refetch through REST; full `pages.content` documents
   are never broadcast because they can contain authorization-scoped records.
 - Slow consumers must not block the hub; use bounded/non-blocking sends where required.
+- Registration/unregistration is idempotent and count-safe. Closing a connection
+  cancels in-flight bridge requests without closing a producer-visible send queue.
 
 ## Verify
 

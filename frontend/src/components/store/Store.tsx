@@ -103,7 +103,7 @@ export const Store: React.FC = () => {
   const setCartItems = useSetAtom(storeCartItemsAtom);
   const setOrders = useSetAtom(ordersAtom);
 
-  const { subscribe, unsubscribe } = useWebSocketSync();
+  const { subscribe } = useWebSocketSync();
 
   const [guestSandboxMode] = useGuestSandboxMode();
 
@@ -331,18 +331,6 @@ export const Store: React.FC = () => {
     if (!isAuthenticated) return;
     setPendingOrderCount(userOrders.filter(hasPendingVendorWork).length);
   }, [isAuthenticated, userOrders]);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    for (const order of userOrders) {
-      subscribe("order", order.id);
-    }
-    return () => {
-      for (const order of userOrders) {
-        unsubscribe("order", order.id);
-      }
-    };
-  }, [isAuthenticated, subscribe, unsubscribe, userOrders]);
 
   useEffect(() => {
     loadCatalog();

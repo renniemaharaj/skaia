@@ -93,7 +93,10 @@ func (h *Hub) handleWebRTCMessage(sender *Client, payload VoiceSignalPayload) {
 	if sender == nil || payload.Route == "" || payload.TargetUserID == 0 {
 		return
 	}
-	if payload.Route != sender.Route {
+	h.mu.RLock()
+	senderRoute := sender.Route
+	h.mu.RUnlock()
+	if payload.Route != senderRoute {
 		return
 	}
 	switch payload.Kind {

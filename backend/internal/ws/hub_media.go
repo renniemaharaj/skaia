@@ -26,6 +26,7 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 	route := action.Route
 	h.mu.RLock()
 	clientRoute := mu.Client.Route
+	clientUserName := mu.Client.UserName
 	h.mu.RUnlock()
 	if route == "" || route != clientRoute {
 		return // Ignore updates without a route
@@ -44,7 +45,7 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 				ID:        generateID(),
 				VideoID:   action.VideoID,
 				AddedBy:   mu.Client.UserID,
-				UserName:  mu.Client.UserName,
+				UserName:  clientUserName,
 				Loop:      action.Loop,
 				CreatedAt: time.Now().UTC().Format(time.RFC3339),
 			}

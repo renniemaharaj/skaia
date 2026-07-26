@@ -96,6 +96,8 @@ func (h *Hub) handleTeleport(req TeleportRequest) {
 // Sessions cap fan-out to cfg.SessionSize regardless of total connection count.
 func (h *Hub) handleCursorBroadcast(cu CursorBroadcast) {
 	sender := cu.Client
+	h.mu.RLock()
+	defer h.mu.RUnlock()
 	if sender.Route == "" {
 		return
 	}
@@ -116,8 +118,6 @@ func (h *Hub) handleCursorBroadcast(cu CursorBroadcast) {
 	})
 	msg := &Message{Type: Cursor, Payload: payload}
 
-	h.mu.RLock()
-	defer h.mu.RUnlock()
 	for client := range h.clients {
 		if client == sender ||
 			client.SessionID != sender.SessionID ||

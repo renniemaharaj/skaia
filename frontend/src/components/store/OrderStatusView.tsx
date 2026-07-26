@@ -1,5 +1,5 @@
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -10,7 +10,6 @@ import iconShadow from "leaflet/dist/images/marker-shadow.png";
 import { AlertTriangle, CheckCircle2, Clock, PackageCheck, XCircle } from "lucide-react";
 import { productsAtom } from "../../atoms/store";
 import type { CartItem, Order } from "../../atoms/store";
-import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { formatCents } from "../../utils/money";
 import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
@@ -35,13 +34,6 @@ const OrderSubmittedView: React.FC<Props> = ({
   onVendorStatusChange,
 }) => {
   const products = useAtomValue(productsAtom);
-  const { subscribe, unsubscribe } = useWebSocketSync();
-
-  useEffect(() => {
-    if (!order?.id) return;
-    subscribe("order", order.id);
-    return () => unsubscribe("order", order.id);
-  }, [order?.id, subscribe, unsubscribe]);
 
   // Ensure marker icon is configured for Leaflet
   try {

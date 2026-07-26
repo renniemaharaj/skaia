@@ -80,9 +80,26 @@ docs disagree.
 
 ## Last Ran
 
-- 2026-07-17
+- 2026-07-26
 
 ## Last Run Remarks
+
+- Final WebSocket correctness sweep added the required `rows.Err()` terminal
+  check in media history loading and split the duplicate subscription assertions
+  that triggered `SA4000`. `staticcheck ./internal/ws/...`, `go vet
+  ./internal/ws/...`, and the WS/page race tests now pass.
+- Repository-wide staticcheck still reports pre-existing findings outside this
+  scope across auth, config, datasource, email, grengo, integration, page,
+  provisioning, section registry, and syslog; none are in `internal/ws`.
+- Reconciled the WebSocket implementation and durable contracts: server-only
+  message types are not client-originated, user credentials are direct-delivery,
+  order sellers receive filtered direct projections, and normal clients no
+  longer request denied order or other-user subscriptions.
+- Removed lifecycle/protocol drift by making registration and subscriptions
+  synchronous, idempotent, bounded, and disconnect-safe; updated realtime,
+  security, and frontend specs. No material contradiction remains.
+
+## Previous Run Remarks (2026-07-17)
 
 - Re-audited the post-reset interactive implementation and confirmed the governing
   architecture stores definitions and records in `pages.content`; retired the

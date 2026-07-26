@@ -7,6 +7,7 @@ import { formatCents } from "../utils/money";
 import { playChatSound, playMessageSound, playNotificationSound } from "../utils/sound";
 import { sendWebSocketMessage } from "../utils/wsProtobuf";
 import { applyWsUpdate } from "../utils/wsRegistry";
+import { consumePendingRecoveryRequest, getGuestSessionId } from "../utils/guestSession";
 
 export interface WebSocketMessage {
   type: string;
@@ -301,8 +302,17 @@ export const handleRecoveryAccepted = (
   setAccessToken: ValueSetter<string | null>,
   setRefreshToken: ValueSetter<string | null>
 ) => {
+  const request = payload?.data?.request;
   const auth = payload?.data?.auth;
   if (!auth?.access_token || !auth?.user) return;
+  if (
+    !request?.id ||
+    !request?.guest_session_id ||
+    request.guest_session_id !== getGuestSessionId() ||
+    !consumePendingRecoveryRequest(request.id, request.guest_session_id)
+  ) {
+    return;
+  }
   setAccessToken(auth.access_token);
   if (auth.refresh_token) {
     setRefreshToken(auth.refresh_token);

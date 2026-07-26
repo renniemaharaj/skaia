@@ -222,6 +222,7 @@ type ApiResponse struct {
 	RequestId     uint64                 `protobuf:"varint,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	Status        uint32                 `protobuf:"varint,2,opt,name=status,proto3" json:"status,omitempty"`
 	Body          []byte                 `protobuf:"bytes,3,opt,name=body,proto3" json:"body,omitempty"`
+	Headers       map[string]string      `protobuf:"bytes,4,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -273,6 +274,13 @@ func (x *ApiResponse) GetStatus() uint32 {
 func (x *ApiResponse) GetBody() []byte {
 	if x != nil {
 		return x.Body
+	}
+	return nil
+}
+
+func (x *ApiResponse) GetHeaders() map[string]string {
+	if x != nil {
+		return x.Headers
 	}
 	return nil
 }
@@ -344,12 +352,16 @@ const file_ws_proto_rawDesc = "" +
 	"\aheaders\x18\x05 \x03(\v2!.skaia.ws.ApiRequest.HeadersEntryR\aheaders\x1a:\n" +
 	"\fHeadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"X\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd2\x01\n" +
 	"\vApiResponse\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\x04R\trequestId\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\rR\x06status\x12\x12\n" +
-	"\x04body\x18\x03 \x01(\fR\x04body\"A\n" +
+	"\x04body\x18\x03 \x01(\fR\x04body\x12<\n" +
+	"\aheaders\x18\x04 \x03(\v2\".skaia.ws.ApiResponse.HeadersEntryR\aheaders\x1a:\n" +
+	"\fHeadersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"A\n" +
 	"\rBatchEnvelope\x120\n" +
 	"\brequests\x18\x01 \x03(\v2\x14.skaia.ws.ApiRequestR\brequestsB\x1dZ\x1bgithub.com/skaia/grpc/ws;wsb\x06proto3"
 
@@ -365,7 +377,7 @@ func file_ws_proto_rawDescGZIP() []byte {
 	return file_ws_proto_rawDescData
 }
 
-var file_ws_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_ws_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_ws_proto_goTypes = []any{
 	(*WebSocketMessage)(nil), // 0: skaia.ws.WebSocketMessage
 	(*ServerMessage)(nil),    // 1: skaia.ws.ServerMessage
@@ -373,15 +385,17 @@ var file_ws_proto_goTypes = []any{
 	(*ApiResponse)(nil),      // 3: skaia.ws.ApiResponse
 	(*BatchEnvelope)(nil),    // 4: skaia.ws.BatchEnvelope
 	nil,                      // 5: skaia.ws.ApiRequest.HeadersEntry
+	nil,                      // 6: skaia.ws.ApiResponse.HeadersEntry
 }
 var file_ws_proto_depIdxs = []int32{
 	5, // 0: skaia.ws.ApiRequest.headers:type_name -> skaia.ws.ApiRequest.HeadersEntry
-	2, // 1: skaia.ws.BatchEnvelope.requests:type_name -> skaia.ws.ApiRequest
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	6, // 1: skaia.ws.ApiResponse.headers:type_name -> skaia.ws.ApiResponse.HeadersEntry
+	2, // 2: skaia.ws.BatchEnvelope.requests:type_name -> skaia.ws.ApiRequest
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_ws_proto_init() }
@@ -395,7 +409,7 @@ func file_ws_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ws_proto_rawDesc), len(file_ws_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

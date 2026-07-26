@@ -52,6 +52,7 @@ const root = protobuf.Root.fromJSON({
                 requestId: { type: "uint64", id: 1 },
                 status: { type: "uint32", id: 2 },
                 body: { type: "bytes", id: 3 },
+                headers: { keyType: "string", type: "string", id: 4 } as any,
               },
             },
             BatchEnvelope: {
@@ -106,6 +107,7 @@ export interface ApiResponseProto {
   requestId: number;
   status: number;
   body: Uint8Array;
+  headers: Record<string, string>;
 }
 
 const apiRequestType = root.lookupType("skaia.ws.ApiRequest");

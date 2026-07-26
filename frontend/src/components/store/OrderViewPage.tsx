@@ -7,7 +7,6 @@ import { isAuthenticatedAtom } from "../../atoms/auth";
 import { currentOrderAtom, ordersAtom } from "../../atoms/store";
 import type { Order } from "../../atoms/store";
 import OrderSubmittedView from "../../components/store/OrderStatusView";
-import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 import { StorePageShell } from "./StorePageShell";
 
@@ -20,13 +19,6 @@ const OrderViewPage: React.FC = () => {
   const [order, setOrder] = useAtom(currentOrderAtom);
   const setOrders = useSetAtom(ordersAtom);
   const [loading, setLoading] = useState(false);
-  const { subscribe, unsubscribe } = useWebSocketSync();
-
-  useEffect(() => {
-    if (!id || !isAuthenticated) return;
-    subscribe("order", id);
-    return () => unsubscribe("order", id);
-  }, [id, isAuthenticated, subscribe, unsubscribe]);
 
   useEffect(() => {
     if (!id || !isAuthenticated) {

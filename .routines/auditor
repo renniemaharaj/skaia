@@ -89,9 +89,22 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Ran
 
-- 2026-07-18
+- 2026-07-26
 
 ## Last Run Remarks
+
+- Audited the WebSocket ingress, subscription registry, REST rerouter,
+  connection lifecycle, recovery correlation, private order/user projections,
+  protobuf contract, and frontend consumers. No Critical, High, or Medium issue
+  remains in the affected scope.
+- During the gate, added global REST-bridge concurrency, request/response header
+  bounds, subscription deduplication/caps, stale-client rejection, presence-field
+  synchronization, token-change reconnects, and adversarial regression coverage.
+- Final verification passed: full backend suite; `go test -race ./internal/ws
+  ./internal/page`; all 124 frontend tests; frontend lint/build; contract drift;
+  and `git diff --check`.
+
+## Previous Run Remarks (2026-07-18)
 
 - Completed the final affected-scope production audit for
   `typed_page_sections_redesign`: no Critical, High, or Medium issue remains in

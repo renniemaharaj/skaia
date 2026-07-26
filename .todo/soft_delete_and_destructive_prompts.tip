@@ -1,0 +1,22 @@
+<--/------->
+
+## soft_delete_and_destructive_prompts
+
+### Current Progress
+- **Phase 1: Inventory and drift resolution** — ⬜ Not started
+- **Phase 2: Tenant/control-plane migrations** — ⬜ Not started
+- **Phase 3: Active-scope reads and mutations** — ⬜ Not started
+- **Phase 4: Restore, realtime, and cache** — ⬜ Not started
+- **Phase 5: Destructive prompt standardization** — ⬜ Not started
+- **Phase 6: Rollout, verification, and specs** — ⬜ Not started
+
+### Next Steps
+- [ ] Invoke `.routines/worker` and build the checked table/operation ledger from fresh migrations, every deployed tenant, `grengo`, runtime SQL, routes, WS actions, and frontend controls.
+- [ ] Resolve the orphaned live `page_interaction_*` tables against the existing page retirement preflight without repurposing them.
+- [ ] Choose per-constraint active-name reuse/reservation behavior and record restore conflict policy before writing migrations.
+- [ ] Implement the additive tenant and control-plane migrations before changing runtime delete behavior.
+- [ ] Convert one complete vertical slice and its restore/tests first; pages or forum are the preferred containment reference.
+- [ ] Replace browser-native dialogs and add the native-dialog CI gate independently once the Prompt contract is tested.
+- [ ] Record all migration, backend, frontend, security, realtime, and restore-drill evidence here before marking phases complete.
+
+<--/------->
