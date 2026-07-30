@@ -23,8 +23,19 @@ import (
 )
 
 var (
-	imageSrcRx = regexp.MustCompile(`(?i)<img[^>]+src=["']([^"']+)["']`)
-	youtubeRx  = regexp.MustCompile(`(?i)(?:youtube\.com/(?:watch\?v=|embed/|shorts/)|youtu\.be/)([A-Za-z0-9_-]{6,})`)
+	imageSrcRx           = regexp.MustCompile(`(?i)<img[^>]+src=["']([^"']+)["']`)
+	youtubeRx            = regexp.MustCompile(`(?i)(?:youtube\.com/(?:watch\?v=|embed/|shorts/)|youtu\.be/)([A-Za-z0-9_-]{6,})`)
+	categoryRouteRx      = regexp.MustCompile(`^/threads/categories/\d+$`)
+	kjvRouteRx           = regexp.MustCompile(`^/kjv/[^/]+/\d+/\d+/(?:open|closed)$`)
+	privateRoutePatterns = []*regexp.Regexp{
+		regexp.MustCompile(`^/edit-thread/\d+$`),
+		regexp.MustCompile(`^/wallet/[^/]+$`),
+		regexp.MustCompile(`^/store/orders/\d+$`),
+		regexp.MustCompile(`^/admin/(?:meta(?:/.*)?|roles)$`),
+		regexp.MustCompile(`^/datasources/\d+$`),
+		regexp.MustCompile(`^/tmp/[^/]+$`),
+		regexp.MustCompile(`^/settings(?:/.*)?$`),
+	}
 )
 
 func stripHTML(s string) string {
@@ -38,10 +49,14 @@ func stripHTML(s string) string {
 }
 
 func snip(s string, max int) string {
-	if len(s) <= max {
+	runes := []rune(s)
+	if len(runes) <= max {
 		return s
 	}
-	return s[:max] + "..."
+	if max <= 3 {
+		return string(runes[:max])
+	}
+	return string(runes[:max-3]) + "..."
 }
 
 func firstNonEmpty(values ...string) string {
@@ -71,6 +86,9 @@ func htmlEscape(s string) string {
 }
 
 func jailedWithoutBypass(ctx context.Context, r *http.Request, rdb *redis.Client) bool {
+	if rdb == nil {
+		return false
+	}
 	reqCtx := r.Context()
 	ip := utils.RealIP(r)
 
@@ -91,6 +109,9 @@ func jailedWithoutBypass(ctx context.Context, r *http.Request, rdb *redis.Client
 
 func getCachedMeta(ctx context.Context, rdb *redis.Client, key string) (CachedMeta, bool) {
 	var meta CachedMeta
+	if rdb == nil {
+		return meta, false
+	}
 
 	cached, err := rdb.Get(ctx, key).Result()
 	if err != nil {
@@ -100,11 +121,17 @@ func getCachedMeta(ctx context.Context, rdb *redis.Client, key string) (CachedMe
 	if json.Unmarshal([]byte(cached), &meta) != nil {
 		return meta, false
 	}
+	if meta.Version != cachedMetaVersion {
+		return CachedMeta{}, false
+	}
 
 	return meta, true
 }
 
 func setCachedMeta(ctx context.Context, rdb *redis.Client, key string, meta CachedMeta, ttl time.Duration) {
+	if rdb == nil {
+		return
+	}
 	b, err := json.Marshal(meta)
 	if err != nil {
 		return
@@ -144,7 +171,7 @@ func resolveRouteSEO(db *sql.DB, r *http.Request) routeSEO {
 	}
 
 	if match := streamRx.FindStringSubmatch(path); match != nil {
-		return resolveStreamSEO(db, r, match[1])
+		return resolveStreamSEO(db, match[1])
 	}
 
 	if match := staticPageRx.FindStringSubmatch(path); match != nil {
@@ -163,7 +190,13 @@ func resolveRouteSEO(db *sql.DB, r *http.Request) routeSEO {
 		return resolveUserSEO(db, match[1], "directory")
 	}
 
-	return routeSEO{}
+	if routeNoIndex(path) {
+		return routeSEO{NoIndex: true}
+	}
+	if routeIsPublicShell(path) {
+		return routeSEO{}
+	}
+	return routeSEO{Miss: true, NoIndex: true}
 }
 
 func resolveThreadSEO(db *sql.DB, r *http.Request, idStr string) routeSEO {
@@ -254,7 +287,7 @@ func resolveUsersSEO(db *sql.DB) routeSEO {
 	}
 }
 
-func resolveStreamSEO(db *sql.DB, r *http.Request, id string) routeSEO {
+func resolveStreamSEO(db *sql.DB, id string) routeSEO {
 	meta, ok := streammeta.DefaultStore.Get(id)
 	if !ok {
 		return routeSEO{Miss: true, Live: true}
@@ -271,7 +304,7 @@ func resolveStreamSEO(db *sql.DB, r *http.Request, id string) routeSEO {
 	return routeSEO{
 		Title: firstNonEmpty(meta.Title, "Stream"),
 		Desc:  snip(stripHTML(firstNonEmpty(meta.Description, "Watch this stream.")), 160),
-		Image: absoluteURL(r, image),
+		Image: image,
 		Live:  true,
 	}
 }
@@ -327,23 +360,23 @@ func resolveUserSEO(db *sql.DB, idStr, kind string) routeSEO {
 	}
 }
 
-func buildMeta(r *http.Request, branding models.Branding, seo models.SEO, route routeSEO) CachedMeta {
-	var meta CachedMeta
-
+func buildMeta(branding models.Branding, seo models.SEO, route routeSEO) CachedMeta {
 	siteName := branding.SiteName
 	if siteName == "" {
 		siteName = branding.HeaderTitle
 	}
 
-	title := siteName
+	title := firstNonEmpty(seo.Title, siteName)
 	if route.Title != "" {
 		if siteName != "" {
 			title = route.Title + " – " + siteName
 		} else {
 			title = route.Title
 		}
-	} else if branding.Tagline != "" {
+	} else if seo.Title == "" && siteName != "" && branding.Tagline != "" {
 		title = siteName + " – " + branding.Tagline
+	} else if title == "" {
+		title = branding.Tagline
 	}
 
 	desc := route.Desc
@@ -362,34 +395,57 @@ func buildMeta(r *http.Request, branding models.Branding, seo models.SEO, route 
 		img = branding.LogoURL
 	}
 
-	img = absoluteURL(r, img)
-	favicon := absoluteURL(r, branding.LogoURL)
-	pageURL := absoluteURL(r, r.URL.Path)
-
-	if title != "" {
-		meta.setTitle(title)
+	favicon := firstNonEmpty(branding.FaviconURL, branding.LogoURL)
+	imageAlt := firstNonEmpty(title, siteName)
+	if route.Miss {
+		title = "Page Not Found"
+		if siteName != "" {
+			title += " – " + siteName
+		}
+		desc = "The requested page could not be found."
+		img = ""
+		imageAlt = ""
 	}
 
-	if desc != "" {
-		meta.setDescription(desc)
+	return CachedMeta{
+		Version:     cachedMetaVersion,
+		Title:       title,
+		Description: desc,
+		Image:       img,
+		ImageAlt:    imageAlt,
+		Favicon:     favicon,
+		SiteName:    siteName,
+		ImageMeta:   imageMetaFromReference(img),
+		NotFound:    route.Miss,
+		NoIndex:     route.NoIndex,
 	}
+}
 
-	meta.setCanonical(pageURL)
-
-	if img != "" {
-		meta.setImage(img)
-
-		imgMeta := detectImageMeta(r.Context(), img)
-		meta.setImageMeta(imgMeta.Width, imgMeta.Height, imgMeta.MIME)
+func routeIsPublicShell(path string) bool {
+	switch path {
+	case "/", "/store", "/forum", "/kjv", "/pages", "/visualizer":
+		return true
 	}
-
-	if favicon != "" {
-		meta.setFavicon(favicon)
+	if categoryRouteRx.MatchString(path) {
+		return true
 	}
+	return kjvRouteRx.MatchString(path)
+}
 
-	meta.setDefaults(siteName)
-
-	return meta
+func routeNoIndex(path string) bool {
+	switch path {
+	case "/new-thread", "/forum/new-category", "/store/new-product",
+		"/store/new-category", "/cart", "/store/orders", "/inbox", "/deployments",
+		"/datasources", "/activity", "/trash", "/flow", "/stream", "/clipmaker",
+		"/login", "/register", "/verify-email", "/forgot-password", "/reset-password":
+		return true
+	}
+	for _, pattern := range privateRoutePatterns {
+		if pattern.MatchString(path) {
+			return true
+		}
+	}
+	return false
 }
 
 func firstImageFromHTML(s string) string {

@@ -263,6 +263,7 @@ func setupClientFromFiles(
 	envMap["CLIENT_NAME"] = name
 	envMap["PORT"] = port
 	writeEnvPatched(clientEnvFile(name), envData, envMap)
+	syncCanonicalURLDefaults(clientEnvFile(name))
 
 	// compose.yml - use archived copy verbatim.
 	if len(composeData) > 0 {

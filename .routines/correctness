@@ -84,6 +84,19 @@ docs disagree.
 
 ## Last Run Remarks
 
+- Reconciled the multi-tenant SEO implementation with the backend, caching/CDN,
+  infrastructure, and security contracts. Canonical identity is configuration
+  owned, rendered request origins are absent from Redis, and nginx health/unknown
+  host traffic cannot warm a tenant route.
+- Corrected two final drift points: static `privacy`/`tos` aliases and old page
+  slugs are invalidated with page mutations, while mutable in-memory stream
+  metadata is never cached. No material code/spec contradiction remains.
+- Production verification is intentionally not marked complete: the affected
+  tenant configs are absent locally and the public sites still serve the old
+  metadata until deployment.
+
+## Previous Run Remarks (2026-07-30)
+
 - Reconciled the completed Bible implementation against backend, frontend,
   route-resolution, caching, security, todo, and routine contracts.
 - Found and resolved the material cache-policy tension: immutable KJV responses

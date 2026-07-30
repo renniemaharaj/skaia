@@ -114,9 +114,22 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-07-30T13:05:28-04:00
+- 2026-07-30T17:18:02-04:00
 
 ## Last Run Remarks
+
+- Implemented `multi_tenant_seo_origin_integrity` through the deployable code
+  boundary: deterministic tenant canonical origins, origin-independent semantic
+  metadata, versioned exact invalidation, single-context escaping, real
+  404/noindex behavior, and side-effect-free image metadata.
+- Hardened generated nginx with a local `/healthz`, fail-closed unknown hosts,
+  restricted provisioned-site routing, canonical env generation/migration, and a
+  generated two-tenant regression. Updated the governing specs and todo status.
+- Full backend/root tests and vet, focused race/static analysis, builds, and diff
+  checks pass. Production deployment and Cloudflare inventory remain explicitly
+  tracked because the affected tenant configs are not present in this checkout.
+
+## Previous Run Remarks (2026-07-30T13:05:28-04:00)
 
 - Completed `bible_voice_reader_integration` with a startup-validated,
   internally embedded 66-book KJV corpus, public catalog/per-book APIs, and no

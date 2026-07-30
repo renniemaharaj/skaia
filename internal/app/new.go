@@ -148,9 +148,20 @@ func cmdNew(args []string) {
 	jwtSecret := generateSecret(32)
 
 	domainList := strings.Join(domains, " ")
+	publicBaseURL, err := canonicalPublicBase(domains)
+	if err != nil {
+		die("Invalid primary domain: %v", err)
+	}
 	var corsParts []string
 	for _, d := range domains {
-		corsParts = append(corsParts, "http://"+d)
+		host, domainErr := normalizedDomainHost(d)
+		if domainErr != nil {
+			die("Invalid domain: %v", domainErr)
+		}
+		corsParts = append(corsParts, "https://"+host)
+		if isLocalDomain(host) {
+			corsParts = append(corsParts, "http://"+host)
+		}
 	}
 	corsOrigins := strings.Join(corsParts, ",")
 
@@ -191,6 +202,8 @@ func cmdNew(args []string) {
 		"",
 		"# Frontend SSR",
 		"INDEX_FILE_PATH=/app/frontend/dist/index.html",
+		fmt.Sprintf("PUBLIC_BASE_URL=%s", publicBaseURL),
+		fmt.Sprintf("SITEMAP_BASE_URL=%s", publicBaseURL),
 		"",
 		"# Features",
 		fmt.Sprintf("FEATURES_ENABLED=%s", features),

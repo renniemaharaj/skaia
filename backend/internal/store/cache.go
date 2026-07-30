@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/skaia/backend/internal/seocache"
 	"github.com/skaia/backend/models"
 )
 
@@ -87,9 +88,9 @@ func (c *ProductCache) Invalidate(id int64) {
 	if err := c.rdb.Del(ctx, productKey(id)).Err(); err != nil {
 		log.Printf("store.ProductCache.Invalidate(%d): %v", id, err)
 	}
-	// Also invalidate SEO meta.
-	seoKey := storeClientPrefix() + "ssr:meta:/store/item/" + strconv.FormatInt(id, 10)
-	c.rdb.Del(ctx, seoKey)
+	if err := seocache.InvalidateRoute(ctx, c.rdb, "/store/product/"+strconv.FormatInt(id, 10)); err != nil {
+		log.Printf("store.ProductCache.InvalidateSEO(%d): %v", id, err)
+	}
 }
 
 // Flush removes all store product cache entries.

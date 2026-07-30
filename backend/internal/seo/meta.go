@@ -1,78 +1,123 @@
 package seo
 
 import (
+	"net/http"
 	"strconv"
 )
 
+const cachedMetaVersion = 2
+
+// CachedMeta contains semantic, origin-independent metadata. Absolute URLs and
+// escaped HTML are produced only while serving a specific request.
 type CachedMeta struct {
-	TitleTag   string   `json:"title_tag"`
-	DescTag    string   `json:"desc_tag"`
-	Tags       []string `json:"tags"`
-	FaviconTag string   `json:"favicon_tag"`
+	Version     int       `json:"version"`
+	Title       string    `json:"title,omitempty"`
+	Description string    `json:"description,omitempty"`
+	Image       string    `json:"image,omitempty"`
+	ImageAlt    string    `json:"image_alt,omitempty"`
+	Favicon     string    `json:"favicon,omitempty"`
+	SiteName    string    `json:"site_name,omitempty"`
+	ImageMeta   ImageMeta `json:"image_meta,omitempty"`
+	NotFound    bool      `json:"not_found,omitempty"`
+	NoIndex     bool      `json:"no_index,omitempty"`
 }
 
-func (c *CachedMeta) setTitle(title string) *CachedMeta {
-	title = htmlEscape(title)
-	c.TitleTag = "<title>" + title + "</title>"
-	c.addProperty("og:title", title)
-	c.addName("twitter:title", title)
-	return c
+type renderedMeta struct {
+	TitleTag   string
+	DescTag    string
+	Tags       []string
+	FaviconTag string
 }
 
-func (c *CachedMeta) setDescription(desc string) *CachedMeta {
-	desc = htmlEscape(desc)
-	c.DescTag = `<meta name="description" content="` + desc + `">`
-	c.addProperty("og:description", desc)
-	c.addName("twitter:description", desc)
-	return c
-}
+func renderMeta(r *http.Request, cached CachedMeta) renderedMeta {
+	var rendered renderedMeta
 
-func (c *CachedMeta) setCanonical(url string) *CachedMeta {
-	c.Tags = append(c.Tags, `<link rel="canonical" href="`+htmlEscape(url)+`">`)
-	c.addProperty("og:url", url)
-	return c
-}
-
-func (c *CachedMeta) setImage(url string) *CachedMeta {
-	url = htmlEscape(url)
-	c.addProperty("og:image", url)
-	c.addName("twitter:image", url)
-	return c
-}
-
-func (c *CachedMeta) setFavicon(url string) *CachedMeta {
-	c.FaviconTag = `<link rel="icon" href="` + htmlEscape(url) + `">`
-	return c
-}
-
-func (c *CachedMeta) setImageMeta(width, height int, mime string) *CachedMeta {
-	if width > 0 {
-		c.addProperty("og:image:width", strconv.Itoa(width))
+	if cached.Title != "" {
+		rendered.setTitle(cached.Title)
 	}
-	if height > 0 {
-		c.addProperty("og:image:height", strconv.Itoa(height))
+	if cached.Description != "" {
+		rendered.setDescription(cached.Description)
 	}
-	if mime != "" {
-		c.addProperty("og:image:type", mime)
+
+	if !cached.NotFound {
+		pageURL := absoluteURL(r, r.URL.Path)
+		rendered.setCanonical(pageURL)
+
+		imageURL := absoluteURL(r, cached.Image)
+		if imageURL != "" {
+			rendered.setImage(imageURL, cached.ImageAlt)
+			rendered.setImageMeta(cached.ImageMeta)
+		}
 	}
-	return c
+
+	if favicon := absoluteURL(r, cached.Favicon); favicon != "" {
+		rendered.setFavicon(favicon)
+	}
+
+	rendered.setDefaults(cached.SiteName)
+	if cached.NoIndex || cached.NotFound {
+		rendered.addName("robots", "noindex, nofollow")
+	}
+	return rendered
 }
 
-func (c *CachedMeta) setDefaults(siteName string) *CachedMeta {
-	c.addProperty("og:type", "website")
-	c.addName("twitter:card", "summary_large_image")
+func (m *renderedMeta) setTitle(title string) {
+	m.TitleTag = "<title>" + htmlEscape(title) + "</title>"
+	m.addProperty("og:title", title)
+	m.addName("twitter:title", title)
+}
 
+func (m *renderedMeta) setDescription(desc string) {
+	m.DescTag = `<meta name="description" content="` + htmlEscape(desc) + `">`
+	m.addProperty("og:description", desc)
+	m.addName("twitter:description", desc)
+}
+
+func (m *renderedMeta) setCanonical(url string) {
+	if url == "" {
+		return
+	}
+	m.Tags = append(m.Tags, `<link rel="canonical" href="`+htmlEscape(url)+`">`)
+	m.addProperty("og:url", url)
+}
+
+func (m *renderedMeta) setImage(url, alt string) {
+	m.addProperty("og:image", url)
+	m.addName("twitter:image", url)
+	if alt != "" {
+		m.addProperty("og:image:alt", alt)
+		m.addName("twitter:image:alt", alt)
+	}
+}
+
+func (m *renderedMeta) setFavicon(url string) {
+	m.FaviconTag = `<link rel="icon" href="` + htmlEscape(url) + `">`
+}
+
+func (m *renderedMeta) setImageMeta(meta ImageMeta) {
+	if meta.Width > 0 {
+		m.addProperty("og:image:width", strconv.Itoa(meta.Width))
+	}
+	if meta.Height > 0 {
+		m.addProperty("og:image:height", strconv.Itoa(meta.Height))
+	}
+	if meta.MIME != "" {
+		m.addProperty("og:image:type", meta.MIME)
+	}
+}
+
+func (m *renderedMeta) setDefaults(siteName string) {
+	m.addProperty("og:type", "website")
+	m.addName("twitter:card", "summary_large_image")
 	if siteName != "" {
-		c.addProperty("og:site_name", siteName)
+		m.addProperty("og:site_name", siteName)
 	}
-
-	return c
 }
 
-func (c *CachedMeta) addProperty(property, content string) {
-	c.Tags = append(c.Tags, `<meta property="`+htmlEscape(property)+`" content="`+htmlEscape(content)+`">`)
+func (m *renderedMeta) addProperty(property, content string) {
+	m.Tags = append(m.Tags, `<meta property="`+htmlEscape(property)+`" content="`+htmlEscape(content)+`">`)
 }
 
-func (c *CachedMeta) addName(name, content string) {
-	c.Tags = append(c.Tags, `<meta name="`+htmlEscape(name)+`" content="`+htmlEscape(content)+`">`)
+func (m *renderedMeta) addName(name, content string) {
+	m.Tags = append(m.Tags, `<meta name="`+htmlEscape(name)+`" content="`+htmlEscape(content)+`">`)
 }

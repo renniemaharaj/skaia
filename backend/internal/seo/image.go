@@ -1,77 +1,22 @@
 package seo
 
 import (
-	"context"
-	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
-	"io"
 	"mime"
-	"net/http"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 type ImageMeta struct {
-	Width  int    `json:"width"`
-	Height int    `json:"height"`
-	MIME   string `json:"mime"`
+	Width  int    `json:"width,omitempty"`
+	Height int    `json:"height,omitempty"`
+	MIME   string `json:"mime,omitempty"`
 }
 
-func detectImageMeta(ctx context.Context, imgURL string) ImageMeta {
-	m := ImageMeta{
-		MIME: mimeFromURL(imgURL),
-	}
-
-	if imgURL == "" {
-		return m
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, imgURL, nil)
-	if err != nil {
-		return m
-	}
-
-	client := &http.Client{Timeout: 2 * time.Second}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return m
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return m
-	}
-
-	if ct := resp.Header.Get("Content-Type"); ct != "" {
-		if clean := strings.Split(ct, ";")[0]; clean != "" {
-			m.MIME = strings.TrimSpace(clean)
-		}
-	}
-
-	limited := io.LimitReader(resp.Body, 512*1024)
-
-	cfg, format, err := image.DecodeConfig(limited)
-	if err != nil {
-		return m
-	}
-
-	m.Width = cfg.Width
-	m.Height = cfg.Height
-
-	switch format {
-	case "jpeg":
-		m.MIME = "image/jpeg"
-	case "png":
-		m.MIME = "image/png"
-	case "gif":
-		m.MIME = "image/gif"
-	}
-
-	return m
+// imageMetaFromReference is intentionally side-effect free. Image dimensions
+// belong to upload-time metadata; SSR must never make outbound requests based
+// on user-controlled page, forum, product, or profile content.
+func imageMetaFromReference(raw string) ImageMeta {
+	return ImageMeta{MIME: mimeFromURL(raw)}
 }
 
 func mimeFromURL(raw string) string {

@@ -93,6 +93,21 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Run Remarks
 
+- Audited `multi_tenant_seo_origin_integrity` across tenant origin trust,
+  request-order/auth independence, Redis keying and invalidation, HTML escaping,
+  soft-404/indexing policy, SSRF/latency, generated nginx, health traffic,
+  control-plane env lifecycle, sitemap alignment, tests, specs, and rollout.
+- The final pass added static page alias/old-slug invalidation, made mutable live
+  stream metadata uncacheable, kept tenant-matched health checks local, surfaced
+  invalidation failures, added a generated two-tenant fixture, and repaired one
+  pre-existing root static-analysis defect encountered by the gate.
+- No Critical, High, or Medium implementation issue remains in the affected
+  code. Full backend/root tests and vet, affected race/static analysis, builds,
+  and diff checks pass. The live sites still expose the old defect and require
+  deployment plus Cloudflare/tenant inventory before recrawl.
+
+## Previous Run Remarks (2026-07-26)
+
 - Audited the WebSocket ingress, subscription registry, REST rerouter,
   connection lifecycle, recovery correlation, private order/user projections,
   protobuf contract, and frontend consumers. No Critical, High, or Medium issue

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -16,6 +17,8 @@ type clientInfo struct {
 	Domains []string
 }
 
+const nginxUnknownBackendMap = `    default                 "";`
+
 // cmdNginxReload regenerates the nginx config and hot-reloads it.
 func cmdNginxReload() {
 	generateNginxConfig()
@@ -26,7 +29,12 @@ func cmdNginxReload() {
 func expandDomains(domains []string) []string {
 	seen := map[string]bool{}
 	var out []string
-	for _, d := range domains {
+	for _, raw := range domains {
+		d, err := normalizedDomainHost(strings.TrimPrefix(raw, "*."))
+		if err != nil {
+			warn("Ignoring invalid nginx domain %q: %v", raw, err)
+			continue
+		}
 		if seen[d] {
 			continue
 		}
@@ -54,24 +62,51 @@ func isIPAddress(s string) bool {
 	return true
 }
 
-func wildcardHostForDomain(domain string) string {
+func provisionedSiteHostPattern(domain string) string {
 	if domain == "" ||
 		domain == "localhost" ||
 		strings.HasPrefix(domain, "www.") ||
-		strings.HasPrefix(domain, "*.") ||
 		!strings.Contains(domain, ".") ||
 		isIPAddress(domain) {
 		return ""
 	}
-	return "*." + domain
+	domain = strings.TrimPrefix(domain, "*.")
+	return `~^site[0-9]+\.` + regexp.QuoteMeta(domain) + `$`
 }
 
 func nginxHostsForDomain(domain string) []string {
+	domain = strings.TrimPrefix(domain, "*.")
 	hosts := []string{domain}
-	if wildcard := wildcardHostForDomain(domain); wildcard != "" {
-		hosts = append(hosts, wildcard)
+	if sitePattern := provisionedSiteHostPattern(domain); sitePattern != "" {
+		hosts = append(hosts, sitePattern)
 	}
 	return hosts
+}
+
+func nginxDefaultServerBlock() string {
+	return `server {
+    listen 80 default_server;
+    server_name _;
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    return 444;
+}
+`
+}
+
+func nginxHealthLocation() string {
+	return `    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+`
 }
 
 // enabledClients scans the backends directory and returns info for all enabled clients.
@@ -172,8 +207,7 @@ gzip_types
 			}
 		}
 	}
-	// Default to first client
-	fmt.Fprintf(&b, "    %-24s%s-backend;\n", "default", clients[0].Name)
+	b.WriteString(nginxUnknownBackendMap + "\n")
 	b.WriteString("}\n\n")
 
 	// WebSocket upgrade map
@@ -208,8 +242,12 @@ proxy_cache_path /var/cache/nginx/uploads
 		}
 	}
 
-	// Server block
+	// Unknown hosts and the shared healthcheck never enter a tenant backend.
+	b.WriteString(nginxDefaultServerBlock())
+
+	// Tenant server block.
 	fmt.Fprintf(&b, "server {\n    listen 80;\n    server_name %s;\n    client_max_body_size 0;\n    proxy_intercept_errors on;\n\n", strings.Join(serverNames, " "))
+	b.WriteString(nginxHealthLocation())
 
 	// Load frontend shell index.html for fallback
 	indexPath := filepath.Join(ProjectRoot(), "backend", "frontend", "dist", "index.html")

@@ -107,6 +107,17 @@ operational policies.
 
 ## Last Run Remarks
 
+- Created `multi_tenant_seo_origin_integrity` after reproducing production
+  cross-host SEO contamination across TheWriterCo and CueballCraft. The review
+  traced request-origin HTML stored in path-only Redis entries, Cloudflare
+  Flexible-style HTTP origin signaling, broad/default nginx host routing, and
+  the shared `localhost /` healthcheck. The worker handoff covers containment,
+  canonical tenant origins, semantic cache data, invalidation, host/proxy
+  hardening, metadata escaping/config correctness, safe image inspection,
+  multi-tenant purge, and public recrawl verification.
+
+## Previous Run Remarks (2026-07-30)
+
 - Created `bible_voice_reader_integration` after matching the ignored
   `integrate/` sources byte-for-byte to the workspace-level TheWriterCo
   repository, staging the missing reader/URL/speech dependencies and local page

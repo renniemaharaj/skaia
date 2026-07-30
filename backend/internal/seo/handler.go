@@ -1,6 +1,7 @@
 package seo
 
 import (
+	"context"
 	"database/sql"
 	"net/http"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	icfg "github.com/skaia/backend/internal/config"
+	"github.com/skaia/backend/internal/seocache"
 	log "github.com/skaia/backend/internal/syslog"
 )
 
@@ -27,19 +29,12 @@ var (
 
 // routeSEO represents the SEO metadata for a specific route, including title, description, image, and a flag indicating if the route was not found (Miss).
 type routeSEO struct {
-	Title string
-	Desc  string
-	Image string
-	Miss  bool
-	Live  bool
-}
-
-func seoClientPrefix() string {
-	name := os.Getenv("CLIENT_NAME")
-	if name == "" {
-		return ""
-	}
-	return name + ":"
+	Title   string
+	Desc    string
+	Image   string
+	Miss    bool
+	Live    bool
+	NoIndex bool
 }
 
 func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.HandlerFunc {
@@ -52,6 +47,11 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 	if readErr != nil {
 		log.Printf("seo: failed to read index file %s: %v", indexPath, readErr)
 	}
+	purgeCtx, cancelPurge := context.WithTimeout(context.Background(), 2*time.Second)
+	if err := seocache.PurgeLegacy(purgeCtx, rdb); err != nil {
+		log.Printf("seo: purge legacy cache: %v", err)
+	}
+	cancelPurge()
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if readErr != nil {
@@ -62,33 +62,51 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 		ctx := r.Context()
 
 		if jailedWithoutBypass(ctx, r, rdb) {
-			serveInjected(w, indexHTML, CachedMeta{
-				TitleTag: "<title>Rate Limit Exceeded</title>",
-				DescTag:  `<meta name="description" content="You have been temporarily rate-limited. Please wait before accessing this page.">`,
-			})
+			serveInjected(w, r, indexHTML, CachedMeta{
+				Version:     cachedMetaVersion,
+				Title:       "Rate Limit Exceeded",
+				Description: "You have been temporarily rate-limited. Please wait before accessing this page.",
+				NoIndex:     true,
+			}, http.StatusTooManyRequests)
 			return
 		}
 
-		cacheKey := seoClientPrefix() + "ssr:meta:" + cacheRouteKey(r)
+		cacheKey := seocache.RouteKey(cacheRouteKey(r))
 
 		if meta, ok := getCachedMeta(ctx, rdb, cacheKey); ok {
-			serveInjected(w, indexHTML, meta)
+			serveInjected(w, r, indexHTML, meta, metaStatus(meta))
 			return
 		}
 
 		branding, seo := loadSiteConfig(cfgSvc)
 		route := resolveRouteSEO(db, r)
 
-		meta := buildMeta(r, branding, seo, route)
+		meta := buildMeta(branding, seo, route)
 
-		ttl := 24 * time.Hour
-		if route.Miss {
-			ttl = 5 * time.Minute
-		} else if route.Live {
-			ttl = 15 * time.Second
+		if ttl, cacheable := routeCacheTTL(route); cacheable {
+			setCachedMeta(ctx, rdb, cacheKey, meta, ttl)
 		}
-		setCachedMeta(ctx, rdb, cacheKey, meta, ttl)
 
-		serveInjected(w, indexHTML, meta)
+		serveInjected(w, r, indexHTML, meta, metaStatus(meta))
 	}
+}
+
+func routeCacheTTL(route routeSEO) (time.Duration, bool) {
+	// Stream titles, descriptions, thumbnails, and existence can change without
+	// a database mutation path. Resolve them on every SSR request instead of
+	// allowing a stale or missing stream entry to outlive the live state.
+	if route.Live {
+		return 0, false
+	}
+	if route.Miss {
+		return 5 * time.Minute, true
+	}
+	return 24 * time.Hour, true
+}
+
+func metaStatus(meta CachedMeta) int {
+	if meta.NotFound {
+		return http.StatusNotFound
+	}
+	return http.StatusOK
 }

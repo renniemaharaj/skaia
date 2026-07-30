@@ -89,6 +89,7 @@ func (s *Service) Update(u *models.User) (*models.User, error) {
 		return nil, err
 	}
 	s.cache.SetByID(updated.ID, updated)
+	s.cache.InvalidateSEO(updated.ID)
 	return updated, nil
 }
 
@@ -276,7 +277,15 @@ func (s *Service) CreateUserFromRegisterRequest(req *models.RegisterRequest) (*m
 		// Other fields can be set as needed, e.g. AvatarURL, etc.
 	}
 	// Password is not handled here; auth will create credential after user is created.
-	return s.repo.Create(user, "")
+	created, err := s.repo.Create(user, "")
+	if err != nil {
+		return nil, err
+	}
+	if created == nil {
+		return nil, fmt.Errorf("create user returned no user")
+	}
+	s.cache.InvalidateSEO(created.ID)
+	return created, nil
 }
 
 // RemoveAllRoles removes all roles from a user.

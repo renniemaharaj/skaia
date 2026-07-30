@@ -129,8 +129,8 @@ func apiPutEnv(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !strings.Contains(body.Content, "CLIENT_NAME=") || !strings.Contains(body.Content, "PORT=") {
-		apiError(w, http.StatusBadRequest, "content missing required CLIENT_NAME= or PORT= declarations")
+	if err := validateSiteEnvContent(body.Content); err != nil {
+		apiError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

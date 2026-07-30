@@ -1,0 +1,169 @@
+# Multi-Tenant SEO Origin Integrity
+
+## Context
+
+Production inspection on 2026-07-30 confirmed that SSR metadata is being cached
+with the origin of whichever request first warms a tenant/path Redis key:
+
+- `https://thewriterco.com/` returned root metadata for
+  `slushup.thewriterco.com`, while `/forum` retained `thewriterco.com`.
+- `https://skaiacraft.com/` returned canonical, Open Graph, image, and favicon
+  URLs rooted at `http://localhost`.
+- Thread, forum, and root Open Graph URLs were HTTP even when fetched over
+  HTTPS. Cloudflare rewrote eligible `href` attributes to HTTPS but did not
+  rewrite Open Graph `content`, making the emitted head internally inconsistent.
+- Authentication is not an SEO input. The apparent signed-in difference came
+  from comparing independently warmed route keys.
+
+The failure chain spans `backend/internal/seo`, generated nginx, tenant env
+generation, and Redis invalidation:
+
+- rendered absolute URLs are cached by client and path, without canonical origin;
+- nginx overwrites `X-Forwarded-Proto` with its HTTP-side `$scheme`;
+- nginx maps unknown hosts to the first tenant;
+- the shared healthcheck requests `/` as `localhost` every five seconds;
+- broad wildcard hosts can reach the primary SPA unless they match the narrower
+  Frappe interception rule;
+- production tenants do not receive an explicit `PUBLIC_BASE_URL`.
+
+The same review also confirmed double-escaped social descriptions, ignored
+`SEO.Title` and `Branding.FaviconURL`, mismatched product invalidation keys,
+soft-404 behavior, and an unguarded outbound image metadata probe.
+
+## Goal
+
+- Make canonical, Open Graph, Twitter, image, and favicon origins deterministic,
+  HTTPS, tenant-approved, and independent of request order, aliases, cookies,
+  healthchecks, or hostile Host headers.
+- Stop unknown/local/wildcard hosts from poisoning tenant SEO caches.
+- Make cached SEO data origin-independent or explicitly origin-scoped, with
+  complete mutation/config invalidation.
+- Correct escaping, configured title/favicon selection, missing-route behavior,
+  and image inspection safety.
+- Provide a safe production rollout and purge/verification runbook for every
+  tenant.
+
+## Non-Goals
+
+- Replacing the React SPA with full component SSR.
+- Rewriting site marketing copy or choosing per-page keywords.
+- Treating Cloudflare HTML rewriting as an SEO correctness mechanism.
+- Automating Search Console or third-party social-crawler submissions.
+
+## Steps
+
+1. Add incident regression coverage before changing behavior:
+   - exercise one tenant/path through approved apex, `www`, subdomain, localhost,
+     forwarded-protocol, and signed/unsigned requests in different orders;
+   - prove cookies/claims do not change public SEO output;
+   - reproduce cross-host root cache contamination and the localhost healthcheck;
+   - assert canonical, `og:url`, `og:image`, Twitter image, and favicon all use
+     the same approved HTTPS origin;
+   - assert apostrophes and ampersands are escaped once, not as `&amp;#39;`.
+2. Define one explicit canonical origin per production tenant:
+   - require and validate an absolute HTTPS `PUBLIC_BASE_URL` for production;
+   - constrain its hostname to the tenant's approved `DOMAINS`;
+   - generate it in `grengo new`, expose it through supported env editing, and
+     preserve/validate it during import and transfer;
+   - document whether `www` and other aliases redirect to the primary origin or
+     serve content with a primary-origin canonical. Do not derive SEO identity
+     from an arbitrary wildcard request host;
+   - align `SITEMAP_BASE_URL` with the same origin instead of maintaining an
+     independent default.
+3. Redesign SEO caching around semantic metadata:
+   - cache title, description, image reference, route state, and image metadata
+     without rendered request-origin HTML, then render absolute tags using the
+     current validated canonical configuration;
+   - alternatively, if rendered tags remain cached, include a validated
+     canonical-origin/config revision in every key and every invalidator;
+   - invalidate affected entries on branding/SEO configuration changes;
+   - correct forum, page, product, user, stream, and landing-route invalidation,
+     including the current `/store/item/` versus `/store/product/` mismatch;
+   - keep public SEO cache keys independent of authentication and rate-limit
+     bypass state.
+4. Harden generated nginx and health checks:
+   - add a dedicated default server whose health endpoint returns success and
+     whose other unknown-host requests return `444`, restoring the documented
+     infrastructure contract;
+   - point the shared Compose healthcheck at that endpoint instead of tenant `/`;
+   - remove the host-map fallback to the first enabled tenant;
+   - narrow wildcard routing to valid provisioned `site<id>` hosts or reject
+     unmatched subdomains before the SPA;
+   - preserve a trustworthy external scheme or consume validated proxy metadata.
+     Audit Cloudflare zones for Flexible mode, Always Use HTTPS, and Automatic
+     HTTPS Rewrites; prefer Full (Strict) origin TLS, while keeping SSR correctness
+     independent of Cloudflare rewriting.
+5. Correct metadata construction:
+   - escape each raw value exactly once at the final HTML context;
+   - honor `SEO.Title` for the site/default route and
+     `Branding.FaviconURL` for the favicon;
+   - ensure canonical and all first-party social/image URLs use the same HTTPS
+     origin before Cloudflare transforms the response;
+   - define image alt metadata and retain dimensions/MIME only when safely known;
+   - return a real `404` or explicit `noindex` policy for missing recognized
+     resources and unknown SPA paths instead of caching indexable soft 404s.
+6. Secure and decouple image metadata detection:
+   - reuse the repository's scrape URL validation policy to reject loopback,
+     private, link-local, metadata-service, unsupported-scheme, and unsafe
+     redirect destinations;
+   - avoid a blocking outbound GET on every cold SSR request where dimensions
+     can be captured at upload time or cached separately;
+   - bound response size, redirects, MIME, dimensions, and timeout with focused
+     tests.
+7. Roll out with explicit incident cleanup:
+   - inventory every tenant's primary origin, aliases, Cloudflare mode, and
+     generated env before deployment;
+   - deploy backend and regenerated nginx together;
+   - purge all legacy `<client>:ssr:meta:*` keys after the new key/data contract
+     is live, using scanned explicit prefixes rather than a broad Redis flush;
+   - verify apex, `www`, valid subdomains, invalid subdomains, forum/thread/page/
+     product routes, missing routes, and signed/unsigned requests;
+   - request recrawls only after raw origin HTML and public Cloudflare HTML pass.
+8. Update `.specs/caching_cdn_spec`, `.specs/infrastructure_spec`, and
+   `.specs/backend_spec` with the implemented canonical-origin, host rejection,
+   cache invalidation, status, and safe image-probe contracts. Record production
+   verification in this todo's `.tip`.
+
+## Verification
+
+- `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./internal/seo ./internal/config ./internal/forum ./internal/store`
+- `go test ./internal/app/...`
+- `go test ./...` from `backend/` and the root module after focused tests pass.
+- Generate nginx for a fixture with multiple tenants and assert:
+  - unknown hosts never select the first backend;
+  - the healthcheck never requests tenant `/`;
+  - only approved apex/alias and valid provisioned-site hosts route.
+- Fetch raw HTML through the public CDN and, where possible, directly from the
+  origin with explicit Host headers. Assert no `localhost`, unintended
+  subdomain, first-tenant domain, or `http://` occurs in first-party SEO tags.
+- Warm identical paths in every host/order/cookie permutation and compare the
+  resulting semantic metadata and canonical origin.
+- Confirm config and content mutations remove or version every affected SEO
+  cache entry.
+- Confirm missing resources return the chosen `404`/`noindex` contract.
+- Confirm unsafe image URLs and unsafe redirect hops cause no outbound request.
+
+## References
+
+- `.routines/planner`
+- `.routines/correctness`
+- `.routines/worker`
+- `.specs/caching_cdn_spec`
+- `.specs/infrastructure_spec`
+- `.specs/backend_spec`
+- `backend/internal/seo/handler.go`
+- `backend/internal/seo/helpers.go`
+- `backend/internal/seo/meta.go`
+- `backend/internal/seo/url.go`
+- `backend/internal/seo/image.go`
+- `backend/internal/forum/cache.go`
+- `backend/internal/store/cache.go`
+- `backend/internal/page/service.go`
+- `backend/main.go`
+- `internal/app/nginx.go`
+- `internal/app/new.go`
+- `internal/app/transfer.go`
+- `compose.yml`
+- `https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/flexible/`
+- `https://developers.cloudflare.com/fundamentals/reference/http-headers/`
+- `https://developers.cloudflare.com/ssl/edge-certificates/additional-options/automatic-https-rewrites/`

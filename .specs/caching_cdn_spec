@@ -27,8 +27,28 @@ resolution, Bible data loading, SSR, or CDN-facing behavior.
 | `/uploads/*` | `public, max-age=2592000` (30 days) |
 | Vite assets | hashed filenames; immutable-style static caching |
 | WebSocket | not cacheable; upgrade proxied at `/ws` and `/api/ws` |
-| SSR HTML | may be rewritten with SEO/site config; avoid relying on CDN purge for correctness |
+| SSR HTML | no-store; semantic route metadata uses tenant-scoped `seo:meta:v2:` Redis keys and is rendered against the validated canonical tenant origin |
 | KJV frontend reads | API remains `no-store`; one catalog promise plus an eight-book in-memory LRU and in-flight coalescing |
+
+## SSR/SEO Cache Integrity
+
+- Cached SEO values are raw title, description, image reference, favicon,
+  site-name, route state, and side-effect-free image MIME metadata. Rendered HTML
+  and request-derived origins are never cached.
+- `PUBLIC_BASE_URL` is the canonical and sitemap origin. Existing tenants may
+  derive it from their first valid `DOMAINS` entry during migration; production
+  origins use HTTPS.
+- Branding/SEO writes invalidate the tenant SEO namespace. Page, thread,
+  product, and user create/update/delete paths invalidate their exact affected
+  routes; `privacy`/`tos` pages also invalidate their root aliases, and user
+  mutations also invalidate `/users`. Live stream metadata is resolved per SSR
+  request because its in-memory state has no durable mutation invalidator.
+- Missing recognized resources and unknown extensionless SPA paths return `404`
+  plus HTML and `X-Robots-Tag` noindex. Authenticated/authentication routes remain
+  renderable SPA shells but are noindex and absent from the sitemap.
+- SSR never fetches a page-, forum-, product-, or profile-controlled image URL.
+  Dimensions belong to upload-time metadata; SSR may infer MIME from a safe file
+  extension only.
 
 ## CDN-Safe Page Pattern
 
@@ -57,11 +77,14 @@ written to local storage.
 - Returning different resources from the same cacheable URL.
 - Redirecting API endpoints for correctness.
 - Relying on Cloudflare purge to make live data correct.
+- Caching absolute SEO URLs by path without a validated canonical-origin key.
+- Using Cloudflare HTML rewrites to repair origin-generated canonical/social URLs.
 - Editing generated nginx config instead of `internal/app/nginx.go`.
 
 ## Verify
 
 - `rg "Cache-Control|Pragma|no-store" backend internal main.go router.go -n`
+- `go test ./internal/seo ./internal/seocache ./internal/config ./internal/forum ./internal/store ./internal/page ./internal/user` from `backend/`
 - `rg "landing-slug|pages/index|landing_page_changed" backend frontend .specs -n`
 
 ## Trace

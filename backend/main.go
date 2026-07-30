@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -50,6 +49,7 @@ import (
 	"github.com/skaia/backend/internal/seo"
 	istore "github.com/skaia/backend/internal/store"
 	istreammeta "github.com/skaia/backend/internal/streammeta"
+	log "github.com/skaia/backend/internal/syslog"
 	itrash "github.com/skaia/backend/internal/trash"
 	iupload "github.com/skaia/backend/internal/upload"
 	iuser "github.com/skaia/backend/internal/user"
@@ -78,31 +78,37 @@ func apiCORSOptions(origins []string) cors.Options {
 
 var sitemapPaths = []string{
 	"/",
-	"/login",
-	"/register",
 	"/store",
 	"/forum",
 	"/kjv",
-	"/cart",
 	"/users",
-	"/inbox",
+	"/pages",
+	"/privacy",
+	"/tos",
 }
 
 func getSitemapBaseURL() string {
+	if base := seo.ConfiguredPublicBaseURL(); base != "" {
+		return base
+	}
+
 	if v := os.Getenv("SITEMAP_BASE_URL"); v != "" {
 		return strings.TrimRight(v, "/")
 	}
 
-	domains := strings.Fields(os.Getenv("DOMAINS"))
-	if len(domains) > 0 {
-		d := domains[0]
-		if !strings.HasPrefix(d, "http://") && !strings.HasPrefix(d, "https://") {
-			d = "https://" + d
-		}
-		return strings.TrimRight(d, "/")
-	}
-
 	return "http://localhost:8080"
+}
+
+func publicRequestScheme(r *http.Request) string {
+	if base := seo.ConfiguredPublicBaseURL(); base != "" {
+		if parsed, err := url.Parse(base); err == nil && (parsed.Scheme == "http" || parsed.Scheme == "https") {
+			return parsed.Scheme
+		}
+	}
+	if r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https") {
+		return "https"
+	}
+	return "http"
 }
 
 func buildSitemapXML(baseURL string) string {
@@ -179,6 +185,9 @@ func deriveGrengoDSN(dsn string) string {
 }
 
 func main() {
+	if err := seo.ValidatePublicURLConfig(); err != nil {
+		log.Fatalf("public URL config: %v", err)
+	}
 	if err := database.Init(); err != nil {
 		log.Fatalf("database init: %v", err)
 	}
@@ -644,7 +653,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	}
 
 	cfgRepo := icfg.NewRepository(db)
-	cfgSvc := icfg.NewService(cfgRepo)
+	cfgSvc := icfg.NewService(cfgRepo, icfg.WithRedisClient(rdb))
 
 	// Bootstrap hub chat slow-mode from the persisted config so it takes
 	// effect on the first connection rather than waiting for the next toggle.
@@ -1122,9 +1131,9 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	istreammeta.NewHandler(istreammeta.DefaultStore).MountPublic(r)
 
 	// SEO: serve index.html with injected SEO head tags
+	seoHandler := imw.ExtractTokenMiddleware(seo.IndexHandler(cfgSvc, rdb, database.DB))
 	r.Get("/", func(w http.ResponseWriter, req *http.Request) {
-		seoHandler := seo.IndexHandler(cfgSvc, rdb, database.DB)
-		imw.ExtractTokenMiddleware(seoHandler).ServeHTTP(w, req)
+		seoHandler.ServeHTTP(w, req)
 	})
 
 	// Proxy /instances/{id} to the corresponding container (or redirect Frappe)
@@ -1169,10 +1178,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 				siteName = utils.GetFrappeSiteName(id)
 			}
 			// Frappe does not support sub-path proxying. Redirect to the subdomain.
-			scheme := "http"
-			if req.TLS != nil || req.Header.Get("X-Forwarded-Proto") == "https" {
-				scheme = "https"
-			}
+			scheme := publicRequestScheme(req)
 			redirectURL := fmt.Sprintf("%s://%s/", scheme, siteName)
 			http.Redirect(w, req, redirectURL, http.StatusMovedPermanently)
 			return
@@ -1215,8 +1221,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			return
 		}
 
-		seoHandler := seo.IndexHandler(cfgSvc, rdb, database.DB)
-		imw.ExtractTokenMiddleware(seoHandler).ServeHTTP(w, req)
+		seoHandler.ServeHTTP(w, req)
 	})
 
 	return r

@@ -65,6 +65,10 @@ dashboard under backend `/api/grengo`.
 
 - Generated config says: do not edit manually; run `grengo nginx reload`.
 - Unknown hosts drop with 444.
+- Nginx answers `/healthz` locally in default and tenant server contexts; the
+  shared Compose healthcheck never requests a tenant backend route.
+- Apex/explicit aliases route normally. Generated wildcard coverage is limited
+  to provisioned `site<id>` hosts; arbitrary subdomains do not enter the SPA.
 - `/ws` and `/api/ws` proxy `Upgrade`/`Connection` with long timeouts.
 - `/uploads/*` is proxied with 30-day cache headers and upload body allowance.
 - API/config paths use no-store cache headers.
@@ -84,7 +88,8 @@ Per-tenant env:
 
 | Var | Contract |
 | --- | --- |
-| `CLIENT_NAME`, `CLIENT_ID`, `PORT`, `DOMAINS` | tenant identity/routing |
+| `CLIENT_NAME`, `CLIENT_ID`, `PORT`, `DOMAINS` | tenant identity/routing; first valid domain is the canonical default |
+| `PUBLIC_BASE_URL`, `SITEMAP_BASE_URL` | matching absolute canonical origin; HTTPS outside localhost |
 | `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `ADMIN_PASSWORD` | required runtime secrets |
 | `FEATURES_ENABLED` | comma-separated feature gates |
 | `PAYMENT_PROVIDER`, `STRIPE_SECRET_KEY` | store payment provider |
@@ -96,6 +101,8 @@ Per-tenant env:
 - No wildcard production CORS/domains.
 - Tenant data isolation is database + Redis prefix + upload directory + env file.
 - Runtime nginx config is generated, not hand-maintained.
+- Unknown/local/alias health traffic cannot select a tenant by map fallback or
+  warm tenant SSR metadata.
 - Armed mode blocks API traffic except explicit allowlist routes.
 - Containers run as non-root app user where the image supports it.
 - Control-plane sites and clusters retain deletion/failure lifecycle state;
@@ -108,6 +115,8 @@ Per-tenant env:
 
 - `rg "nginx reload|migrate <name|all>|compose up" internal main.go router.go -n`
 - `internal/app/nginx.go`
+- `internal/app/public_url.go`
+- `compose.yml` `/healthz`
 - `backend/main.go` armed middleware and `/api/grengo` mount
 
 ## Trace

@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/skaia/backend/internal/s_registry"
+	"github.com/skaia/backend/internal/seocache"
+	log "github.com/skaia/backend/internal/syslog"
 	"github.com/skaia/backend/models"
 )
 
@@ -207,12 +208,15 @@ func (s *Service) invalidateSEO(slug string) {
 	if s.rdb == nil {
 		return
 	}
-	name := os.Getenv("CLIENT_NAME")
-	if name != "" {
-		name = name + ":"
+	routes := []string{"/page/" + slug}
+	if slug == "privacy" || slug == "tos" {
+		routes = append(routes, "/"+slug)
 	}
-	seoKey := name + "ssr:meta:/page/" + slug
-	s.rdb.Del(context.Background(), seoKey)
+	for _, route := range routes {
+		if err := seocache.InvalidateRoute(context.Background(), s.rdb, route); err != nil {
+			log.Printf("page: invalidate SEO cache for %q: %v", route, err)
+		}
+	}
 }
 
 func (s *Service) Create(p *models.Page) error {
@@ -226,7 +230,11 @@ func (s *Service) Create(p *models.Page) error {
 	if err := s.validateContent(p.Content); err != nil {
 		return err
 	}
-	return s.repo.Create(p)
+	if err := s.repo.Create(p); err != nil {
+		return err
+	}
+	s.invalidateSEO(p.Slug)
+	return nil
 }
 
 func (s *Service) Update(p *models.Page) error {
@@ -234,15 +242,15 @@ func (s *Service) Update(p *models.Page) error {
 		p.Content = "[]"
 	}
 	p.Content = ClearInteractiveRecords(p.Content)
+	current, err := s.repo.GetByID(p.ID)
+	if err != nil {
+		return err
+	}
 	typedReady := false
 	if s.TypedSectionMutationsEnabled() {
 		typedReady, _ = s.typedRepo.TypedSectionPageReady(p.ID)
 	}
 	if typedReady {
-		current, err := s.repo.GetByID(p.ID)
-		if err != nil {
-			return err
-		}
 		if !sameNormalizedDefinition(current.Content, p.Content) {
 			return ErrLegacySectionMutationDisabled
 		}
@@ -253,8 +261,11 @@ func (s *Service) Update(p *models.Page) error {
 	if err := s.validateContent(p.Content); err != nil {
 		return err
 	}
-	err := s.repo.UpdatePreservingInteractive(p)
+	err = s.repo.UpdatePreservingInteractive(p)
 	if err == nil {
+		if current.Slug != p.Slug {
+			s.invalidateSEO(current.Slug)
+		}
 		s.invalidateSEO(p.Slug)
 	}
 	return err
@@ -290,6 +301,7 @@ func (s *Service) Duplicate(fromID int64, newSlug, newTitle string) (*models.Pag
 	if err := s.repo.Create(dup); err != nil {
 		return nil, err
 	}
+	s.invalidateSEO(dup.Slug)
 	return dup, nil
 }
 
@@ -302,6 +314,7 @@ func (s *Service) Delete(id, actorID int64) error {
 	if err := s.repo.Delete(id, actorID); err != nil {
 		return err
 	}
+	s.invalidateSEO(p.Slug)
 	if p.OwnerID != nil && *p.OwnerID > 0 {
 		_ = s.repo.DecrementUsed(*p.OwnerID)
 	}

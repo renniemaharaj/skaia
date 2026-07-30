@@ -260,7 +260,12 @@ bibliographical certification.
 - Images: JPEG/PNG/WebP/GIF <= 10 MB with dimension validation.
 - Videos: MP4/WebM/OGG/MOV <= 50 MB.
 - Traversal (`..`) is rejected.
-- `internal/ssr` rewrites SPA HTML with SEO/site config and serves sitemap data.
+- `internal/seo` caches origin-independent route metadata, renders SPA head tags
+  against the validated tenant `PUBLIC_BASE_URL`, returns noindex/404 for
+  missing resources, and performs no outbound image fetch.
+- Branding/SEO and route-resource mutations invalidate the versioned tenant SEO
+  namespace. Legacy rendered `ssr:meta:` keys are removed by exact tenant prefix
+  during handler startup. Live stream metadata is deliberately not cached.
 
 ## Invariants
 

@@ -83,7 +83,11 @@ func (s *Service) SearchThreads(query string, limit, offset int) ([]*models.Foru
 }
 
 func (s *Service) CreateThread(thread *models.ForumThread) (*models.ForumThread, error) {
-	return s.threads.Create(thread)
+	created, err := s.threads.Create(thread)
+	if err == nil && created != nil && s.cache != nil {
+		s.cache.Invalidate(created.ID)
+	}
+	return created, err
 }
 
 func (s *Service) UpdateThread(thread *models.ForumThread) (*models.ForumThread, error) {

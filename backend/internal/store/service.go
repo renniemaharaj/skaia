@@ -139,7 +139,11 @@ func (s *Service) ListSimilarProducts(productID int64, limit int) ([]*models.Pro
 }
 
 func (s *Service) CreateProduct(p *models.Product) (*models.Product, error) {
-	return s.products.Create(p)
+	created, err := s.products.Create(p)
+	if err == nil && created != nil && s.cache != nil {
+		s.cache.Invalidate(created.ID)
+	}
+	return created, err
 }
 
 func (s *Service) UpdateProduct(p *models.Product) (*models.Product, error) {

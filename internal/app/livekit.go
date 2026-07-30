@@ -86,19 +86,16 @@ func repairLiveKit(opts liveKitRepairOptions) []string {
 }
 
 func liveKitURLArg(args []string) string {
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--url":
-			if i+1 >= len(args) {
-				die("--url requires a value")
-			}
-			i++
-			return strings.TrimRight(strings.TrimSpace(args[i]), "/")
-		default:
-			die("Unknown livekit option: %s", args[i])
-		}
+	if len(args) == 0 {
+		return ""
 	}
-	return ""
+	if args[0] != "--url" {
+		die("Unknown livekit option: %s", args[0])
+	}
+	if len(args) != 2 {
+		die("--url requires exactly one value")
+	}
+	return strings.TrimRight(strings.TrimSpace(args[1]), "/")
 }
 
 func inferLiveKitURL() string {

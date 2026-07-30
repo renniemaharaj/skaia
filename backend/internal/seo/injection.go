@@ -5,8 +5,9 @@ import (
 	"strings"
 )
 
-func serveInjected(w http.ResponseWriter, data []byte, meta CachedMeta) {
+func serveInjected(w http.ResponseWriter, r *http.Request, data []byte, cached CachedMeta, status int) {
 	out := string(data)
+	meta := renderMeta(r, cached)
 
 	out = replacePlaceholder(out, "%TITLE_PLACEHOLDER%", meta.TitleTag)
 	out = replacePlaceholder(out, "%META_DESCRIPTION_PLACEHOLDER%", meta.DescTag)
@@ -24,5 +25,9 @@ func serveInjected(w http.ResponseWriter, data []byte, meta CachedMeta) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")
+	if cached.NoIndex || cached.NotFound {
+		w.Header().Set("X-Robots-Tag", "noindex, nofollow")
+	}
+	w.WriteHeader(status)
 	_, _ = w.Write([]byte(out))
 }

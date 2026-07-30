@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/skaia/backend/internal/seocache"
 	"github.com/skaia/backend/models"
 )
 
@@ -87,9 +88,9 @@ func (c *ThreadCache) Invalidate(id int64) {
 	if err := c.rdb.Del(ctx, threadKey(id)).Err(); err != nil {
 		log.Printf("forum.ThreadCache.Invalidate(%d): %v", id, err)
 	}
-	// Also invalidate SEO meta.
-	seoKey := forumClientPrefix() + "ssr:meta:/view-thread/" + strconv.FormatInt(id, 10)
-	c.rdb.Del(ctx, seoKey)
+	if err := seocache.InvalidateRoute(ctx, c.rdb, "/view-thread/"+strconv.FormatInt(id, 10)); err != nil {
+		log.Printf("forum.ThreadCache.InvalidateSEO(%d): %v", id, err)
+	}
 }
 
 // Flush removes all forum thread cache entries.

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/skaia/backend/internal/seocache"
 	"github.com/skaia/backend/models"
 )
 
@@ -98,6 +99,22 @@ func (c *Cache) Invalidate(id int64) {
 	ctx := context.Background()
 	if err := c.rdb.Del(ctx, cacheKey(id)).Err(); err != nil {
 		log.Printf("user.Cache.Invalidate(%d): %v", id, err)
+	}
+	c.InvalidateSEO(id)
+}
+
+// InvalidateSEO removes profile and directory metadata without evicting the
+// authoritative user cache entry.
+func (c *Cache) InvalidateSEO(id int64) {
+	if c == nil || c.rdb == nil {
+		return
+	}
+	ctx := context.Background()
+	idPath := strconv.FormatInt(id, 10)
+	for _, route := range []string{"/users/" + idPath, "/directory/" + idPath, "/users"} {
+		if err := seocache.InvalidateRoute(ctx, c.rdb, route); err != nil {
+			log.Printf("user.Cache.InvalidateSEO(%d): %v", id, err)
+		}
 	}
 }
 

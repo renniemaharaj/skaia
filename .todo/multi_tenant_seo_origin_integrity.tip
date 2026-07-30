@@ -1,0 +1,41 @@
+<--/------->
+
+## multi_tenant_seo_origin_integrity
+
+### Current Progress
+- **Production incident diagnosis** — ✅ Complete
+- **Regression tests and canonical-origin contract** — ✅ Complete
+- **Cache and metadata remediation** — ✅ Complete
+- **Nginx, proxy, and image-probe hardening** — ✅ Complete
+- **Multi-tenant rollout and recrawl verification** — 🟡 In progress
+
+### Next Steps
+- [x] Add the apex/`www`/subdomain/localhost/hostile-host/protocol/auth request-order matrix.
+- [x] Implement validated canonical origins, semantic versioned metadata caching,
+  complete config/content invalidation, single escaping, configured title/favicon,
+  real 404/noindex handling, and side-effect-free image metadata.
+- [x] Add a dedicated nginx health/default server, fail-closed host map, restricted
+  provisioned-site regex, and a generated two-tenant config regression.
+- [x] Update backend, caching/CDN, infrastructure, and security specifications.
+- [x] 2026-07-30 verification passed: full backend and root module tests; backend
+  and root `go vet`; focused affected-package race detector; affected-package and
+  root staticcheck excluding the repository's pre-existing `U1000` baseline;
+  backend/root builds; generated-nginx fixture; and `git diff --check`.
+- [ ] On the production deployment host, inventory each tenant's primary domain,
+  explicit aliases, `PUBLIC_BASE_URL`, `SITEMAP_BASE_URL`, and Cloudflare SSL mode.
+  This checkout contains only the local `home` tenant, so that inventory cannot
+  be completed here.
+- [ ] Deploy the backend and control-plane changes together, run `grengo migrate
+  all` to persist canonical defaults, run `grengo nginx reload`, and recreate or
+  restart tenant backends. Handler startup purges only each tenant's legacy
+  `<client>:ssr:meta:*` prefix.
+- [ ] Repeat the public raw-HTML matrix and verify no first-party SEO tag contains
+  `localhost`, an unintended subdomain, or `http://`; verify invalid hosts drop,
+  missing routes return `404`/noindex, and signed/unsigned output matches.
+- [ ] Set Cloudflare to Full (Strict) where supported and request recrawls only
+  after the public matrix passes. The 2026-07-30 pre-deploy check still returned
+  `slushup.thewriterco.com` for TheWriterCo root, HTTP social URLs for forum/thread,
+  and localhost metadata for Skaiacraft, proving production has not yet received
+  this build.
+
+<--/------->

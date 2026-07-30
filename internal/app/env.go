@@ -86,6 +86,7 @@ var rootLiveKitDefaults = []envDefaultEntry{
 // empty. Returns the number of keys added or initialized.
 func syncEnvDefaults(name string) int {
 	envFile := clientEnvFile(name)
+	canonicalUpdates := syncCanonicalURLDefaults(envFile)
 	existing := loadEnvKeys(envFile) // includes both active and commented-out keys
 	active := loadEnvMap(envFile)
 	activeKeys := loadActiveEnvKeys(envFile)
@@ -110,7 +111,7 @@ func syncEnvDefaults(name string) int {
 	}
 
 	if len(toAdd) == 0 && len(toSet) == 0 {
-		return 0
+		return canonicalUpdates
 	}
 
 	if len(toAdd) > 0 {
@@ -118,7 +119,7 @@ func syncEnvDefaults(name string) int {
 		raw, err := os.ReadFile(envFile)
 		if err != nil {
 			warn("Cannot read %s: %v", envFile, err)
-			return 0
+			return canonicalUpdates
 		}
 
 		content := string(raw)
@@ -145,20 +146,20 @@ func syncEnvDefaults(name string) int {
 
 		if err := os.WriteFile(envFile, []byte(content), 0644); err != nil {
 			warn("Cannot write %s: %v", envFile, err)
-			return 0
+			return canonicalUpdates
 		}
 	}
 
 	for _, d := range toSet {
 		if err := setEnvVal(envFile, d.Key, envDefaultValue(d)); err != nil {
 			warn("Cannot update %s in %s: %v", d.Key, envFile, err)
-			return len(toAdd)
+			return canonicalUpdates + len(toAdd)
 		}
 	}
 
 	upgradeEnvPerformanceKeys(envFile)
 
-	return len(toAdd) + len(toSet)
+	return canonicalUpdates + len(toAdd) + len(toSet)
 }
 
 func envDefaultValue(d envDefaultEntry) string {

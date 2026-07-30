@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
@@ -33,8 +32,11 @@ func TestBuildSitemapXML(t *testing.T) {
 	if !strings.Contains(xml, "<loc>https://example.com/</loc>") {
 		t.Fatalf("expected root URL in sitemap, got %s", xml)
 	}
-	if !strings.Contains(xml, "<loc>https://example.com/login</loc>") {
-		t.Fatalf("expected login URL in sitemap, got %s", xml)
+	if !strings.Contains(xml, "<loc>https://example.com/forum</loc>") {
+		t.Fatalf("expected forum URL in sitemap, got %s", xml)
+	}
+	if strings.Contains(xml, "/login</loc>") || strings.Contains(xml, "/inbox</loc>") {
+		t.Fatalf("sitemap contains non-indexable routes: %s", xml)
 	}
 	if !strings.Contains(xml, "<urlset") {
 		t.Fatalf("expected urlset root in sitemap, got %s", xml)
@@ -42,22 +44,31 @@ func TestBuildSitemapXML(t *testing.T) {
 }
 
 func TestGetSitemapBaseURL(t *testing.T) {
-	orig := os.Getenv("SITEMAP_BASE_URL")
-	defer os.Setenv("SITEMAP_BASE_URL", orig)
-
-	os.Setenv("SITEMAP_BASE_URL", "https://sitemap.example.org")
-	if got := getSitemapBaseURL(); got != "https://sitemap.example.org" {
-		t.Fatalf("expected %q got %q", "https://sitemap.example.org", got)
-	}
-
-	os.Unsetenv("SITEMAP_BASE_URL")
-	os.Setenv("DOMAINS", "example.com www.example.com")
+	t.Setenv("SITEMAP_BASE_URL", "https://sitemap.example.org")
+	t.Setenv("DOMAINS", "example.com www.example.com")
+	t.Setenv("PUBLIC_BASE_URL", "https://example.com")
 	if got := getSitemapBaseURL(); got != "https://example.com" {
 		t.Fatalf("expected %q got %q", "https://example.com", got)
 	}
 
-	os.Unsetenv("DOMAINS")
+	t.Setenv("DOMAINS", "")
+	t.Setenv("PUBLIC_BASE_URL", "")
+	if got := getSitemapBaseURL(); got != "https://sitemap.example.org" {
+		t.Fatalf("expected %q got %q", "https://sitemap.example.org", got)
+	}
+
+	t.Setenv("SITEMAP_BASE_URL", "")
 	if got := getSitemapBaseURL(); got != "http://localhost:8080" {
 		t.Fatalf("expected fallback %q got %q", "http://localhost:8080", got)
+	}
+}
+
+func TestPublicRequestSchemeUsesCanonicalOrigin(t *testing.T) {
+	t.Setenv("DOMAINS", "example.com")
+	t.Setenv("PUBLIC_BASE_URL", "https://example.com")
+	req := httptest.NewRequest(http.MethodGet, "http://example.com/instances/1", nil)
+	req.Header.Set("X-Forwarded-Proto", "http")
+	if got := publicRequestScheme(req); got != "https" {
+		t.Fatalf("publicRequestScheme() = %q, want https", got)
 	}
 }

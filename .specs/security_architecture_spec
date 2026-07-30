@@ -111,6 +111,10 @@ is not an architectural invariant and must not be treated as one.
 - Tenant data is isolated by database, Redis namespace, upload root, runtime env,
   and host routing. Cross-tenant identifiers and cache keys are never accepted
   without resolving the current tenant boundary.
+- Tenant SEO identity is configuration-owned, never Host-header- or
+  first-request-owned. Unknown hosts fail at nginx, healthchecks do not enter a
+  tenant, rendered absolute metadata is not cached, and SSR performs no outbound
+  request to content-controlled image URLs.
 - Normalized custom-page contracts resolve only embedded schemas. User config
   cannot trigger remote schema fetches; CSS colors require explicit safe-value
   validation, and contract errors never echo page config or response values.
