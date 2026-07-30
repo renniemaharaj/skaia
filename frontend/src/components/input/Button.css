@@ -54,6 +54,16 @@
   gap: 0.35rem;
 }
 
+.sk-btn.sk-btn--icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  flex: 0 0 1.75rem;
+  padding: 0;
+  border-radius: var(--radius-sm);
+}
+
 /* Variants ---------------------------------------------------------------- */
 
 /* Action */

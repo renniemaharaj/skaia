@@ -114,9 +114,26 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-07-26T07:59:09-04:00
+- 2026-07-30T13:05:28-04:00
 
 ## Last Run Remarks
+
+- Completed `bible_voice_reader_integration` with a startup-validated,
+  internally embedded 66-book KJV corpus, public catalog/per-book APIs, and no
+  database or remote scripture dependency.
+- Added the public Bible browser and responsive reader, query/path deep-link
+  preservation, bounded preferences and book caching, favorites/download,
+  accessible dialogs, browser narration, continuous advancement, voice fallback,
+  cancellation lifecycle, and keyboard controls.
+- Follow-up polish moved book discovery/picking to `DirectoryLayout` with
+  metadata search, division filtering, persisted grid/TableView modes, added
+  viewport fullscreen reader behavior, and repaired the shared compact icon
+  button sizing contract.
+- Verification passed: all corpus checksums; complete backend suite; all 149
+  frontend tests; contract drift; Biome lint; TypeScript; native-dialog guard;
+  production build; dependency/color drift checks; and `git diff --check`.
+
+## Previous Run Remarks (2026-07-26T07:59:09-04:00)
 
 - Completed `websocket_ingress_trust_boundary_hardening`: client ingress is an
   explicit allowlist, private subscriptions are service-authorized and bounded,

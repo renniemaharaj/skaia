@@ -2,20 +2,22 @@
 
 ## Scope
 
-Frontend/backend resolution for `/`, custom pages, landing-page swaps, and CDN-safe
-page fetching.
+Frontend/backend resolution for `/`, custom pages, public KJV deep links,
+landing-page swaps, and CDN-safe page fetching.
 
 ## Load when
 
-Changing `PageBuilder`, `usePageData`, page routes, landing page config, CDN/cache
-behavior, or page WebSocket events.
+Changing `PageBuilder`, `usePageData`, page routes, Bible URL parsing, landing
+page config, CDN/cache behavior, or page WebSocket events.
 
 ## Owns
 
 - Backend: `backend/internal/page/handler.go`, `backend/internal/page/service.go`
 - Frontend: `frontend/src/pages/index/index.tsx`,
   `frontend/src/components/page/PageBuilder.tsx`,
-  `frontend/src/hooks/usePageData.ts`
+  `frontend/src/hooks/usePageData.ts`, `frontend/src/pages/kjv/index.tsx`,
+  `frontend/src/components/bible/location.ts`
+- Bible backend: `backend/internal/bible/handler.go`
 - Config key: `site_config.landing_page_slug`
 
 ## Cold Load `/`
@@ -47,6 +49,21 @@ Clients in index mode refetch through the slug resolution path after the
 content-free landing invalidation. `landing_page_updated` is a fallback signal
 for UI badges and missed page pushes.
 
+## Public KJV Deep Links
+
+| Form | Contract |
+| --- | --- |
+| `/kjv` | Opens the public Bible browser; validated saved preferences may restore selection without changing the base URL |
+| `/kjv?bt=Matthew&c=6&v=25&o=1` | Legacy query form; all four fields are required when any is present |
+| `/kjv/matthew/6/25/open` | Path form; the final segment is exactly `open` or `closed` |
+
+The first complete URL state is authoritative over local preferences. Book
+titles/slugs are matched case-insensitively after space/underscore normalization,
+with `Psalm` retained as an alias for canonical `Psalms`. UI navigation preserves
+the URL form used to enter the reader. Canonicalization uses history replacement;
+user navigation pushes history, while automatic narration replaces the current
+coordinate.
+
 ## Page Mutations
 
 - `PUT /pages/{id}` returns the authoritative updated page to the sender.
@@ -68,6 +85,8 @@ for UI badges and missed page pushes.
 - Landing swap must cancel queued local page saves before changing pages.
 - Incoming page broadcasts must preserve per-user local fields such as `is_liked`
   and `can_delete` when those are absent from the broadcast.
+- Invalid or incomplete KJV deep links expose a visible error and never render
+  persisted scripture as if the supplied coordinate had resolved.
 
 ## Anti-patterns
 
@@ -81,9 +100,13 @@ for UI badges and missed page pushes.
 - `rg "landing-slug|set-homepage|landing_page_changed|landing_page_updated" backend frontend/src -n`
 - `backend/internal/page/handler.go`
 - `frontend/src/hooks/usePageData.ts`
+- `frontend/src/components/bible/location.test.ts`
+- `frontend/src/pages/kjv/index.test.tsx`
 
 ## Trace
 
 - `.specs/custom_pages_multiplayer_spec`
 - `.specs/caching_cdn_spec`
 - `.specs/realtime_wss_spec`
+- `.specs/backend_spec`
+- `.specs/frontend_spec`

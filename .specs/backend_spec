@@ -2,8 +2,8 @@
 
 ## Scope
 
-Go API, domain boundaries, routes, persistence, cache, security, and store/auth
-contracts.
+Go API, domain boundaries, routes, persistence, cache, security, store/auth, and
+the embedded immutable KJV corpus contracts.
 
 ## Load when
 
@@ -14,7 +14,7 @@ auth, store, cache, WebSocket emission, uploads, SSR, or grengo proxy behavior.
 
 - Entry/router: `backend/main.go`
 - Models: `backend/models/*.go`
-- Domains: `backend/internal/{auth,user,forum,store,inbox,notification,config,page,datasource,customsection,events,upload,ws,ssr,grengo}`
+- Domains: `backend/internal/{auth,user,forum,store,inbox,notification,config,page,datasource,customsection,events,upload,ws,ssr,grengo,bible}`
 - DB/Redis: `backend/database/db.go`
 - Migrations: `backend/internal/migrations/*.sql`
 
@@ -27,6 +27,9 @@ auth, store, cache, WebSocket emission, uploads, SSR, or grengo proxy behavior.
 - Repositories execute SQL, accept `context.Context` where the local interface
   does, and avoid business logic.
 - Interfaces live per domain in `interface.go` for test substitution.
+- `internal/bible` embeds the pinned KJV JSON corpus and validates its 66 books,
+  1,189 chapters, 31,102 verses, consecutive coordinates, non-empty text, and
+  aggregate SHA-512 fingerprint before the router is allowed to start.
 - Redis caches are best-effort, tenant-prefixed, read-through, and invalidated on writes.
 - Normalized page-section values use the embedded Draft 2020-12 contracts through
   `s_registry.ValidateContractValue`; external schema references are forbidden,
@@ -102,7 +105,19 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 | `/api/analytics` | `internal/analytics` | resource stats/visitors |
 | `/api/mediascraper` | `internal/mediascraper` | scrape/job controls |
 | `/api/grengo` | `internal/grengo` | in-app tenant administration proxy |
+| `/api/bible/kjv` | `internal/bible` | public immutable KJV catalog and per-book reads |
 | `/api/site` | `backend/main.go` | arm/disarm, `home.manage` + power-level gate |
+
+## Bible Routes
+
+| Method | Path | Contract |
+| --- | --- | --- |
+| `GET` | `/api/bible/kjv/books` | Canonically ordered 66-book catalog, division metadata, corpus counts, source commit, fingerprint, and provenance notice |
+| `GET` | `/api/bible/kjv/books/{book}` | One complete book by canonical slug/title or normalized alias; unknown books return `404` |
+
+The Bible domain has no database or remote runtime dependency. Its source is
+vendored from `renniemaharaj/kjv-bible` commit `6ace898`; the exact edition is
+not asserted beyond the upstream provenance evidence.
 
 ## Page Routes
 
@@ -246,6 +261,8 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 - Security-sensitive operations follow `.specs/security_architecture_spec`; route
   middleware and frontend checks never replace service-level policy enforcement.
 - API JSON must go through `utils.WriteJSON` / `utils.WriteError`.
+- Bible reads remain `no-store` like every other API JSON response; corpus
+  immutability does not create a server/CDN caching exception.
 - Business logic and SQL must not live in handlers.
 - Auth secrets must never be cached in public user models.
 - Landing page is `site_config.landing_page_slug`; there is no `is_index`.

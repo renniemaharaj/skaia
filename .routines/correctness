@@ -84,6 +84,18 @@ docs disagree.
 
 ## Last Run Remarks
 
+- Reconciled the completed Bible implementation against backend, frontend,
+  route-resolution, caching, security, todo, and routine contracts.
+- Found and resolved the material cache-policy tension: immutable KJV responses
+  still use the required API `no-store` headers, while reuse is limited to the
+  embedded backend repository and a bounded eight-book browser memory cache.
+- Confirmed invalid deep links fail visibly instead of leaking remembered
+  coordinates, the corpus is not persisted or fetched remotely, and no
+  Tailwind/Redux/Radix dependency crossed into the integration. Full tests,
+  contract drift, lint, TypeScript, build, checksum, and diff checks pass.
+
+## Previous Run Remarks (2026-07-30)
+
 - Corrected the aggregate trash listing failure caused by manager-only
   `page_allocation` SQL skipping placeholder `$1` while the caller still passed
   four arguments. PostgreSQL therefore could not infer `$1` and returned

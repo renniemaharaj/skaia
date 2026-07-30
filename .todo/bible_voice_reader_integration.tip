@@ -4,24 +4,38 @@
 
 ### Current Progress
 - **Reference discovery and dependency staging** — ✅ Complete
-- **Internal corpus and backend API** — ⬜ Not started
-- **Frontend state, URL codec, and data client** — ⬜ Not started
-- **Bible browser and reader UI translation** — ⬜ Not started
-- **Browser narration and shortcuts** — ⬜ Not started
-- **Routes, navigation, verification, and specs** — ⬜ Not started
+- **Internal corpus and backend API** — ✅ Complete
+- **Frontend state, URL codec, and data client** — ✅ Complete
+- **Bible browser and reader UI translation** — ✅ Complete
+- **Browser narration and shortcuts** — ✅ Complete
+- **Routes, navigation, verification, and specs** — ✅ Complete
 
 Reference verification passed 2026-07-30: staged dependency files are
 byte-identical to TheWriterCo commit `fbdd6bf`; KJV `python script.py audit`
 and `sha512sum -c SHA512SUMS` passed at commit `6ace898`.
 
+Implementation completed 2026-07-30. The backend now serves the pinned,
+startup-validated corpus from `/api/bible/kjv`; the public `/kjv` experience
+supports the legacy query link and path form, browser narration, continuous
+navigation, search, favorites, download, and responsive token-based UI without
+the source project's Tailwind/UI dependencies.
+
+Follow-up polish completed 2026-07-30: book discovery and the picker now use
+Skaia's official DirectoryLayout with metadata search, division filtering,
+persisted grid/table views, and TableView rows. The reader has a viewport
+fullscreen mode with Escape/body-scroll/dialog handling, and the shared Button
+primitive now applies its intended compact sizing to all `size="icon"` actions.
+
+Verification passed: all 66 corpus checksums; full backend suite; all 149
+frontend tests; Biome lint; TypeScript; native-dialog guard; section-contract
+drift check; production build; dependency/color drift checks; and
+`git diff --check`. Web Speech behavior is covered with mocked browser APIs;
+physical browser/device voice availability remains browser/OS-owned. Manual
+cross-device smoke testing was unavailable in this headless workspace; route,
+state, accessibility lifecycle, and production rendering are covered by the
+automated suites and build.
+
 ### Next Steps
-- [ ] Run `.routines/worker` starting with corpus verification/import and the
-      `backend/internal/bible` API contract in the plan.
-- [ ] Implement the frontend URL/state layer before translating the visual
-      components so query and path deep links remain the single selection
-      contract.
-- [ ] Complete automated/manual verification and update
-      `.specs/backend_spec`, `.specs/frontend_spec`, and
-      `.specs/route_resolution_spec` with implemented truth.
+- None. The implementation plan is complete.
 
 <--/------->

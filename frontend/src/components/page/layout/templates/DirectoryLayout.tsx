@@ -114,15 +114,21 @@ export function DirectoryLayout<T>({
                 {onViewModeChange && (
                   <div className="directory-layout__view-toggle">
                     <button
+                      type="button"
                       className={`directory-view-btn ${viewMode === "grid" ? "active" : ""}`}
                       onClick={() => onViewModeChange("grid")}
+                      aria-label="Grid view"
+                      aria-pressed={viewMode === "grid"}
                       title="Grid view"
                     >
                       <LayoutGrid size={16} />
                     </button>
                     <button
+                      type="button"
                       className={`directory-view-btn ${viewMode === "list" ? "active" : ""}`}
                       onClick={() => onViewModeChange("list")}
+                      aria-label="List view"
+                      aria-pressed={viewMode === "list"}
                       title="List view"
                     >
                       <List size={16} />

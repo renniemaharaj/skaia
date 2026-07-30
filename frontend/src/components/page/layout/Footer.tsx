@@ -24,6 +24,7 @@ const DEFAULTS: FooterConfig = {
     { label: "Home", url: "/" },
     { label: "Store", url: "/store" },
     { label: "Forum", url: "/forum" },
+    { label: "Bible", url: "/kjv" },
   ],
   contact_heading: "",
   contact_text: "",

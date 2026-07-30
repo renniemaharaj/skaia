@@ -85,6 +85,7 @@ const ClipMakerPage = lazy(() =>
   import("./clipmaker/index.tsx").then(m => ({ default: m.ClipMakerPage }))
 );
 const TrashPage = lazy(() => import("./trash/TrashPage.tsx"));
+const KJVPage = lazy(() => import("./kjv/index.tsx"));
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
@@ -153,6 +154,8 @@ export const guestRoutes: (CustomRoute | IndexRoute)[] = [
 
 export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { index: true, element: <Index />, conditional: "landing" },
+  { path: "kjv", element: <KJVPage /> },
+  { path: "kjv/:book/:chapter/:verse/:readerState", element: <KJVPage /> },
   { path: "pages", element: <CustomPages /> },
   { path: "page/:slug", element: <PageBuilder /> },
   { path: "privacy", element: <PageBuilder slug="privacy" /> },

@@ -131,7 +131,9 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const isActive = (path: string) => {
-    return location.pathname === path ? "active" : "";
+    return location.pathname === path || (path !== "/" && location.pathname.startsWith(`${path}/`))
+      ? "active"
+      : "";
   };
 
   const navItems = [
@@ -139,7 +141,6 @@ export const Header: React.FC<HeaderProps> = ({
     routeAllowed("store") && { to: "/store", label: "Store" },
     routeAllowed("forum") && { to: "/forum", label: "Forum" },
     { to: "/pages", label: "Pages" },
-    isAuthenticated && { to: "/trash", label: "Trash" },
     isAuthenticated && hasPermission("events.view") && { to: "/activity", label: "Activity" },
   ].filter((item): item is { to: string; label: string; isNew?: boolean } => !!item);
 

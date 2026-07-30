@@ -8,7 +8,7 @@ nginx cache behavior.
 ## Load when
 
 Changing `utils.WriteJSON`, nginx generation, uploads/static serving, page route
-resolution, SSR, or CDN-facing behavior.
+resolution, Bible data loading, SSR, or CDN-facing behavior.
 
 ## Owns
 
@@ -16,6 +16,7 @@ resolution, SSR, or CDN-facing behavior.
 - Runtime nginx generator: `internal/app/nginx.go`
 - Frontend image nginx variant: `frontend/nginx/default.conf`
 - Page flow: `.specs/route_resolution_spec`
+- Bible client cache: `frontend/src/components/bible/api.ts`
 
 ## Contracts
 
@@ -27,6 +28,7 @@ resolution, SSR, or CDN-facing behavior.
 | Vite assets | hashed filenames; immutable-style static caching |
 | WebSocket | not cacheable; upgrade proxied at `/ws` and `/api/ws` |
 | SSR HTML | may be rewritten with SEO/site config; avoid relying on CDN purge for correctness |
+| KJV frontend reads | API remains `no-store`; one catalog promise plus an eight-book in-memory LRU and in-flight coalescing |
 
 ## CDN-Safe Page Pattern
 
@@ -44,6 +46,11 @@ Live page changes bypass CDN through WebSocket:
 - `page:update page_updated` carries a content-free invalidation; typed writes
   may add affected section IDs/revisions or a theme revision.
 - `config:update landing_page_updated` carries `{ slug }` as a fallback/UI signal.
+
+The embedded KJV corpus is immutable, but `/api/bible/kjv/*` is not an exception
+to the global API header policy. Reuse is process-local in the Go repository and
+bounded to the browser session in the frontend client; corpus payloads are not
+written to local storage.
 
 ## Anti-patterns
 

@@ -2,13 +2,13 @@
 
 ## Scope
 
-React UI architecture, shared state, route-level pages, CSS system, and store/cart
-frontend contracts.
+React UI architecture, shared state, route-level pages, CSS system, store/cart,
+and the Bible viewer/browser-narration contracts.
 
 ## Load when
 
-Changing React components, page routes, atoms/hooks, CSS, cart/store UI,
-WebSocket consumers, or page-builder UX.
+Changing React components, page routes, atoms/hooks, CSS, cart/store UI, Bible
+navigation/narration, WebSocket consumers, or page-builder UX.
 
 ## Owns
 
@@ -19,6 +19,8 @@ WebSocket consumers, or page-builder UX.
 - WebSocket singleton: `frontend/src/hooks/useWebSocketSync.ts`
 - Design tokens/utilities: `frontend/src/index.css`, `frontend/src/utilities.css`
 - Domain pages/components: `src/pages/*`, `src/components/*`, `src/styles/*`
+- Bible UI/data: `src/pages/kjv/*`, `src/components/bible/*`,
+  `src/atoms/bible.ts`
 
 ## Architecture Contracts
 
@@ -65,6 +67,10 @@ WebSocket consumers, or page-builder UX.
 - Datasource-backed reusable designs use the `SectionPreset` type and
   `/config/section-presets`; `CustomSection` remains a deprecated type alias and
   the backend retains the old route during the compatibility window.
+- Bible reads use only `/bible/kjv/books` and `/bible/kjv/books/{book}`. The
+  client coalesces requests, retains the catalog for the page lifetime, and
+  bounds its per-book memory cache to eight entries; it never persists corpus
+  text or fetches scripture from GitHub at runtime.
 
 ## Destructive UX and Trash
 
@@ -92,6 +98,37 @@ WebSocket consumers, or page-builder UX.
 | Notifications | `atoms/notifications.ts` | notification WS + read/delete REST |
 | Config/page | `atoms/config.ts`, page local state | config/page WS + page hooks |
 | Presence/chat/media | `atoms/presence.ts`, `chat.ts`, `voice.ts`, `media.ts` | WS only |
+| Bible | `atoms/bible.ts` | URL-authoritative selection + bounded validated local preferences |
+
+## Bible Viewer and Narration
+
+- Public routes are `/kjv`, the legacy query form
+  `/kjv?bt={title}&c={chapter}&v={verse}&o={0|1}`, and the path form
+  `/kjv/{bookSlug}/{chapter}/{verse}/{open|closed}`.
+- A complete deep link is authoritative over saved selection. Navigation
+  preserves the incoming query/path form; narration advances with history
+  replacement, and malformed or nonexistent coordinates render an error rather
+  than remembered scripture.
+- Local storage key `bible.preferences` contains only validated selection,
+  narration preference, selected browser voice URI, and at most 500 favorites.
+- Narration uses the browser Web Speech API with delayed voice discovery,
+  English/default fallback, play/pause/resume/stop, one utterance per verse, and
+  continuous cross-chapter advancement. It cancels on reader close, book change,
+  disable, or unmount and ignores stale utterance callbacks.
+- Reader shortcuts are Left/Right for adjacent verses, `V` for narration,
+  Space for play/pause, and Escape for fullscreen exit or narration stop. They
+  do not capture navigation/narration events from interactive or editable
+  controls.
+- Book discovery and the picker use the shared `DirectoryLayout`, `FilterBar`,
+  and `TableView`, including persisted grid/table preference, metadata search,
+  division filtering, and keyboard-openable rows.
+- Fullscreen reader mode is transient route-local UI. It fills the viewport,
+  locks background scrolling, preserves picker/favorites dialog layering, and
+  exits before reader collapse or through Escape.
+- The browser, reader, picker, and favorites dialog use Skaia components and
+  global CSS tokens; icon-only `Button` controls use the compact 1.75rem
+  `size="icon"` contract. No Tailwind, Redux, Radix, or remote scripture
+  dependency is part of the feature.
 
 ## Store/Cart Frontend Contracts
 
@@ -192,6 +229,11 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 | `src/components/page/sectionRendererRegistry.tsx` | exhaustive typed renderer metadata and clipboard dispatch |
 | `src/components/page/sectionTheme.ts` | safe page-palette variable and section-color resolution |
 | `src/components/page/typedSectionApi.ts` | typed section payload adaptation, stable-ID/revision API client |
+| `src/pages/kjv/index.tsx` | catalog/book loading and URL-authoritative reader orchestration |
+| `src/components/bible/BibleBrowser.tsx` | shared directory grid/table book discovery and picker |
+| `src/components/bible/BibleReader.tsx` | route-scoped reader, fullscreen shell, favorites, and controls |
+| `src/components/bible/location.ts` | query/path parsing, aliases, and canonical URL generation |
+| `src/components/bible/useBibleSpeech.ts` | browser narration lifecycle and continuous advancement |
 | `src/pages/cart/index.tsx` | checkout state and guest/auth cart submission |
 | `src/components/store/cart/*` | cart UI panels and delivery picker |
 
@@ -213,6 +255,8 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 - Do not duplicate token definitions in component CSS.
 - Do not persist sensitive card CVV-like data in frontend local storage.
 - Backend permissions are authoritative; frontend permission checks are UX only.
+- Bible deep links must never silently fall back to persisted coordinates when
+  their supplied book/chapter/verse/open state is invalid.
 - Password-recovery auth pushes require the exact browser-local guest session and
   tab-local pending recovery request ID. Mismatched or unsolicited credentials
   never update auth atoms.

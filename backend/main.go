@@ -27,6 +27,7 @@ import (
 	ianalytics "github.com/skaia/backend/internal/analytics"
 	"github.com/skaia/backend/internal/auth"
 	"github.com/skaia/backend/internal/authhandler"
+	ibible "github.com/skaia/backend/internal/bible"
 	iclipmaker "github.com/skaia/backend/internal/clipmaker"
 	icfg "github.com/skaia/backend/internal/config"
 	"github.com/skaia/backend/internal/ctx"
@@ -81,6 +82,7 @@ var sitemapPaths = []string{
 	"/register",
 	"/store",
 	"/forum",
+	"/kjv",
 	"/cart",
 	"/users",
 	"/inbox",
@@ -982,6 +984,12 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		analyticsRepo := ianalytics.NewRepository(db)
 		analyticsSvc := ianalytics.NewService(analyticsRepo)
+
+		bibleRepo, err := ibible.NewRepository()
+		if err != nil {
+			log.Fatalf("bible corpus init: %v", err)
+		}
+		ibible.NewHandler(ibible.NewService(bibleRepo)).Mount(api)
 
 		authHandler := auth.NewHandler(authSvc, hub, dispatcher, emailSender, inboxSvc, userSvc)
 		hub.OnGuestSessionClosed = authHandler.ExpireRecoveryRequestsForGuestSession
