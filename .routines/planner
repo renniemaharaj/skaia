@@ -103,9 +103,19 @@ operational policies.
 
 ## Last Ran
 
-- 2026-07-26
+- 2026-07-30
 
 ## Last Run Remarks
+
+- Created `bible_voice_reader_integration` after matching the ignored
+  `integrate/` sources byte-for-byte to the workspace-level TheWriterCo
+  repository, staging the missing reader/URL/speech dependencies and local page
+  artwork, auditing the current Skaia frontend/backend contracts, and tracing
+  the verified KJV corpus. The worker handoff defines the internal embedded
+  corpus API, dual query/path URL contract, Jotai boundary, UI translation,
+  browser narration lifecycle, provenance caveat, and verification gates.
+
+## Previous Run Remarks (2026-07-26)
 
 - Created `soft_delete_and_destructive_prompts` after tracing checked-in tenant
   and control-plane schemas, live database drift, runtime hard deletes, cascades,
@@ -114,14 +124,14 @@ operational policies.
   orphaned, and file-backed records; it also makes Skaia's shared Prompt and a
   no-native-browser-dialog gate part of deletion acceptance.
 
-## Previous Run Remarks (2026-07-18)
+## Earlier Run Remarks (2026-07-18)
 
 - Reconciled the two final Appearance UX findings into the completed
   `typed_page_sections_redesign` plan/tip and durable compatibility spec. The plan
   remains complete after worker verification; deployment does not waive its
   production cutover/retirement evidence gates.
 
-## Earlier Run Remarks (2026-07-17)
+## Older Run Remarks (2026-07-17)
 
 - Retired the completed but contradictory interactive-section plan pair,
   preserved its durable JSON-backed architecture in the spec, and created the

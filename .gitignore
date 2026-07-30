@@ -6,6 +6,7 @@ dist/
 *.log
 tmp_build
 pgadmin_data/
+integrate
 .env
 .env.local
 .env.*.local

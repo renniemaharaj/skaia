@@ -1,0 +1,180 @@
+# KJV Bible and Voice Reader Integration
+
+## Context
+
+The old React implementation is staged under `integrate/`; every initially
+staged file is byte-identical to `/home/renniem/Workspace/thewriterco` commit
+`fbdd6bf`. Missing feature dependencies and the page artwork are preserved in
+`integrate/legacy_dependencies/README.md`.
+
+The replacement must preserve the old tool's useful behavior without importing
+Redux, Radix Themes, Tailwind, Framer Motion, Embla, or the old page shell. It
+must use Skaia's React Router, Jotai state, shared UI primitives, dialog
+patterns, theme context, and token-only CSS.
+
+The corpus source is `/home/renniem/Workspace/kjv-bible` commit `6ace898`.
+Its 2026-07-30 audit records 66 books, 1,189 chapters, and 31,102 verses with
+corpus fingerprint
+`f49b390066c3113fbb708b96406acc6a02dffe9c56835154d73b6caa45123ede112544ede09e0ed8db43c1d7481feed46a1a2bb212d8261b25b9aaa6d7a3a8b2`.
+The upstream transcription and exact KJV edition are not yet documented, so
+Skaia must preserve that provenance limitation.
+
+## Goal
+
+- Provide a public `/kjv` Bible browser with the legacy book picker, search,
+  reader, favorites, download, keyboard navigation, and browser voice controls.
+- Support legacy query links such as
+  `/kjv?bt=Matthew&c=6&v=25&o=1`.
+- Support path links as
+  `/kjv/:book/:chapter/:verse/:readerState`, where the canonical state is
+  `open` or `closed` (for example `/kjv/matthew/6/25/open`).
+- Serve a verified, internal KJV copy from Skaia's Go backend with no runtime
+  GitHub dependency.
+- Match Skaia's responsive, accessible, light/dark UI contracts while
+  preserving the old workflow rather than its library-specific markup.
+
+## Non-Goals
+
+- Do not add alternate translations, commentary, AI study features, accounts
+  synchronization, or server-side favorites.
+- Do not add Redux, a new UI library, a carousel package, or a database
+  migration.
+- Do not claim a specific KJV edition or stronger textual provenance than the
+  corpus source documents.
+- Do not make the existing realtime voice-chat subsystem own browser
+  `SpeechSynthesis`; Bible narration is a separate local frontend capability.
+
+## Contracts
+
+### Backend
+
+- Add `backend/internal/bible` using the normal handler/service boundary and an
+  embedded read-only corpus store; place the exact 66 JSON files and integrity
+  metadata inside that package so the Go binary is self-contained.
+- The backend owns canonical titles, URL slugs, legacy division order,
+  testament/division labels, chapter counts, verse counts, and title aliases.
+  Use `Psalms`, not the stale legacy `Psalm`.
+- Mount public, read-only endpoints:
+  - `GET /api/bible/kjv/books`
+  - `GET /api/bible/kjv/books/{book}`
+- The list response returns translation metadata plus ordered book summaries.
+  The book response returns `translation`, canonical `title`, `slug`, and the
+  chapter/verse object. Unknown books return `404`; malformed embedded content
+  prevents service startup/tests from passing.
+- Preserve the repository-wide API no-store policy. Client code may retain
+  already loaded books in a bounded in-memory map for the current session.
+- Record source commit, fingerprint, public-domain/MIT statements, and the
+  upstream edition/transcription caveat beside the embedded corpus.
+
+### Frontend state and URLs
+
+- Add a focused Bible atom module. Persist only preferences and user state:
+  last selection, reader open state, favorites, speech-enabled preference, and
+  selected `voiceURI`. Do not persist corpus JSON or transient
+  speaking/paused/loading/error state.
+- Parse query and path forms through one typed `BibleLocation` codec. On first
+  load a valid URL is authoritative over remembered state; intentional UI
+  navigation updates the same URL form, while narration auto-advance uses
+  history replacement so it does not flood browser history.
+- Accept `o=1|0` in query form and `open|closed` in path form. Canonicalize book
+  aliases/case to backend titles/slugs. Validate chapter and verse after the
+  book loads; show an inline recoverable not-found/error state instead of
+  silently presenting the wrong scripture.
+- Add both `/kjv` route shapes as public lazy routes, add Bible navigation in
+  the shared header/footer, and add `/kjv` to the sitemap.
+
+### Viewer and reader
+
+- Translate the legacy divisions, search, book tiles, optional cover/page-flip
+  animation, loading state, picker dialog, chapter/verse selectors, current
+  verse, four following shadow verses, previous/next, next-five, favorite,
+  favorites manager, and JSON download.
+- Use the local staged `Bible_Page_Art.jpg`; no runtime GitHub image or scripture
+  fetches. Respect `prefers-reduced-motion`.
+- Use Skaia `Button`, `Select`, `SearchField`, `.card`/`.section`, existing
+  dialog styles, Lucide icons, and global CSS tokens. New component CSS owns
+  layout/animation only and contains no hardcoded colors, token fallbacks, or
+  native dialogs.
+- Keep the reader route-scoped to the Bible page instead of mounting a global
+  fixed panel on every Skaia page. The collapsed control remains usable without
+  obscuring the site header/footer; the open reader is responsive and
+  keyboard/focus accessible.
+
+### Browser narration
+
+- Feature-detect `speechSynthesis` and `SpeechSynthesisUtterance`; render an
+  explanatory disabled state when unavailable.
+- Populate voices initially and on `voiceschanged`. Restore a saved `voiceURI`
+  only when present; otherwise prefer a browser-default English voice, then any
+  English voice, then the first available voice.
+- Implement real play, pause, resume, and stop behavior. Narrate one verse per
+  utterance, advance on a successful end, continue across chapters within the
+  selected book, and stop cleanly at the end of the book.
+- Cancel and invalidate the active narration session on stop, book/route
+  change, reader close, error, or unmount so stale callbacks cannot advance the
+  verse. Changing voices while playing restarts only the current verse.
+- Preserve shortcuts while the reader is open: Left/Right navigate, `V`
+  toggles speech controls, Space plays/pauses, and Escape stops. Never intercept
+  shortcuts from inputs, textareas, selects, buttons, or editable content.
+
+## Steps
+
+1. Import and verify the KJV corpus, add embedded corpus metadata/store/service,
+   implement the two public handlers, mount them in `backend/main.go`, and add
+   corpus, service, handler, route, and error tests.
+2. Add typed frontend Bible API models/client, the URL codec, Jotai
+   preference/favorites state, bounded book cache, and unit tests for aliases,
+   query/path round trips, invalid coordinates, and persistence.
+3. Translate the Bible browser and book-picker UI using Skaia primitives and
+   CSS tokens; preserve legacy division/search/animation behavior and the local
+   artwork without old UI/runtime dependencies.
+4. Translate the reader, selectors, navigation, favorites, download, and
+   responsive open/collapsed panel; connect every intentional state change to
+   URL synchronization.
+5. Implement and test the browser speech engine, asynchronous voice discovery,
+   controls, verse/chapter progression, cancellation guards, unsupported
+   browser state, and keyboard exclusions.
+6. Wire public routes and shared navigation/sitemap, add page-level integration
+   tests for both URL forms, verify responsive/light/dark/reduced-motion and
+   keyboard/screen-reader behavior, then update affected specs and this tip.
+
+## Verification
+
+- Corpus source before import:
+  `python script.py audit` and `sha512sum -c SHA512SUMS` in
+  `/home/renniem/Workspace/kjv-bible`.
+- Backend: `go test ./...` from `backend/`; tests must assert the 66/1,189/31,102
+  totals, tracked fingerprint, canonical `Psalms`, endpoint ordering, known
+  `Matthew 6:25`, and `404` behavior.
+- Frontend: targeted Vitest suites plus `npm test -- --run`,
+  `npm run lint`, `npm run check:native-dialogs`, and `npm run build` from
+  `frontend/`.
+- Manual URLs:
+  `/kjv`, `/kjv?bt=Matthew&c=6&v=25&o=1`,
+  `/kjv/matthew/6/25/open`, a multiword/numbered book, closed state, invalid
+  book/chapter/verse, browser back/forward, and a direct hard refresh.
+- Manual speech: delayed `voiceschanged`, missing saved voice, play/pause/resume,
+  stop, voice change, verse/chapter boundary, end-of-book, navigation away, and
+  browsers without Web Speech support.
+- CSS drift:
+  `rg "#[0-9a-fA-F]{3,8}|rgba\\(|rgb\\(|var\\([^)]*," frontend/src --glob '*.css'`.
+- Dependency/runtime drift:
+  `rg "@radix-ui/themes|tailwind|react-redux|redux|raw.githubusercontent.com|github.com/renniemaharaj/Resources" frontend/src backend/internal/bible`.
+
+## References
+
+- `.routines/worker`
+- `.specs/frontend_spec`
+- `.specs/backend_spec`
+- `.specs/route_resolution_spec`
+- `.specs/caching_cdn_spec`
+- `integrate/`
+- `integrate/legacy_dependencies/README.md`
+- `/home/renniem/Workspace/thewriterco/src/pages/kjv/index.tsx`
+- `/home/renniem/Workspace/kjv-bible/README.md`
+- `frontend/src/pages/routes.tsx`
+- `frontend/src/atoms/`
+- `frontend/src/components/input/`
+- `frontend/src/components/ui/Prompt.tsx`
+- `backend/main.go`
+- `backend/internal/utils/http.go`
