@@ -41,6 +41,7 @@
 
   /* Semantic status colors */
   --error-color: #dc3545;
+  --bible-red-letter: #b42332;
   --error-bg: rgba(220, 53, 69, 0.1);
   --error-border: rgba(220, 53, 69, 0.25);
   --success-color: #198754;
@@ -149,6 +150,7 @@ html[data-theme="dark"] {
 
   /* Semantic status colors */
   --error-color: #ff6b7a;
+  --bible-red-letter: #ff7785;
   --error-bg: rgba(255, 107, 122, 0.12);
   --error-border: rgba(255, 107, 122, 0.25);
   --success-color: #34c97a;

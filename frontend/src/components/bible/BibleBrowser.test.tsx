@@ -1,9 +1,9 @@
-import { Provider } from "jotai";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Provider } from "jotai";
 import { describe, expect, it, vi } from "vitest";
-import type { BibleCatalog } from "./types";
 import BibleBrowser from "./BibleBrowser";
+import type { BibleCatalog } from "./types";
 
 const catalog: BibleCatalog = {
   translation: {
@@ -15,8 +15,7 @@ const catalog: BibleCatalog = {
     source_repository: "https://example.com/kjv",
     source_commit: "test",
     corpus_sha512: "hash",
-    provenance_notice: "Edition not documented.",
-  },
+  } as BibleCatalog["translation"],
   books: [
     {
       title: "Matthew",

@@ -27,9 +27,11 @@ auth, store, cache, WebSocket emission, uploads, SSR, or grengo proxy behavior.
 - Repositories execute SQL, accept `context.Context` where the local interface
   does, and avoid business logic.
 - Interfaces live per domain in `interface.go` for test substitution.
-- `internal/bible` embeds the pinned KJV JSON corpus and validates its 66 books,
-  1,189 chapters, 31,102 verses, consecutive coordinates, non-empty text, and
-  aggregate SHA-512 fingerprint before the router is allowed to start.
+- `internal/bible` embeds the pinned KJV JSON corpus, translation metadata, and
+  66 rendering-marker sidecars. Before the router starts it validates 66 books,
+  1,189 chapters, 31,102 verses, consecutive coordinates, non-empty text,
+  metadata identity, exact marker alignment/span bounds, the aggregate corpus
+  SHA-512, and Skaia's metadata/marker snapshot SHA-512.
 - Redis caches are best-effort, tenant-prefixed, read-through, and invalidated on writes.
 - Normalized page-section values use the embedded Draft 2020-12 contracts through
   `s_registry.ValidateContractValue`; external schema references are forbidden,
@@ -112,12 +114,16 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 
 | Method | Path | Contract |
 | --- | --- | --- |
-| `GET` | `/api/bible/kjv/books` | Canonically ordered 66-book catalog, division metadata, corpus counts, source commit, fingerprint, and provenance notice |
-| `GET` | `/api/bible/kjv/books/{book}` | One complete book by canonical slug/title or normalized alias; unknown books return `404` |
+| `GET` | `/api/bible/kjv/books` | Canonically ordered 66-book catalog plus translation history, language, repository/verification provenance, years, corpus counts, source commit, and text/rendering fingerprints |
+| `GET` | `/api/bible/kjv/books/{book}` | One complete book plus aligned paragraph, added-word, and words-of-Christ marker DTOs by canonical slug/title or normalized alias; unknown books return `404` |
 
 The Bible domain has no database or remote runtime dependency. Its source is
-vendored from `renniemaharaj/kjv-bible` commit `6ace898`; the exact edition is
-not asserted beyond the upstream provenance evidence.
+vendored from `renniemaharaj/kjv-bible` commit
+`88723a44bb3e3f229a34f9cf11ce1b7acf971eee`. The metadata records first
+publication in 1611, 1769 as the general editorial basis, and a 2026-07-30
+verse-level verification reference to Bible SuperSearch KJV module 6.2.0. That
+reference is not represented as the repository corpus origin or independent
+bibliographical certification.
 
 ## Page Routes
 

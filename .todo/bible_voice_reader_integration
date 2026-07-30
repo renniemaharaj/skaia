@@ -12,12 +12,15 @@ Redux, Radix Themes, Tailwind, Framer Motion, Embla, or the old page shell. It
 must use Skaia's React Router, Jotai state, shared UI primitives, dialog
 patterns, theme context, and token-only CSS.
 
-The corpus source is `/home/renniem/Workspace/kjv-bible` commit `6ace898`.
+The corpus source is `/home/renniem/Workspace/kjv-bible` commit
+`88723a44bb3e3f229a34f9cf11ce1b7acf971eee`.
 Its 2026-07-30 audit records 66 books, 1,189 chapters, and 31,102 verses with
 corpus fingerprint
-`f49b390066c3113fbb708b96406acc6a02dffe9c56835154d73b6caa45123ede112544ede09e0ed8db43c1d7481feed46a1a2bb212d8261b25b9aaa6d7a3a8b2`.
-The upstream transcription and exact KJV edition are not yet documented, so
-Skaia must preserve that provenance limitation.
+`7c2eff0219d59c683b1d12739a64facb22807770e05daf20cf1a4d22ef1b739d5ec03268abb8c3201fd69eb1014cc45a37697cb8abaceccd316c2e473db0b264`.
+Its `kjv.json` records the 1611 first publication, 1769 general editorial
+basis, maintained repository origin, and a 2026-07-30 verse-level verification
+reference to Bible SuperSearch KJV module 6.2.0. That reference is not an
+independent bibliographical certification or a claim of vendor origin.
 
 ## Goal
 
@@ -39,8 +42,8 @@ Skaia must preserve that provenance limitation.
   synchronization, or server-side favorites.
 - Do not add Redux, a new UI library, a carousel package, or a database
   migration.
-- Do not claim a specific KJV edition or stronger textual provenance than the
-  corpus source documents.
+- Do not claim vendor origin or stronger textual provenance than the corpus
+  source documents.
 - Do not make the existing realtime voice-chat subsystem own browser
   `SpeechSynthesis`; Bible narration is a separate local frontend capability.
 
@@ -59,12 +62,14 @@ Skaia must preserve that provenance limitation.
   - `GET /api/bible/kjv/books/{book}`
 - The list response returns translation metadata plus ordered book summaries.
   The book response returns `translation`, canonical `title`, `slug`, and the
-  chapter/verse object. Unknown books return `404`; malformed embedded content
-  prevents service startup/tests from passing.
+  chapter/verse object plus the aligned marker DTO. Unknown books return `404`;
+  malformed embedded text, metadata, or markers prevent service startup/tests
+  from passing.
 - Preserve the repository-wide API no-store policy. Client code may retain
   already loaded books in a bounded in-memory map for the current session.
-- Record source commit, fingerprint, public-domain/MIT statements, and the
-  upstream edition/transcription caveat beside the embedded corpus.
+- Record the source commit, text and rendering fingerprints, translation
+  history, repository origin, and provider-verification caveat beside the
+  embedded corpus.
 
 ### Frontend state and URLs
 
@@ -89,6 +94,10 @@ Skaia must preserve that provenance limitation.
   animation, loading state, picker dialog, chapter/verse selectors, current
   verse, four following shadow verses, previous/next, next-five, favorite,
   favorites manager, and JSON download.
+- Render marker sidecars without changing clean verse text: paragraph starts
+  break the context flow, added words are italicized, and words of Christ use a
+  theme-aware global red-letter token. Interpret offsets as zero-based Unicode
+  code points with exclusive ends.
 - Use the local staged `Bible_Page_Art.jpg`; no runtime GitHub image or scripture
   fetches. Respect `prefers-reduced-motion`.
 - Use Skaia `Button`, `Select`, `SearchField`, `.card`/`.section`, existing

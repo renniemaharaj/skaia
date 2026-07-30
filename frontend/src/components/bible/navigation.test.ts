@@ -10,6 +10,13 @@ const book: BibleBook = {
     "1": { "1": "one", "2": "two", "3": "three" },
     "2": { "1": "four", "2": "five" },
   },
+  markers: {
+    schema_version: 1,
+    book: "Example",
+    offset_unit: "Unicode code points",
+    span_end: "exclusive",
+    chapters: {},
+  },
 };
 
 const selection: BibleSelection = {

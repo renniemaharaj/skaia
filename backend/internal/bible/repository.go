@@ -1,6 +1,7 @@
 package bible
 
 import (
+	"bytes"
 	"crypto/sha512"
 	"embed"
 	"encoding/binary"
@@ -8,13 +9,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 var ErrBookNotFound = errors.New("bible book not found")
 
-//go:embed corpus/*.json corpus/SHA512SUMS corpus/SOURCE.md corpus/UPSTREAM_README.md
+//go:embed corpus/*.json corpus/markers/*.json corpus/SHA512SUMS corpus/SOURCE.md corpus/UPSTREAM_README.md corpus/markers/README.md
 var corpusFS embed.FS
 
 type embeddedRepository struct {
@@ -30,17 +33,27 @@ func NewRepository() (Repository, error) {
 		return nil, fmt.Errorf("bible catalog has %d books, want %d", len(canonicalCatalog), CorpusBooks)
 	}
 
+	sourceMetadata, sourceMetadataRaw, err := loadTranslationMetadata()
+	if err != nil {
+		return nil, err
+	}
 	repo := &embeddedRepository{
 		metadata: TranslationMetadata{
-			Code:             TranslationCode,
-			Name:             "King James Version",
-			Books:            CorpusBooks,
-			Chapters:         CorpusChapters,
-			Verses:           CorpusVerses,
-			SourceRepository: "https://github.com/renniemaharaj/kjv-bible",
-			SourceCommit:     SourceCommit,
-			CorpusSHA512:     CorpusSHA512,
-			ProvenanceNotice: "The upstream transcription and exact KJV edition are not documented.",
+			SchemaVersion:        sourceMetadata.SchemaVersion,
+			Code:                 sourceMetadata.Abbreviation,
+			Name:                 sourceMetadata.Name,
+			Abbreviation:         sourceMetadata.Abbreviation,
+			Language:             sourceMetadata.Language,
+			TranslationHistory:   sourceMetadata.TranslationHistory,
+			RepositoryProvenance: sourceMetadata.RepositoryProvenance,
+			TextFormat:           sourceMetadata.TextFormat,
+			Books:                CorpusBooks,
+			Chapters:             CorpusChapters,
+			Verses:               CorpusVerses,
+			SourceRepository:     "https://github.com/renniemaharaj/kjv-bible",
+			SourceCommit:         SourceCommit,
+			CorpusSHA512:         CorpusSHA512,
+			RenderingSHA512:      RenderingSHA512,
 		},
 		summaries: make([]BookSummary, 0, CorpusBooks),
 		books:     make(map[string]*Book, CorpusBooks),
@@ -49,6 +62,9 @@ func NewRepository() (Repository, error) {
 
 	hasher := sha512.New()
 	_, _ = hasher.Write([]byte("KJV-JSON-CORPUS\x00v1\x00"))
+	renderingHasher := sha512.New()
+	_, _ = renderingHasher.Write([]byte("KJV-JSON-RENDERING\x00v1\x00"))
+	writeCorpusFrame(renderingHasher, "kjv.json", sourceMetadataRaw)
 	totalChapters := 0
 	totalVerses := 0
 
@@ -68,6 +84,11 @@ func NewRepository() (Repository, error) {
 		if err != nil {
 			return nil, err
 		}
+		markers, markerRaw, err := loadBookMarkers(entry.title, chapters)
+		if err != nil {
+			return nil, err
+		}
+		writeCorpusFrame(renderingHasher, "markers/"+filename, markerRaw)
 		totalChapters += chapterCount
 		totalVerses += verseCount
 
@@ -88,6 +109,7 @@ func NewRepository() (Repository, error) {
 			Title:       entry.title,
 			Slug:        entry.slug,
 			Chapters:    chapters,
+			Markers:     markers,
 		}
 		repo.aliases[normalizeBookKey(entry.slug)] = entry.slug
 		repo.aliases[normalizeBookKey(entry.title)] = entry.slug
@@ -109,8 +131,120 @@ func NewRepository() (Repository, error) {
 	if fingerprint != CorpusSHA512 {
 		return nil, fmt.Errorf("embedded corpus fingerprint %s does not match tracked %s", fingerprint, CorpusSHA512)
 	}
+	renderingFingerprint := hex.EncodeToString(renderingHasher.Sum(nil))
+	if renderingFingerprint != RenderingSHA512 {
+		return nil, fmt.Errorf(
+			"embedded rendering fingerprint %s does not match tracked %s",
+			renderingFingerprint,
+			RenderingSHA512,
+		)
+	}
 
 	return repo, nil
+}
+
+type sourceTranslationMetadata struct {
+	SchemaVersion        int                  `json:"schema_version"`
+	Name                 string               `json:"name"`
+	Abbreviation         string               `json:"abbreviation"`
+	Language             LanguageMetadata     `json:"language"`
+	TranslationHistory   TranslationHistory   `json:"translation_history"`
+	RepositoryProvenance RepositoryProvenance `json:"repository_provenance"`
+	TextFormat           TextFormat           `json:"text_format"`
+}
+
+func loadTranslationMetadata() (sourceTranslationMetadata, []byte, error) {
+	raw, err := corpusFS.ReadFile("corpus/kjv.json")
+	if err != nil {
+		return sourceTranslationMetadata{}, nil, fmt.Errorf("read embedded kjv.json: %w", err)
+	}
+	var metadata sourceTranslationMetadata
+	if err := decodeStrict(raw, &metadata); err != nil {
+		return sourceTranslationMetadata{}, nil, fmt.Errorf("decode embedded kjv.json: %w", err)
+	}
+	if metadata.SchemaVersion != 1 ||
+		metadata.Name != "King James Version" ||
+		metadata.Abbreviation != TranslationCode ||
+		metadata.Language.Code != "en" ||
+		metadata.TranslationHistory.FirstPublished != 1611 ||
+		metadata.TranslationHistory.EditorialBasis != 1769 ||
+		metadata.RepositoryProvenance.Verification.VerseCount != CorpusVerses {
+		return sourceTranslationMetadata{}, nil, errors.New("embedded kjv.json does not match the supported KJV metadata contract")
+	}
+	return metadata, raw, nil
+}
+
+func loadBookMarkers(
+	title string,
+	chapters map[string]map[string]string,
+) (BookMarkers, []byte, error) {
+	raw, err := corpusFS.ReadFile("corpus/markers/" + title + ".json")
+	if err != nil {
+		return BookMarkers{}, nil, fmt.Errorf("read embedded %s markers: %w", title, err)
+	}
+	var markers BookMarkers
+	if err := decodeStrict(raw, &markers); err != nil {
+		return BookMarkers{}, nil, fmt.Errorf("decode embedded %s markers: %w", title, err)
+	}
+	if markers.SchemaVersion != 1 ||
+		markers.Book != title ||
+		markers.OffsetUnit != "Unicode code points" ||
+		markers.SpanEnd != "exclusive" {
+		return BookMarkers{}, nil, fmt.Errorf("embedded %s markers have an unsupported contract", title)
+	}
+	if len(markers.Chapters) != len(chapters) {
+		return BookMarkers{}, nil, fmt.Errorf("embedded %s markers do not align with the book chapters", title)
+	}
+	for chapterKey, chapter := range chapters {
+		markerChapter, ok := markers.Chapters[chapterKey]
+		if !ok || len(markerChapter) != len(chapter) {
+			return BookMarkers{}, nil, fmt.Errorf("embedded %s chapter %s markers do not align", title, chapterKey)
+		}
+		for verseKey, text := range chapter {
+			verseMarkers, ok := markerChapter[verseKey]
+			if !ok {
+				return BookMarkers{}, nil, fmt.Errorf("embedded %s %s:%s markers are missing", title, chapterKey, verseKey)
+			}
+			textLength := utf8.RuneCountInString(text)
+			if err := validateSpans(verseMarkers.AddedWords, textLength); err != nil {
+				return BookMarkers{}, nil, fmt.Errorf("embedded %s %s:%s added-word markers: %w", title, chapterKey, verseKey, err)
+			}
+			if err := validateSpans(verseMarkers.WordsOfChrist, textLength); err != nil {
+				return BookMarkers{}, nil, fmt.Errorf("embedded %s %s:%s red-letter markers: %w", title, chapterKey, verseKey, err)
+			}
+		}
+	}
+	return markers, raw, nil
+}
+
+func validateSpans(spans []TextSpan, textLength int) error {
+	previousEnd := 0
+	for index, span := range spans {
+		if span.Start < 0 || span.End <= span.Start || span.End > textLength {
+			return fmt.Errorf("span %d [%d,%d) is outside text length %d", index, span.Start, span.End, textLength)
+		}
+		if index > 0 && span.Start < previousEnd {
+			return fmt.Errorf("span %d overlaps the previous span", index)
+		}
+		previousEnd = span.End
+	}
+	return nil
+}
+
+func decodeStrict(raw []byte, target any) error {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(target); err != nil {
+		return err
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		if err == nil {
+			return errors.New("unexpected trailing JSON value")
+		}
+		return err
+	}
+	return nil
 }
 
 func writeCorpusFrame(hasher interface{ Write([]byte) (int, error) }, filename string, raw []byte) {

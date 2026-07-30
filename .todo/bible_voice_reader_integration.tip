@@ -12,7 +12,8 @@
 
 Reference verification passed 2026-07-30: staged dependency files are
 byte-identical to TheWriterCo commit `fbdd6bf`; KJV `python script.py audit`
-and `sha512sum -c SHA512SUMS` passed at commit `6ace898`.
+and `sha512sum -c SHA512SUMS` passed for the refreshed corpus at commit
+`88723a44bb3e3f229a34f9cf11ce1b7acf971eee`.
 
 Implementation completed 2026-07-30. The backend now serves the pinned,
 startup-validated corpus from `/api/bible/kjv`; the public `/kjv` experience
@@ -25,6 +26,15 @@ Skaia's official DirectoryLayout with metadata search, division filtering,
 persisted grid/table views, and TableView rows. The reader has a viewport
 fullscreen mode with Escape/body-scroll/dialog handling, and the shared Button
 primitive now applies its intended compact sizing to all `size="icon"` actions.
+
+Corpus/renderer refresh completed 2026-07-30: Skaia now embeds
+`kjv-bible` commit `88723a44bb3e3f229a34f9cf11ce1b7acf971eee`, including
+1,173 corrected verses across 63 books, `kjv.json` translation/provenance
+metadata, and all 66 rendering-marker sidecars. Backend startup validates marker
+alignment and Unicode span bounds and pins a separate rendering snapshot hash.
+The reader renders paragraph starts, added-word italics, and red-letter spans
+without modifying text used by narration. Corpus information now shows the
+1611/1769 history and Bible SuperSearch KJV module 6.2.0 verification reference.
 
 Verification passed: all 66 corpus checksums; full backend suite; all 149
 frontend tests; Biome lint; TypeScript; native-dialog guard; section-contract

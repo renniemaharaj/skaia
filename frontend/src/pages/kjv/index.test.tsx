@@ -1,6 +1,6 @@
-import { Provider, createStore } from "jotai";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Provider, createStore } from "jotai";
 import { useLocation } from "react-router-dom";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -16,15 +16,39 @@ vi.mock("../../components/bible/api", () => ({
 
 const catalog: BibleCatalog = {
   translation: {
+    schema_version: 1,
     code: "KJV",
     name: "King James Version",
+    abbreviation: "KJV",
+    language: { name: "English", code: "en" },
+    translation_history: {
+      first_published: 1611,
+      editorial_basis: 1769,
+      description: "KJV translation history.",
+    },
+    repository_provenance: {
+      corpus_origin: "Maintained repository corpus.",
+      verification: {
+        last_verified: "2026-07-30",
+        reference: "Bible SuperSearch KJV module 6.2.0, 1611 / 1769",
+        method: "Verse comparison.",
+        verse_count: 31102,
+      },
+    },
+    text_format: {
+      books: "<Book>.json",
+      structure: "chapter and verse JSON objects",
+      plain_text: "Clean text.",
+      rendering_markers: "markers/<Book>.json",
+      marker_offsets: "Unicode code points.",
+    },
     books: 66,
     chapters: 1189,
     verses: 31102,
     source_repository: "https://example.com/kjv",
     source_commit: "test",
     corpus_sha512: "hash",
-    provenance_notice: "Edition not documented.",
+    rendering_sha512: "rendering-hash",
   },
   books: [
     {
@@ -50,6 +74,33 @@ const matthew: BibleBook = {
     "6": {
       "25": "Take no thought for your life.",
       "26": "Behold the fowls of the air.",
+    },
+  },
+  markers: {
+    schema_version: 1,
+    book: "Matthew",
+    offset_unit: "Unicode code points",
+    span_end: "exclusive",
+    chapters: {
+      "1": {
+        "1": {
+          paragraph_start: true,
+          added_words: [],
+          words_of_christ: [],
+        },
+      },
+      "6": {
+        "25": {
+          paragraph_start: true,
+          added_words: [],
+          words_of_christ: [{ start: 0, end: 30 }],
+        },
+        "26": {
+          paragraph_start: false,
+          added_words: [],
+          words_of_christ: [{ start: 0, end: 28 }],
+        },
+      },
     },
   },
 };

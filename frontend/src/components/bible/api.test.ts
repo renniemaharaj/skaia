@@ -25,6 +25,13 @@ describe("Bible API client cache", () => {
       title: "Matthew",
       slug: "matthew",
       chapters: { "1": { "1": "text" } },
+      markers: {
+        schema_version: 1,
+        book: "Matthew",
+        offset_unit: "Unicode code points",
+        span_end: "exclusive",
+        chapters: {},
+      },
     };
     apiRequestMock.mockImplementation(endpoint =>
       Promise.resolve(endpoint.endsWith("/books") ? catalog : matthew)
@@ -59,6 +66,13 @@ describe("Bible API client cache", () => {
       title: "Matthew",
       slug: "matthew",
       chapters: {},
+      markers: {
+        schema_version: 1,
+        book: "Matthew",
+        offset_unit: "Unicode code points",
+        span_end: "exclusive",
+        chapters: {},
+      },
     } satisfies BibleBook);
     await expect(fetchBibleBook("matthew")).resolves.toMatchObject({ slug: "matthew" });
   });

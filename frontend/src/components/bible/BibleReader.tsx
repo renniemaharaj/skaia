@@ -21,6 +21,7 @@ import Button from "../input/Button";
 import Select from "../input/Select";
 import BibleBrowser from "./BibleBrowser";
 import BibleDialog from "./BibleDialog";
+import BibleVerseText from "./BibleVerseText";
 import { adjacentBibleSelection, bibleVerseSlice } from "./navigation";
 import type {
   BibleBook,
@@ -68,6 +69,7 @@ export default function BibleReader({
   const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const currentText = book.chapters[selection.chapter]?.[selection.verse] ?? "";
+  const currentMarkers = book.markers.chapters[selection.chapter]?.[selection.verse];
   const currentSlice = useMemo(() => bibleVerseSlice(book, selection, 5), [book, selection]);
   const previousSelection = useMemo(
     () => adjacentBibleSelection(book, selection, -1),
@@ -415,7 +417,15 @@ export default function BibleReader({
                 <p className="bible-eyebrow">
                   {book.title} {selection.chapter}:{selection.verse}
                 </p>
-                <p>{currentText}</p>
+                <p
+                  className={
+                    currentMarkers?.paragraph_start
+                      ? "bible-reader__verse--paragraph-start"
+                      : undefined
+                  }
+                >
+                  <BibleVerseText text={currentText} markers={currentMarkers} />
+                </p>
               </article>
               <Button
                 size="icon"
@@ -433,12 +443,22 @@ export default function BibleReader({
               {currentSlice.map((item, index) => (
                 <p
                   key={`${item.chapter}:${item.verse}`}
-                  className={index === 0 ? "is-current" : ""}
+                  className={[
+                    index === 0 ? "is-current" : "",
+                    book.markers.chapters[item.chapter]?.[item.verse]?.paragraph_start
+                      ? "is-paragraph-start"
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
                 >
                   <strong>
                     {item.chapter}:{item.verse}
                   </strong>{" "}
-                  {item.text}
+                  <BibleVerseText
+                    text={item.text}
+                    markers={book.markers.chapters[item.chapter]?.[item.verse]}
+                  />
                 </p>
               ))}
             </div>

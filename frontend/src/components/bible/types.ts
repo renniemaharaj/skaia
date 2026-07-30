@@ -1,13 +1,40 @@
 export interface BibleTranslationMetadata {
+  schema_version: number;
   code: string;
   name: string;
+  abbreviation: string;
+  language: {
+    name: string;
+    code: string;
+  };
+  translation_history: {
+    first_published: number;
+    editorial_basis: number;
+    description: string;
+  };
+  repository_provenance: {
+    corpus_origin: string;
+    verification: {
+      last_verified: string;
+      reference: string;
+      method: string;
+      verse_count: number;
+    };
+  };
+  text_format: {
+    books: string;
+    structure: string;
+    plain_text: string;
+    rendering_markers: string;
+    marker_offsets: string;
+  };
   books: number;
   chapters: number;
   verses: number;
   source_repository: string;
   source_commit: string;
   corpus_sha512: string;
-  provenance_notice: string;
+  rendering_sha512: string;
 }
 
 export interface BibleBookSummary {
@@ -32,6 +59,26 @@ export interface BibleBook {
   title: string;
   slug: string;
   chapters: Record<string, Record<string, string>>;
+  markers: BibleBookMarkers;
+}
+
+export interface BibleTextSpan {
+  start: number;
+  end: number;
+}
+
+export interface BibleVerseMarkers {
+  paragraph_start: boolean;
+  added_words: BibleTextSpan[];
+  words_of_christ: BibleTextSpan[];
+}
+
+export interface BibleBookMarkers {
+  schema_version: number;
+  book: string;
+  offset_unit: "Unicode code points";
+  span_end: "exclusive";
+  chapters: Record<string, Record<string, BibleVerseMarkers>>;
 }
 
 export interface BibleSelection {

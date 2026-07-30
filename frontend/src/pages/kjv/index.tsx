@@ -241,12 +241,23 @@ export default function KJVPage() {
       <section className="bible-corpus-note card" aria-label="KJV corpus information">
         <div>
           <p className="bible-eyebrow">Internal scripture source</p>
-          <h2>KJV corpus</h2>
+          <h2>
+            {catalog.translation.name} ({catalog.translation.abbreviation})
+          </h2>
           <p>
             {catalog.translation.books} books · {catalog.translation.chapters.toLocaleString()}{" "}
             chapters · {catalog.translation.verses.toLocaleString()} verses
           </p>
-          <small>{catalog.translation.provenance_notice}</small>
+          <p className="bible-corpus-note__edition">
+            First published {catalog.translation.translation_history.first_published} · Editorial
+            basis {catalog.translation.translation_history.editorial_basis}
+          </p>
+          <small>{catalog.translation.translation_history.description}</small>
+          <small>{catalog.translation.repository_provenance.corpus_origin}</small>
+          <small>
+            Verified {catalog.translation.repository_provenance.verification.last_verified}:{" "}
+            {catalog.translation.repository_provenance.verification.reference}.
+          </small>
         </div>
         <a
           className="sk-btn sk-btn--ghost sk-btn--md"

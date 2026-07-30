@@ -71,6 +71,10 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   client coalesces requests, retains the catalog for the page lifetime, and
   bounds its per-book memory cache to eight entries; it never persists corpus
   text or fetches scripture from GitHub at runtime.
+- Book payload rendering markers use zero-based Unicode code-point offsets with
+  exclusive ends. The reader preserves clean verse strings while showing added
+  words in italics, words of Christ with the global red-letter token, and
+  paragraph starts as context-flow breaks.
 
 ## Destructive UX and Trash
 
@@ -125,6 +129,10 @@ navigation/narration, WebSocket consumers, or page-builder UX.
 - Fullscreen reader mode is transient route-local UI. It fills the viewport,
   locks background scrolling, preserves picker/favorites dialog layering, and
   exits before reader collapse or through Escape.
+- Corpus information presents the embedded source metadata: translation
+  description, 1611 first publication, 1769 editorial basis, maintained
+  repository origin, last verification date, and Bible SuperSearch KJV module
+  6.2.0 verification reference without treating that provider as corpus origin.
 - The browser, reader, picker, and favorites dialog use Skaia components and
   global CSS tokens; icon-only `Button` controls use the compact 1.75rem
   `size="icon"` contract. No Tailwind, Redux, Radix, or remote scripture
@@ -232,6 +240,7 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 | `src/pages/kjv/index.tsx` | catalog/book loading and URL-authoritative reader orchestration |
 | `src/components/bible/BibleBrowser.tsx` | shared directory grid/table book discovery and picker |
 | `src/components/bible/BibleReader.tsx` | route-scoped reader, fullscreen shell, favorites, and controls |
+| `src/components/bible/BibleVerseText.tsx` | Unicode code-point marker segmentation and clean semantic verse rendering |
 | `src/components/bible/location.ts` | query/path parsing, aliases, and canonical URL generation |
 | `src/components/bible/useBibleSpeech.ts` | browser narration lifecycle and continuous advancement |
 | `src/pages/cart/index.tsx` | checkout state and guest/auth cart submission |

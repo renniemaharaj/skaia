@@ -5,22 +5,60 @@ const (
 	CorpusBooks     = 66
 	CorpusChapters  = 1189
 	CorpusVerses    = 31102
-	CorpusSHA512    = "f49b390066c3113fbb708b96406acc6a02dffe9c56835154d73b6caa45123ede112544ede09e0ed8db43c1d7481feed46a1a2bb212d8261b25b9aaa6d7a3a8b2"
-	SourceCommit    = "6ace898"
+	CorpusSHA512    = "7c2eff0219d59c683b1d12739a64facb22807770e05daf20cf1a4d22ef1b739d5ec03268abb8c3201fd69eb1014cc45a37697cb8abaceccd316c2e473db0b264"
+	RenderingSHA512 = "fdcd899c46e9bcd03136e9af6b972fbdae7aa6c61cb8db4552ac0487e3691de38fe6fe3be2b82e62ff41a9fb1bbd80a159c2daa956152adb94bda2efd136db9d"
+	SourceCommit    = "88723a44bb3e3f229a34f9cf11ce1b7acf971eee"
 )
 
-// TranslationMetadata describes the embedded corpus without overstating its
-// textual provenance.
+type LanguageMetadata struct {
+	Name string `json:"name"`
+	Code string `json:"code"`
+}
+
+type TranslationHistory struct {
+	FirstPublished int    `json:"first_published"`
+	EditorialBasis int    `json:"editorial_basis"`
+	Description    string `json:"description"`
+}
+
+type CorpusVerification struct {
+	LastVerified string `json:"last_verified"`
+	Reference    string `json:"reference"`
+	Method       string `json:"method"`
+	VerseCount   int    `json:"verse_count"`
+}
+
+type RepositoryProvenance struct {
+	CorpusOrigin string             `json:"corpus_origin"`
+	Verification CorpusVerification `json:"verification"`
+}
+
+type TextFormat struct {
+	Books            string `json:"books"`
+	Structure        string `json:"structure"`
+	PlainText        string `json:"plain_text"`
+	RenderingMarkers string `json:"rendering_markers"`
+	MarkerOffsets    string `json:"marker_offsets"`
+}
+
+// TranslationMetadata exposes the upstream translation metadata alongside the
+// immutable identity of the exact snapshot embedded by Skaia.
 type TranslationMetadata struct {
-	Code             string `json:"code"`
-	Name             string `json:"name"`
-	Books            int    `json:"books"`
-	Chapters         int    `json:"chapters"`
-	Verses           int    `json:"verses"`
-	SourceRepository string `json:"source_repository"`
-	SourceCommit     string `json:"source_commit"`
-	CorpusSHA512     string `json:"corpus_sha512"`
-	ProvenanceNotice string `json:"provenance_notice"`
+	SchemaVersion        int                  `json:"schema_version"`
+	Code                 string               `json:"code"`
+	Name                 string               `json:"name"`
+	Abbreviation         string               `json:"abbreviation"`
+	Language             LanguageMetadata     `json:"language"`
+	TranslationHistory   TranslationHistory   `json:"translation_history"`
+	RepositoryProvenance RepositoryProvenance `json:"repository_provenance"`
+	TextFormat           TextFormat           `json:"text_format"`
+	Books                int                  `json:"books"`
+	Chapters             int                  `json:"chapters"`
+	Verses               int                  `json:"verses"`
+	SourceRepository     string               `json:"source_repository"`
+	SourceCommit         string               `json:"source_commit"`
+	CorpusSHA512         string               `json:"corpus_sha512"`
+	RenderingSHA512      string               `json:"rendering_sha512"`
 }
 
 // BookSummary is the backend-owned navigation contract for one Bible book.
@@ -36,12 +74,32 @@ type BookSummary struct {
 	VerseCount     int    `json:"verse_count"`
 }
 
-// Book is the full immutable chapter-and-verse payload for one book.
+type TextSpan struct {
+	Start int `json:"start"`
+	End   int `json:"end"`
+}
+
+type VerseMarkers struct {
+	ParagraphStart bool       `json:"paragraph_start"`
+	AddedWords     []TextSpan `json:"added_words"`
+	WordsOfChrist  []TextSpan `json:"words_of_christ"`
+}
+
+type BookMarkers struct {
+	SchemaVersion int                                `json:"schema_version"`
+	Book          string                             `json:"book"`
+	OffsetUnit    string                             `json:"offset_unit"`
+	SpanEnd       string                             `json:"span_end"`
+	Chapters      map[string]map[string]VerseMarkers `json:"chapters"`
+}
+
+// Book is the full immutable chapter, verse, and rendering-marker payload.
 type Book struct {
 	Translation string                       `json:"translation"`
 	Title       string                       `json:"title"`
 	Slug        string                       `json:"slug"`
 	Chapters    map[string]map[string]string `json:"chapters"`
+	Markers     BookMarkers                  `json:"markers"`
 }
 
 // BookList is returned by the public catalog endpoint.

@@ -369,6 +369,14 @@
   line-height: 1.7;
 }
 
+.bible-verse-mark--added {
+  font-style: italic;
+}
+
+.bible-verse-mark--christ {
+  color: var(--bible-red-letter);
+}
+
 .bible-reader__context {
   max-width: 820px;
   margin: 0 auto;
@@ -385,6 +393,19 @@
 
 .bible-reader__context p + p::before {
   content: " ";
+}
+
+.bible-reader__context .is-paragraph-start {
+  display: block;
+  margin-top: 0.75rem;
+}
+
+.bible-reader__context .is-paragraph-start:first-child {
+  margin-top: 0;
+}
+
+.bible-reader__context p + p.is-paragraph-start::before {
+  content: none;
 }
 
 .bible-reader__context .is-current {
@@ -448,6 +469,14 @@
   max-width: 720px;
   margin-top: 0.45rem;
   color: var(--text-secondary);
+}
+
+.bible-corpus-note small + small {
+  margin-top: 0.35rem;
+}
+
+.bible-corpus-note__edition {
+  font-weight: 600;
 }
 
 @media (max-width: 720px) {

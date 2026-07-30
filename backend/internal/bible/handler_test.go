@@ -39,6 +39,10 @@ func TestHandlerListBooks(t *testing.T) {
 	if payload.Translation.Code != TranslationCode || len(payload.Books) != CorpusBooks {
 		t.Fatalf("unexpected response: translation=%q books=%d", payload.Translation.Code, len(payload.Books))
 	}
+	if payload.Translation.TranslationHistory.FirstPublished != 1611 ||
+		payload.Translation.RepositoryProvenance.Verification.Reference == "" {
+		t.Fatalf("translation metadata is incomplete: %#v", payload.Translation)
+	}
 }
 
 func TestHandlerGetBookAndNotFound(t *testing.T) {
@@ -56,7 +60,9 @@ func TestHandlerGetBookAndNotFound(t *testing.T) {
 		if err := json.Unmarshal(response.Body.Bytes(), &payload); err != nil {
 			t.Fatalf("decode response: %v", err)
 		}
-		if payload.Title != "Matthew" || payload.Chapters["6"]["25"] == "" {
+		if payload.Title != "Matthew" ||
+			payload.Chapters["6"]["25"] == "" ||
+			len(payload.Markers.Chapters["6"]["25"].WordsOfChrist) != 1 {
 			t.Fatalf("unexpected Matthew response: %#v", payload)
 		}
 	})
