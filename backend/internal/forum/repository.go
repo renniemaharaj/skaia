@@ -21,8 +21,8 @@ func (r *sqlCategoryRepository) GetByID(id int64) (*models.ForumCategory, error)
 	c := &models.ForumCategory{}
 	err := r.db.QueryRow(
 		`SELECT c.id, c.name, c.description, c.display_order, c.is_pinned, c.is_locked, c.created_at,
-		        (SELECT COUNT(*) FROM forum_threads WHERE category_id = c.id) as thread_count
-		 FROM forum_categories c WHERE c.id = $1`, id,
+		        (SELECT COUNT(*) FROM forum_threads WHERE category_id = c.id AND deleted_at IS NULL) as thread_count
+		 FROM forum_categories c WHERE c.id = $1 AND c.deleted_at IS NULL`, id,
 	).Scan(&c.ID, &c.Name, &c.Description, &c.DisplayOrder, &c.IsPinned, &c.IsLocked, &c.CreatedAt, &c.ThreadCount)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("category not found")
@@ -34,8 +34,8 @@ func (r *sqlCategoryRepository) GetByName(name string) (*models.ForumCategory, e
 	c := &models.ForumCategory{}
 	err := r.db.QueryRow(
 		`SELECT c.id, c.name, c.description, c.display_order, c.is_pinned, c.is_locked, c.created_at,
-		        (SELECT COUNT(*) FROM forum_threads WHERE category_id = c.id) as thread_count
-		 FROM forum_categories c WHERE c.name = $1`, name,
+		        (SELECT COUNT(*) FROM forum_threads WHERE category_id = c.id AND deleted_at IS NULL) as thread_count
+		 FROM forum_categories c WHERE c.name = $1 AND c.deleted_at IS NULL`, name,
 	).Scan(&c.ID, &c.Name, &c.Description, &c.DisplayOrder, &c.IsPinned, &c.IsLocked, &c.CreatedAt, &c.ThreadCount)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("category not found")
@@ -57,27 +57,40 @@ func (r *sqlCategoryRepository) Create(cat *models.ForumCategory) (*models.Forum
 func (r *sqlCategoryRepository) Update(cat *models.ForumCategory) (*models.ForumCategory, error) {
 	err := r.db.QueryRow(
 		`UPDATE forum_categories SET name=$1, description=$2, display_order=$3, is_pinned=$4, is_locked=$5
-		 WHERE id=$6
+		 WHERE id=$6 AND deleted_at IS NULL
 		 RETURNING id, name, description, display_order, is_pinned, is_locked, created_at`,
 		cat.Name, cat.Description, cat.DisplayOrder, cat.IsPinned, cat.IsLocked, cat.ID,
 	).Scan(&cat.ID, &cat.Name, &cat.Description, &cat.DisplayOrder, &cat.IsPinned, &cat.IsLocked, &cat.CreatedAt)
 	// Fetch thread count since we're returning the updated struct
 	if err == nil {
-		r.db.QueryRow(`SELECT COUNT(*) FROM forum_threads WHERE category_id = $1`, cat.ID).Scan(&cat.ThreadCount)
+		r.db.QueryRow(`SELECT COUNT(*) FROM forum_threads WHERE category_id = $1 AND deleted_at IS NULL`, cat.ID).Scan(&cat.ThreadCount)
 	}
 	return cat, err
 }
 
-func (r *sqlCategoryRepository) Delete(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM forum_categories WHERE id = $1`, id)
+func (r *sqlCategoryRepository) Delete(id, actorID int64) error {
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE forum_categories
+		    SET deleted_at = COALESCE(deleted_at, NOW()),
+		        deleted_by = COALESCE(deleted_by, $2)
+		    WHERE id = $1 AND deleted_at IS NULL
+		    RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		 SELECT $2, 'forum_category', id::text, 'delete' FROM changed`,
+		id, actorID,
+	)
 	return err
 }
 
 func (r *sqlCategoryRepository) List() ([]*models.ForumCategory, error) {
 	rows, err := r.db.Query(
 		`SELECT c.id, c.name, c.description, c.display_order, c.is_pinned, c.is_locked, c.created_at,
-		        (SELECT COUNT(*) FROM forum_threads WHERE category_id = c.id) as thread_count
-		 FROM forum_categories c ORDER BY c.is_pinned DESC, c.display_order ASC`,
+		        (SELECT COUNT(*) FROM forum_threads WHERE category_id = c.id AND deleted_at IS NULL) as thread_count
+		 FROM forum_categories c
+		 WHERE c.deleted_at IS NULL
+		 ORDER BY c.is_pinned DESC, c.display_order ASC`,
 	)
 	if err != nil {
 		return nil, err
@@ -99,8 +112,10 @@ func (r *sqlCategoryRepository) Search(query string) ([]*models.ForumCategory, e
 	searchPattern := "%" + query + "%"
 	rows, err := r.db.Query(
 		`SELECT c.id, c.name, c.description, c.display_order, c.is_pinned, c.is_locked, c.created_at,
-		        (SELECT COUNT(*) FROM forum_threads WHERE category_id = c.id) as thread_count
-		 FROM forum_categories c WHERE c.name ILIKE $1 ORDER BY c.is_pinned DESC, c.display_order ASC`,
+		        (SELECT COUNT(*) FROM forum_threads WHERE category_id = c.id AND deleted_at IS NULL) as thread_count
+		 FROM forum_categories c
+		 WHERE c.deleted_at IS NULL AND c.name ILIKE $1
+		 ORDER BY c.is_pinned DESC, c.display_order ASC`,
 		searchPattern,
 	)
 	if err != nil {
@@ -140,17 +155,18 @@ func (r *sqlThreadRepository) GetByID(id int64) (*models.ForumThread, error) {
 		        ft.reply_count, ft.is_pinned, ft.is_locked,
 		        ft.is_shared, ft.original_thread_id,
 		        ft.created_at, ft.updated_at,
-		        u.username, u.avatar_url, u.background_video_url, u.background_image_url, u.background_position,
+		        COALESCE(u.username, ''), COALESCE(u.avatar_url, ''), u.background_video_url, u.background_image_url, u.background_position,
 		        STRING_AGG(DISTINCT r.name, ',') AS roles,
 		        COUNT(DISTINCT tl.id) AS likes,
 				ft.last_edited_by, editor.avatar_url, COALESCE(editor.display_name, editor.username)
 		 FROM forum_threads ft
+		 JOIN forum_categories fc ON fc.id = ft.category_id AND fc.deleted_at IS NULL
 		 LEFT JOIN users u ON ft.user_id = u.id
 		 LEFT JOIN users editor ON ft.last_edited_by = editor.id
 		 LEFT JOIN user_roles ur ON u.id = ur.user_id
 		 LEFT JOIN roles r ON ur.role_id = r.id
-		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id
-		 WHERE ft.id = $1
+		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id AND tl.inactive_at IS NULL
+		 WHERE ft.id = $1 AND ft.deleted_at IS NULL
 		 GROUP BY ft.id, u.id, u.username, u.avatar_url, u.background_video_url, u.background_image_url, u.background_position, editor.id`, id,
 	).Scan(&t.ID, &t.CategoryID, &t.UserID, &t.Title, &t.Content,
 		&t.ViewCount, &t.ReplyCount, &t.IsPinned, &t.IsLocked,
@@ -198,12 +214,13 @@ func (r *sqlThreadRepository) GetByCategory(categoryID int64, limit, offset int)
 		        ft.reply_count, ft.is_pinned, ft.is_locked,
 		        ft.is_shared, ft.original_thread_id,
 		        ft.created_at, ft.updated_at,
-		        u.username, u.avatar_url, u.background_video_url, u.background_image_url, u.background_position,
+		        COALESCE(u.username, ''), COALESCE(u.avatar_url, ''), u.background_video_url, u.background_image_url, u.background_position,
 		        COUNT(DISTINCT tl.id) AS likes
 		 FROM forum_threads ft
+		 JOIN forum_categories fc ON fc.id = ft.category_id AND fc.deleted_at IS NULL
 		 LEFT JOIN users u ON ft.user_id = u.id
-		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id
-		 WHERE ft.category_id = $1
+		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id AND tl.inactive_at IS NULL
+		 WHERE ft.category_id = $1 AND ft.deleted_at IS NULL
 		 GROUP BY ft.id, u.id, u.username, u.avatar_url
 		 ORDER BY ft.is_pinned DESC, ft.created_at DESC
 		 LIMIT $2 OFFSET $3`,
@@ -250,11 +267,13 @@ func (r *sqlThreadRepository) GetAll(limit, offset int) ([]*models.ForumThread, 
 		        ft.reply_count, ft.is_pinned, ft.is_locked,
 		        ft.is_shared, ft.original_thread_id,
 		        ft.created_at, ft.updated_at,
-		        u.username, u.avatar_url, u.background_video_url, u.background_image_url, u.background_position,
+		        COALESCE(u.username, ''), COALESCE(u.avatar_url, ''), u.background_video_url, u.background_image_url, u.background_position,
 		        COUNT(DISTINCT tl.id) AS likes
 		 FROM forum_threads ft
+		 JOIN forum_categories fc ON fc.id = ft.category_id AND fc.deleted_at IS NULL
 		 LEFT JOIN users u ON ft.user_id = u.id
-		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id
+		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id AND tl.inactive_at IS NULL
+		 WHERE ft.deleted_at IS NULL
 		 GROUP BY ft.id, u.id, u.username, u.avatar_url
 		 ORDER BY ft.is_pinned DESC, ft.created_at DESC
 		 LIMIT $1 OFFSET $2`,
@@ -301,12 +320,13 @@ func (r *sqlThreadRepository) GetByUser(userID int64, limit, offset int) ([]*mod
 		        ft.reply_count, ft.is_pinned, ft.is_locked,
 		        ft.is_shared, ft.original_thread_id,
 		        ft.created_at, ft.updated_at,
-		        u.username, u.avatar_url, u.background_video_url, u.background_image_url, u.background_position,
+		        COALESCE(u.username, ''), COALESCE(u.avatar_url, ''), u.background_video_url, u.background_image_url, u.background_position,
 		        COUNT(DISTINCT tl.id) AS likes
 		 FROM forum_threads ft
+		 JOIN forum_categories fc ON fc.id = ft.category_id AND fc.deleted_at IS NULL
 		 LEFT JOIN users u ON ft.user_id = u.id
-		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id
-		 WHERE ft.user_id = $1
+		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id AND tl.inactive_at IS NULL
+		 WHERE ft.user_id = $1 AND ft.deleted_at IS NULL
 		 GROUP BY ft.id, u.id, u.username, u.avatar_url
 		 ORDER BY ft.created_at DESC
 		 LIMIT $2 OFFSET $3`,
@@ -366,7 +386,11 @@ func (r *sqlThreadRepository) Update(thread *models.ForumThread) (*models.ForumT
 	err := r.db.QueryRow(
 		`UPDATE forum_threads
 		 SET title=$1, content=$2, is_pinned=$3, is_locked=$4, category_id=$5, updated_at=CURRENT_TIMESTAMP, last_edited_by=$6
-		 WHERE id=$7
+		 WHERE id=$7 AND deleted_at IS NULL
+		   AND EXISTS (
+		       SELECT 1 FROM forum_categories
+		       WHERE id=$5 AND deleted_at IS NULL
+		   )
 		 RETURNING id, category_id, user_id, title, content,
 		           COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='thread' AND resource_id=forum_threads.id), 0),
 		           reply_count, is_pinned, is_locked, is_shared, original_thread_id, created_at, updated_at, last_edited_by`,
@@ -384,8 +408,19 @@ func (r *sqlThreadRepository) Update(thread *models.ForumThread) (*models.ForumT
 	return thread, err
 }
 
-func (r *sqlThreadRepository) Delete(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM forum_threads WHERE id = $1`, id)
+func (r *sqlThreadRepository) Delete(id, actorID int64) error {
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE forum_threads
+		    SET deleted_at = COALESCE(deleted_at, NOW()),
+		        deleted_by = COALESCE(deleted_by, $2)
+		    WHERE id = $1 AND deleted_at IS NULL
+		    RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		 SELECT $2, 'forum_thread', id::text, 'delete' FROM changed`,
+		id, actorID,
+	)
 	return err
 }
 
@@ -397,12 +432,13 @@ func (r *sqlThreadRepository) Search(query string, limit, offset int) ([]*models
 		        ft.reply_count, ft.is_pinned, ft.is_locked,
 		        ft.is_shared, ft.original_thread_id,
 		        ft.created_at, ft.updated_at,
-		        u.username, u.avatar_url, u.background_video_url, u.background_image_url, u.background_position,
+		        COALESCE(u.username, ''), COALESCE(u.avatar_url, ''), u.background_video_url, u.background_image_url, u.background_position,
 		        COUNT(DISTINCT tl.id) AS likes
 		 FROM forum_threads ft
+		 JOIN forum_categories fc ON fc.id = ft.category_id AND fc.deleted_at IS NULL
 		 LEFT JOIN users u ON ft.user_id = u.id
-		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id
-		 WHERE ft.title ILIKE $1
+		 LEFT JOIN thread_likes tl ON ft.id = tl.thread_id AND tl.inactive_at IS NULL
+		 WHERE ft.deleted_at IS NULL AND ft.title ILIKE $1
 		 GROUP BY ft.id, u.id, u.username, u.avatar_url
 		 ORDER BY ft.is_pinned DESC, ft.created_at DESC
 		 LIMIT $2 OFFSET $3`,
@@ -444,31 +480,45 @@ func (r *sqlThreadRepository) Search(query string, limit, offset int) ([]*models
 
 func (r *sqlThreadRepository) Like(threadID, userID int64) (int64, error) {
 	if _, err := r.db.Exec(
-		`INSERT INTO thread_likes (thread_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		`INSERT INTO thread_likes (thread_id, user_id, inactive_at, inactive_by)
+		 SELECT $1, $2, NULL, NULL
+		 WHERE EXISTS (
+		     SELECT 1
+		     FROM forum_threads ft
+		     JOIN forum_categories fc ON fc.id=ft.category_id AND fc.deleted_at IS NULL
+		     WHERE ft.id=$1 AND ft.deleted_at IS NULL
+		 )
+		 ON CONFLICT (thread_id, user_id)
+		 DO UPDATE SET inactive_at=NULL, inactive_by=NULL, created_at=CURRENT_TIMESTAMP`,
 		threadID, userID,
 	); err != nil {
 		return 0, err
 	}
 	var count int64
-	err := r.db.QueryRow(`SELECT COUNT(*) FROM thread_likes WHERE thread_id = $1`, threadID).Scan(&count)
+	err := r.db.QueryRow(`SELECT COUNT(*) FROM thread_likes WHERE thread_id = $1 AND inactive_at IS NULL`, threadID).Scan(&count)
 	return count, err
 }
 
 func (r *sqlThreadRepository) Unlike(threadID, userID int64) (int64, error) {
 	if _, err := r.db.Exec(
-		`DELETE FROM thread_likes WHERE thread_id = $1 AND user_id = $2`, threadID, userID,
+		`UPDATE thread_likes
+		 SET inactive_at=COALESCE(inactive_at, NOW()), inactive_by=COALESCE(inactive_by, $2)
+		 WHERE thread_id = $1 AND user_id = $2 AND inactive_at IS NULL`, threadID, userID,
 	); err != nil {
 		return 0, err
 	}
 	var count int64
-	err := r.db.QueryRow(`SELECT COUNT(*) FROM thread_likes WHERE thread_id = $1`, threadID).Scan(&count)
+	err := r.db.QueryRow(`SELECT COUNT(*) FROM thread_likes WHERE thread_id = $1 AND inactive_at IS NULL`, threadID).Scan(&count)
 	return count, err
 }
 
 func (r *sqlThreadRepository) IsLikedByUser(threadID, userID int64) (bool, error) {
 	var exists bool
 	err := r.db.QueryRow(
-		`SELECT EXISTS(SELECT 1 FROM thread_likes WHERE thread_id = $1 AND user_id = $2)`,
+		`SELECT EXISTS(
+		    SELECT 1 FROM thread_likes
+		    WHERE thread_id = $1 AND user_id = $2 AND inactive_at IS NULL
+		 )`,
 		threadID, userID,
 	).Scan(&exists)
 	return exists, err
@@ -479,7 +529,7 @@ func (r *sqlThreadRepository) GetThreadLikers(threadID int64, limit, offset int)
 		`SELECT u.id, u.username, u.email, u.display_name, u.avatar_url, u.is_suspended, u.created_at
 		 FROM users u
 		 JOIN thread_likes tl ON u.id = tl.user_id
-		 WHERE tl.thread_id = $1
+		 WHERE tl.thread_id = $1 AND tl.inactive_at IS NULL
 		 ORDER BY tl.created_at DESC
 		 LIMIT $2 OFFSET $3`,
 		threadID, limit, offset,
@@ -545,9 +595,11 @@ func (r *sqlThreadRepository) GetThreadContributorsUsers(threadID int64, limit, 
 		 JOIN (
 		     SELECT user_id, MAX(ts) as last_activity
 		     FROM (
-		         SELECT user_id, created_at as ts FROM thread_comments WHERE thread_id=$1 AND user_id IS NOT NULL
+		         SELECT user_id, created_at as ts FROM thread_comments
+		         WHERE thread_id=$1 AND user_id IS NOT NULL AND deleted_at IS NULL
 		         UNION ALL
-		         SELECT user_id, edited_at as ts FROM thread_editors WHERE thread_id=$1
+		         SELECT user_id, edited_at as ts FROM thread_editors
+		         WHERE thread_id=$1 AND inactive_at IS NULL
 		     ) combined
 		     GROUP BY user_id
 		 ) tc ON u.id = tc.user_id
@@ -588,13 +640,15 @@ func (r *sqlCommentRepository) GetByID(id int64) (*models.ThreadComment, error) 
 	var roles sql.NullString
 	err := r.db.QueryRow(
 		`SELECT tc.id, tc.thread_id, tc.user_id, tc.content, tc.created_at, tc.updated_at,
-		        u.username, u.avatar_url,
+		        COALESCE(u.username, ''), COALESCE(u.avatar_url, ''),
 		        STRING_AGG(DISTINCT r.name, ',') AS roles
 		 FROM thread_comments tc
+		 JOIN forum_threads ft ON ft.id=tc.thread_id AND ft.deleted_at IS NULL
+		 JOIN forum_categories fc ON fc.id=ft.category_id AND fc.deleted_at IS NULL
 		 LEFT JOIN users u ON tc.user_id = u.id
 		 LEFT JOIN user_roles ur ON u.id = ur.user_id
 		 LEFT JOIN roles r ON ur.role_id = r.id
-		 WHERE tc.id = $1
+		 WHERE tc.id = $1 AND tc.deleted_at IS NULL
 		 GROUP BY tc.id, u.id, u.username, u.avatar_url`, id,
 	).Scan(&c.ID, &c.ThreadID, &c.AuthorID, &c.Content, &c.CreatedAt, &c.UpdatedAt,
 		&c.AuthorName, &c.AuthorAvatar, &roles)
@@ -613,15 +667,17 @@ func (r *sqlCommentRepository) GetByID(id int64) (*models.ThreadComment, error) 
 func (r *sqlCommentRepository) GetByThread(threadID int64, limit, offset int) ([]*models.ThreadComment, error) {
 	rows, err := r.db.Query(
 		`SELECT tc.id, tc.thread_id, tc.user_id, tc.content, tc.created_at, tc.updated_at,
-		        u.username, u.avatar_url,
+		        COALESCE(u.username, ''), COALESCE(u.avatar_url, ''),
 		        STRING_AGG(DISTINCT r.name, ',') AS roles,
 		        COUNT(DISTINCT tcl.id) AS likes
 		 FROM thread_comments tc
+		 JOIN forum_threads ft ON ft.id=tc.thread_id AND ft.deleted_at IS NULL
+		 JOIN forum_categories fc ON fc.id=ft.category_id AND fc.deleted_at IS NULL
 		 LEFT JOIN users u ON tc.user_id = u.id
 		 LEFT JOIN user_roles ur ON u.id = ur.user_id
 		 LEFT JOIN roles r ON ur.role_id = r.id
-		 LEFT JOIN thread_comment_likes tcl ON tc.id = tcl.thread_comment_id
-		 WHERE tc.thread_id = $1
+		 LEFT JOIN thread_comment_likes tcl ON tc.id = tcl.thread_comment_id AND tcl.inactive_at IS NULL
+		 WHERE tc.thread_id = $1 AND tc.deleted_at IS NULL
 		 GROUP BY tc.id, u.id, u.username, u.avatar_url
 		 ORDER BY tc.created_at ASC
 		 LIMIT $2 OFFSET $3`,
@@ -649,7 +705,14 @@ func (r *sqlCommentRepository) GetByThread(threadID int64, limit, offset int) ([
 }
 
 func (r *sqlCommentRepository) GetThreadContributors(threadID int64) ([]int64, error) {
-	rows, err := r.db.Query(`SELECT DISTINCT user_id FROM thread_comments WHERE thread_id = $1 AND user_id IS NOT NULL`, threadID)
+	rows, err := r.db.Query(
+		`SELECT DISTINCT tc.user_id
+		 FROM thread_comments tc
+		 JOIN forum_threads ft ON ft.id=tc.thread_id AND ft.deleted_at IS NULL
+		 JOIN forum_categories fc ON fc.id=ft.category_id AND fc.deleted_at IS NULL
+		 WHERE tc.thread_id = $1 AND tc.user_id IS NOT NULL AND tc.deleted_at IS NULL`,
+		threadID,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -668,13 +731,20 @@ func (r *sqlCommentRepository) GetThreadContributors(threadID int64) ([]int64, e
 func (r *sqlCommentRepository) Create(comment *models.ThreadComment) (*models.ThreadComment, error) {
 	err := r.db.QueryRow(
 		`INSERT INTO thread_comments (thread_id, user_id, content)
-		 VALUES ($1, $2, $3)
+		 SELECT $1, $2, $3
+		 FROM forum_threads ft
+		 JOIN forum_categories fc ON fc.id=ft.category_id AND fc.deleted_at IS NULL
+		 WHERE ft.id=$1 AND ft.deleted_at IS NULL
 		 RETURNING id, thread_id, user_id, content, created_at, updated_at`,
 		comment.ThreadID, comment.AuthorID, comment.Content,
 	).Scan(&comment.ID, &comment.ThreadID, &comment.AuthorID, &comment.Content,
 		&comment.CreatedAt, &comment.UpdatedAt)
 	if err == nil {
-		_, _ = r.db.Exec(`UPDATE forum_threads SET reply_count = reply_count + 1 WHERE id = $1`, comment.ThreadID)
+		_, _ = r.db.Exec(
+			`UPDATE forum_threads SET reply_count = reply_count + 1
+			 WHERE id = $1 AND deleted_at IS NULL`,
+			comment.ThreadID,
+		)
 	}
 	return comment, err
 }
@@ -682,7 +752,7 @@ func (r *sqlCommentRepository) Create(comment *models.ThreadComment) (*models.Th
 func (r *sqlCommentRepository) Update(comment *models.ThreadComment) (*models.ThreadComment, error) {
 	err := r.db.QueryRow(
 		`UPDATE thread_comments SET content=$1, updated_at=CURRENT_TIMESTAMP
-		 WHERE id=$2
+		 WHERE id=$2 AND deleted_at IS NULL
 		 RETURNING id, thread_id, user_id, content, created_at, updated_at`,
 		comment.Content, comment.ID,
 	).Scan(&comment.ID, &comment.ThreadID, &comment.AuthorID, &comment.Content,
@@ -690,46 +760,74 @@ func (r *sqlCommentRepository) Update(comment *models.ThreadComment) (*models.Th
 	return comment, err
 }
 
-func (r *sqlCommentRepository) Delete(id int64) error {
-	var threadID int64
-	if err := r.db.QueryRow(`SELECT thread_id FROM thread_comments WHERE id = $1`, id).Scan(&threadID); err != nil {
-		return err
-	}
-	if _, err := r.db.Exec(`DELETE FROM thread_comments WHERE id = $1`, id); err != nil {
-		return err
-	}
-	_, _ = r.db.Exec(`UPDATE forum_threads SET reply_count = reply_count - 1 WHERE id = $1`, threadID)
-	return nil
+func (r *sqlCommentRepository) Delete(id, actorID int64) error {
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE thread_comments
+		    SET deleted_at=COALESCE(deleted_at, NOW()),
+		        deleted_by=COALESCE(deleted_by, $2)
+		    WHERE id=$1 AND deleted_at IS NULL
+		    RETURNING id, thread_id
+		 ), audit AS (
+		    INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		    SELECT $2, 'thread_comment', id::text, 'delete' FROM changed
+		 )
+		 UPDATE forum_threads
+		 SET reply_count=GREATEST(reply_count - 1, 0)
+		 WHERE id IN (SELECT thread_id FROM changed)`,
+		id, actorID,
+	)
+	return err
 }
 
 func (r *sqlCommentRepository) Like(commentID, userID int64) (int64, error) {
 	if _, err := r.db.Exec(
-		`INSERT INTO thread_comment_likes (thread_comment_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		`INSERT INTO thread_comment_likes (thread_comment_id, user_id, inactive_at, inactive_by)
+		 SELECT $1, $2, NULL, NULL
+		 FROM thread_comments tc
+		 JOIN forum_threads ft ON ft.id=tc.thread_id AND ft.deleted_at IS NULL
+		 JOIN forum_categories fc ON fc.id=ft.category_id AND fc.deleted_at IS NULL
+		 WHERE tc.id=$1 AND tc.deleted_at IS NULL
+		 ON CONFLICT (thread_comment_id, user_id)
+		 DO UPDATE SET inactive_at=NULL, inactive_by=NULL, created_at=CURRENT_TIMESTAMP`,
 		commentID, userID,
 	); err != nil {
 		return 0, err
 	}
 	var count int64
-	err := r.db.QueryRow(`SELECT COUNT(*) FROM thread_comment_likes WHERE thread_comment_id = $1`, commentID).Scan(&count)
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM thread_comment_likes
+		 WHERE thread_comment_id = $1 AND inactive_at IS NULL`,
+		commentID,
+	).Scan(&count)
 	return count, err
 }
 
 func (r *sqlCommentRepository) Unlike(commentID, userID int64) (int64, error) {
 	if _, err := r.db.Exec(
-		`DELETE FROM thread_comment_likes WHERE thread_comment_id = $1 AND user_id = $2`,
+		`UPDATE thread_comment_likes
+		 SET inactive_at=COALESCE(inactive_at, NOW()), inactive_by=COALESCE(inactive_by, $2)
+		 WHERE thread_comment_id = $1 AND user_id = $2 AND inactive_at IS NULL`,
 		commentID, userID,
 	); err != nil {
 		return 0, err
 	}
 	var count int64
-	err := r.db.QueryRow(`SELECT COUNT(*) FROM thread_comment_likes WHERE thread_comment_id = $1`, commentID).Scan(&count)
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM thread_comment_likes
+		 WHERE thread_comment_id = $1 AND inactive_at IS NULL`,
+		commentID,
+	).Scan(&count)
 	return count, err
 }
 
 func (r *sqlCommentRepository) IsLikedByUser(commentID, userID int64) (bool, error) {
 	var exists bool
 	err := r.db.QueryRow(
-		`SELECT EXISTS(SELECT 1 FROM thread_comment_likes WHERE thread_comment_id = $1 AND user_id = $2)`,
+		`SELECT EXISTS(
+		    SELECT 1 FROM thread_comment_likes
+		    WHERE thread_comment_id = $1 AND user_id = $2 AND inactive_at IS NULL
+		 )`,
 		commentID, userID,
 	).Scan(&exists)
 	return exists, err

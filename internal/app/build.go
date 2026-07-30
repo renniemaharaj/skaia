@@ -22,7 +22,7 @@ func buildFrontend() string {
 	}
 
 	log("Building frontend from %s …", frontendDir)
-	
+
 	// Run npm ci if node_modules doesn't exist
 	if _, err := os.Stat(filepath.Join(frontendDir, "node_modules")); os.IsNotExist(err) {
 		cmdCi := exec.Command("npm", "ci")

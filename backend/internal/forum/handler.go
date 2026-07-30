@@ -118,7 +118,7 @@ func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 		for _, cat := range categories {
 			hasThreads := len(threadsByCat[cat.ID]) > 0
 			matchesName := strings.Contains(strings.ToLower(cat.Name), lowerQ) || strings.Contains(strings.ToLower(cat.Description), lowerQ)
-			
+
 			if matchesName || hasThreads {
 				threads := threadsByCat[cat.ID]
 				if len(threads) == 0 {
@@ -246,7 +246,7 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.DeleteCategory(id); err != nil {
+	if err := h.svc.DeleteCategory(id, userID); err != nil {
 		log.Printf("forum.deleteCategory: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete category")
 		return
@@ -643,7 +643,7 @@ func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {
 		Meta:       map[string]interface{}{"title": thread.Title},
 		Fn: func() {
 			h.hub.PropagateForumThread(id, updated, "thread_updated")
-			
+
 			if categoryMoved {
 				// update both categories
 				if recentThreads, err := h.svc.ListCategoryThreads(oldCategoryID, 5, 0); err == nil {
@@ -715,7 +715,7 @@ func (h *Handler) deleteThread(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := h.svc.DeleteThread(id); err != nil {
+	if err := h.svc.DeleteThread(id, userID); err != nil {
 		log.Printf("forum.deleteThread: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete thread")
 		return
@@ -970,7 +970,7 @@ func (h *Handler) createComment(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 					delete(toNotify, userID) // don't notify the commenter
-					
+
 					for uid := range toNotify {
 						message := fmt.Sprintf("Someone commented on your thread: %s", thread.Title)
 						if uid != thread.UserID {
@@ -1082,7 +1082,7 @@ func (h *Handler) deleteComment(w http.ResponseWriter, r *http.Request) {
 	commentUploadURLs := iupload.ExtractUploadURLs(comment.Content)
 
 	threadID := comment.ThreadID
-	if err := h.svc.DeleteComment(id); err != nil {
+	if err := h.svc.DeleteComment(id, userID); err != nil {
 		log.Printf("forum.deleteComment: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete comment")
 		return

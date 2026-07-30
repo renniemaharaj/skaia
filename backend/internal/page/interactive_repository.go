@@ -98,7 +98,7 @@ func (r *sqlRepository) MutateInteractiveResponses(pageID, legacySectionID int64
 			return err
 		}
 		if _, err := exec.Exec(
-			`UPDATE pages SET content=$2::jsonb, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, pageID, projected,
+			`UPDATE pages SET content=$2::jsonb,updated_at=CURRENT_TIMESTAMP WHERE id=$1 AND deleted_at IS NULL`, pageID, projected,
 		); err != nil {
 			return err
 		}
@@ -115,7 +115,8 @@ func lockInteractiveSection(exec database.Executor, pageID int64, key ShadowLega
 	query :=
 		`SELECT id FROM page_section_instances
 		 WHERE page_id=$1 AND legacy_key_kind=$2 AND legacy_key=$3
-		   AND section_type IN ('form','qa','survey','poll','vote')`
+		   AND section_type IN ('form','qa','survey','poll','vote')
+		   AND deleted_at IS NULL`
 	args := []any{pageID, key.Kind, key.Value}
 	if expectedType != "" {
 		query += ` AND section_type=$4`
@@ -134,8 +135,9 @@ func loadInteractiveResponses(exec database.Executor, pageID int64, onlySectionI
 	                 r.respondent_name,r.answers,r.status,r.moderator_answer,r.pinned,
 	                 r.idempotency_key_hash,r.created_at,r.updated_at
 	          FROM page_section_instances s
-	          LEFT JOIN page_section_responses r ON r.section_id=s.id
-	          WHERE s.page_id=$1 AND s.section_type IN ('form','qa','survey','poll','vote')`
+	          LEFT JOIN page_section_responses r ON r.section_id=s.id AND r.deleted_at IS NULL
+	          WHERE s.page_id=$1 AND s.section_type IN ('form','qa','survey','poll','vote')
+	            AND s.deleted_at IS NULL`
 	args := []any{pageID}
 	if onlySectionID != nil {
 		query += ` AND s.id=$2`
@@ -235,14 +237,14 @@ func replaceInteractiveResponseRows(exec database.Executor, sectionID int64, rec
 			   (EXCLUDED.respondent_user_key,EXCLUDED.idempotency_key_hash,EXCLUDED.answers,
 			    EXCLUDED.respondent_name,EXCLUDED.status,EXCLUDED.moderator_answer,EXCLUDED.pinned)
 			   THEN page_section_responses.revision+1 ELSE page_section_responses.revision END,
-			 updated_at=EXCLUDED.updated_at`,
+			 updated_at=EXCLUDED.updated_at,deleted_at=NULL,deleted_by=NULL`,
 			sectionID, record.ID, record.UserID, hash, answers, record.RespondentName,
 			record.Status, record.Answer, record.Pinned, createdAt, updatedAt,
 		); err != nil {
 			return err
 		}
 	}
-	rows, err := exec.Query(`SELECT response_key FROM page_section_responses WHERE section_id=$1`, sectionID)
+	rows, err := exec.Query(`SELECT response_key FROM page_section_responses WHERE section_id=$1 AND deleted_at IS NULL`, sectionID)
 	if err != nil {
 		return err
 	}
@@ -261,7 +263,11 @@ func replaceInteractiveResponseRows(exec database.Executor, sectionID int64, rec
 		return err
 	}
 	for _, key := range stale {
-		if _, err := exec.Exec(`DELETE FROM page_section_responses WHERE section_id=$1 AND response_key=$2`, sectionID, key); err != nil {
+		if _, err := exec.Exec(
+			`UPDATE page_section_responses SET deleted_at=COALESCE(deleted_at,NOW())
+			 WHERE section_id=$1 AND response_key=$2 AND deleted_at IS NULL`,
+			sectionID, key,
+		); err != nil {
 			return err
 		}
 	}

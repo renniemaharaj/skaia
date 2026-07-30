@@ -80,9 +80,24 @@ docs disagree.
 
 ## Last Ran
 
-- 2026-07-26
+- 2026-07-30
 
 ## Last Run Remarks
+
+- Corrected the aggregate trash listing failure caused by manager-only
+  `page_allocation` SQL skipping placeholder `$1` while the caller still passed
+  four arguments. PostgreSQL therefore could not infer `$1` and returned
+  `42P18`.
+- Found and fixed the same latent drift in the manager-only `role` provider.
+  Both providers now return an empty result before querying for ordinary users
+  and use manager-only SQL with a matching argument list. Restore follows the
+  same fail-closed boundary.
+- Replaced temporary `fmt.Println` diagnostics with contextual server-side
+  endpoint logging. Added provider-specific list/restore coverage and an
+  aggregate PostgreSQL test that executes every provider registered by
+  `main.go`; focused database tests and `go test ./...` pass.
+
+## Previous Run Remarks (2026-07-26)
 
 - Final WebSocket correctness sweep added the required `rows.Err()` terminal
   check in media history loading and split the duplicate subscription assertions
@@ -99,7 +114,7 @@ docs disagree.
   synchronous, idempotent, bounded, and disconnect-safe; updated realtime,
   security, and frontend specs. No material contradiction remains.
 
-## Previous Run Remarks (2026-07-17)
+## Earlier Run Remarks (2026-07-17)
 
 - Re-audited the post-reset interactive implementation and confirmed the governing
   architecture stores definitions and records in `pages.content`; retired the

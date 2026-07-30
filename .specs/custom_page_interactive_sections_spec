@@ -118,6 +118,14 @@ concurrent type change cannot turn Q&A moderation into another section mutation.
   `page_section_responses`, never from the rollback document. The cutover audit
   verifies response parity before recording a successful rollback drill.
 
+## Deletion lifecycle
+
+- Normalized responses use `deleted_at`/`deleted_by`; compatibility projection,
+  moderation, parity reads, and counts include only active responses whose
+  section and page are active. Stale projection rows are tombstoned, not erased.
+- Trash restore rechecks page/section policy and active ancestors, then rebuilds
+  the compatibility response projection transactionally.
+
 ## Verify
 
 - Backend: registry validation, transactional record preservation, sanitization,

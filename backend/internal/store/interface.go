@@ -12,7 +12,7 @@ type CategoryRepository interface {
 	GetByName(name string) (*models.StoreCategory, error)
 	Create(cat *models.StoreCategory) (*models.StoreCategory, error)
 	Update(cat *models.StoreCategory) (*models.StoreCategory, error)
-	Delete(id int64) error
+	Delete(id, actorID int64) error
 	List() ([]*models.StoreCategory, error)
 }
 
@@ -22,7 +22,7 @@ type ProductRepository interface {
 	GetByCategory(categoryID int64, limit, offset int) ([]*models.Product, error)
 	Create(p *models.Product) (*models.Product, error)
 	Update(p *models.Product) (*models.Product, error)
-	Delete(id int64) error
+	Delete(id, actorID int64) error
 	List(limit, offset int) ([]*models.Product, error)
 }
 
@@ -48,7 +48,7 @@ type OrderRepository interface {
 	AcceptWithStockCheck(id int64) (*models.Order, error)
 	UpdateVendorStatus(id, ownerID int64, status, note string) (*models.Order, error)
 	UpdateStatus(id int64, status string) (*models.Order, error)
-	Delete(id int64) error
+	Delete(id, actorID int64) error
 }
 
 // ReferenceCodeRepository manages checkout reference codes and their payouts.
@@ -58,7 +58,7 @@ type ReferenceCodeRepository interface {
 	GetByID(id int64) (*models.ReferenceCode, error)
 	GetByCode(code string) (*models.ReferenceCode, error)
 	List(limit, offset int) ([]*models.ReferenceCode, error)
-	Delete(id int64) error
+	Delete(id, actorID int64) error
 	CreatePayout(payout *models.ReferenceCodePayout) (*models.ReferenceCodePayout, error)
 	CreatePayoutWithWalletCredit(payout *models.ReferenceCodePayout, description string) (*models.ReferenceCodePayout, error)
 	GetPayoutByOrderID(orderID int64) (*models.ReferenceCodePayout, error)
@@ -76,7 +76,7 @@ type SubscriptionPlanRepository interface {
 	Create(plan *models.SubscriptionPlan) (*models.SubscriptionPlan, error)
 	GetByID(id int64) (*models.SubscriptionPlan, error)
 	Update(plan *models.SubscriptionPlan) (*models.SubscriptionPlan, error)
-	Delete(id int64) error
+	Delete(id, actorID int64) error
 	List() ([]*models.SubscriptionPlan, error)
 }
 
@@ -109,7 +109,7 @@ type WalletRepository interface {
 	AddCard(card *models.UserCard) (*models.UserCard, error)
 	GetCards(userID int64) ([]*models.UserCard, error)
 	UpdateCard(card *models.UserCard) (*models.UserCard, error)
-	DeleteCard(cardID, userID int64) error
+	DeleteCard(cardID, userID, actorID int64) error
 }
 
 // ReviewRepository manages product reviews.

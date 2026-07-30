@@ -84,6 +84,7 @@ const StreamPage = lazy(() => import("./stream/index.tsx"));
 const ClipMakerPage = lazy(() =>
   import("./clipmaker/index.tsx").then(m => ({ default: m.ClipMakerPage }))
 );
+const TrashPage = lazy(() => import("./trash/TrashPage.tsx"));
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
@@ -125,6 +126,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "datasources/:id", element: <DataSourceEditorPage /> },
   { path: "tmp/:sessionId", element: <GrengoPage /> },
   { path: "activity", element: <ActivityPage /> },
+  { path: "trash", element: <TrashPage /> },
   { path: "flow", element: <FlowPage /> },
   { path: "stream", element: <StreamPage /> },
   { path: "clipmaker", element: <ClipMakerPage /> },

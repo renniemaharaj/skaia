@@ -868,6 +868,11 @@ func pageInvalidation(p *models.Page) map[string]interface{} {
 }
 
 func (h *Handler) deletePage(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
 	id, err := parseID(r, "id")
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid id")
@@ -877,13 +882,12 @@ func (h *Handler) deletePage(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
-	if err := h.svc.Delete(id); err != nil {
+	if err := h.svc.Delete(id, userID); err != nil {
 		log.Printf("page.deletePage: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "delete failed")
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
-	userID, _ := utils.UserIDFromCtx(r)
 	h.dispatcher.Dispatch(ievents.Job{
 		UserID:     userID,
 		Activity:   ievents.ActPageDeleted,
@@ -1370,7 +1374,7 @@ func (h *Handler) deleteComment(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
-	if err := h.svc.DeleteComment(commentID); err != nil {
+	if err := h.svc.DeleteComment(commentID, uid); err != nil {
 		log.Printf("page.deleteComment: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed")
 		return
@@ -1500,9 +1504,14 @@ func (h *Handler) factoryResetHomepage(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
+	actorID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
 
 	// 1. Delete all custom pages (cascades: editors, likes, comments, views).
-	if err := h.svc.DeleteAll(); err != nil {
+	if err := h.svc.DeleteAll(actorID); err != nil {
 		log.Printf("factoryReset: delete pages: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete pages")
 		return

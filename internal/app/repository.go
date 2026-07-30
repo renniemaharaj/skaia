@@ -50,17 +50,18 @@ VALUES (TRUE, %s, %s, NOW())
 ON CONFLICT (id) DO UPDATE
 SET salt_hex = EXCLUDED.salt_hex,
     hash_hex = EXCLUDED.hash_hex,
+    cleared_at = NULL,
     updated_at = NOW();
 `, sqlLiteral(parts[0]), sqlLiteral(parts[1]))
 	return r.execSQL([]byte(sql))
 }
 
 func (r grengoRepository) LoadPasscode() (string, error) {
-	return r.queryScalar(`SELECT salt_hex || ':' || hash_hex FROM grengo_passcodes WHERE id = TRUE`)
+	return r.queryScalar(`SELECT salt_hex || ':' || hash_hex FROM grengo_passcodes WHERE id = TRUE AND cleared_at IS NULL`)
 }
 
 func (r grengoRepository) ClearPasscode() error {
-	return r.execSQL([]byte(`DELETE FROM grengo_passcodes WHERE id = TRUE;`))
+	return r.execSQL([]byte(`UPDATE grengo_passcodes SET salt_hex=NULL, hash_hex=NULL, cleared_at=COALESCE(cleared_at, NOW()), updated_at=NOW() WHERE id = TRUE AND cleared_at IS NULL;`))
 }
 
 func (r grengoRepository) RecordFrappeAllocation(record frappeAllocation) error {
@@ -106,7 +107,7 @@ func (r grengoRepository) capturePreviousFrappeClusterSQL(record frappeAllocatio
 INSERT INTO frappe_allocation_previous_cluster (id)
 SELECT cluster_id
 FROM frappe_sites
-WHERE site_name = %s
+WHERE site_name=%s AND deleted_at IS NULL
 FOR UPDATE;`, sqlLiteral(record.SiteName))
 }
 
@@ -126,6 +127,9 @@ WITH upserted_cluster AS (
     container_name = EXCLUDED.container_name,
     capacity = EXCLUDED.capacity,
     status = EXCLUDED.status,
+    deleted_at = NULL,
+    deletion_failed_at = NULL,
+    deletion_error_code = NULL,
     updated_at = NOW()
   RETURNING id
 )
@@ -145,6 +149,9 @@ ON CONFLICT (site_name) DO UPDATE SET
   cluster_id = EXCLUDED.cluster_id,
   version = EXCLUDED.version,
   status = EXCLUDED.status,
+  deleted_at = NULL,
+  deletion_failed_at = NULL,
+  deletion_error_code = NULL,
   updated_at = NOW();`,
 		sqlLiteral(record.SiteName), sqlLiteral(record.Version), sqlLiteral(status))
 }
@@ -154,7 +161,7 @@ func (r grengoRepository) refreshFrappeClusterSiteCountSQL() string {
 UPDATE frappe_clusters fc
 SET site_count = COALESCE((
     SELECT COUNT(*) FROM frappe_sites fs
-    WHERE fs.cluster_id = fc.id AND fs.status <> 'deleted'
+    WHERE fs.cluster_id=fc.id AND fs.status <> 'deleted' AND fs.deleted_at IS NULL
   ), 0),
   updated_at = NOW()
 WHERE fc.id IN (

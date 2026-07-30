@@ -30,7 +30,7 @@ func (r *sqlSubscriptionPlanRepository) GetByID(id int64) (*models.SubscriptionP
 	plan := &models.SubscriptionPlan{}
 	err := r.db.QueryRow(
 		`SELECT id, name, description, price_cents, currency, interval_unit, interval_count, trial_days, stripe_price_id, is_active, created_at, updated_at
-		 FROM subscription_plans WHERE id = $1`, id,
+		 FROM subscription_plans WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&plan.ID, &plan.Name, &plan.Description, &plan.PriceCents, &plan.Currency, &plan.IntervalUnit, &plan.IntervalCount, &plan.TrialDays, &plan.StripePriceID, &plan.IsActive, &plan.CreatedAt, &plan.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("subscription plan not found")
@@ -41,22 +41,35 @@ func (r *sqlSubscriptionPlanRepository) GetByID(id int64) (*models.SubscriptionP
 func (r *sqlSubscriptionPlanRepository) Update(plan *models.SubscriptionPlan) (*models.SubscriptionPlan, error) {
 	err := r.db.QueryRow(
 		`UPDATE subscription_plans SET name=$1, description=$2, price_cents=$3, currency=$4, interval_unit=$5, interval_count=$6, trial_days=$7, stripe_price_id=$8, is_active=$9, updated_at=CURRENT_TIMESTAMP
-		 WHERE id=$10
+		 WHERE id=$10 AND deleted_at IS NULL
 		 RETURNING id, name, description, price_cents, currency, interval_unit, interval_count, trial_days, stripe_price_id, is_active, created_at, updated_at`,
 		plan.Name, plan.Description, plan.PriceCents, plan.Currency, plan.IntervalUnit, plan.IntervalCount, plan.TrialDays, plan.StripePriceID, plan.IsActive, plan.ID,
 	).Scan(&plan.ID, &plan.Name, &plan.Description, &plan.PriceCents, &plan.Currency, &plan.IntervalUnit, &plan.IntervalCount, &plan.TrialDays, &plan.StripePriceID, &plan.IsActive, &plan.CreatedAt, &plan.UpdatedAt)
 	return plan, err
 }
 
-func (r *sqlSubscriptionPlanRepository) Delete(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM subscription_plans WHERE id = $1`, id)
+func (r *sqlSubscriptionPlanRepository) Delete(id, actorID int64) error {
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE subscription_plans
+		    SET deleted_at=COALESCE(deleted_at, NOW()),
+		        deleted_by=COALESCE(deleted_by, $2)
+		    WHERE id=$1 AND deleted_at IS NULL
+		    RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		 SELECT $2, 'subscription_plan', id::text, 'delete' FROM changed`,
+		id, actorID,
+	)
 	return err
 }
 
 func (r *sqlSubscriptionPlanRepository) List() ([]*models.SubscriptionPlan, error) {
 	rows, err := r.db.Query(
 		`SELECT id, name, description, price_cents, currency, interval_unit, interval_count, trial_days, stripe_price_id, is_active, created_at, updated_at
-		 FROM subscription_plans WHERE is_active = true ORDER BY price_cents ASC`,
+		 FROM subscription_plans
+		 WHERE is_active = true AND deleted_at IS NULL
+		 ORDER BY price_cents ASC`,
 	)
 	if err != nil {
 		return nil, err
@@ -96,7 +109,7 @@ func (r *sqlSubscriptionRepository) GetByID(id int64) (*models.Subscription, err
 	s := &models.Subscription{}
 	err := r.db.QueryRow(
 		`SELECT id, user_id, plan_id, provider, provider_subscription_id, provider_customer_id, status, current_period_start, current_period_end, cancel_at_period_end, cancelled_at, created_at, updated_at
-		 FROM subscriptions WHERE id = $1`, id,
+		 FROM subscriptions WHERE id=$1 AND deleted_at IS NULL`, id,
 	).Scan(&s.ID, &s.UserID, &s.PlanID, &s.Provider, &s.ProviderSubscriptionID, &s.ProviderCustomerID, &s.Status, &s.CurrentPeriodStart, &s.CurrentPeriodEnd, &s.CancelAtPeriodEnd, &s.CancelledAt, &s.CreatedAt, &s.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("subscription not found")
@@ -108,7 +121,7 @@ func (r *sqlSubscriptionRepository) GetByUserID(userID int64) (*models.Subscript
 	s := &models.Subscription{}
 	err := r.db.QueryRow(
 		`SELECT id, user_id, plan_id, provider, provider_subscription_id, provider_customer_id, status, current_period_start, current_period_end, cancel_at_period_end, cancelled_at, created_at, updated_at
-		 FROM subscriptions WHERE user_id = $1 AND status IN ('active','trialing','past_due')
+		 FROM subscriptions WHERE user_id=$1 AND status IN ('active','trialing','past_due') AND deleted_at IS NULL
 		 ORDER BY created_at DESC LIMIT 1`, userID,
 	).Scan(&s.ID, &s.UserID, &s.PlanID, &s.Provider, &s.ProviderSubscriptionID, &s.ProviderCustomerID, &s.Status, &s.CurrentPeriodStart, &s.CurrentPeriodEnd, &s.CancelAtPeriodEnd, &s.CancelledAt, &s.CreatedAt, &s.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -121,7 +134,7 @@ func (r *sqlSubscriptionRepository) GetByProviderID(providerSubID string) (*mode
 	s := &models.Subscription{}
 	err := r.db.QueryRow(
 		`SELECT id, user_id, plan_id, provider, provider_subscription_id, provider_customer_id, status, current_period_start, current_period_end, cancel_at_period_end, cancelled_at, created_at, updated_at
-		 FROM subscriptions WHERE provider_subscription_id = $1`, providerSubID,
+		 FROM subscriptions WHERE provider_subscription_id=$1 AND deleted_at IS NULL`, providerSubID,
 	).Scan(&s.ID, &s.UserID, &s.PlanID, &s.Provider, &s.ProviderSubscriptionID, &s.ProviderCustomerID, &s.Status, &s.CurrentPeriodStart, &s.CurrentPeriodEnd, &s.CancelAtPeriodEnd, &s.CancelledAt, &s.CreatedAt, &s.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("subscription not found")
@@ -132,7 +145,7 @@ func (r *sqlSubscriptionRepository) GetByProviderID(providerSubID string) (*mode
 func (r *sqlSubscriptionRepository) Update(s *models.Subscription) (*models.Subscription, error) {
 	err := r.db.QueryRow(
 		`UPDATE subscriptions SET status=$1, current_period_start=$2, current_period_end=$3, cancel_at_period_end=$4, cancelled_at=$5, updated_at=CURRENT_TIMESTAMP
-		 WHERE id=$6
+		 WHERE id=$6 AND deleted_at IS NULL
 		 RETURNING id, user_id, plan_id, provider, provider_subscription_id, provider_customer_id, status, current_period_start, current_period_end, cancel_at_period_end, cancelled_at, created_at, updated_at`,
 		s.Status, s.CurrentPeriodStart, s.CurrentPeriodEnd, s.CancelAtPeriodEnd, s.CancelledAt, s.ID,
 	).Scan(&s.ID, &s.UserID, &s.PlanID, &s.Provider, &s.ProviderSubscriptionID, &s.ProviderCustomerID, &s.Status, &s.CurrentPeriodStart, &s.CurrentPeriodEnd, &s.CancelAtPeriodEnd, &s.CancelledAt, &s.CreatedAt, &s.UpdatedAt)
@@ -142,7 +155,7 @@ func (r *sqlSubscriptionRepository) Update(s *models.Subscription) (*models.Subs
 func (r *sqlSubscriptionRepository) ListByUser(userID int64) ([]*models.Subscription, error) {
 	rows, err := r.db.Query(
 		`SELECT id, user_id, plan_id, provider, provider_subscription_id, provider_customer_id, status, current_period_start, current_period_end, cancel_at_period_end, cancelled_at, created_at, updated_at
-		 FROM subscriptions WHERE user_id = $1 ORDER BY created_at DESC`, userID,
+		 FROM subscriptions WHERE user_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC`, userID,
 	)
 	if err != nil {
 		return nil, err

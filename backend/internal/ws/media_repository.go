@@ -29,7 +29,7 @@ func (r *MediaHistoryRepo) LoadHistory(route string) ([]MediaItem, error) {
 	rows, err := r.DB.Query(`
 		SELECT id, video_id, added_by, user_name, loop, created_at
 		FROM media_history
-		WHERE route = $1
+		WHERE route=$1 AND deleted_at IS NULL
 		ORDER BY created_at DESC
 		LIMIT 50
 	`, route)
@@ -61,7 +61,14 @@ func (r *MediaHistoryRepo) DeleteHistoryItem(id int64) error {
 	if r.DB == nil {
 		return nil
 	}
-	_, err := r.DB.Exec(`DELETE FROM media_history WHERE id = $1`, id)
+	_, err := r.DB.Exec(
+		`WITH changed AS (
+		    UPDATE media_history
+		    SET deleted_at=COALESCE(deleted_at,NOW()),deleted_by=COALESCE(deleted_by,added_by)
+		    WHERE id=$1 AND deleted_at IS NULL RETURNING id,deleted_by
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id,resource_type,resource_id,action)
+		 SELECT deleted_by,'media_history',id::text,'delete' FROM changed`, id)
 	return err
 }
 
@@ -69,7 +76,16 @@ func (r *MediaHistoryRepo) DeleteHistoryItemByData(route, videoID, createdAt str
 	if r.DB == nil {
 		return nil
 	}
-	_, err := r.DB.Exec(`DELETE FROM media_history WHERE route = $1 AND video_id = $2 AND created_at = $3`, route, videoID, createdAt)
+	_, err := r.DB.Exec(
+		`WITH changed AS (
+		    UPDATE media_history
+		    SET deleted_at=COALESCE(deleted_at,NOW()),deleted_by=COALESCE(deleted_by,added_by)
+		    WHERE route=$1 AND video_id=$2 AND created_at=$3 AND deleted_at IS NULL
+		    RETURNING id,deleted_by
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id,resource_type,resource_id,action)
+		 SELECT deleted_by,'media_history',id::text,'delete' FROM changed`,
+		route, videoID, createdAt)
 	return err
 }
 
@@ -77,6 +93,13 @@ func (r *MediaHistoryRepo) ClearHistory(route string) error {
 	if r.DB == nil {
 		return nil
 	}
-	_, err := r.DB.Exec(`DELETE FROM media_history WHERE route = $1`, route)
+	_, err := r.DB.Exec(
+		`WITH changed AS (
+		    UPDATE media_history
+		    SET deleted_at=COALESCE(deleted_at,NOW()),deleted_by=COALESCE(deleted_by,added_by)
+		    WHERE route=$1 AND deleted_at IS NULL RETURNING id,deleted_by
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id,resource_type,resource_id,action)
+		 SELECT deleted_by,'media_history',id::text,'delete' FROM changed`, route)
 	return err
 }

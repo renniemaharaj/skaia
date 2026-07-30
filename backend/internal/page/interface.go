@@ -9,8 +9,8 @@ type Repository interface {
 	Create(p *models.Page) error
 	UpdatePreservingInteractive(p *models.Page) error
 	MutateContent(pageID int64, mutate func(string) (string, error)) error
-	Delete(id int64) error
-	DeleteAll() error
+	Delete(id, actorID int64) error
+	DeleteAll(actorID int64) error
 	List() ([]*models.Page, error)
 
 	// Ownership & editors
@@ -35,7 +35,7 @@ type Repository interface {
 	GetComment(id int64) (*models.PageComment, error)
 	ListComments(pageID int64, limit, offset int) ([]*models.PageComment, error)
 	UpdateComment(c *models.PageComment) error
-	DeleteComment(id int64) error
+	DeleteComment(id, actorID int64) error
 	LikeComment(commentID, userID int64) (int64, error)
 	UnlikeComment(commentID, userID int64) (int64, error)
 	IsCommentLikedByUser(commentID, userID int64) (bool, error)

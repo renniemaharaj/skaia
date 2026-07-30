@@ -86,7 +86,7 @@ func (r *sqlWalletRepository) GetTransactions(userID int64, limit, offset int) (
 	query := `
 		SELECT id, user_id, amount, type, description, created_at
 		FROM user_wallet_transactions
-		WHERE user_id = $1
+		WHERE user_id = $1 AND deleted_at IS NULL
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3
 	`
@@ -183,7 +183,8 @@ func (r *sqlWalletRepository) UpdateCard(card *models.UserCard) (*models.UserCar
 	card.Last4 = cardLast4(card.CardNumber)
 	if card.Last4 == "" {
 		_ = r.db.QueryRow(
-			`SELECT card_number FROM user_cards WHERE id = $1 AND user_id = $2`,
+			`SELECT card_number FROM user_cards
+			 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
 			card.ID, card.UserID,
 		).Scan(&card.Last4)
 		card.Last4 = cardLast4(card.Last4)
@@ -193,14 +194,25 @@ func (r *sqlWalletRepository) UpdateCard(card *models.UserCard) (*models.UserCar
 	query := `
 		UPDATE user_cards
 		SET card_name = $1, card_description = $2, card_type = $3, is_credit = $4, card_number = $5, cvv = $6, expiry_month = $7, expiry_year = $8
-		WHERE id = $9 AND user_id = $10
+		WHERE id = $9 AND user_id = $10 AND deleted_at IS NULL
 	`
 	_, err := r.db.Exec(query, card.CardName, card.CardDescription, card.CardType, card.IsCredit, card.CardNumber, card.CVV, card.ExpiryMonth, card.ExpiryYear, card.ID, card.UserID)
 	return card, err
 }
 
-func (r *sqlWalletRepository) DeleteCard(cardID, userID int64) error {
-	_, err := r.db.Exec(`DELETE FROM user_cards WHERE id = $1 AND user_id = $2`, cardID, userID)
+func (r *sqlWalletRepository) DeleteCard(cardID, userID, actorID int64) error {
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE user_cards
+		    SET deleted_at=COALESCE(deleted_at, NOW()),
+		        deleted_by=COALESCE(deleted_by, $3)
+		    WHERE id=$1 AND user_id=$2 AND deleted_at IS NULL
+		    RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		 SELECT $3, 'user_card', id::text, 'delete' FROM changed`,
+		cardID, userID, actorID,
+	)
 	return err
 }
 

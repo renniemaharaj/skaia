@@ -53,7 +53,7 @@ func (r *SQLRepository) GetByID(ctx context.Context, id string) (*Session, error
 		SELECT id, user_id, created_ip, last_seen_ip, user_agent_hash,
 		       issued_at, expires_at, verified, created_at, updated_at
 		FROM sessions
-		WHERE id = $1 AND expires_at > NOW()`, id)
+		WHERE id = $1 AND expires_at > NOW() AND revoked_at IS NULL`, id)
 	s := &Session{}
 	if err := row.Scan(
 		&s.ID, &s.UserID, &s.CreatedIP, &s.LastSeenIP,
@@ -70,7 +70,7 @@ func (r *SQLRepository) GetByUserID(ctx context.Context, userID int64) ([]*Sessi
 		SELECT id, user_id, created_ip, last_seen_ip, user_agent_hash,
 		       issued_at, expires_at, verified, created_at, updated_at
 		FROM sessions
-		WHERE user_id = $1 AND expires_at > NOW()
+		WHERE user_id = $1 AND expires_at > NOW() AND revoked_at IS NULL
 		ORDER BY created_at DESC`, userID)
 	if err != nil {
 		return nil, err
@@ -94,29 +94,38 @@ func (r *SQLRepository) GetByUserID(ctx context.Context, userID int64) ([]*Sessi
 func (r *SQLRepository) UpdateLastSeenIP(ctx context.Context, id, ip string) error {
 	_, err := r.db.ExecContext(ctx, `
 		UPDATE sessions SET last_seen_ip = $1, updated_at = NOW()
-		WHERE id = $2`, ip, id)
+		WHERE id = $2 AND revoked_at IS NULL`, ip, id)
 	return err
 }
 
 func (r *SQLRepository) MarkVerified(ctx context.Context, id string) error {
 	_, err := r.db.ExecContext(ctx, `
 		UPDATE sessions SET verified = true, updated_at = NOW()
-		WHERE id = $1`, id)
+		WHERE id = $1 AND revoked_at IS NULL`, id)
 	return err
 }
 
 func (r *SQLRepository) DeleteByID(ctx context.Context, id string) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM sessions WHERE id = $1`, id)
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE sessions
+		SET revoked_at=COALESCE(revoked_at, NOW()), revoked_reason=COALESCE(revoked_reason, 'logout'), updated_at=NOW()
+		WHERE id = $1 AND revoked_at IS NULL`, id)
 	return err
 }
 
 func (r *SQLRepository) DeleteByUserID(ctx context.Context, userID int64) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM sessions WHERE user_id = $1`, userID)
+	_, err := r.db.ExecContext(ctx, `
+		UPDATE sessions
+		SET revoked_at=COALESCE(revoked_at, NOW()), revoked_reason=COALESCE(revoked_reason, 'user_logout'), updated_at=NOW()
+		WHERE user_id = $1 AND revoked_at IS NULL`, userID)
 	return err
 }
 
 func (r *SQLRepository) DeleteExpired(ctx context.Context) (int64, error) {
-	res, err := r.db.ExecContext(ctx, `DELETE FROM sessions WHERE expires_at <= $1`, time.Now())
+	res, err := r.db.ExecContext(ctx, `
+		UPDATE sessions
+		SET revoked_at=COALESCE(revoked_at, $1), revoked_reason=COALESCE(revoked_reason, 'expired'), updated_at=NOW()
+		WHERE expires_at <= $1 AND revoked_at IS NULL`, time.Now())
 	if err != nil {
 		return 0, err
 	}

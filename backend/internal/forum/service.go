@@ -48,8 +48,8 @@ func (s *Service) UpdateCategory(cat *models.ForumCategory) (*models.ForumCatego
 	return s.categories.Update(cat)
 }
 
-func (s *Service) DeleteCategory(id int64) error {
-	return s.categories.Delete(id)
+func (s *Service) DeleteCategory(id, actorID int64) error {
+	return s.categories.Delete(id, actorID)
 }
 
 // Thread methods
@@ -94,8 +94,8 @@ func (s *Service) UpdateThread(thread *models.ForumThread) (*models.ForumThread,
 	return t, err
 }
 
-func (s *Service) DeleteThread(id int64) error {
-	err := s.threads.Delete(id)
+func (s *Service) DeleteThread(id, actorID int64) error {
+	err := s.threads.Delete(id, actorID)
 	if err == nil {
 		s.cache.Invalidate(id)
 	}
@@ -160,12 +160,12 @@ func (s *Service) UpdateComment(comment *models.ThreadComment) (*models.ThreadCo
 	return s.comments.Update(comment)
 }
 
-func (s *Service) DeleteComment(id int64) error {
+func (s *Service) DeleteComment(id, actorID int64) error {
 	comment, err := s.comments.GetByID(id)
 	if err != nil {
 		return err
 	}
-	if err := s.comments.Delete(id); err != nil {
+	if err := s.comments.Delete(id, actorID); err != nil {
 		return err
 	}
 	s.cache.Invalidate(comment.ThreadID)

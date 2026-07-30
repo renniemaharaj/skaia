@@ -10,6 +10,7 @@ import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import { useThreadsFeed } from "../../hooks/useThreadsFeed";
 import { apiRequest } from "../../utils/api";
 import { FilterBar } from "../ui/FilterBar";
+import { confirmDestructiveAction } from "../ui/Prompt";
 import CategoryThreadsFeed from "./CategoryThreadsFeed";
 import { Forum } from "./Forum";
 
@@ -54,6 +55,14 @@ const CategoryThreadsPage = () => {
 
   const handleDeleteCategory = async () => {
     if (!category) return;
+    if (
+      !(await confirmDestructiveAction({
+        title: `Delete ${category.name}?`,
+        body: "The category will move to Trash and its threads will be hidden.",
+        confirmLabel: "Delete category",
+      }))
+    )
+      return;
     try {
       await apiRequest(`/forum/categories/${category.id}`, {
         method: "DELETE",

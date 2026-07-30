@@ -49,6 +49,7 @@ import (
 	"github.com/skaia/backend/internal/seo"
 	istore "github.com/skaia/backend/internal/store"
 	istreammeta "github.com/skaia/backend/internal/streammeta"
+	itrash "github.com/skaia/backend/internal/trash"
 	iupload "github.com/skaia/backend/internal/upload"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
@@ -988,6 +989,19 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		iuser.NewHandler(userSvc, hub, dispatcher, inboxSender, emailSender).Mount(api, imw.JWTAuthMiddleware)
 		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, commentSlowMode)
 		istore.NewHandler(storeSvc, hub, notifSvc, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware)
+		trashProviders := iforum.NewTrashProviders(db)
+		trashProviders = append(
+			trashProviders,
+			inotif.NewTrashProvider(db),
+			ids.NewTrashProvider(db),
+			ics.NewTrashProvider(db),
+		)
+		trashProviders = append(trashProviders, ipage.NewTrashProviders(db)...)
+		trashProviders = append(trashProviders, istore.NewTrashProviders(db)...)
+		trashProviders = append(trashProviders, iinbox.NewTrashProviders(db)...)
+		trashProviders = append(trashProviders, iuser.NewTrashProviders(db)...)
+		trashProviders = append(trashProviders, icfg.NewTrashProviders(db)...)
+		itrash.NewHandler(itrash.NewService(userSvc, trashProviders...), hub).Mount(api, imw.JWTAuthMiddleware)
 
 		uploadHandler := iupload.NewHandler(hub)
 		uploadHandler.Mount(api, imw.JWTAuthMiddleware)

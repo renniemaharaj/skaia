@@ -173,8 +173,19 @@ but new runtime code must pass a strict allowlist check.
    - Add domain-owned restore endpoints such as
      `POST /{resource}/{id}/restore`, protected by service-level policy and audit.
    - Add bounded/paginated deleted-item reads for authorized owners/managers.
-     A shared admin trash screen may aggregate service DTOs, but must not issue
-     generic SQL or bypass domain rules.
+     Expose them through one authenticated `/trash` frontend route using the
+     existing directory/table-view shell. The route groups tombstones by
+     resource type and gives each group its own bounded table, empty state,
+     pagination, and per-item undo controls.
+   - Back the shared trash route with an aggregation service over domain-owned
+     trash providers and normalized summary DTOs; it must not issue generic SQL,
+     accept caller-selected authorization scopes, or bypass resource policies.
+     Ordinary users see only resources they deleted or own and are permitted to
+     restore. Administrators and callers with the relevant manage-others
+     permission see all tombstones within each authorized resource domain.
+     Do not expose bulk undo until the matching domain supplies an atomic bulk
+     restore that reauthorizes every item and fails closed without leaking
+     hidden tombstones.
    - Support single and bulk restore where the matching bulk delete exists.
      Surface uniqueness/parent-deleted conflicts as stable `409` codes.
    - Restore caches, counts, search visibility, page allocations, and realtime
@@ -251,6 +262,11 @@ but new runtime code must pass a strict allowlist check.
 - Frontend: add Prompt accessibility/queue/cancel/confirm tests and focused
   destructive-handler tests proving cancel sends no request and confirm sends
   exactly one request.
+- Trash: prove `/trash` renders resource-grouped directory tables, ordinary
+  users can list/undo only their own authorized tombstones, resource managers
+  can list/undo all tombstones only in domains they manage, pagination is
+  bounded per group, and mixed unauthorized bulk restores fail without
+  revealing record existence.
 - Static gates:
   `rg -n "\\b(window\\.)?(confirm|prompt|alert)\\s*\\(|onbeforeunload|beforeunload" frontend/src`
   must return no application hits; runtime `DELETE FROM` must match only the

@@ -14,6 +14,7 @@ import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import { TransactionHistoryCard } from "../cards/TransactionHistoryCard";
 import Button from "../input/Button";
 import Select from "../input/Select";
+import { confirmDestructiveAction } from "../ui/Prompt";
 import { useUserData } from "../user/useUserData";
 import { StorePageShell } from "./StorePageShell";
 import "./WalletPage.css";
@@ -164,7 +165,14 @@ export const WalletPage = () => {
 
   const handleDeleteCard = async (id: number) => {
     if (!canViewTargetWallet) return;
-    if (!confirm("Are you sure you want to delete this card?")) return;
+    if (
+      !(await confirmDestructiveAction({
+        title: "Delete payment card?",
+        body: "The saved card record will move to Trash and can be restored by an authorized user.",
+        confirmLabel: "Delete card",
+      }))
+    )
+      return;
     setLoading(true);
     try {
       await apiRequest(`/store/wallet/cards/${id}${walletQueryString}`, {

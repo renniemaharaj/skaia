@@ -199,8 +199,8 @@ func (s *Service) projectNormalizedRead(p *models.Page) (*models.Page, error) {
 	return &projected, nil
 }
 
-func (s *Service) DeleteAll() error {
-	return s.repo.DeleteAll()
+func (s *Service) DeleteAll(actorID int64) error {
+	return s.repo.DeleteAll(actorID)
 }
 
 func (s *Service) invalidateSEO(slug string) {
@@ -293,13 +293,13 @@ func (s *Service) Duplicate(fromID int64, newSlug, newTitle string) (*models.Pag
 	return dup, nil
 }
 
-func (s *Service) Delete(id int64) error {
+func (s *Service) Delete(id, actorID int64) error {
 	// Look up the page owner so we can decrement their allocation.
 	p, err := s.repo.GetByID(id)
 	if err != nil {
-		return s.repo.Delete(id)
+		return s.repo.Delete(id, actorID)
 	}
-	if err := s.repo.Delete(id); err != nil {
+	if err := s.repo.Delete(id, actorID); err != nil {
 		return err
 	}
 	if p.OwnerID != nil && *p.OwnerID > 0 {
@@ -464,8 +464,8 @@ func (s *Service) UpdateComment(c *models.PageComment) error {
 	return s.repo.UpdateComment(c)
 }
 
-func (s *Service) DeleteComment(id int64) error {
-	return s.repo.DeleteComment(id)
+func (s *Service) DeleteComment(id, actorID int64) error {
+	return s.repo.DeleteComment(id, actorID)
 }
 
 func (s *Service) LikeComment(commentID, userID int64) (int64, error) {

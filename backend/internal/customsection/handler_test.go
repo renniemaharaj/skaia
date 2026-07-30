@@ -28,7 +28,7 @@ func (r presetAliasRepository) ListByDataSource(int64) ([]*models.CustomSection,
 }
 func (presetAliasRepository) Create(*models.CustomSection) error { return nil }
 func (presetAliasRepository) Update(*models.CustomSection) error { return nil }
-func (presetAliasRepository) Delete(int64) error                 { return nil }
+func (presetAliasRepository) Delete(int64, int64) error          { return nil }
 
 func TestSectionPresetAndCustomSectionRoutesRemainAliases(t *testing.T) {
 	repository := presetAliasRepository{items: []*models.CustomSection{{

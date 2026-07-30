@@ -38,7 +38,7 @@ func (r *sqlReferenceCodeRepository) Update(code *models.ReferenceCode) (*models
 	err := r.db.QueryRow(
 		`UPDATE store_reference_codes
 		 SET code=$1, user_id=$2, incentive_amount=$3, is_active=$4, updated_at=CURRENT_TIMESTAMP
-		 WHERE id=$5
+		 WHERE id=$5 AND deleted_at IS NULL
 		 RETURNING id, code, user_id, incentive_amount, is_active, created_at, updated_at`,
 		code.Code, code.UserID, code.IncentiveAmount, code.IsActive, code.ID,
 	).Scan(&code.ID, &code.Code, &code.UserID, &code.IncentiveAmount, &code.IsActive, &code.CreatedAt, &code.UpdatedAt)
@@ -49,7 +49,7 @@ func (r *sqlReferenceCodeRepository) GetByID(id int64) (*models.ReferenceCode, e
 	code := &models.ReferenceCode{}
 	err := r.db.QueryRow(
 		`SELECT id, code, user_id, incentive_amount, is_active, created_at, updated_at
-		 FROM store_reference_codes WHERE id=$1`,
+		 FROM store_reference_codes WHERE id=$1 AND deleted_at IS NULL`,
 		id,
 	).Scan(&code.ID, &code.Code, &code.UserID, &code.IncentiveAmount, &code.IsActive, &code.CreatedAt, &code.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -62,7 +62,7 @@ func (r *sqlReferenceCodeRepository) GetByCode(rawCode string) (*models.Referenc
 	code := &models.ReferenceCode{}
 	err := r.db.QueryRow(
 		`SELECT id, code, user_id, incentive_amount, is_active, created_at, updated_at
-		 FROM store_reference_codes WHERE code=$1`,
+		 FROM store_reference_codes WHERE code=$1 AND deleted_at IS NULL`,
 		normalizeReferenceCode(rawCode),
 	).Scan(&code.ID, &code.Code, &code.UserID, &code.IncentiveAmount, &code.IsActive, &code.CreatedAt, &code.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -75,6 +75,7 @@ func (r *sqlReferenceCodeRepository) List(limit, offset int) ([]*models.Referenc
 	rows, err := r.db.Query(
 		`SELECT id, code, user_id, incentive_amount, is_active, created_at, updated_at
 		 FROM store_reference_codes
+		 WHERE deleted_at IS NULL
 		 ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
 		limit, offset,
 	)
@@ -94,8 +95,19 @@ func (r *sqlReferenceCodeRepository) List(limit, offset int) ([]*models.Referenc
 	return codes, rows.Err()
 }
 
-func (r *sqlReferenceCodeRepository) Delete(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM store_reference_codes WHERE id=$1`, id)
+func (r *sqlReferenceCodeRepository) Delete(id, actorID int64) error {
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE store_reference_codes
+		    SET deleted_at=COALESCE(deleted_at, NOW()),
+		        deleted_by=COALESCE(deleted_by, $2)
+		    WHERE id=$1 AND deleted_at IS NULL
+		    RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		 SELECT $2, 'store_reference_code', id::text, 'delete' FROM changed`,
+		id, actorID,
+	)
 	return err
 }
 

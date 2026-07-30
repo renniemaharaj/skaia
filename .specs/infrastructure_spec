@@ -98,6 +98,11 @@ Per-tenant env:
 - Runtime nginx config is generated, not hand-maintained.
 - Armed mode blocks API traffic except explicit allowlist routes.
 - Containers run as non-root app user where the image supports it.
+- Control-plane sites and clusters retain deletion/failure lifecycle state;
+  external teardown is not represented as restorable infrastructure.
+- Grengo passcode clearing nulls secret material and records `cleared_at`.
+  API-key permissions deactivate, API keys revoke, and control-plane application
+  code cannot hard-delete guarded lifecycle rows.
 
 ## Verify
 

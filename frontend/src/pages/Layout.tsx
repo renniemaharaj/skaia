@@ -1,4 +1,4 @@
-import { useAtomValue, useSetAtom, getDefaultStore } from "jotai";
+import { getDefaultStore, useAtomValue, useSetAtom } from "jotai";
 import { useAtom } from "jotai";
 import { Info } from "lucide-react";
 import type { ReactNode } from "react";
@@ -10,14 +10,14 @@ import { featuresAtom, seoAtom } from "../atoms/config";
 import { contextUserAtom } from "../atoms/contextUser";
 import { layoutModeAtom } from "../atoms/layoutMode";
 import {
-  pendingTpRouteAtom,
-  pendingTpUserAtom,
   cursorPositionsAtom,
   layoutChildrenAtom,
+  pendingTpRouteAtom,
+  pendingTpUserAtom,
   presencePanelExpandedAtom,
 } from "../atoms/presence";
-import { enlargedStreamIdAtom } from "../atoms/voice";
 import { cartItemCountAtom } from "../atoms/store";
+import { enlargedStreamIdAtom } from "../atoms/voice";
 import { Footer } from "../components/page/layout/Footer";
 import { Header } from "../components/page/layout/Header";
 import { type MFAChallengeContext, type RateLimitDefconInfo, apiRequest } from "../utils/api";
@@ -364,6 +364,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (pathname.startsWith("/inbox")) return true;
     if (pathname === "/users") return true;
     if (pathname.startsWith("/activity")) return true;
+    if (pathname.startsWith("/trash")) return true;
     if (pathname.startsWith("/deployments")) return true;
     if (pathname.startsWith("/datasources")) return true;
     if (pathname.startsWith("/settings")) return true;

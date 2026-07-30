@@ -11,6 +11,7 @@ import {
 import { wsBaseUrlAtom } from "../atoms/config";
 import { activeConversationIdAtom } from "../atoms/inbox";
 import { pendingTpRouteAtom, pendingTpUserAtom } from "../atoms/presence";
+import { rejectAllWsApiRequests, resolveWsApiResponse } from "../utils/api";
 import {
   applyMessageUpdate,
   dispatchEventBusMessage,
@@ -24,7 +25,6 @@ import {
   handleStoreUpdate,
   handleUserUpdate,
 } from "./handlers";
-import { rejectAllWsApiRequests, resolveWsApiResponse } from "../utils/api";
 import "../utils/wsResources";
 import {
   WS_PROTO_SUBPROTOCOL,
@@ -200,6 +200,10 @@ export const useWebSocketSync = () => {
 
             case "config:update":
               handleConfigUpdate(payload);
+              return;
+
+            case "trash:update":
+              window.dispatchEvent(new CustomEvent("trash:updated", { detail: payload }));
               return;
 
             case "recovery_request:accepted":

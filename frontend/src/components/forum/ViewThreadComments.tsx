@@ -11,6 +11,7 @@ import { useCommentsFeed } from "../../hooks/useCommentsFeed";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 import CommentSection from "../comments/CommentSection";
+import { confirmDestructiveAction } from "../ui/Prompt";
 
 const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,6 +45,14 @@ const ViewThreadComments = ({ threadId }: { threadId: string | undefined }) => {
   }, [threadId, subscribe]);
 
   const handleDeleteComment = useCallback(async (commentId: string) => {
+    if (
+      !(await confirmDestructiveAction({
+        title: "Delete comment?",
+        body: "The comment will move to Trash.",
+        confirmLabel: "Delete comment",
+      }))
+    )
+      return;
     try {
       await apiRequest(`/forum/comments/${commentId}`, {
         method: "DELETE",

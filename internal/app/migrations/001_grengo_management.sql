@@ -68,3 +68,28 @@ CREATE TABLE IF NOT EXISTS grengo_api_key_permissions (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (api_key_id, module)
 );
+
+-- Control-plane lifecycle foundation. Keep aligned with
+-- 002_soft_delete_lifecycle.sql for fresh-schema parity.
+ALTER TABLE frappe_sites
+    ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS deletion_failed_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS deletion_error_code VARCHAR(80);
+
+ALTER TABLE frappe_clusters
+    ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS deletion_failed_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS deletion_error_code VARCHAR(80);
+
+ALTER TABLE grengo_api_key_permissions
+    ADD COLUMN IF NOT EXISTS inactive_at TIMESTAMPTZ;
+
+ALTER TABLE grengo_passcodes
+    ALTER COLUMN salt_hex DROP NOT NULL,
+    ALTER COLUMN hash_hex DROP NOT NULL,
+    ADD COLUMN IF NOT EXISTS cleared_at TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS idx_frappe_sites_deleted_at
+    ON frappe_sites(deleted_at) WHERE deleted_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_frappe_clusters_deleted_at
+    ON frappe_clusters(deleted_at) WHERE deleted_at IS NOT NULL;

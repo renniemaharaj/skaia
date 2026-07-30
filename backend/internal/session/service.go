@@ -25,7 +25,7 @@ var (
 // Service contains the business logic for session management
 // and Turnstile step-up verification.
 type Service struct {
-	repo            Repository
+	repo               Repository
 	turnstileSiteKey   string
 	turnstileSecretKey string
 }

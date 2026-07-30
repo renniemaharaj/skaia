@@ -77,7 +77,7 @@ func apiWebhookGithub(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log("Received webhook trigger, shipping frontend...")
-	
+
 	// Run in background so webhook responds immediately
 	go func() {
 		defer func() {

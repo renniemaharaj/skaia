@@ -21,7 +21,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { apiRequest } from "../../utils/api";
 import MonacoEditor from "../monaco/Editor";
 import { Console } from "../ui/Console";
-import { customAlert, customConfirm } from "../ui/Prompt";
+import { confirmDestructiveAction, customAlert, customConfirm } from "../ui/Prompt";
 import "./GrengoDashboard.css";
 import { useAtomValue } from "jotai";
 import { socketAtom } from "../../atoms/auth";
@@ -690,7 +690,18 @@ export default function GrengoDashboard() {
   };
 
   const handleDelete = async (name: string) => {
-    if (!(await customConfirm(`Permanently delete site "${name}" and all its data?`))) return;
+    if (
+      !(await confirmDestructiveAction({
+        title: `Permanently delete ${name}?`,
+        body: "External site data and infrastructure will be destroyed and cannot be restored from Trash.",
+        confirmLabel: "Delete permanently",
+        typedConfirmation: {
+          value: name,
+          label: `Type ${name} to continue`,
+        },
+      }))
+    )
+      return;
     setBusy(prev => ({ ...prev, [name]: true }));
     try {
       await triggerAndWaitForJob("site-cmd", sendGrengoJobAction("site-cmd", name, "remove"));
@@ -998,7 +1009,11 @@ export default function GrengoDashboard() {
                               j => j.type === "delete-export" && j.target === exp.name
                             )}
                             onClick={async () => {
-                              const confirmed = await customConfirm(`Delete ${exp.name}?`);
+                              const confirmed = await confirmDestructiveAction({
+                                title: `Permanently delete ${exp.name}?`,
+                                body: "The exported archive file will be physically removed and cannot be restored from Trash.",
+                                confirmLabel: "Delete permanently",
+                              });
                               if (!confirmed) return;
                               try {
                                 await grengoRequest(`/exports/${exp.name}`, {

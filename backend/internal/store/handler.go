@@ -245,7 +245,7 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid category ID")
 		return
 	}
-	if err := h.svc.DeleteCategory(id); err != nil {
+	if err := h.svc.DeleteCategory(id, userID); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete category")
 		return
 	}
@@ -566,7 +566,7 @@ func (h *Handler) deleteProduct(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
 		return
 	}
-	if err := h.svc.DeleteProduct(id); err != nil {
+	if err := h.svc.DeleteProduct(id, userID); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete product")
 		return
 	}
@@ -799,7 +799,7 @@ func (h *Handler) deleteReferenceCode(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid reference code ID")
 		return
 	}
-	if err := h.svc.DeleteReferenceCode(id); err != nil {
+	if err := h.svc.DeleteReferenceCode(id, userID); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete reference code")
 		return
 	}
@@ -1252,7 +1252,7 @@ func (h *Handler) deleteOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	order, _ := h.svc.GetOrder(id)
-	if err := h.svc.DeleteOrder(id); err != nil {
+	if err := h.svc.DeleteOrder(id, userID); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete order")
 		return
 	}
@@ -1662,7 +1662,7 @@ func (h *Handler) deletePlan(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid plan ID")
 		return
 	}
-	if err := h.svc.DeletePlan(id); err != nil {
+	if err := h.svc.DeletePlan(id, userID); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to delete plan")
 		return
 	}
@@ -1900,6 +1900,11 @@ func (h *Handler) updateCard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) deleteCard(w http.ResponseWriter, r *http.Request) {
+	actorID, authenticated := utils.UserIDFromCtx(r)
+	if !authenticated {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
 	userID, ok := h.resolveWalletUser(w, r)
 	if !ok {
 		return
@@ -1912,7 +1917,7 @@ func (h *Handler) deleteCard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.svc.WalletRepo.DeleteCard(cardID, userID)
+	err = h.svc.WalletRepo.DeleteCard(cardID, userID, actorID)
 	if err != nil {
 		log.Printf("Wallet delete card error: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "Failed to delete card")

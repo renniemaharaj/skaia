@@ -62,8 +62,8 @@ func (r *sqlRepository) CreateTypedSection(pageID, actorID int64, section Shadow
 				document.Sections[index].Revision++
 			}
 			if _, err := exec.Exec(
-				`UPDATE page_section_instances SET source_index=$2, display_order=$3, revision=$4,
-				 updated_by=$5, updated_at=CURRENT_TIMESTAMP WHERE id=$1`,
+				`UPDATE page_section_instances SET source_index=$2,display_order=$3,revision=$4,
+				 updated_by=$5,updated_at=CURRENT_TIMESTAMP WHERE id=$1 AND deleted_at IS NULL`,
 				document.Sections[index].ID, nextIndex, nextIndex+1, document.Sections[index].Revision, actorID,
 			); err != nil {
 				return fmt.Errorf("reindex typed sections: %w", err)
@@ -162,7 +162,12 @@ func (r *sqlRepository) DeleteTypedSection(pageID, sectionID, actorID, expectedR
 		if err := RequireExpectedSectionRevision(expectedRevision, document.Sections[target].Revision); err != nil {
 			return err
 		}
-		if _, err := exec.Exec(`DELETE FROM page_section_instances WHERE id=$1 AND page_id=$2`, sectionID, pageID); err != nil {
+		if _, err := exec.Exec(
+			`UPDATE page_section_instances
+			 SET deleted_at=COALESCE(deleted_at,NOW()),deleted_by=COALESCE(deleted_by,$3),updated_by=$3,updated_at=NOW()
+			 WHERE id=$1 AND page_id=$2 AND deleted_at IS NULL`,
+			sectionID, pageID, actorID,
+		); err != nil {
 			return err
 		}
 		document.Sections = append(document.Sections[:target], document.Sections[target+1:]...)
@@ -175,8 +180,8 @@ func (r *sqlRepository) DeleteTypedSection(pageID, sectionID, actorID, expectedR
 				revision++
 			}
 			if _, err := exec.Exec(
-				`UPDATE page_section_instances SET source_index=$2, display_order=$3, revision=$4,
-				 updated_by=$5, updated_at=CURRENT_TIMESTAMP WHERE id=$1`,
+				`UPDATE page_section_instances SET source_index=$2,display_order=$3,revision=$4,
+				 updated_by=$5,updated_at=CURRENT_TIMESTAMP WHERE id=$1 AND deleted_at IS NULL`,
 				document.Sections[index].ID, index, index+1, revision, actorID,
 			); err != nil {
 				return err
@@ -237,8 +242,8 @@ func (r *sqlRepository) ReorderTypedSections(pageID, actorID int64, order []Type
 				revision++
 			}
 			if _, err := exec.Exec(
-				`UPDATE page_section_instances SET source_index=$2, display_order=$3, revision=$4,
-				 updated_by=$5, updated_at=CURRENT_TIMESTAMP WHERE id=$1`,
+				`UPDATE page_section_instances SET source_index=$2,display_order=$3,revision=$4,
+				 updated_by=$5,updated_at=CURRENT_TIMESTAMP WHERE id=$1 AND deleted_at IS NULL`,
 				requested.ID, index, index+1, revision, actorID,
 			); err != nil {
 				return err
@@ -259,14 +264,14 @@ func (r *sqlRepository) ReorderTypedSections(pageID, actorID int64, order []Type
 
 func lockTypedPage(exec database.Executor, pageID int64) (string, error) {
 	var content string
-	if err := exec.QueryRow(`SELECT content::text FROM pages WHERE id=$1 FOR UPDATE`, pageID).Scan(&content); err != nil {
+	if err := exec.QueryRow(`SELECT content::text FROM pages WHERE id=$1 AND deleted_at IS NULL FOR UPDATE`, pageID).Scan(&content); err != nil {
 		return "", err
 	}
 	return content, nil
 }
 
 func lockAndLoadTypedDocument(exec database.Executor, pageID int64) (NormalizedShadowDocument, error) {
-	rows, err := exec.Query(`SELECT id FROM page_section_instances WHERE page_id=$1 ORDER BY id FOR UPDATE`, pageID)
+	rows, err := exec.Query(`SELECT id FROM page_section_instances WHERE page_id=$1 AND deleted_at IS NULL ORDER BY id FOR UPDATE`, pageID)
 	if err != nil {
 		return NormalizedShadowDocument{}, err
 	}
@@ -285,7 +290,7 @@ func lockAndLoadTypedDocument(exec database.Executor, pageID int64) (NormalizedS
 
 func stageSectionSourceIndexes(exec database.Executor, pageID int64) error {
 	_, err := exec.Exec(
-		`UPDATE page_section_instances SET source_index=source_index+$2 WHERE page_id=$1 AND source_index<$2`,
+		`UPDATE page_section_instances SET source_index=source_index+$2 WHERE page_id=$1 AND source_index<$2 AND deleted_at IS NULL`,
 		pageID, shadowSourceIndexOffset,
 	)
 	return err
@@ -297,13 +302,13 @@ func writeTypedSection(exec database.Executor, pageID, actorID int64, section Sh
 		return 0, err
 	}
 	if _, err := exec.Exec(
-		`UPDATE page_section_instances SET created_by=COALESCE(created_by,$2), updated_by=$2 WHERE id=$1`,
+		`UPDATE page_section_instances SET created_by=COALESCE(created_by,$2),updated_by=$2,deleted_at=NULL,deleted_by=NULL WHERE id=$1`,
 		sectionID, actorID,
 	); err != nil {
 		return 0, err
 	}
 	if _, err := exec.Exec(
-		`UPDATE page_section_instance_items SET source_index=source_index+$2 WHERE section_id=$1 AND source_index<$2`,
+		`UPDATE page_section_instance_items SET source_index=source_index+$2 WHERE section_id=$1 AND source_index<$2 AND deleted_at IS NULL`,
 		sectionID, shadowSourceIndexOffset,
 	); err != nil {
 		return 0, err
@@ -328,15 +333,17 @@ func writeTypedSection(exec database.Executor, pageID, actorID int64, section Sh
 			return 0, err
 		}
 		if _, err := exec.Exec(
-			`UPDATE page_section_instance_items SET created_by=COALESCE(created_by,$2), updated_by=$2 WHERE id=$1`,
+			`UPDATE page_section_instance_items SET created_by=COALESCE(created_by,$2),updated_by=$2,deleted_at=NULL,deleted_by=NULL WHERE id=$1`,
 			itemID, actorID,
 		); err != nil {
 			return 0, err
 		}
 	}
 	if _, err := exec.Exec(
-		`DELETE FROM page_section_instance_items WHERE section_id=$1 AND source_index >= $2`,
-		sectionID, shadowSourceIndexOffset,
+		`UPDATE page_section_instance_items
+		 SET deleted_at=COALESCE(deleted_at,NOW()),deleted_by=COALESCE(deleted_by,$3)
+		 WHERE section_id=$1 AND source_index >= $2 AND deleted_at IS NULL`,
+		sectionID, shadowSourceIndexOffset, actorID,
 	); err != nil {
 		return 0, err
 	}
@@ -376,12 +383,16 @@ func persistTypedPageDefinition(exec database.Executor, pageID int64, current st
 
 func (r *sqlRepository) GetPageTheme(pageID int64) (*models.PageTheme, error) {
 	theme := &models.PageTheme{Version: 1, Tokens: []models.PageThemeToken{}}
-	if err := r.db.QueryRow(`SELECT revision FROM page_themes WHERE page_id=$1`, pageID).Scan(&theme.Revision); err != nil {
+	if err := r.db.QueryRow(
+		`SELECT t.revision FROM page_themes t JOIN pages p ON p.id=t.page_id
+		 WHERE t.page_id=$1 AND t.deleted_at IS NULL AND p.deleted_at IS NULL`,
+		pageID,
+	).Scan(&theme.Revision); err != nil {
 		return nil, err
 	}
 	rows, err := r.db.Query(
 		`SELECT token_key,label,color_value,display_order,revision FROM page_theme_tokens
-		 WHERE page_id=$1 ORDER BY display_order,token_key`, pageID,
+		 WHERE page_id=$1 AND deleted_at IS NULL ORDER BY display_order,token_key`, pageID,
 	)
 	if err != nil {
 		return nil, err
@@ -404,14 +415,14 @@ func (r *sqlRepository) UpdatePageTheme(pageID, actorID, expectedRevision int64,
 			return err
 		}
 		var actual int64
-		if err := exec.QueryRow(`SELECT revision FROM page_themes WHERE page_id=$1 FOR UPDATE`, pageID).Scan(&actual); err != nil {
+		if err := exec.QueryRow(`SELECT revision FROM page_themes WHERE page_id=$1 AND deleted_at IS NULL FOR UPDATE`, pageID).Scan(&actual); err != nil {
 			return err
 		}
 		if err := RequireExpectedSectionRevision(expectedRevision, actual); err != nil {
 			return err
 		}
 		rows, err := exec.Query(
-			`SELECT token_key,label,color_value,display_order,revision FROM page_theme_tokens WHERE page_id=$1 FOR UPDATE`, pageID,
+			`SELECT token_key,label,color_value,display_order,revision FROM page_theme_tokens WHERE page_id=$1 AND deleted_at IS NULL FOR UPDATE`, pageID,
 		)
 		if err != nil {
 			return err
@@ -429,7 +440,7 @@ func (r *sqlRepository) UpdatePageTheme(pageID, actorID, expectedRevision int64,
 			return err
 		}
 		referencedRows, err := exec.Query(
-			`SELECT DISTINCT token_key FROM page_section_color_references WHERE page_id=$1`, pageID,
+			`SELECT DISTINCT token_key FROM page_section_color_references WHERE page_id=$1 AND inactive_at IS NULL`, pageID,
 		)
 		if err != nil {
 			return err
@@ -456,7 +467,11 @@ func (r *sqlRepository) UpdatePageTheme(pageID, actorID, expectedRevision int64,
 				return ErrPaletteTokenReferenced
 			}
 		}
-		if _, err := exec.Exec(`SET CONSTRAINTS page_theme_tokens_page_id_display_order_key DEFERRED`); err != nil {
+		if _, err := exec.Exec(
+			`UPDATE page_theme_tokens SET display_order=display_order+64
+			 WHERE page_id=$1 AND deleted_at IS NULL`,
+			pageID,
+		); err != nil {
 			return err
 		}
 		for _, token := range theme.Tokens {
@@ -468,7 +483,7 @@ func (r *sqlRepository) UpdatePageTheme(pageID, actorID, expectedRevision int64,
 				}
 				if _, err := exec.Exec(
 					`UPDATE page_theme_tokens SET label=$3,color_value=$4,display_order=$5,revision=$6,
-					 updated_by=$7,updated_at=CURRENT_TIMESTAMP WHERE page_id=$1 AND token_key=$2`,
+					 updated_by=$7,updated_at=CURRENT_TIMESTAMP WHERE page_id=$1 AND token_key=$2 AND deleted_at IS NULL`,
 					pageID, token.Key, token.Label, token.Value, token.DisplayOrder, revision, actorID,
 				); err != nil {
 					return err
@@ -476,7 +491,11 @@ func (r *sqlRepository) UpdatePageTheme(pageID, actorID, expectedRevision int64,
 			} else if _, err := exec.Exec(
 				`INSERT INTO page_theme_tokens
 				 (page_id,token_key,label,color_value,display_order,revision,created_by,updated_by)
-				 VALUES ($1,$2,$3,$4,$5,$6,$7,$7)`,
+				 VALUES ($1,$2,$3,$4,$5,$6,$7,$7)
+				 ON CONFLICT (page_id,token_key) DO UPDATE SET
+				   label=EXCLUDED.label,color_value=EXCLUDED.color_value,
+				   display_order=EXCLUDED.display_order,revision=EXCLUDED.revision,
+				   updated_by=EXCLUDED.updated_by,updated_at=NOW(),deleted_at=NULL,deleted_by=NULL`,
 				pageID, token.Key, token.Label, token.Value, token.DisplayOrder, revision, actorID,
 			); err != nil {
 				return err
@@ -486,13 +505,18 @@ func (r *sqlRepository) UpdatePageTheme(pageID, actorID, expectedRevision int64,
 			if _, retained := incoming[key]; retained {
 				continue
 			}
-			if _, err := exec.Exec(`DELETE FROM page_theme_tokens WHERE page_id=$1 AND token_key=$2`, pageID, key); err != nil {
+			if _, err := exec.Exec(
+				`UPDATE page_theme_tokens
+				 SET deleted_at=COALESCE(deleted_at,NOW()),deleted_by=COALESCE(deleted_by,$3)
+				 WHERE page_id=$1 AND token_key=$2 AND deleted_at IS NULL`,
+				pageID, key, actorID,
+			); err != nil {
 				return err
 			}
 		}
 		if err := exec.QueryRow(
 			`UPDATE page_themes SET revision=revision+1,updated_by=$2,updated_at=CURRENT_TIMESTAMP
-			 WHERE page_id=$1 RETURNING revision`, pageID, actorID,
+			 WHERE page_id=$1 AND deleted_at IS NULL RETURNING revision`, pageID, actorID,
 		).Scan(&actual); err != nil {
 			return err
 		}

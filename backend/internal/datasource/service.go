@@ -28,8 +28,8 @@ func (s *Service) Update(ds *models.DataSource) error {
 	return s.repo.Update(ds)
 }
 
-func (s *Service) Delete(id int64) error {
-	return s.repo.Delete(id)
+func (s *Service) Delete(id, actorID int64) error {
+	return s.repo.Delete(id, actorID)
 }
 
 func (s *Service) GetEnvData(id int64) (string, error) {

@@ -244,6 +244,15 @@ section types and from normalized page-section snapshot presets.
 - Preserve ordering, empty content, negative spacing, inline rich-text colors,
   media URLs, preset references, and copied page-scoped ID collisions.
 
+## Deletion lifecycle
+
+- Shadow synchronization tombstones stale normalized sections, items, tokens,
+  and responses and revives matching stable identities on reappearance.
+  Quarantine evidence is resolved with `resolved_at`, never physically deleted.
+- Definition and rollback projection read only active rows with active page and
+  section ancestors. Separately tombstoned children remain hidden when a parent
+  is restored.
+
 ## Verify
 
 - `go test ./internal/page ./internal/s_registry` from `backend/`.

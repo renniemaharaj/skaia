@@ -3,10 +3,10 @@ package provisioning
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/renniemaharaj/grouplogs/pkg/logger"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"github.com/renniemaharaj/grouplogs/pkg/logger"
 )
 
 // SupersetProvisionWorker handles the deployment strategy for Superset.
@@ -89,7 +89,6 @@ REDIS_PORT=%d
 		return fmt.Errorf("failed to write env file: %w", err)
 	}
 
-
 	port := 8088
 	if config.Port > 0 {
 		port = config.Port
@@ -116,7 +115,7 @@ services:
 
 	// 4. Build the one-time bootstrap initialization.
 	l.InfoF("Starting single-tenant container via docker-compose using %s...", envPath)
-	
+
 	upCmd := exec.Command("docker", "compose", "up", "-d")
 	upCmd.Dir = instanceDir
 	if err := streamCommand(upCmd, l); err != nil {
@@ -132,10 +131,10 @@ services:
 	}
 
 	containerName := fmt.Sprintf("skaia_superset_%d", instanceID)
-	
+
 	for _, bCmd := range bootstrapCmds {
 		l.InfoF("Executing Bootstrap: docker exec %s %s", containerName, bCmd)
-		
+
 		// parse bCmd string into args for exec
 		// For simplicity, we wrap it in sh -c
 		cmd := exec.Command("docker", "exec", containerName, "sh", "-c", bCmd)

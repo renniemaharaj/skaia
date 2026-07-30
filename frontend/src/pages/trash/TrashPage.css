@@ -1,0 +1,49 @@
+.trash-directory .directory-layout__list--custom {
+  padding-bottom: 2rem;
+}
+
+.trash-groups {
+  display: grid;
+  gap: 1rem;
+}
+
+.trash-group {
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+}
+
+.trash-group__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.trash-group__heading h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.trash-group__heading span {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.trash-directory__state {
+  min-height: 12rem;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.65rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.trash-directory__state p {
+  margin: 0;
+}

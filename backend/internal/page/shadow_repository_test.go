@@ -52,7 +52,9 @@ func TestSQLRepositoryMaintainsIdempotentPageSectionShadow(t *testing.T) {
 	}
 	var itemCount int
 	if err := db.QueryRow(
-		`SELECT COUNT(*) FROM page_section_instance_items i JOIN page_section_instances s ON s.id=i.section_id WHERE s.page_id=$1`,
+		`SELECT COUNT(*) FROM page_section_instance_items i
+		 JOIN page_section_instances s ON s.id=i.section_id
+		 WHERE s.page_id=$1 AND s.deleted_at IS NULL AND i.deleted_at IS NULL`,
 		page.ID,
 	).Scan(&itemCount); err != nil {
 		t.Fatal(err)

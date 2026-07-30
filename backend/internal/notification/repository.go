@@ -28,7 +28,7 @@ func (r *sqlRepository) GetByUser(userID int64, limit, offset int) ([]*models.No
 	rows, err := r.db.Query(
 		`SELECT id, user_id, type, message, route, is_read, created_at
 		 FROM notifications
-		 WHERE user_id = $1
+		 WHERE user_id = $1 AND deleted_at IS NULL
 		 ORDER BY created_at DESC
 		 LIMIT $2 OFFSET $3`,
 		userID, limit, offset,
@@ -51,7 +51,8 @@ func (r *sqlRepository) GetByUser(userID int64, limit, offset int) ([]*models.No
 
 func (r *sqlRepository) MarkRead(id, userID int64) error {
 	res, err := r.db.Exec(
-		`UPDATE notifications SET is_read = TRUE WHERE id = $1 AND user_id = $2`,
+		`UPDATE notifications SET is_read = TRUE
+		 WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL`,
 		id, userID,
 	)
 	if err != nil {
@@ -65,14 +66,24 @@ func (r *sqlRepository) MarkRead(id, userID int64) error {
 
 func (r *sqlRepository) MarkAllRead(userID int64) error {
 	_, err := r.db.Exec(
-		`UPDATE notifications SET is_read = TRUE WHERE user_id = $1`, userID,
+		`UPDATE notifications SET is_read = TRUE
+		 WHERE user_id = $1 AND deleted_at IS NULL`, userID,
 	)
 	return err
 }
 
 func (r *sqlRepository) Delete(id, userID int64) error {
 	res, err := r.db.Exec(
-		`DELETE FROM notifications WHERE id = $1 AND user_id = $2`, id, userID,
+		`WITH changed AS (
+		    UPDATE notifications
+		    SET deleted_at=COALESCE(deleted_at, NOW()),
+		        deleted_by=COALESCE(deleted_by, $2)
+		    WHERE id=$1 AND user_id=$2 AND deleted_at IS NULL
+		    RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		 SELECT $2, 'notification', id::text, 'delete' FROM changed`,
+		id, userID,
 	)
 	if err != nil {
 		return err
@@ -84,20 +95,32 @@ func (r *sqlRepository) Delete(id, userID int64) error {
 }
 
 func (r *sqlRepository) DeleteAll(userID int64) error {
-	_, err := r.db.Exec(`DELETE FROM notifications WHERE user_id = $1`, userID)
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE notifications
+		    SET deleted_at=COALESCE(deleted_at, NOW()),
+		        deleted_by=COALESCE(deleted_by, $1)
+		    WHERE user_id=$1 AND deleted_at IS NULL
+		    RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		 SELECT $1, 'notification', id::text, 'delete' FROM changed`,
+		userID,
+	)
 	return err
 }
 
 func (r *sqlRepository) UnreadCount(userID int64) (int, error) {
 	var count int
 	err := r.db.QueryRow(
-		`SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = FALSE`, userID,
+		`SELECT COUNT(*) FROM notifications
+		 WHERE user_id = $1 AND is_read = FALSE AND deleted_at IS NULL`, userID,
 	).Scan(&count)
 	return count, err
 }
 
 func (r *sqlRepository) GetAllUserIDs() ([]int64, error) {
-	rows, err := r.db.Query(`SELECT id FROM users`)
+	rows, err := r.db.Query(`SELECT id FROM users WHERE deleted_at IS NULL`)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +138,14 @@ func (r *sqlRepository) GetAllUserIDs() ([]int64, error) {
 }
 
 func (r *sqlRepository) GetUsersByRoleID(roleID int64) ([]int64, error) {
-	rows, err := r.db.Query(`SELECT user_id FROM user_roles WHERE role_id = $1`, roleID)
+	rows, err := r.db.Query(
+		`SELECT ur.user_id
+		 FROM user_roles ur
+		 JOIN users u ON u.id=ur.user_id AND u.deleted_at IS NULL
+		 JOIN roles r ON r.id=ur.role_id AND r.deleted_at IS NULL
+		 WHERE ur.role_id=$1 AND ur.inactive_at IS NULL`,
+		roleID,
+	)
 	if err != nil {
 		return nil, err
 	}

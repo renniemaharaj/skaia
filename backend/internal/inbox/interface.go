@@ -22,9 +22,9 @@ type Repository interface {
 	SetConversationLocked(id int64, locked bool) error
 	UpdateParticipantRole(conversationID, userID int64, role string) error
 	SetParticipantMuted(conversationID, userID int64, muted bool) error
-	RemoveParticipant(conversationID, userID int64) error
+	RemoveParticipant(conversationID, userID, actorID int64) error
 	AddParticipant(conversationID, userID int64, role string) error
-	DeleteConversation(id int64) error
+	DeleteConversation(id, actorID int64) error
 	GetNoreplyUserID() (int64, error)
 
 	// Messages

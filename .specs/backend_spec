@@ -93,6 +93,7 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 | `/api/store` | `internal/store` | catalog, cart, checkout, orders, wallet, reviews, subscriptions |
 | `/api/inbox` | `internal/inbox` | conversations, group participants, messages, blocks |
 | `/api/notifications` | `internal/notification` | list/read/delete/unread count |
+| `/api/trash` | `internal/trash` + domain providers | authenticated grouped tombstone summaries and policy-checked restore |
 | `/api/defcon` | `main.go` + `ratelimit` | admin telemetry and runtime reset |
 | `/api/config` | `internal/config`, datasource, customsection | public config reads, protected config writes |
 | `/api/pages` | `internal/page` | public page reads, protected page/page-admin writes |
@@ -209,6 +210,28 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
   compatibility-endpoint write telemetry. `backend/cmd/page-section-cutover`
   audits normalized -> compatibility -> normalized parity and reports the
   release-window retirement preflight. It never removes legacy data or writes.
+
+## Lifecycle and Trash Contracts
+
+- Application records use lifecycle state instead of runtime hard deletion.
+  Restorable entities use `deleted_at`/`deleted_by`; reversible relationships
+  use `inactive_at`/`inactive_by`; sessions revoke; auth secrets are scrubbed.
+- Normal reads, joins, counts, searches, and mutations require active rows and
+  active ancestors. Container deletion does not tombstone descendants.
+- Delete and restore write `resource_lifecycle_events`. Runtime `DELETE FROM`
+  is forbidden for application records, immutable evidence, and lifecycle
+  history by database triggers; only logins explicitly granted SET access to
+  the NOLOGIN `skaia_hard_delete_operator` role may run reviewed cleanup.
+- `/api/trash/` aggregates bounded domain-owned projections. Providers own
+  authorization and SQL; the aggregator never accepts a caller-selected scope.
+  Owners/deleters see their authorized tombstones, while the provider's
+  manage-others permission expands only that resource domain. Hidden tombstones
+  and unauthorized restores resolve as not found.
+- `POST /api/trash/{resource}/{id}/restore` is transactional, audited, and
+  returns `409 restore_conflict` when an active parent or unique-value conflict
+  prevents restoration.
+- Page palette writes stage active ordering during replacement; active
+  display-order uniqueness excludes tombstoned tokens.
 
 ## Upload/SSR Contracts
 

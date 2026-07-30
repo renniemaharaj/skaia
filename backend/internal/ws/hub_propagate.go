@@ -120,6 +120,18 @@ func (h *Hub) BroadcastPage(action string, data interface{}) {
 	h.Broadcast(&Message{Type: PageUpdate, Payload: payload})
 }
 
+// BroadcastTrash emits only a resource type and opaque ID after a restore
+// transaction commits. Consumers refetch through their ordinary authorized
+// APIs; no tombstoned content enters realtime payloads.
+func (h *Hub) BroadcastTrash(resource, id string) {
+	payload, _ := json.Marshal(map[string]interface{}{
+		"action":   "resource_restored",
+		"resource": resource,
+		"id":       id,
+	})
+	h.Broadcast(&Message{Type: TrashUpdate, Payload: payload})
+}
+
 // BroadcastPageExceptUser sends a CMS page change to every connected client except
 // the user who originated the update.
 func (h *Hub) BroadcastPageExceptUser(userID int64, action string, data interface{}) {

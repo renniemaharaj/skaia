@@ -52,14 +52,14 @@ func syncPageSectionShadow(exec database.Executor, source *models.Page) (ShadowS
 	}
 	if _, err := exec.Exec(
 		`INSERT INTO page_themes (page_id, schema_version, revision)
-		 VALUES ($1, 1, 1) ON CONFLICT (page_id) DO NOTHING`, source.ID,
+		 VALUES ($1,1,1) ON CONFLICT (page_id) DO UPDATE SET deleted_at=NULL,deleted_by=NULL`, source.ID,
 	); err != nil {
 		return ShadowSyncReport{}, fmt.Errorf("ensure page shadow theme: %w", err)
 	}
 	if _, err := exec.Exec(
 		`UPDATE page_section_instances
 		 SET source_index = source_index + $2
-		 WHERE page_id = $1 AND source_index < $2`, source.ID, shadowSourceIndexOffset,
+		 WHERE page_id=$1 AND source_index<$2 AND deleted_at IS NULL`, source.ID, shadowSourceIndexOffset,
 	); err != nil {
 		return ShadowSyncReport{}, fmt.Errorf("stage page shadow sections: %w", err)
 	}
@@ -85,7 +85,7 @@ func syncPageSectionShadow(exec database.Executor, source *models.Page) (ShadowS
 		if _, err := exec.Exec(
 			`UPDATE page_section_instance_items
 			 SET source_index = source_index + $2
-			 WHERE section_id = $1 AND source_index < $2`, sectionID, shadowSourceIndexOffset,
+			 WHERE section_id=$1 AND source_index<$2 AND deleted_at IS NULL`, sectionID, shadowSourceIndexOffset,
 		); err != nil {
 			return ShadowSyncReport{}, fmt.Errorf("stage page shadow items: %w", err)
 		}
@@ -107,7 +107,8 @@ func syncPageSectionShadow(exec database.Executor, source *models.Page) (ShadowS
 			itemCount++
 		}
 		if _, err := exec.Exec(
-			`DELETE FROM page_section_instance_items WHERE section_id = $1 AND source_index >= $2`,
+			`UPDATE page_section_instance_items SET deleted_at=COALESCE(deleted_at,NOW())
+			 WHERE section_id=$1 AND source_index >= $2 AND deleted_at IS NULL`,
 			sectionID, shadowSourceIndexOffset,
 		); err != nil {
 			return ShadowSyncReport{}, fmt.Errorf("delete stale page shadow items: %w", err)
@@ -124,7 +125,8 @@ func syncPageSectionShadow(exec database.Executor, source *models.Page) (ShadowS
 		}
 	}
 	if _, err := exec.Exec(
-		`DELETE FROM page_section_instances WHERE page_id = $1 AND source_index >= $2`,
+		`UPDATE page_section_instances SET deleted_at=COALESCE(deleted_at,NOW())
+		 WHERE page_id=$1 AND source_index >= $2 AND deleted_at IS NULL`,
 		source.ID, shadowSourceIndexOffset,
 	); err != nil {
 		return ShadowSyncReport{}, fmt.Errorf("delete stale page shadow sections: %w", err)
@@ -213,7 +215,8 @@ func upsertShadowSection(exec database.Executor, source *models.Page, section Sh
 			default_collapsed=EXCLUDED.default_collapsed, config_version=EXCLUDED.config_version,
 			config=EXCLUDED.config, config_encoding=EXCLUDED.config_encoding,
 			quarantined_config=EXCLUDED.quarantined_config, quarantined_section=EXCLUDED.quarantined_section,
-			alias_repairs=EXCLUDED.alias_repairs, revision=EXCLUDED.revision, updated_at=CURRENT_TIMESTAMP
+			alias_repairs=EXCLUDED.alias_repairs,revision=EXCLUDED.revision,
+			updated_at=CURRENT_TIMESTAMP,deleted_at=NULL,deleted_by=NULL
 		 RETURNING id`,
 		source.ID, section.SourceIndex, section.LegacyKey.Kind, section.LegacyKey.Value,
 		section.OriginalSectionType, section.SectionType, section.DisplayOrder, section.Heading, section.Subheading,
@@ -245,7 +248,7 @@ func upsertShadowItem(exec database.Executor, sectionID int64, item ShadowItem) 
 			heading=EXCLUDED.heading, subheading=EXCLUDED.subheading, image_url=EXCLUDED.image_url,
 			link_url=EXCLUDED.link_url, config_version=EXCLUDED.config_version, config=EXCLUDED.config,
 			config_encoding=EXCLUDED.config_encoding, quarantined_item=EXCLUDED.quarantined_item,
-			revision=EXCLUDED.revision, updated_at=CURRENT_TIMESTAMP
+			revision=EXCLUDED.revision,updated_at=CURRENT_TIMESTAMP,deleted_at=NULL,deleted_by=NULL
 		 RETURNING id`,
 		sectionID, item.SourceIndex, item.LegacyKey.Kind, item.LegacyKey.Value, item.DisplayOrder,
 		item.Icon, item.Heading, item.Subheading, item.ImageURL, item.LinkURL, item.ConfigVersion,
@@ -258,7 +261,10 @@ func upsertShadowItem(exec database.Executor, sectionID int64, item ShadowItem) 
 }
 
 func replaceShadowColorReferences(exec database.Executor, pageID, sectionID int64, shell ShadowSectionShell) ([]string, error) {
-	if _, err := exec.Exec(`DELETE FROM page_section_color_references WHERE section_id = $1`, sectionID); err != nil {
+	if _, err := exec.Exec(
+		`UPDATE page_section_color_references SET inactive_at=COALESCE(inactive_at,NOW())
+		 WHERE section_id=$1 AND inactive_at IS NULL`, sectionID,
+	); err != nil {
 		return nil, fmt.Errorf("clear page shadow color references: %w", err)
 	}
 	colors := map[string]ShadowColorSource{
@@ -273,7 +279,9 @@ func replaceShadowColorReferences(exec database.Executor, pageID, sectionID int6
 		result, err := exec.Exec(
 			`INSERT INTO page_section_color_references (section_id, page_id, color_role, token_key)
 			 SELECT $1::bigint, $2::bigint, $3::varchar, $4::varchar
-			 WHERE EXISTS (SELECT 1 FROM page_theme_tokens WHERE page_id = $2::bigint AND token_key = $4::varchar)`,
+			 WHERE EXISTS (SELECT 1 FROM page_theme_tokens WHERE page_id=$2::bigint AND token_key=$4::varchar AND deleted_at IS NULL)
+			 ON CONFLICT (section_id,color_role) DO UPDATE SET
+			   page_id=EXCLUDED.page_id,token_key=EXCLUDED.token_key,inactive_at=NULL,inactive_by=NULL`,
 			sectionID, pageID, role, color.Token,
 		)
 		if err != nil {
@@ -288,7 +296,10 @@ func replaceShadowColorReferences(exec database.Executor, pageID, sectionID int6
 }
 
 func replaceShadowQuarantine(exec database.Executor, pageID int64, entries []ShadowQuarantine) error {
-	if _, err := exec.Exec(`DELETE FROM page_section_quarantine WHERE page_id = $1`, pageID); err != nil {
+	if _, err := exec.Exec(
+		`UPDATE page_section_quarantine SET resolved_at=COALESCE(resolved_at,NOW())
+		 WHERE page_id=$1 AND resolved_at IS NULL`, pageID,
+	); err != nil {
 		return fmt.Errorf("clear page shadow quarantine: %w", err)
 	}
 	for _, entry := range entries {
@@ -353,7 +364,7 @@ func loadPageSectionShadow(exec database.Executor, pageID int64) (NormalizedShad
 		        animation, animation_intensity, background_color, text_color, h1_color, h2_color, h3_color,
 		        content_scale, collapsible, default_collapsed, config_version, config, config_encoding,
 		        quarantined_config, quarantined_section, alias_repairs, revision
-		 FROM page_section_instances WHERE page_id = $1 ORDER BY source_index`, pageID,
+		 FROM page_section_instances WHERE page_id=$1 AND deleted_at IS NULL ORDER BY source_index`, pageID,
 	)
 	if err != nil {
 		return document, fmt.Errorf("load page shadow sections: %w", err)
@@ -400,7 +411,8 @@ func loadPageSectionShadow(exec database.Executor, pageID int64) (NormalizedShad
 		        i.config_version, i.config, i.config_encoding, i.quarantined_item, i.revision
 		 FROM page_section_instance_items i
 		 JOIN page_section_instances s ON s.id = i.section_id
-		 WHERE s.page_id = $1 ORDER BY s.source_index, i.source_index`, pageID,
+		 WHERE s.page_id=$1 AND s.deleted_at IS NULL AND i.deleted_at IS NULL
+		 ORDER BY s.source_index,i.source_index`, pageID,
 	)
 	if err != nil {
 		return document, fmt.Errorf("load page shadow items: %w", err)

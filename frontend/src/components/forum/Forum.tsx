@@ -6,6 +6,7 @@ import { useLayoutPosition } from "../../atoms/viewModes";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
+import { confirmDestructiveAction } from "../ui/Prompt";
 
 import "./Forum.css";
 import "../ui/FeatureCard.css";
@@ -134,6 +135,14 @@ export const Forum: React.FC = () => {
   }, [socket, loadForums]);
 
   const handleDeleteCategory = async (categoryId: string) => {
+    if (
+      !(await confirmDestructiveAction({
+        title: "Delete forum category?",
+        body: "The category will move to Trash. Its active threads remain retained but hidden until the category is restored.",
+        confirmLabel: "Delete category",
+      }))
+    )
+      return;
     try {
       await apiRequest(`/forum/categories/${categoryId}`, {
         method: "DELETE",
@@ -180,12 +189,22 @@ export const Forum: React.FC = () => {
     }
   };
 
-  const handleDeleteThread = (threadId: string, _: string) => {
-    apiRequest(`/forum/threads/${threadId}`, {
-      method: "DELETE",
-    }).catch(error => {
+  const handleDeleteThread = async (threadId: string, _: string) => {
+    if (
+      !(await confirmDestructiveAction({
+        title: "Delete forum thread?",
+        body: "The thread will move to Trash. Its comments remain retained but hidden.",
+        confirmLabel: "Delete thread",
+      }))
+    )
+      return;
+    try {
+      await apiRequest(`/forum/threads/${threadId}`, {
+        method: "DELETE",
+      });
+    } catch (error) {
       console.error("Error deleting thread:", error);
-    });
+    }
   };
 
   const canCreateCategory =

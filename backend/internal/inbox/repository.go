@@ -23,7 +23,7 @@ func (r *sqlRepository) GetConversation(id int64) (*models.InboxConversation, er
 	var title sql.NullString
 	err := r.db.QueryRow(
 		`SELECT id, is_group, title, is_locked, created_at, updated_at
-		 FROM inbox_conversations WHERE id = $1`, id,
+		 FROM inbox_conversations WHERE id=$1 AND deleted_at IS NULL`, id,
 	).Scan(&c.ID, &c.IsGroup, &title, &c.IsLocked, &c.CreatedAt, &c.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("conversation not found")
@@ -42,7 +42,9 @@ func (r *sqlRepository) GetConversationBetween(user1ID, user2ID int64) (*models.
 		 FROM inbox_conversations c
 		 JOIN inbox_conversation_participants p1 ON p1.conversation_id = c.id
 		 JOIN inbox_conversation_participants p2 ON p2.conversation_id = c.id
-		 WHERE p1.user_id = $1 AND p2.user_id = $2 AND c.is_group = false`,
+		 WHERE p1.user_id=$1 AND p2.user_id=$2 AND c.is_group=false
+		   AND c.deleted_at IS NULL
+		   AND p1.inactive_at IS NULL AND p2.inactive_at IS NULL`,
 		user1ID, user2ID,
 	).Scan(&c.ID, &c.IsGroup, &title, &c.IsLocked, &c.CreatedAt, &c.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -67,7 +69,8 @@ func (r *sqlRepository) GetOrCreateConversation(user1ID, user2ID int64) (*models
 		if err != nil {
 			return err
 		}
-		_, err = exec.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id) VALUES ($1, $2), ($1, $3)`, c.ID, user1ID, user2ID)
+		_, err = exec.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id) VALUES ($1, $2), ($1, $3)
+			ON CONFLICT (conversation_id,user_id) DO UPDATE SET inactive_at=NULL,inactive_by=NULL`, c.ID, user1ID, user2ID)
 		return err
 	})
 	if err != nil {
@@ -98,7 +101,8 @@ func (r *sqlRepository) CreateGroupConversation(title string, creatorID int64, p
 			if pid == creatorID {
 				role = "owner"
 			}
-			_, err = exec.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, $3)`, c.ID, pid, role)
+			_, err = exec.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, $3)
+				ON CONFLICT (conversation_id,user_id) DO UPDATE SET role=EXCLUDED.role,inactive_at=NULL,inactive_by=NULL`, c.ID, pid, role)
 			if err != nil {
 				return err
 			}
@@ -116,7 +120,7 @@ func (r *sqlRepository) ListConversations(userID int64) ([]*models.InboxConversa
 		`SELECT c.id, c.is_group, c.title, c.is_locked, c.created_at, c.updated_at
 		 FROM inbox_conversations c
 		 JOIN inbox_conversation_participants p ON p.conversation_id = c.id
-		 WHERE p.user_id = $1
+		 WHERE p.user_id=$1 AND p.inactive_at IS NULL AND c.deleted_at IS NULL
 		 ORDER BY c.updated_at DESC`,
 		userID,
 	)
@@ -141,7 +145,7 @@ func (r *sqlRepository) ListConversations(userID int64) ([]*models.InboxConversa
 }
 
 func (r *sqlRepository) GetParticipants(conversationID int64) ([]ParticipantRow, error) {
-	rows, err := r.db.Query(`SELECT user_id, role, is_muted FROM inbox_conversation_participants WHERE conversation_id = $1`, conversationID)
+	rows, err := r.db.Query(`SELECT user_id, role, is_muted FROM inbox_conversation_participants WHERE conversation_id=$1 AND inactive_at IS NULL`, conversationID)
 	if err != nil {
 		return nil, err
 	}
@@ -158,27 +162,30 @@ func (r *sqlRepository) GetParticipants(conversationID int64) ([]ParticipantRow,
 }
 
 func (r *sqlRepository) SetConversationLocked(id int64, locked bool) error {
-	_, err := r.db.Exec(`UPDATE inbox_conversations SET is_locked = $1 WHERE id = $2`, locked, id)
+	_, err := r.db.Exec(`UPDATE inbox_conversations SET is_locked=$1 WHERE id=$2 AND deleted_at IS NULL`, locked, id)
 	return err
 }
 
 func (r *sqlRepository) UpdateParticipantRole(conversationID, userID int64, role string) error {
-	_, err := r.db.Exec(`UPDATE inbox_conversation_participants SET role = $1 WHERE conversation_id = $2 AND user_id = $3`, role, conversationID, userID)
+	_, err := r.db.Exec(`UPDATE inbox_conversation_participants SET role=$1 WHERE conversation_id=$2 AND user_id=$3 AND inactive_at IS NULL`, role, conversationID, userID)
 	return err
 }
 
 func (r *sqlRepository) SetParticipantMuted(conversationID, userID int64, muted bool) error {
-	_, err := r.db.Exec(`UPDATE inbox_conversation_participants SET is_muted = $1 WHERE conversation_id = $2 AND user_id = $3`, muted, conversationID, userID)
+	_, err := r.db.Exec(`UPDATE inbox_conversation_participants SET is_muted=$1 WHERE conversation_id=$2 AND user_id=$3 AND inactive_at IS NULL`, muted, conversationID, userID)
 	return err
 }
 
-func (r *sqlRepository) RemoveParticipant(conversationID, userID int64) error {
-	_, err := r.db.Exec(`DELETE FROM inbox_conversation_participants WHERE conversation_id = $1 AND user_id = $2`, conversationID, userID)
+func (r *sqlRepository) RemoveParticipant(conversationID, userID, actorID int64) error {
+	_, err := r.db.Exec(`UPDATE inbox_conversation_participants
+		SET inactive_at=COALESCE(inactive_at,NOW()),inactive_by=COALESCE(inactive_by,$3)
+		WHERE conversation_id=$1 AND user_id=$2 AND inactive_at IS NULL`, conversationID, userID, actorID)
 	return err
 }
 
 func (r *sqlRepository) AddParticipant(conversationID, userID int64, role string) error {
-	_, err := r.db.Exec(`INSERT INTO inbox_conversation_participants (conversation_id, user_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`, conversationID, userID, role)
+	_, err := r.db.Exec(`INSERT INTO inbox_conversation_participants (conversation_id,user_id,role) VALUES ($1,$2,$3)
+		ON CONFLICT (conversation_id,user_id) DO UPDATE SET role=EXCLUDED.role,inactive_at=NULL,inactive_by=NULL`, conversationID, userID, role)
 	return err
 }
 
@@ -187,11 +194,13 @@ func (r *sqlRepository) AddParticipant(conversationID, userID int64, role string
 func (r *sqlRepository) GetMessage(id int64) (*models.InboxMessage, error) {
 	m := &models.InboxMessage{}
 	err := r.db.QueryRow(
-		`SELECT id, conversation_id, sender_id, content, message_type,
-		        COALESCE(attachment_url,''), COALESCE(attachment_name,''),
-		        COALESCE(attachment_size,0), COALESCE(attachment_mime,''),
-		        is_read, created_at, updated_at
-		 FROM inbox_messages WHERE id = $1`, id,
+		`SELECT im.id, im.conversation_id, im.sender_id, im.content, im.message_type,
+		        COALESCE(im.attachment_url,''), COALESCE(im.attachment_name,''),
+		        COALESCE(im.attachment_size,0), COALESCE(im.attachment_mime,''),
+		        im.is_read, im.created_at, im.updated_at
+		 FROM inbox_messages im
+		 JOIN inbox_conversations c ON c.id=im.conversation_id AND c.deleted_at IS NULL
+		 WHERE im.id=$1 AND im.deleted_at IS NULL`, id,
 	).Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Content, &m.MessageType,
 		&m.AttachmentURL, &m.AttachmentName, &m.AttachmentSize, &m.AttachmentMime,
 		&m.IsRead, &m.CreatedAt, &m.UpdatedAt)
@@ -203,12 +212,13 @@ func (r *sqlRepository) GetMessage(id int64) (*models.InboxMessage, error) {
 
 func (r *sqlRepository) ListMessages(conversationID int64, limit, offset int) ([]*models.InboxMessage, error) {
 	rows, err := r.db.Query(
-		`SELECT id, conversation_id, sender_id, content, message_type,
-		        COALESCE(attachment_url,''), COALESCE(attachment_name,''),
-		        COALESCE(attachment_size,0), COALESCE(attachment_mime,''),
-		        is_read, created_at, updated_at
-		 FROM inbox_messages
-		 WHERE conversation_id = $1
+		`SELECT im.id, im.conversation_id, im.sender_id, im.content, im.message_type,
+		        COALESCE(im.attachment_url,''), COALESCE(im.attachment_name,''),
+		        COALESCE(im.attachment_size,0), COALESCE(im.attachment_mime,''),
+		        im.is_read, im.created_at, im.updated_at
+		 FROM inbox_messages im
+		 JOIN inbox_conversations c ON c.id=im.conversation_id AND c.deleted_at IS NULL
+		 WHERE im.conversation_id=$1 AND im.deleted_at IS NULL
 		 ORDER BY created_at DESC
 		 LIMIT $2 OFFSET $3`,
 		conversationID, limit, offset,
@@ -237,7 +247,8 @@ func (r *sqlRepository) CreateMessage(msg *models.InboxMessage) (*models.InboxMe
 	}
 	err := r.db.QueryRow(
 		`INSERT INTO inbox_messages (conversation_id, sender_id, content, message_type, attachment_url, attachment_name, attachment_size, attachment_mime)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		 SELECT $1,$2,$3,$4,$5,$6,$7,$8
+		 WHERE EXISTS (SELECT 1 FROM inbox_conversations WHERE id=$1 AND deleted_at IS NULL)
 		 RETURNING id, conversation_id, sender_id, content, message_type,
 		           COALESCE(attachment_url,''), COALESCE(attachment_name,''),
 		           COALESCE(attachment_size,0), COALESCE(attachment_mime,''),
@@ -275,7 +286,13 @@ func nullIfZero(n int64) interface{} {
 
 func (r *sqlRepository) DeleteMessage(id, senderID int64) error {
 	res, err := r.db.Exec(
-		`DELETE FROM inbox_messages WHERE id = $1 AND sender_id = $2`, id, senderID,
+		`WITH changed AS (
+		    UPDATE inbox_messages
+		    SET deleted_at=COALESCE(deleted_at,NOW()),deleted_by=COALESCE(deleted_by,$2)
+		    WHERE id=$1 AND sender_id=$2 AND deleted_at IS NULL RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id,resource_type,resource_id,action)
+		 SELECT $2,'inbox_message',id::text,'delete' FROM changed`, id, senderID,
 	)
 	if err != nil {
 		return err
@@ -290,7 +307,7 @@ func (r *sqlRepository) MarkConversationRead(conversationID, userID int64) error
 	_, err := r.db.Exec(
 		`UPDATE inbox_messages
 		 SET is_read = TRUE
-		 WHERE conversation_id = $1 AND sender_id != $2 AND is_read = FALSE`,
+		 WHERE conversation_id=$1 AND sender_id!=$2 AND is_read=FALSE AND deleted_at IS NULL`,
 		conversationID, userID,
 	)
 	return err
@@ -302,7 +319,9 @@ func (r *sqlRepository) UnreadTotal(userID int64) (int, error) {
 		`SELECT COUNT(*)
 		 FROM inbox_messages im
 		 JOIN inbox_conversation_participants ic ON ic.conversation_id = im.conversation_id
+		 JOIN inbox_conversations c ON c.id=im.conversation_id
 		 WHERE ic.user_id = $1
+		   AND ic.inactive_at IS NULL AND c.deleted_at IS NULL AND im.deleted_at IS NULL
 		   AND im.sender_id != $1
 		   AND im.is_read = FALSE`,
 		userID,
@@ -315,7 +334,7 @@ func (r *sqlRepository) UnreadCount(conversationID, userID int64) (int, error) {
 	err := r.db.QueryRow(
 		`SELECT COUNT(*)
 		 FROM inbox_messages
-		 WHERE conversation_id = $1
+		 WHERE conversation_id = $1 AND deleted_at IS NULL
 		   AND sender_id != $2
 		   AND is_read = FALSE`,
 		conversationID, userID,
@@ -323,8 +342,17 @@ func (r *sqlRepository) UnreadCount(conversationID, userID int64) (int, error) {
 	return count, err
 }
 
-func (r *sqlRepository) DeleteConversation(id int64) error {
-	res, err := r.db.Exec(`DELETE FROM inbox_conversations WHERE id = $1`, id)
+func (r *sqlRepository) DeleteConversation(id, actorID int64) error {
+	res, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE inbox_conversations
+		    SET deleted_at=COALESCE(deleted_at,NOW()),deleted_by=COALESCE(deleted_by,$2)
+		    WHERE id=$1 AND deleted_at IS NULL RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id,resource_type,resource_id,action)
+		 SELECT $2,'inbox_conversation',id::text,'delete' FROM changed`,
+		id, actorID,
+	)
 	if err != nil {
 		return err
 	}
@@ -340,7 +368,7 @@ func (r *sqlRepository) BlockUser(blockerID, blockedID int64) error {
 	_, err := r.db.Exec(
 		`INSERT INTO user_blocks (blocker_id, blocked_id)
 		 VALUES ($1, $2)
-		 ON CONFLICT (blocker_id, blocked_id) DO NOTHING`,
+		 ON CONFLICT (blocker_id,blocked_id) DO UPDATE SET inactive_at=NULL,inactive_by=NULL`,
 		blockerID, blockedID,
 	)
 	return err
@@ -348,7 +376,8 @@ func (r *sqlRepository) BlockUser(blockerID, blockedID int64) error {
 
 func (r *sqlRepository) UnblockUser(blockerID, blockedID int64) error {
 	_, err := r.db.Exec(
-		`DELETE FROM user_blocks WHERE blocker_id = $1 AND blocked_id = $2`,
+		`UPDATE user_blocks SET inactive_at=COALESCE(inactive_at,NOW()),inactive_by=COALESCE(inactive_by,$1)
+		 WHERE blocker_id=$1 AND blocked_id=$2 AND inactive_at IS NULL`,
 		blockerID, blockedID,
 	)
 	return err
@@ -357,7 +386,7 @@ func (r *sqlRepository) UnblockUser(blockerID, blockedID int64) error {
 func (r *sqlRepository) IsBlocked(blockerID, blockedID int64) (bool, error) {
 	var exists bool
 	err := r.db.QueryRow(
-		`SELECT EXISTS(SELECT 1 FROM user_blocks WHERE blocker_id = $1 AND blocked_id = $2)`,
+		`SELECT EXISTS(SELECT 1 FROM user_blocks WHERE blocker_id=$1 AND blocked_id=$2 AND inactive_at IS NULL)`,
 		blockerID, blockedID,
 	).Scan(&exists)
 	return exists, err
@@ -368,8 +397,8 @@ func (r *sqlRepository) IsBlockedEither(userA, userB int64) (bool, error) {
 	err := r.db.QueryRow(
 		`SELECT EXISTS(
 			SELECT 1 FROM user_blocks
-			WHERE (blocker_id = $1 AND blocked_id = $2)
-			   OR (blocker_id = $2 AND blocked_id = $1)
+			WHERE inactive_at IS NULL AND ((blocker_id=$1 AND blocked_id=$2)
+			   OR (blocker_id=$2 AND blocked_id=$1))
 		)`,
 		userA, userB,
 	).Scan(&exists)
@@ -378,7 +407,7 @@ func (r *sqlRepository) IsBlockedEither(userA, userB int64) (bool, error) {
 
 func (r *sqlRepository) ListBlockedUsers(blockerID int64) ([]int64, error) {
 	rows, err := r.db.Query(
-		`SELECT blocked_id FROM user_blocks WHERE blocker_id = $1 ORDER BY created_at DESC`,
+		`SELECT blocked_id FROM user_blocks WHERE blocker_id=$1 AND inactive_at IS NULL ORDER BY created_at DESC`,
 		blockerID,
 	)
 	if err != nil {

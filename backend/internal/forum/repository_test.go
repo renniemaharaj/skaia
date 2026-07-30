@@ -50,7 +50,7 @@ func TestCategoryRepository_Delete(t *testing.T) {
 	cat, err := repo.Create(&models.ForumCategory{Name: testutil.UniqueStr("del_cat")})
 	require.NoError(t, err)
 
-	require.NoError(t, repo.Delete(cat.ID))
+	require.NoError(t, repo.Delete(cat.ID, 1))
 
 	_, err = repo.GetByID(cat.ID)
 	require.Error(t, err)
@@ -188,7 +188,7 @@ func TestCommentRepository_Delete_DecrementsReplyCount(t *testing.T) {
 		Content:  "going away",
 	})
 
-	require.NoError(t, commentRepo.Delete(comment.ID))
+	require.NoError(t, commentRepo.Delete(comment.ID, 1))
 
 	t2, err := threadRepo.GetByID(thread.ID)
 	require.NoError(t, err)

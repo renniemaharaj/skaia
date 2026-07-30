@@ -3,20 +3,71 @@
 ## soft_delete_and_destructive_prompts
 
 ### Current Progress
-- **Phase 1: Inventory and drift resolution** — ⬜ Not started
-- **Phase 2: Tenant/control-plane migrations** — ⬜ Not started
-- **Phase 3: Active-scope reads and mutations** — ⬜ Not started
-- **Phase 4: Restore, realtime, and cache** — ⬜ Not started
-- **Phase 5: Destructive prompt standardization** — ⬜ Not started
-- **Phase 6: Rollout, verification, and specs** — ⬜ Not started
+- **Phase 1: Inventory and drift resolution** — ✅ Complete
+- **Phase 2: Tenant/control-plane migrations** — ✅ Complete
+- **Phase 3: Active-scope reads and mutations** — ✅ Complete
+- **Phase 4: Restore, realtime, and cache** — ✅ Complete
+- **Phase 5: Destructive prompt standardization** — ✅ Complete
+- **Phase 6: Rollout, verification, and specs** — 🟨 Code complete; deployment pending
 
-### Next Steps
-- [ ] Invoke `.routines/worker` and build the checked table/operation ledger from fresh migrations, every deployed tenant, `grengo`, runtime SQL, routes, WS actions, and frontend controls.
-- [ ] Resolve the orphaned live `page_interaction_*` tables against the existing page retirement preflight without repurposing them.
-- [ ] Choose per-constraint active-name reuse/reservation behavior and record restore conflict policy before writing migrations.
-- [ ] Implement the additive tenant and control-plane migrations before changing runtime delete behavior.
-- [ ] Convert one complete vertical slice and its restore/tests first; pages or forum are the preferred containment reference.
-- [ ] Replace browser-native dialogs and add the native-dialog CI gate independently once the Prompt contract is tested.
-- [ ] Record all migration, backend, frontend, security, realtime, and restore-drill evidence here before marking phases complete.
+### Completed
+- [x] Built the checked table/operation ledger from fresh tenant/control-plane
+  schemas, runtime SQL, HTTP routes, realtime actions, and frontend controls.
+- [x] Kept the dormant `page_interaction_*` tables under the existing page
+  retirement preflight and did not repurpose them.
+- [x] Recorded stable-name reservation and active-only theme ordering policies;
+  restore collisions return a stable conflict rather than mutating identity.
+- [x] Added additive tenant migration `034_soft_delete_lifecycle.sql`, matching
+  fresh-schema parity, and control-plane migration
+  `002_soft_delete_lifecycle.sql`.
+- [x] Converted runtime physical deletion to tombstone, inactive relationship,
+  revoke, scrub, retained evidence, or explicit permanent-file teardown
+  semantics. Non-test Go runtime SQL now has no `DELETE FROM`.
+- [x] Added domain trash providers and the authenticated `/trash` directory
+  route. It renders resource-grouped `TableView`s with bounded pagination and
+  per-item undo. Ordinary callers are owner/deleter scoped; resource managers
+  receive domain-wide scope only after service-side permission checks.
+- [x] Added stable restore not-found/conflict handling, audit lifecycle events,
+  and content-free `trash:update` websocket invalidation.
+- [x] Replaced browser-native destructive dialogs with the queued, accessible
+  Skaia Prompt contract and added a static native-dialog gate.
+- [x] Updated backend, frontend, migration, realtime, routing, security,
+  infrastructure, and normalized-page specifications.
+
+### Verification Evidence
+- [x] Tenant migrations 001-034 applied to clean PostgreSQL databases; focused
+  forum, store, page, inbox, user, config, and hard-delete-guard integration
+  suites passed against the migrated schema.
+- [x] Control-plane migrations 001-002 applied twice cleanly; a direct passcode
+  delete was rejected by the database hard-delete guard.
+- [x] `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
+  passed in `backend`.
+- [x] `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test . ./internal/...`
+  passed for the control plane.
+- [x] Prompt/trash focused frontend tests passed (4/4), the isolated auth suite
+  passed (19/19), the production frontend build passed, and the native-dialog
+  gate returned no hits.
+- [x] The complete frontend run passed 127/128 tests; its one failure was the
+  auth token-storage test observing another suite's token. The same 19-test
+  auth file passed in isolation, documenting pre-existing parallel
+  local-storage leakage rather than a trash/prompt regression.
+
+### Deployment Handoff
+- [ ] Apply the tenant migration to each deployed tenant and the control-plane
+  migration to `grengo`, capturing preflight counts and restore drills per
+  environment. No production deployment was authorized in this workspace.
+- [ ] Grant `SET` on the NOLOGIN `skaia_hard_delete_operator` role only to the
+  audited maintenance principal; application roles must never receive it.
+- [ ] Add atomic bulk-restore APIs before exposing bulk undo for domains with
+  bulk deletion. The shared route intentionally exposes only reauthorized
+  per-item undo today.
+
+### Correctness Follow-up — 2026-07-30
+- [x] Fixed PostgreSQL `42P18` in the manager-only `page_allocation` trash
+  listing by matching its placeholders and arguments.
+- [x] Fixed the same latent mismatch in manager-only role listing/restoration
+  without widening ordinary-user visibility.
+- [x] Added manager-scope list/restore regression tests and an aggregate
+  PostgreSQL test that executes every trash provider registered by `main.go`.
 
 <--/------->

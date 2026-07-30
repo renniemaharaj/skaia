@@ -68,8 +68,8 @@ func (s *Service) UpdateCategory(cat *models.StoreCategory) (*models.StoreCatego
 	return s.categories.Update(cat)
 }
 
-func (s *Service) DeleteCategory(id int64) error {
-	return s.categories.Delete(id)
+func (s *Service) DeleteCategory(id, actorID int64) error {
+	return s.categories.Delete(id, actorID)
 }
 
 // SendOrderInboxMessage sends a system message to the user about their order status update.
@@ -150,8 +150,8 @@ func (s *Service) UpdateProduct(p *models.Product) (*models.Product, error) {
 	return updated, err
 }
 
-func (s *Service) DeleteProduct(id int64) error {
-	err := s.products.Delete(id)
+func (s *Service) DeleteProduct(id, actorID int64) error {
+	err := s.products.Delete(id, actorID)
 	if err == nil && s.cache != nil {
 		s.cache.Invalidate(id)
 	}
@@ -225,8 +225,8 @@ func (s *Service) ListAllOrders(limit, offset int) ([]*models.Order, error) {
 	return s.orders.ListAll(limit, offset)
 }
 
-func (s *Service) DeleteOrder(id int64) error {
-	return s.orders.Delete(id)
+func (s *Service) DeleteOrder(id, actorID int64) error {
+	return s.orders.Delete(id, actorID)
 }
 
 func (s *Service) UpdateOrderStatus(id int64, status string) (*models.Order, error) {
@@ -302,11 +302,11 @@ func (s *Service) ListReferenceCodes(limit, offset int) ([]*models.ReferenceCode
 	return s.referenceCodes.List(limit, offset)
 }
 
-func (s *Service) DeleteReferenceCode(id int64) error {
+func (s *Service) DeleteReferenceCode(id, actorID int64) error {
 	if id <= 0 {
 		return fmt.Errorf("reference code id required")
 	}
-	return s.referenceCodes.Delete(id)
+	return s.referenceCodes.Delete(id, actorID)
 }
 
 func (s *Service) AwardReferenceCodePayout(order *models.Order) error {
@@ -638,8 +638,8 @@ func (s *Service) UpdatePlan(plan *models.SubscriptionPlan) (*models.Subscriptio
 	return s.plans.Update(plan)
 }
 
-func (s *Service) DeletePlan(id int64) error {
-	return s.plans.Delete(id)
+func (s *Service) DeletePlan(id, actorID int64) error {
+	return s.plans.Delete(id, actorID)
 }
 
 // Subscription methods

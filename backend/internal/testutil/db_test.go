@@ -27,6 +27,11 @@ func TestRunMigrationsIdempotentAndBaselineSynced(t *testing.T) {
 		{"page_section_shadow_runs", "rollback_status"},
 		{"page_section_shadow_runs", "cutover_ready_at"},
 		{"page_section_shadow_runs", "legacy_write_count"},
+		{"products", "deleted_at"},
+		{"cart_items", "inactive_at"},
+		{"sessions", "revoked_at"},
+		{"auth_backup_codes", "cleared_at"},
+		{"page_section_quarantine", "resolved_at"},
 	} {
 		requireColumn(t, db, column.table, column.name)
 	}
@@ -39,6 +44,14 @@ func TestRunMigrationsIdempotentAndBaselineSynced(t *testing.T) {
 		"page_section_quarantine", "page_section_shadow_runs",
 	} {
 		requireTable(t, db, table)
+	}
+
+	key := UniqueStr("hard_delete_guard")
+	if _, err := db.Exec(`INSERT INTO site_config(key,value) VALUES ($1,'{}'::jsonb)`, key); err != nil {
+		t.Fatalf("seed hard-delete guard row: %v", err)
+	}
+	if _, err := db.Exec(`DELETE FROM site_config WHERE key=$1`, key); err == nil {
+		t.Fatal("application connection bypassed the hard-delete guard")
 	}
 }
 

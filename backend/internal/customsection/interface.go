@@ -9,5 +9,5 @@ type Repository interface {
 	ListByDataSource(datasourceID int64) ([]*models.CustomSection, error)
 	Create(cs *models.CustomSection) error
 	Update(cs *models.CustomSection) error
-	Delete(id int64) error
+	Delete(id, actorID int64) error
 }

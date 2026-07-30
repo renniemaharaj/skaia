@@ -76,6 +76,7 @@ limit/error WS messages.
 | `notification` | `AppNotification` | prepend + toast/sound |
 | `notification:sync` | `{ notifications }` | recent notification bootstrap |
 | `notification:update` | `{ action, id? }` | read/delete mutations |
+| `trash:update` | `{ action: resource_restored, resource, id }` | content-free restore invalidation; clients refetch through authorized REST |
 | `presence:update` | `{ users }` | online users |
 | `cursor:update` | cursor payload | cursor positions |
 | `global:chat` | `GlobalChatMessage` | append chat |
@@ -138,7 +139,7 @@ Subscription authorization is mandatory and fail-closed:
 | `order:update` | `order_created`, `order_updated`, `order_deleted` |
 | `user:update` | `user_updated`, `permissions_changed`, upload/profile/MFA variants in payload |
 | `config:update` | `branding_updated`, `seo_updated`, `footer_updated`, `features_updated`, `landing_page_updated` |
-| `page:update` | `page_created`, `page_updated`, `page_deleted`, `landing_page_changed`, `landing_updated` |
+| `page:update` | `page_created`, `page_updated`, `page_deleted`, `landing_page_changed`, `landing_updated`; restore consumers perform an authoritative content-free refetch |
 | `notification:update` | `notification_read`, `notification_deleted`, `notification_all_read`, `notification_all_deleted` |
 
 ## Atom Convergence
@@ -173,6 +174,10 @@ shared mutations converge through WS:
   cancels in-flight bridge requests without closing a producer-visible send queue.
 
 ## Verify
+
+Existing `*_deleted` actions remain the active-state removal projection even
+though storage is retained. Restore uses a content-free invalidation or
+authoritative REST refetch; tombstoned private payloads are never broadcast.
 
 - Backend messages: `rg "Broadcast|Propagate|SendToUser|Message\\{" backend/internal -n`
 - Frontend reducer: `frontend/src/hooks/useWebSocketSync.ts`

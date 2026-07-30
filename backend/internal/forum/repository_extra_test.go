@@ -76,7 +76,7 @@ func TestThreadRepository_Delete(t *testing.T) {
 		Title: testutil.UniqueStr("to_delete"), Content: "going away",
 	})
 	require.NoError(t, err)
-	require.NoError(t, threadRepo.Delete(thread.ID))
+	require.NoError(t, threadRepo.Delete(thread.ID, 1))
 	_, err = threadRepo.GetByID(thread.ID)
 	require.Error(t, err, "deleted thread must not be retrievable")
 }

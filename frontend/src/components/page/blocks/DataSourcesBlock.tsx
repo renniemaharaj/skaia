@@ -147,7 +147,15 @@ export const DataSourcesBlock = ({ section, canEdit }: Props) => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!(await customConfirm("Delete this data source?"))) return;
+    if (
+      !(await customConfirm({
+        title: "Delete this data source?",
+        body: "The data source will move to Trash and can be restored later.",
+        confirmLabel: "Delete data source",
+        destructive: true,
+      }))
+    )
+      return;
     try {
       await apiRequest(`/config/datasources/${id}`, { method: "DELETE" });
       toast.success("Data source deleted");

@@ -195,7 +195,15 @@ export default function RolesManagementPage() {
   };
 
   const deleteRole = async (roleId: string) => {
-    if (!(await customConfirm("Delete this role? Users with only this role will lose it."))) return;
+    if (
+      !(await customConfirm({
+        title: "Delete this role?",
+        body: "The role will move to Trash. Its active assignments stop granting access immediately.",
+        confirmLabel: "Delete role",
+        destructive: true,
+      }))
+    )
+      return;
     setDeletingId(roleId);
     try {
       await apiRequest(`/users/roles/${roleId}`, { method: "DELETE" });

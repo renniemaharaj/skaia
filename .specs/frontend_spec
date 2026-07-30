@@ -66,6 +66,21 @@ WebSocket consumers, or page-builder UX.
   `/config/section-presets`; `CustomSection` remains a deprecated type alias and
   the backend retains the old route during the compatibility window.
 
+## Destructive UX and Trash
+
+- Authenticated users have one protected `/trash` route built with
+  `DirectoryLayout` and grouped `TableView` sections. Each resource group owns
+  bounded pagination and per-row Undo controls; the backend response, not
+  client role inference, determines which groups and rows are visible.
+- `PromptContainer` is the only browser-modal owner. Destructive operations use
+  structured `customConfirm`/`confirmDestructiveAction` options with explicit
+  title, impact, and action label; permanent file/infrastructure operations say
+  that Trash cannot restore them and may require typed confirmation.
+- Prompt requests serialize, trap and restore focus, expose an accessible
+  `alertdialog`, support Escape/cancel, and settle every queued promise.
+  Native `confirm`, `prompt`, `alert`, and unload prompts are forbidden by
+  `npm run check:native-dialogs`.
+
 ## State Ownership
 
 | Domain | Atoms | Primary writer |

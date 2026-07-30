@@ -68,5 +68,5 @@ func (s *Service) Delete(actorID, id int64) error {
 	if err := s.requireMutation(actorID); err != nil {
 		return err
 	}
-	return s.repo.Delete(id)
+	return s.repo.Delete(id, actorID)
 }

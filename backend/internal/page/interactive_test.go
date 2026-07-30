@@ -336,7 +336,7 @@ func TestDatabaseConcurrentBuilderSavePreservesSubmission(t *testing.T) {
 	if err := repo.Create(p); err != nil {
 		t.Fatal(err)
 	}
-	defer repo.Delete(p.ID)
+	defer repo.Delete(p.ID, 1)
 
 	updated := interactiveContentOfType("form", `{
 		"status":"open","result_visibility":"never","response_limit":1,

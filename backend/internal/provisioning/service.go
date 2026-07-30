@@ -704,12 +704,21 @@ func parsePlainGrouplogLine(raw string) (logger.Line, bool) {
 }
 
 func (s *service) TearDownInstance(id int64) error {
+	if err := s.repo.UpdateInstanceStatus(id, "deleting"); err != nil {
+		return err
+	}
 	dir, err := s.findInstanceDir(id)
 	if err == nil {
 		cmd := exec.Command("docker", "compose", "down", "-v")
 		cmd.Dir = dir
-		_ = cmd.Run()
-		os.RemoveAll(dir)
+		if err := cmd.Run(); err != nil {
+			_ = s.repo.UpdateInstanceStatus(id, "deletion_failed")
+			return fmt.Errorf("tear down instance infrastructure: %w", err)
+		}
+		if err := os.RemoveAll(dir); err != nil {
+			_ = s.repo.UpdateInstanceStatus(id, "deletion_failed")
+			return fmt.Errorf("remove instance files: %w", err)
+		}
 	}
 	return s.repo.DeleteInstance(id)
 }

@@ -3,9 +3,9 @@ package user
 import (
 	"encoding/json"
 	"errors"
+	log "github.com/skaia/backend/internal/syslog"
 	_ "image/jpeg"
 	_ "image/png"
-	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"os"
 	"path/filepath"

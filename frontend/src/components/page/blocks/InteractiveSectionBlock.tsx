@@ -491,7 +491,16 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate }: Props) {
   };
 
   const deleteRecord = async (record: InteractiveRecord) => {
-    if (!pageId || !(await customConfirm("Delete this submitted record?"))) return;
+    if (
+      !pageId ||
+      !(await customConfirm({
+        title: "Delete this submitted response?",
+        body: "The response will move to Trash and can be restored while its page section remains active.",
+        confirmLabel: "Delete response",
+        destructive: true,
+      }))
+    )
+      return;
     try {
       const response = await apiRequest<{ config: string }>(
         `/pages/${pageId}/sections/${section.id}/responses/${record.id}`,

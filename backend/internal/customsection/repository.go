@@ -31,12 +31,27 @@ func (r *sqlRepository) scan(row interface{ Scan(...any) error }) (*models.Custo
 
 func (r *sqlRepository) GetByID(id int64) (*models.CustomSection, error) {
 	return r.scan(r.db.QueryRow(
-		`SELECT `+selectCols+` FROM custom_sections WHERE id = $1`, id))
+		`SELECT `+selectCols+`
+		 FROM custom_sections cs
+		 WHERE cs.id = $1 AND cs.deleted_at IS NULL
+		   AND EXISTS (
+		       SELECT 1 FROM data_sources ds
+		       WHERE ds.id=cs.datasource_id AND ds.deleted_at IS NULL
+		   )`,
+		id,
+	))
 }
 
 func (r *sqlRepository) List() ([]*models.CustomSection, error) {
 	rows, err := r.db.Query(
-		`SELECT ` + selectCols + ` FROM custom_sections ORDER BY created_at DESC`)
+		`SELECT ` + selectCols + `
+		 FROM custom_sections cs
+		 WHERE cs.deleted_at IS NULL
+		   AND EXISTS (
+		       SELECT 1 FROM data_sources ds
+		       WHERE ds.id=cs.datasource_id AND ds.deleted_at IS NULL
+		   )
+		 ORDER BY cs.created_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +61,14 @@ func (r *sqlRepository) List() ([]*models.CustomSection, error) {
 
 func (r *sqlRepository) ListByDataSource(datasourceID int64) ([]*models.CustomSection, error) {
 	rows, err := r.db.Query(
-		`SELECT `+selectCols+` FROM custom_sections WHERE datasource_id = $1 ORDER BY created_at DESC`,
+		`SELECT `+selectCols+`
+		 FROM custom_sections
+		 WHERE datasource_id = $1 AND deleted_at IS NULL
+		   AND EXISTS (
+		       SELECT 1 FROM data_sources
+		       WHERE id=$1 AND deleted_at IS NULL
+		   )
+		 ORDER BY created_at DESC`,
 		datasourceID)
 	if err != nil {
 		return nil, err
@@ -83,7 +105,11 @@ func (r *sqlRepository) Update(cs *models.CustomSection) error {
 	_, err := r.db.Exec(
 		`UPDATE custom_sections SET name = $1, description = $2, datasource_id = $3,
 		        section_type = $4, config = $5, updated_at = NOW()
-		 WHERE id = $6`,
+		 WHERE id = $6 AND deleted_at IS NULL
+		   AND EXISTS (
+		       SELECT 1 FROM data_sources
+		       WHERE id=$3 AND deleted_at IS NULL
+		   )`,
 		cs.Name, cs.Description, cs.DataSourceID, cs.SectionType, cs.Config, cs.ID,
 	)
 	return err
@@ -99,8 +125,19 @@ func normalizePresetType(cs *models.CustomSection) {
 	cs.PresetType = cs.SectionType
 }
 
-func (r *sqlRepository) Delete(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM custom_sections WHERE id = $1`, id)
+func (r *sqlRepository) Delete(id, actorID int64) error {
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE custom_sections
+		    SET deleted_at=COALESCE(deleted_at, NOW()),
+		        deleted_by=COALESCE(deleted_by, $2)
+		    WHERE id=$1 AND deleted_at IS NULL
+		    RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		 SELECT $2, 'section_preset', id::text, 'delete' FROM changed`,
+		id, actorID,
+	)
 	return err
 }
 

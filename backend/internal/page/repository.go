@@ -3,6 +3,7 @@ package page
 import (
 	"context"
 	"database/sql"
+	"strconv"
 
 	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
@@ -23,7 +24,7 @@ func (r *sqlRepository) GetBySlug(slug string) (*models.Page, error) {
 		        owner_id,
 		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=pages.id), 0),
 		        visibility, created_at, updated_at
-		 FROM pages WHERE slug = $1`, slug,
+		 FROM pages WHERE slug = $1 AND deleted_at IS NULL`, slug,
 	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description,
 		&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
@@ -43,7 +44,7 @@ func (r *sqlRepository) GetByID(id int64) (*models.Page, error) {
 		        owner_id,
 		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=pages.id), 0),
 		        visibility, created_at, updated_at
-		 FROM pages WHERE id = $1`, id,
+		 FROM pages WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description,
 		&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
@@ -61,7 +62,7 @@ func (r *sqlRepository) List() ([]*models.Page, error) {
 		        owner_id,
 		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=pages.id), 0),
 		        visibility, created_at, updated_at
-		 FROM pages ORDER BY created_at DESC`)
+		 FROM pages WHERE deleted_at IS NULL ORDER BY created_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +106,11 @@ func (r *sqlRepository) Create(p *models.Page) error {
 func (r *sqlRepository) UpdatePreservingInteractive(p *models.Page) error {
 	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
 		var current string
-		if err := exec.QueryRow(`SELECT content::text FROM pages WHERE id = $1 FOR UPDATE`, p.ID).Scan(&current); err != nil {
+		if err := exec.QueryRow(
+			`SELECT content::text FROM pages
+			 WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
+			p.ID,
+		).Scan(&current); err != nil {
 			return err
 		}
 		merged, err := mergeInteractiveRecords(current, p.Content)
@@ -117,7 +122,7 @@ func (r *sqlRepository) UpdatePreservingInteractive(p *models.Page) error {
 			`UPDATE pages
 			 SET slug = $2, title = $3, description = $4,
 			     content = $5::jsonb, visibility = $6, updated_at = CURRENT_TIMESTAMP
-			 WHERE id = $1
+			 WHERE id = $1 AND deleted_at IS NULL
 			 RETURNING updated_at`,
 			p.ID, p.Slug, p.Title, p.Description, p.Content, p.Visibility,
 		).Scan(&p.UpdatedAt); err != nil {
@@ -141,7 +146,11 @@ func (r *sqlRepository) UpdatePreservingInteractive(p *models.Page) error {
 func (r *sqlRepository) MutateContent(pageID int64, mutate func(string) (string, error)) error {
 	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
 		var current string
-		if err := exec.QueryRow(`SELECT content::text FROM pages WHERE id = $1 FOR UPDATE`, pageID).Scan(&current); err != nil {
+		if err := exec.QueryRow(
+			`SELECT content::text FROM pages
+			 WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
+			pageID,
+		).Scan(&current); err != nil {
 			return err
 		}
 		next, err := mutate(current)
@@ -149,7 +158,8 @@ func (r *sqlRepository) MutateContent(pageID int64, mutate func(string) (string,
 			return err
 		}
 		if _, err = exec.Exec(
-			`UPDATE pages SET content = $2::jsonb, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+			`UPDATE pages SET content = $2::jsonb, updated_at = CURRENT_TIMESTAMP
+			 WHERE id = $1 AND deleted_at IS NULL`,
 			pageID, next,
 		); err != nil {
 			return err
@@ -164,38 +174,101 @@ func (r *sqlRepository) MutateContent(pageID int64, mutate func(string) (string,
 	})
 }
 
-func (r *sqlRepository) Delete(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM pages WHERE id = $1`, id)
-	return err
+func (r *sqlRepository) Delete(id, actorID int64) error {
+	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		var slug string
+		if err := exec.QueryRow(
+			`UPDATE pages
+			 SET deleted_at=COALESCE(deleted_at, NOW()),
+			     deleted_by=COALESCE(deleted_by, $2)
+			 WHERE id=$1 AND deleted_at IS NULL
+			 RETURNING slug`,
+			id, actorID,
+		).Scan(&slug); err != nil {
+			if err == sql.ErrNoRows {
+				return nil
+			}
+			return err
+		}
+		if _, err := exec.Exec(
+			`UPDATE site_config SET value='""'::jsonb, updated_at=NOW()
+			 WHERE key='landing_page_slug' AND value=to_jsonb($1::text)`,
+			slug,
+		); err != nil {
+			return err
+		}
+		_, err := exec.Exec(
+			`INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+			 VALUES ($1, 'page', $2, 'delete')`,
+			actorID, strconv.FormatInt(id, 10),
+		)
+		return err
+	})
 }
 
-func (r *sqlRepository) DeleteAll() error {
-	_, err := r.db.Exec(`DELETE FROM pages`)
-	return err
+func (r *sqlRepository) DeleteAll(actorID int64) error {
+	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		if _, err := exec.Exec(
+			`WITH changed AS (
+			    UPDATE pages
+			    SET deleted_at=COALESCE(deleted_at, NOW()),
+			        deleted_by=COALESCE(deleted_by, $1)
+			    WHERE deleted_at IS NULL
+			    RETURNING id
+			 )
+			 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+			 SELECT $1, 'page', id::text, 'delete' FROM changed`,
+			actorID,
+		); err != nil {
+			return err
+		}
+		_, err := exec.Exec(
+			`UPDATE site_config SET value='""'::jsonb, updated_at=NOW()
+			 WHERE key='landing_page_slug'`,
+		)
+		return err
+	})
 }
 
 // ownership & editors
 
 func (r *sqlRepository) SetOwner(pageID, ownerID int64) error {
-	_, err := r.db.Exec(`UPDATE pages SET owner_id = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, pageID, ownerID)
+	_, err := r.db.Exec(
+		`UPDATE pages SET owner_id = $2, updated_at = CURRENT_TIMESTAMP
+		 WHERE id = $1 AND deleted_at IS NULL`,
+		pageID, ownerID,
+	)
 	return err
 }
 
 func (r *sqlRepository) ClearOwner(pageID int64) error {
-	_, err := r.db.Exec(`UPDATE pages SET owner_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1`, pageID)
+	_, err := r.db.Exec(
+		`UPDATE pages SET owner_id = NULL, updated_at = CURRENT_TIMESTAMP
+		 WHERE id = $1 AND deleted_at IS NULL`,
+		pageID,
+	)
 	return err
 }
 
 func (r *sqlRepository) AddEditor(pageID, userID, grantedBy int64) error {
 	_, err := r.db.Exec(
-		`INSERT INTO page_editors (page_id, user_id, granted_by) VALUES ($1, $2, $3) ON CONFLICT (page_id, user_id) DO NOTHING`,
+		`INSERT INTO page_editors (page_id, user_id, granted_by, inactive_at, inactive_by)
+		 SELECT $1, $2, $3, NULL, NULL
+		 WHERE EXISTS (SELECT 1 FROM pages WHERE id=$1 AND deleted_at IS NULL)
+		 ON CONFLICT (page_id, user_id) DO UPDATE
+		 SET inactive_at=NULL, inactive_by=NULL, granted_by=$3, granted_at=CURRENT_TIMESTAMP`,
 		pageID, userID, grantedBy,
 	)
 	return err
 }
 
 func (r *sqlRepository) RemoveEditor(pageID, userID int64) error {
-	_, err := r.db.Exec(`DELETE FROM page_editors WHERE page_id = $1 AND user_id = $2`, pageID, userID)
+	_, err := r.db.Exec(
+		`UPDATE page_editors
+		 SET inactive_at=COALESCE(inactive_at, NOW())
+		 WHERE page_id=$1 AND user_id=$2 AND inactive_at IS NULL`,
+		pageID, userID,
+	)
 	return err
 }
 
@@ -203,7 +276,9 @@ func (r *sqlRepository) GetEditors(pageID int64) ([]*models.PageUser, error) {
 	rows, err := r.db.Query(
 		`SELECT u.id, u.username, u.display_name, COALESCE(u.avatar_url, ''), u.background_video_url, u.background_image_url, u.background_position
 		 FROM page_editors pe JOIN users u ON u.id = pe.user_id
-		 WHERE pe.page_id = $1 ORDER BY pe.granted_at`, pageID,
+		 JOIN pages p ON p.id=pe.page_id AND p.deleted_at IS NULL
+		 WHERE pe.page_id = $1 AND pe.inactive_at IS NULL
+		 ORDER BY pe.granted_at`, pageID,
 	)
 	if err != nil {
 		return nil, err
@@ -236,7 +311,7 @@ func (r *sqlRepository) GetOwner(pageID int64) (*models.PageUser, error) {
 	err := r.db.QueryRow(
 		`SELECT u.id, u.username, u.display_name, COALESCE(u.avatar_url, ''), u.background_video_url, u.background_image_url, u.background_position
 		 FROM pages p JOIN users u ON u.id = p.owner_id
-		 WHERE p.id = $1`, pageID,
+		 WHERE p.id = $1 AND p.deleted_at IS NULL`, pageID,
 	).Scan(&u.ID, &u.Username, &u.DisplayName, &u.AvatarURL, &bgVid, &bgImg, &bgPos)
 	if err != nil {
 		return nil, err
@@ -256,7 +331,11 @@ func (r *sqlRepository) GetOwner(pageID int64) (*models.PageUser, error) {
 func (r *sqlRepository) IsEditor(pageID, userID int64) (bool, error) {
 	var count int
 	err := r.db.QueryRow(
-		`SELECT COUNT(*) FROM page_editors WHERE page_id = $1 AND user_id = $2`, pageID, userID,
+		`SELECT COUNT(*)
+		 FROM page_editors pe
+		 JOIN pages p ON p.id=pe.page_id AND p.deleted_at IS NULL
+		 WHERE pe.page_id=$1 AND pe.user_id=$2 AND pe.inactive_at IS NULL`,
+		pageID, userID,
 	).Scan(&count)
 	return count > 0, err
 }
@@ -268,10 +347,11 @@ func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=p.id), 0),
 		        p.visibility, p.created_at, p.updated_at,
 		        u.id, u.username, u.display_name, COALESCE(u.avatar_url, ''), u.background_video_url, u.background_image_url, u.background_position,
-		        (SELECT COUNT(*) FROM page_likes WHERE page_id = p.id),
-		        (SELECT COUNT(*) FROM page_comments WHERE page_id = p.id)
+		        (SELECT COUNT(*) FROM page_likes WHERE page_id = p.id AND inactive_at IS NULL),
+		        (SELECT COUNT(*) FROM page_comments WHERE page_id = p.id AND deleted_at IS NULL)
 		 FROM pages p
 		 LEFT JOIN users u ON u.id = p.owner_id
+		 WHERE p.deleted_at IS NULL
 		 ORDER BY p.updated_at DESC`)
 	if err != nil {
 		return nil, err
@@ -313,42 +393,69 @@ func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 
 func (r *sqlRepository) LikePage(pageID, userID int64) (int64, error) {
 	_, err := r.db.Exec(
-		`INSERT INTO page_likes (page_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, pageID, userID)
+		`INSERT INTO page_likes (page_id, user_id, inactive_at, inactive_by)
+		 SELECT $1, $2, NULL, NULL
+		 WHERE EXISTS (SELECT 1 FROM pages WHERE id=$1 AND deleted_at IS NULL)
+		 ON CONFLICT (page_id, user_id) DO UPDATE
+		 SET inactive_at=NULL, inactive_by=NULL, created_at=CURRENT_TIMESTAMP`,
+		pageID, userID)
 	if err != nil {
 		return 0, err
 	}
 	var count int64
-	err = r.db.QueryRow(`SELECT COUNT(*) FROM page_likes WHERE page_id = $1`, pageID).Scan(&count)
+	err = r.db.QueryRow(
+		`SELECT COUNT(*) FROM page_likes
+		 WHERE page_id = $1 AND inactive_at IS NULL`,
+		pageID,
+	).Scan(&count)
 	return count, err
 }
 
 func (r *sqlRepository) UnlikePage(pageID, userID int64) (int64, error) {
 	_, err := r.db.Exec(
-		`DELETE FROM page_likes WHERE page_id = $1 AND user_id = $2`, pageID, userID)
+		`UPDATE page_likes
+		 SET inactive_at=COALESCE(inactive_at, NOW()), inactive_by=COALESCE(inactive_by, $2)
+		 WHERE page_id=$1 AND user_id=$2 AND inactive_at IS NULL`,
+		pageID, userID)
 	if err != nil {
 		return 0, err
 	}
 	var count int64
-	err = r.db.QueryRow(`SELECT COUNT(*) FROM page_likes WHERE page_id = $1`, pageID).Scan(&count)
+	err = r.db.QueryRow(
+		`SELECT COUNT(*) FROM page_likes
+		 WHERE page_id = $1 AND inactive_at IS NULL`,
+		pageID,
+	).Scan(&count)
 	return count, err
 }
 
 func (r *sqlRepository) IsPageLikedByUser(pageID, userID int64) (bool, error) {
 	var count int
 	err := r.db.QueryRow(
-		`SELECT COUNT(*) FROM page_likes WHERE page_id = $1 AND user_id = $2`, pageID, userID).Scan(&count)
+		`SELECT COUNT(*) FROM page_likes
+		 WHERE page_id=$1 AND user_id=$2 AND inactive_at IS NULL`,
+		pageID, userID,
+	).Scan(&count)
 	return count > 0, err
 }
 
 func (r *sqlRepository) GetPageLikeCount(pageID int64) (int, error) {
 	var count int
-	err := r.db.QueryRow(`SELECT COUNT(*) FROM page_likes WHERE page_id = $1`, pageID).Scan(&count)
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM page_likes
+		 WHERE page_id=$1 AND inactive_at IS NULL`,
+		pageID,
+	).Scan(&count)
 	return count, err
 }
 
 func (r *sqlRepository) GetPageCommentCount(pageID int64) (int, error) {
 	var count int
-	err := r.db.QueryRow(`SELECT COUNT(*) FROM page_comments WHERE page_id = $1`, pageID).Scan(&count)
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM page_comments
+		 WHERE page_id=$1 AND deleted_at IS NULL`,
+		pageID,
+	).Scan(&count)
 	return count, err
 }
 
@@ -356,7 +463,9 @@ func (r *sqlRepository) GetPageCommentCount(pageID int64) (int, error) {
 
 func (r *sqlRepository) CreateComment(c *models.PageComment) (*models.PageComment, error) {
 	err := r.db.QueryRow(
-		`INSERT INTO page_comments (page_id, user_id, content) VALUES ($1, $2, $3)
+		`INSERT INTO page_comments (page_id, user_id, content)
+		 SELECT $1, $2, $3
+		 WHERE EXISTS (SELECT 1 FROM pages WHERE id=$1 AND deleted_at IS NULL)
 		 RETURNING id, created_at, updated_at`,
 		c.PageID, c.UserID, c.Content,
 	).Scan(&c.ID, &c.CreatedAt, &c.UpdatedAt)
@@ -368,8 +477,10 @@ func (r *sqlRepository) GetComment(id int64) (*models.PageComment, error) {
 	err := r.db.QueryRow(
 		`SELECT c.id, c.page_id, c.user_id, c.content, c.created_at, c.updated_at,
 		        u.username, COALESCE(u.avatar_url, '')
-		 FROM page_comments c JOIN users u ON u.id = c.user_id
-		 WHERE c.id = $1`, id,
+		 FROM page_comments c
+		 JOIN pages p ON p.id=c.page_id AND p.deleted_at IS NULL
+		 JOIN users u ON u.id = c.user_id
+		 WHERE c.id = $1 AND c.deleted_at IS NULL`, id,
 	).Scan(&c.ID, &c.PageID, &c.UserID, &c.Content, &c.CreatedAt, &c.UpdatedAt,
 		&c.AuthorName, &c.AuthorAvatar)
 	return c, err
@@ -379,9 +490,11 @@ func (r *sqlRepository) ListComments(pageID int64, limit, offset int) ([]*models
 	rows, err := r.db.Query(
 		`SELECT c.id, c.page_id, c.user_id, c.content, c.created_at, c.updated_at,
 		        u.username, COALESCE(u.display_name, u.username), COALESCE(u.avatar_url, ''),
-		        (SELECT COUNT(*) FROM page_comment_likes WHERE page_comment_id = c.id)
-		 FROM page_comments c JOIN users u ON u.id = c.user_id
-		 WHERE c.page_id = $1
+		        (SELECT COUNT(*) FROM page_comment_likes WHERE page_comment_id = c.id AND inactive_at IS NULL)
+		 FROM page_comments c
+		 JOIN pages p ON p.id=c.page_id AND p.deleted_at IS NULL
+		 JOIN users u ON u.id = c.user_id
+		 WHERE c.page_id = $1 AND c.deleted_at IS NULL
 		 ORDER BY c.created_at ASC
 		 LIMIT $2 OFFSET $3`, pageID, limit, offset,
 	)
@@ -405,44 +518,73 @@ func (r *sqlRepository) ListComments(pageID int64, limit, offset int) ([]*models
 
 func (r *sqlRepository) UpdateComment(c *models.PageComment) error {
 	_, err := r.db.Exec(
-		`UPDATE page_comments SET content = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+		`UPDATE page_comments SET content = $2, updated_at = CURRENT_TIMESTAMP
+		 WHERE id = $1 AND deleted_at IS NULL`,
 		c.ID, c.Content)
 	return err
 }
 
-func (r *sqlRepository) DeleteComment(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM page_comments WHERE id = $1`, id)
+func (r *sqlRepository) DeleteComment(id, actorID int64) error {
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE page_comments
+		    SET deleted_at=COALESCE(deleted_at, NOW()),
+		        deleted_by=COALESCE(deleted_by, $2)
+		    WHERE id=$1 AND deleted_at IS NULL
+		    RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		 SELECT $2, 'page_comment', id::text, 'delete' FROM changed`,
+		id, actorID,
+	)
 	return err
 }
 
 func (r *sqlRepository) LikeComment(commentID, userID int64) (int64, error) {
 	_, err := r.db.Exec(
-		`INSERT INTO page_comment_likes (page_comment_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		`INSERT INTO page_comment_likes (page_comment_id, user_id, inactive_at, inactive_by)
+		 SELECT $1, $2, NULL, NULL
+		 FROM page_comments c
+		 JOIN pages p ON p.id=c.page_id AND p.deleted_at IS NULL
+		 WHERE c.id=$1 AND c.deleted_at IS NULL
+		 ON CONFLICT (page_comment_id, user_id) DO UPDATE
+		 SET inactive_at=NULL, inactive_by=NULL, created_at=CURRENT_TIMESTAMP`,
 		commentID, userID)
 	if err != nil {
 		return 0, err
 	}
 	var count int64
-	err = r.db.QueryRow(`SELECT COUNT(*) FROM page_comment_likes WHERE page_comment_id = $1`, commentID).Scan(&count)
+	err = r.db.QueryRow(
+		`SELECT COUNT(*) FROM page_comment_likes
+		 WHERE page_comment_id=$1 AND inactive_at IS NULL`,
+		commentID,
+	).Scan(&count)
 	return count, err
 }
 
 func (r *sqlRepository) UnlikeComment(commentID, userID int64) (int64, error) {
 	_, err := r.db.Exec(
-		`DELETE FROM page_comment_likes WHERE page_comment_id = $1 AND user_id = $2`,
+		`UPDATE page_comment_likes
+		 SET inactive_at=COALESCE(inactive_at, NOW()), inactive_by=COALESCE(inactive_by, $2)
+		 WHERE page_comment_id=$1 AND user_id=$2 AND inactive_at IS NULL`,
 		commentID, userID)
 	if err != nil {
 		return 0, err
 	}
 	var count int64
-	err = r.db.QueryRow(`SELECT COUNT(*) FROM page_comment_likes WHERE page_comment_id = $1`, commentID).Scan(&count)
+	err = r.db.QueryRow(
+		`SELECT COUNT(*) FROM page_comment_likes
+		 WHERE page_comment_id=$1 AND inactive_at IS NULL`,
+		commentID,
+	).Scan(&count)
 	return count, err
 }
 
 func (r *sqlRepository) IsCommentLikedByUser(commentID, userID int64) (bool, error) {
 	var count int
 	err := r.db.QueryRow(
-		`SELECT COUNT(*) FROM page_comment_likes WHERE page_comment_id = $1 AND user_id = $2`,
+		`SELECT COUNT(*) FROM page_comment_likes
+		 WHERE page_comment_id=$1 AND user_id=$2 AND inactive_at IS NULL`,
 		commentID, userID).Scan(&count)
 	return count > 0, err
 }
@@ -456,7 +598,7 @@ func (r *sqlRepository) GetAllocation(userID int64) (*models.UserPageAllocation,
 		        u.username, COALESCE(u.display_name, u.username), COALESCE(u.avatar_url, '')
 		 FROM user_page_allocations a
 		 JOIN users u ON u.id = a.user_id
-		 WHERE a.user_id = $1`, userID,
+		 WHERE a.user_id=$1 AND a.deleted_at IS NULL AND u.deleted_at IS NULL`, userID,
 	).Scan(&a.ID, &a.UserID, &a.MaxPages, &a.UsedPages, &a.CreatedAt, &a.UpdatedAt,
 		&a.Username, &a.DisplayName, &a.AvatarURL)
 	if err != nil {
@@ -470,7 +612,7 @@ func (r *sqlRepository) UpsertAllocation(userID, maxPages int64) error {
 		`INSERT INTO user_page_allocations (user_id, max_pages, updated_at)
 		 VALUES ($1, $2, CURRENT_TIMESTAMP)
 		 ON CONFLICT (user_id) DO UPDATE
-		   SET max_pages = $2, updated_at = CURRENT_TIMESTAMP`,
+		   SET max_pages=$2,deleted_at=NULL,deleted_by=NULL,updated_at=CURRENT_TIMESTAMP`,
 		userID, maxPages)
 	return err
 }
@@ -479,7 +621,7 @@ func (r *sqlRepository) IncrementUsed(userID int64) error {
 	_, err := r.db.Exec(
 		`UPDATE user_page_allocations
 		 SET used_pages = used_pages + 1, updated_at = CURRENT_TIMESTAMP
-		 WHERE user_id = $1`, userID)
+		 WHERE user_id=$1 AND deleted_at IS NULL`, userID)
 	return err
 }
 
@@ -487,7 +629,7 @@ func (r *sqlRepository) DecrementUsed(userID int64) error {
 	_, err := r.db.Exec(
 		`UPDATE user_page_allocations
 		 SET used_pages = GREATEST(used_pages - 1, 0), updated_at = CURRENT_TIMESTAMP
-		 WHERE user_id = $1`, userID)
+		 WHERE user_id=$1 AND deleted_at IS NULL`, userID)
 	return err
 }
 
@@ -497,6 +639,7 @@ func (r *sqlRepository) ListAllocations() ([]*models.UserPageAllocation, error) 
 		        u.username, COALESCE(u.display_name, u.username), COALESCE(u.avatar_url, '')
 		 FROM user_page_allocations a
 		 JOIN users u ON u.id = a.user_id
+		 WHERE a.deleted_at IS NULL AND u.deleted_at IS NULL
 		 ORDER BY a.updated_at DESC`)
 	if err != nil {
 		return nil, err
@@ -515,25 +658,34 @@ func (r *sqlRepository) ListAllocations() ([]*models.UserPageAllocation, error) 
 }
 
 func (r *sqlRepository) DeleteAllocation(userID int64) error {
-	_, err := r.db.Exec(`DELETE FROM user_page_allocations WHERE user_id = $1`, userID)
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE user_page_allocations SET deleted_at=COALESCE(deleted_at,NOW())
+		    WHERE user_id=$1 AND deleted_at IS NULL RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(resource_type,resource_id,action)
+		 SELECT 'page_allocation',id::text,'delete' FROM changed`, userID)
 	return err
 }
 
 func (r *sqlRepository) SetUsedPages(userID int64, count int) error {
 	_, err := r.db.Exec(
-		`UPDATE user_page_allocations SET used_pages = $2, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1`,
+		`UPDATE user_page_allocations SET used_pages=$2,updated_at=CURRENT_TIMESTAMP WHERE user_id=$1 AND deleted_at IS NULL`,
 		userID, count)
 	return err
 }
 
 func (r *sqlRepository) CountOwnedPages(userID int64) (int, error) {
 	var count int
-	err := r.db.QueryRow(`SELECT COUNT(*) FROM pages WHERE owner_id = $1`, userID).Scan(&count)
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM pages WHERE owner_id=$1 AND deleted_at IS NULL`,
+		userID,
+	).Scan(&count)
 	return count, err
 }
 
 func (r *sqlRepository) GetNoreplyUserID() (int64, error) {
 	var id int64
-	err := r.db.QueryRow(`SELECT id FROM users WHERE username = 'noreply' LIMIT 1`).Scan(&id)
+	err := r.db.QueryRow(`SELECT id FROM users WHERE username='noreply' AND deleted_at IS NULL LIMIT 1`).Scan(&id)
 	return id, err
 }

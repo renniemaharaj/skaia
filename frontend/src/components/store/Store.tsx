@@ -21,6 +21,7 @@ import { EditProductDialog } from "./EditProductDialog";
 import "./Store.css";
 import { useLayoutPosition } from "../../atoms/viewModes";
 import { MediaPreviewLightbox, type PreviewMediaItem } from "../ui/MediaPreviewLightbox";
+import { confirmDestructiveAction } from "../ui/Prompt";
 import { StoreCategoryBar } from "./StoreCategoryBar";
 import { StoreProductGrid } from "./StoreProductGrid";
 import { getProductMediaItems } from "./storeMedia";
@@ -398,6 +399,14 @@ export const Store: React.FC = () => {
 
   // Admin actions
   const handleDeleteProduct = async (productId: string) => {
+    if (
+      !(await confirmDestructiveAction({
+        title: "Delete product?",
+        body: "The product will move to Trash. Historical order lines remain unchanged.",
+        confirmLabel: "Delete product",
+      }))
+    )
+      return;
     try {
       await apiRequest(`/store/products/${productId}`, { method: "DELETE" });
       setProducts(prev => prev.filter(p => p.id !== productId));
@@ -407,6 +416,14 @@ export const Store: React.FC = () => {
   };
 
   const handleDeleteCategory = async (categoryId: string) => {
+    if (
+      !(await confirmDestructiveAction({
+        title: "Delete store category?",
+        body: "The category will move to Trash and its active products will be hidden.",
+        confirmLabel: "Delete category",
+      }))
+    )
+      return;
     try {
       await apiRequest(`/store/categories/${categoryId}`, { method: "DELETE" });
       setCategories(prev => prev.filter(c => c.id !== categoryId));

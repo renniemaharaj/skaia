@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 
@@ -22,7 +23,7 @@ func (r *sqlRepository) loadRolesAndPermissions(user *models.User) error {
 	rows, err := r.db.Query(
 		`SELECT r.name FROM roles r
 		 JOIN user_roles ur ON r.id = ur.role_id
-		 WHERE ur.user_id = $1`,
+		 WHERE ur.user_id = $1 AND ur.inactive_at IS NULL AND r.deleted_at IS NULL`,
 		user.ID,
 	)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -44,12 +45,15 @@ func (r *sqlRepository) loadRolesAndPermissions(user *models.User) error {
 	permRows, err := r.db.Query(
 		`SELECT p.name FROM permissions p
 		 JOIN user_permissions up ON p.id = up.permission_id
-		 WHERE up.user_id = $1
+		 WHERE up.user_id = $1 AND up.inactive_at IS NULL AND p.deleted_at IS NULL
 		 UNION
 		 SELECT p.name FROM permissions p
 		 JOIN role_permissions rp ON p.id = rp.permission_id
 		 JOIN user_roles ur ON rp.role_id = ur.role_id
-		 WHERE ur.user_id = $1`,
+		 JOIN roles r ON r.id = rp.role_id
+		 WHERE ur.user_id = $1
+		   AND ur.inactive_at IS NULL AND rp.inactive_at IS NULL
+		   AND r.deleted_at IS NULL AND p.deleted_at IS NULL`,
 		user.ID,
 	)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -73,10 +77,10 @@ func (r *sqlRepository) loadRolesAndPermissions(user *models.User) error {
 	return nil
 }
 
-const scanCols = `id, username, email, display_name, avatar_url, banner_url, photo_url,
-				  bio, discord_id, is_suspended, suspended_at, suspended_reason,
+const scanCols = `id, username, email, COALESCE(display_name,''), COALESCE(avatar_url,''), COALESCE(banner_url,''), COALESCE(photo_url,''),
+				  COALESCE(bio,''), discord_id, is_suspended, suspended_at, suspended_reason,
 				  email_verified, email_verified_at, created_at, updated_at,
-				  background_image_url, background_video_url, background_position, font_family, profile_card_art_url`
+				  COALESCE(background_image_url,''), COALESCE(background_video_url,''), COALESCE(background_position,''), COALESCE(font_family,''), COALESCE(profile_card_art_url,'')`
 
 func scanUser(row interface {
 	Scan(dest ...any) error
@@ -95,7 +99,7 @@ func scanUser(row interface {
 
 func (r *sqlRepository) GetByID(id int64) (*models.User, error) {
 	user, err := scanUser(r.db.QueryRow(
-		`SELECT `+scanCols+` FROM users WHERE id = $1`, id,
+		`SELECT `+scanCols+` FROM users WHERE id = $1 AND deleted_at IS NULL`, id,
 	))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("user not found")
@@ -108,7 +112,7 @@ func (r *sqlRepository) GetByID(id int64) (*models.User, error) {
 
 func (r *sqlRepository) GetByUsername(username string) (*models.User, error) {
 	user, err := scanUser(r.db.QueryRow(
-		`SELECT `+scanCols+` FROM users WHERE username = $1`, username,
+		`SELECT `+scanCols+` FROM users WHERE username = $1 AND deleted_at IS NULL`, username,
 	))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("user not found")
@@ -121,7 +125,7 @@ func (r *sqlRepository) GetByUsername(username string) (*models.User, error) {
 
 func (r *sqlRepository) GetByEmail(email string) (*models.User, error) {
 	user, err := scanUser(r.db.QueryRow(
-		`SELECT `+scanCols+` FROM users WHERE email = $1`, email,
+		`SELECT `+scanCols+` FROM users WHERE email = $1 AND deleted_at IS NULL`, email,
 	))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("user not found")
@@ -153,7 +157,8 @@ func (r *sqlRepository) Create(user *models.User, passwordHash string) (*models.
 	// Assign default "member" role (looked up by name so it is immune to ID changes)
 	if _, err = r.db.Exec(
 		`INSERT INTO user_roles (user_id, role_id)
-		SELECT $1, id FROM roles WHERE name = 'member' LIMIT 1`,
+		SELECT $1, id FROM roles WHERE name = 'member' AND deleted_at IS NULL LIMIT 1
+		ON CONFLICT (user_id, role_id) DO UPDATE SET inactive_at=NULL, inactive_by=NULL`,
 		inserted.ID,
 	); err != nil {
 		return nil, err
@@ -171,7 +176,7 @@ func (r *sqlRepository) Update(user *models.User) (*models.User, error) {
 		     suspended_reason=$9, updated_at=CURRENT_TIMESTAMP,
 		     background_image_url=$10, background_video_url=$11, background_position=$12,
 		     font_family=$13, profile_card_art_url=$14
-		 WHERE id=$15`,
+		 WHERE id=$15 AND deleted_at IS NULL`,
 		user.DisplayName, user.AvatarURL, user.BannerURL, user.PhotoURL,
 		user.Bio, user.DiscordID, user.IsSuspended, user.SuspendedAt, user.SuspendedReason,
 		user.BackgroundImageURL, user.BackgroundVideoURL, user.BackgroundPosition,
@@ -185,13 +190,48 @@ func (r *sqlRepository) Update(user *models.User) (*models.User, error) {
 }
 
 func (r *sqlRepository) Delete(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM users WHERE id = $1`, id)
-	return err
+	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		res, err := exec.Exec(
+			`UPDATE users
+			 SET deleted_at=COALESCE(deleted_at, NOW()), deleted_by=COALESCE(deleted_by, id),
+			     is_suspended=TRUE, updated_at=NOW()
+			 WHERE id=$1 AND deleted_at IS NULL`,
+			id,
+		)
+		if err != nil {
+			return err
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			return errors.New("user not found")
+		}
+		for _, query := range []string{
+			`UPDATE sessions SET revoked_at=COALESCE(revoked_at,NOW()), revoked_reason=COALESCE(revoked_reason,'user_deleted'), updated_at=NOW() WHERE user_id=$1 AND revoked_at IS NULL`,
+			`UPDATE user_sessions SET revoked_at=COALESCE(revoked_at,NOW()), revoked_reason=COALESCE(revoked_reason,'user_deleted') WHERE user_id=$1 AND revoked_at IS NULL`,
+			`UPDATE user_roles SET inactive_at=COALESCE(inactive_at,NOW()), inactive_by=COALESCE(inactive_by,$1) WHERE user_id=$1 AND inactive_at IS NULL`,
+			`UPDATE user_permissions SET inactive_at=COALESCE(inactive_at,NOW()), inactive_by=COALESCE(inactive_by,$1) WHERE user_id=$1 AND inactive_at IS NULL`,
+			`UPDATE auth_credentials SET password_hash=NULL, cleared_at=COALESCE(cleared_at,NOW()), updated_at=NOW() WHERE user_id=$1 AND cleared_at IS NULL`,
+			`UPDATE auth_totp_secrets SET totp_secret=NULL, enabled=FALSE, cleared_at=COALESCE(cleared_at,NOW()), updated_at=NOW() WHERE user_id=$1 AND cleared_at IS NULL`,
+			`UPDATE auth_backup_codes SET code_hash=NULL, used=TRUE, cleared_at=COALESCE(cleared_at,NOW()) WHERE user_id=$1 AND cleared_at IS NULL`,
+			`UPDATE email_verification_tokens SET token=NULL, cleared_at=COALESCE(cleared_at,NOW()) WHERE user_id=$1 AND cleared_at IS NULL`,
+			`UPDATE password_reset_tokens SET token=NULL, used=TRUE, cleared_at=COALESCE(cleared_at,NOW()) WHERE user_id=$1 AND cleared_at IS NULL`,
+			`UPDATE mfa_challenge_required SET required=FALSE, reason_code='', action='', cleared_at=COALESCE(cleared_at,NOW()), updated_at=NOW() WHERE user_id=$1 AND cleared_at IS NULL`,
+		} {
+			if _, err := exec.Exec(query, id); err != nil {
+				return err
+			}
+		}
+		_, err = exec.Exec(
+			`INSERT INTO resource_lifecycle_events(actor_id,resource_type,resource_id,action)
+			 VALUES ($1::bigint,'user',($1::bigint)::text,'delete')`,
+			id,
+		)
+		return err
+	})
 }
 
 func (r *sqlRepository) List(limit, offset int) ([]*models.User, error) {
 	rows, err := r.db.Query(
-		`SELECT `+scanCols+` FROM users LIMIT $1 OFFSET $2`, limit, offset,
+		`SELECT `+scanCols+` FROM users WHERE deleted_at IS NULL LIMIT $1 OFFSET $2`, limit, offset,
 	)
 	if err != nil {
 		return nil, err
@@ -217,7 +257,8 @@ func (r *sqlRepository) Search(query string, limit, offset int) ([]*models.User,
 	rows, err := r.db.Query(
 		`SELECT `+scanCols+`
 		 FROM users
-		 WHERE username ILIKE $1 OR email ILIKE $1 OR display_name ILIKE $1
+		 WHERE deleted_at IS NULL
+		   AND (username ILIKE $1 OR email ILIKE $1 OR display_name ILIKE $1)
 		 LIMIT $2 OFFSET $3`,
 		like, limit, offset,
 	)
@@ -242,7 +283,8 @@ func (r *sqlRepository) Search(query string, limit, offset int) ([]*models.User,
 
 func (r *sqlRepository) AddRole(userID, roleID int64) error {
 	_, err := r.db.Exec(
-		`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)
+		 ON CONFLICT (user_id, role_id) DO UPDATE SET inactive_at=NULL, inactive_by=NULL`,
 		userID, roleID,
 	)
 	return err
@@ -250,7 +292,8 @@ func (r *sqlRepository) AddRole(userID, roleID int64) error {
 
 func (r *sqlRepository) RemoveRole(userID, roleID int64) error {
 	_, err := r.db.Exec(
-		`DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2`,
+		`UPDATE user_roles SET inactive_at=COALESCE(inactive_at,NOW())
+		 WHERE user_id=$1 AND role_id=$2 AND inactive_at IS NULL`,
 		userID, roleID,
 	)
 	return err
@@ -258,11 +301,12 @@ func (r *sqlRepository) RemoveRole(userID, roleID int64) error {
 
 func (r *sqlRepository) AddRoleByName(userID int64, roleName string) error {
 	var roleID int64
-	if err := r.db.QueryRow(`SELECT id FROM roles WHERE name = $1`, roleName).Scan(&roleID); err != nil {
+	if err := r.db.QueryRow(`SELECT id FROM roles WHERE name = $1 AND deleted_at IS NULL`, roleName).Scan(&roleID); err != nil {
 		return err
 	}
 	_, err := r.db.Exec(
-		`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)
+		 ON CONFLICT (user_id, role_id) DO UPDATE SET inactive_at=NULL, inactive_by=NULL`,
 		userID, roleID,
 	)
 	return err
@@ -270,18 +314,19 @@ func (r *sqlRepository) AddRoleByName(userID int64, roleName string) error {
 
 func (r *sqlRepository) RemoveRoleByName(userID int64, roleName string) error {
 	var roleID int64
-	if err := r.db.QueryRow(`SELECT id FROM roles WHERE name = $1`, roleName).Scan(&roleID); err != nil {
+	if err := r.db.QueryRow(`SELECT id FROM roles WHERE name = $1 AND deleted_at IS NULL`, roleName).Scan(&roleID); err != nil {
 		return err
 	}
 	_, err := r.db.Exec(
-		`DELETE FROM user_roles WHERE user_id = $1 AND role_id = $2`,
+		`UPDATE user_roles SET inactive_at=COALESCE(inactive_at,NOW())
+		 WHERE user_id=$1 AND role_id=$2 AND inactive_at IS NULL`,
 		userID, roleID,
 	)
 	return err
 }
 
 func (r *sqlRepository) GetAllRoles() ([]*models.Role, error) {
-	rows, err := r.db.Query(`SELECT id, name, COALESCE(description, ''), power_level, theme_color, glow_color, storage_bonus, created_at FROM roles ORDER BY power_level DESC, id`)
+	rows, err := r.db.Query(`SELECT id, name, COALESCE(description, ''), power_level, theme_color, glow_color, storage_bonus, created_at FROM roles WHERE deleted_at IS NULL ORDER BY power_level DESC, id`)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +345,7 @@ func (r *sqlRepository) GetAllRoles() ([]*models.Role, error) {
 
 func (r *sqlRepository) Suspend(userID int64, reason string) error {
 	_, err := r.db.Exec(
-		`UPDATE users SET is_suspended=TRUE, suspended_at=CURRENT_TIMESTAMP, suspended_reason=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2`,
+		`UPDATE users SET is_suspended=TRUE, suspended_at=CURRENT_TIMESTAMP, suspended_reason=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2 AND deleted_at IS NULL`,
 		reason, userID,
 	)
 	return err
@@ -308,7 +353,7 @@ func (r *sqlRepository) Suspend(userID int64, reason string) error {
 
 func (r *sqlRepository) Unsuspend(userID int64) error {
 	_, err := r.db.Exec(
-		`UPDATE users SET is_suspended=FALSE, suspended_at=NULL, suspended_reason=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=$1`,
+		`UPDATE users SET is_suspended=FALSE, suspended_at=NULL, suspended_reason=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=$1 AND deleted_at IS NULL`,
 		userID,
 	)
 	return err
@@ -320,12 +365,18 @@ func (r *sqlRepository) HasPermission(userID int64, permission string) (bool, er
 		`SELECT COUNT(*) FROM (
 		     SELECT 1 FROM user_permissions up
 		     JOIN permissions p ON up.permission_id = p.id
+		     JOIN users u ON u.id=up.user_id
 		     WHERE up.user_id = $1 AND p.name = $2
+		       AND up.inactive_at IS NULL AND p.deleted_at IS NULL AND u.deleted_at IS NULL
 		     UNION
 		     SELECT 1 FROM role_permissions rp
 		     JOIN permissions p ON rp.permission_id = p.id
 		     JOIN user_roles ur ON rp.role_id = ur.role_id
+		     JOIN roles ro ON ro.id=rp.role_id
+		     JOIN users u ON u.id=ur.user_id
 		     WHERE ur.user_id = $1 AND p.name = $2
+		       AND ur.inactive_at IS NULL AND rp.inactive_at IS NULL
+		       AND ro.deleted_at IS NULL AND p.deleted_at IS NULL AND u.deleted_at IS NULL
 		 ) AS perms`,
 		userID, permission,
 	).Scan(&count)
@@ -340,14 +391,15 @@ func (r *sqlRepository) AddPermission(userID int64, permissionName string) error
 	// Upsert: create the permission row if it doesn't exist yet, then return its id.
 	if err := r.db.QueryRow(
 		`INSERT INTO permissions (name) VALUES ($1)
-		 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+		 ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name, deleted_at=NULL, deleted_by=NULL
 		 RETURNING id`,
 		permissionName,
 	).Scan(&permID); err != nil {
 		return err
 	}
 	_, err := r.db.Exec(
-		`INSERT INTO user_permissions (user_id, permission_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		`INSERT INTO user_permissions (user_id, permission_id) VALUES ($1, $2)
+		 ON CONFLICT (user_id, permission_id) DO UPDATE SET inactive_at=NULL, inactive_by=NULL`,
 		userID, permID,
 	)
 	return err
@@ -356,12 +408,13 @@ func (r *sqlRepository) AddPermission(userID int64, permissionName string) error
 func (r *sqlRepository) RemovePermission(userID int64, permissionName string) error {
 	var permID int64
 	if err := r.db.QueryRow(
-		`SELECT id FROM permissions WHERE name = $1`, permissionName,
+		`SELECT id FROM permissions WHERE name = $1 AND deleted_at IS NULL`, permissionName,
 	).Scan(&permID); err != nil {
 		return err
 	}
 	_, err := r.db.Exec(
-		`DELETE FROM user_permissions WHERE user_id = $1 AND permission_id = $2`,
+		`UPDATE user_permissions SET inactive_at=COALESCE(inactive_at,NOW())
+		 WHERE user_id=$1 AND permission_id=$2 AND inactive_at IS NULL`,
 		userID, permID,
 	)
 	return err
@@ -370,7 +423,7 @@ func (r *sqlRepository) RemovePermission(userID int64, permissionName string) er
 func (r *sqlRepository) GetAllPermissions() ([]*models.Permission, error) {
 	rows, err := r.db.Query(
 		`SELECT id, name, category, description, created_at
-		 FROM permissions ORDER BY category, name`,
+		 FROM permissions WHERE deleted_at IS NULL ORDER BY category, name`,
 	)
 	if err != nil {
 		return nil, err
@@ -394,7 +447,7 @@ func (r *sqlRepository) GetUserMaxPowerLevel(userID int64) (int, error) {
 		`SELECT COALESCE(MAX(ro.power_level), 0)
 		 FROM roles ro
 		 JOIN user_roles ur ON ro.id = ur.role_id
-		 WHERE ur.user_id = $1`,
+		 WHERE ur.user_id = $1 AND ur.inactive_at IS NULL AND ro.deleted_at IS NULL`,
 		userID,
 	).Scan(&level)
 	return level, err
@@ -407,13 +460,15 @@ func (r *sqlRepository) GetSuperuserDemotionStatus(targetID int64) (*SuperuserDe
 		     SELECT DISTINCT ur.user_id
 		     FROM user_roles ur
 		     JOIN roles r ON r.id = ur.role_id
-		     WHERE r.name = 'superuser'
+		     JOIN users u ON u.id=ur.user_id
+		     WHERE r.name = 'superuser' AND r.deleted_at IS NULL
+		       AND u.deleted_at IS NULL AND ur.inactive_at IS NULL
 		 ),
 		 current_votes AS (
 		     SELECT DISTINCT v.actor_id
 		     FROM superuser_demotion_votes v
 		     JOIN current_superusers cs ON cs.user_id = v.actor_id
-		     WHERE v.target_id = $1
+		     WHERE v.target_id = $1 AND v.inactive_at IS NULL
 		 )
 		 SELECT
 		     (SELECT COUNT(*) FROM current_votes) AS votes,
@@ -433,7 +488,8 @@ func (r *sqlRepository) GetSuperuserDemotionStatus(targetID int64) (*SuperuserDe
 
 func (r *sqlRepository) NewDistinctSuperuserDemotionVote(actorID, targetID int64) (*SuperuserDemotionStatus, error) {
 	if _, err := r.db.Exec(
-		`INSERT INTO superuser_demotion_votes (actor_id, target_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		`INSERT INTO superuser_demotion_votes (actor_id, target_id) VALUES ($1, $2)
+		 ON CONFLICT (actor_id,target_id) DO UPDATE SET inactive_at=NULL, inactive_by=NULL`,
 		actorID, targetID,
 	); err != nil {
 		return nil, err
@@ -447,7 +503,8 @@ func (r *sqlRepository) GetAllDistinctSuperusers() ([]*models.User, error) {
 		 FROM users u
 		 JOIN user_roles ur ON u.id = ur.user_id
 		 JOIN roles r ON ur.role_id = r.id
-		 WHERE r.name = 'superuser'`,
+		 WHERE r.name = 'superuser' AND r.deleted_at IS NULL
+		   AND u.deleted_at IS NULL AND ur.inactive_at IS NULL`,
 	)
 	if err != nil {
 		return nil, err
@@ -468,7 +525,7 @@ func (r *sqlRepository) GetAllDistinctSuperusers() ([]*models.User, error) {
 func (r *sqlRepository) GetRoleByID(id int64) (*models.Role, error) {
 	ro := &models.Role{}
 	err := r.db.QueryRow(
-		`SELECT id, name, COALESCE(description, ''), power_level, theme_color, glow_color, storage_bonus, created_at FROM roles WHERE id = $1`, id,
+		`SELECT id, name, COALESCE(description, ''), power_level, theme_color, glow_color, storage_bonus, created_at FROM roles WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&ro.ID, &ro.Name, &ro.Description, &ro.PowerLevel, &ro.ThemeColor, &ro.GlowColor, &ro.StorageBonus, &ro.CreatedAt)
 	if err != nil {
 		return nil, err
@@ -499,7 +556,15 @@ func (r *sqlRepository) UpdateRole(id int64, name, description string, powerLeve
 }
 
 func (r *sqlRepository) DeleteRole(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM roles WHERE id = $1`, id)
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE roles SET deleted_at=COALESCE(deleted_at,NOW())
+		    WHERE id=$1 AND deleted_at IS NULL RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(resource_type,resource_id,action)
+		 SELECT 'role',id::text,'delete' FROM changed`,
+		id,
+	)
 	return err
 }
 
@@ -508,7 +573,7 @@ func (r *sqlRepository) GetRolePermissions(roleID int64) ([]*models.Permission, 
 		`SELECT p.id, p.name, COALESCE(p.category, ''), COALESCE(p.description, ''), p.created_at
 		 FROM permissions p
 		 JOIN role_permissions rp ON p.id = rp.permission_id
-		 WHERE rp.role_id = $1
+		 WHERE rp.role_id = $1 AND rp.inactive_at IS NULL AND p.deleted_at IS NULL
 		 ORDER BY p.category, p.name`,
 		roleID,
 	)
@@ -532,14 +597,15 @@ func (r *sqlRepository) AddPermissionToRole(roleID int64, permissionName string)
 	var permID int64
 	if err := r.db.QueryRow(
 		`INSERT INTO permissions (name) VALUES ($1)
-		 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+		 ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name, deleted_at=NULL, deleted_by=NULL
 		 RETURNING id`,
 		permissionName,
 	).Scan(&permID); err != nil {
 		return err
 	}
 	_, err := r.db.Exec(
-		`INSERT INTO role_permissions (role_id, permission_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		`INSERT INTO role_permissions (role_id, permission_id) VALUES ($1, $2)
+		 ON CONFLICT (role_id,permission_id) DO UPDATE SET inactive_at=NULL, inactive_by=NULL`,
 		roleID, permID,
 	)
 	return err
@@ -547,9 +613,9 @@ func (r *sqlRepository) AddPermissionToRole(roleID int64, permissionName string)
 
 func (r *sqlRepository) RemovePermissionFromRole(roleID int64, permissionName string) error {
 	_, err := r.db.Exec(
-		`DELETE FROM role_permissions
-		 WHERE role_id = $1
-		   AND permission_id = (SELECT id FROM permissions WHERE name = $2)`,
+		`UPDATE role_permissions SET inactive_at=COALESCE(inactive_at,NOW())
+		 WHERE role_id=$1 AND inactive_at IS NULL
+		   AND permission_id=(SELECT id FROM permissions WHERE name=$2 AND deleted_at IS NULL)`,
 		roleID, permissionName,
 	)
 	return err
@@ -569,7 +635,7 @@ func (r *sqlRepository) GetEmailVerificationToken(token string) (*models.EmailVe
 	t := &models.EmailVerificationToken{}
 	err := r.db.QueryRow(
 		`SELECT id, user_id, token, expires_at, created_at
-		 FROM email_verification_tokens WHERE token = $1`, token,
+		 FROM email_verification_tokens WHERE token = $1 AND cleared_at IS NULL`, token,
 	).Scan(&t.ID, &t.UserID, &t.Token, &t.ExpiresAt, &t.CreatedAt)
 	if err != nil {
 		return nil, err
@@ -586,7 +652,7 @@ func (r *sqlRepository) MarkEmailVerified(userID int64) error {
 }
 
 func (r *sqlRepository) DeleteEmailVerificationTokens(userID int64) error {
-	_, err := r.db.Exec(`DELETE FROM email_verification_tokens WHERE user_id = $1`, userID)
+	_, err := r.db.Exec(`UPDATE email_verification_tokens SET token=NULL, cleared_at=COALESCE(cleared_at,NOW()) WHERE user_id=$1 AND cleared_at IS NULL`, userID)
 	return err
 }
 
@@ -604,7 +670,7 @@ func (r *sqlRepository) GetPasswordResetToken(token string) (*models.PasswordRes
 	t := &models.PasswordResetToken{}
 	err := r.db.QueryRow(
 		`SELECT id, user_id, token, expires_at, used, created_at
-		 FROM password_reset_tokens WHERE token = $1`, token,
+		 FROM password_reset_tokens WHERE token = $1 AND cleared_at IS NULL`, token,
 	).Scan(&t.ID, &t.UserID, &t.Token, &t.ExpiresAt, &t.Used, &t.CreatedAt)
 	if err != nil {
 		return nil, err
@@ -618,7 +684,7 @@ func (r *sqlRepository) MarkPasswordResetTokenUsed(tokenID int64) error {
 }
 
 func (r *sqlRepository) DeletePasswordResetTokens(userID int64) error {
-	_, err := r.db.Exec(`DELETE FROM password_reset_tokens WHERE user_id = $1`, userID)
+	_, err := r.db.Exec(`UPDATE password_reset_tokens SET token=NULL, used=TRUE, cleared_at=COALESCE(cleared_at,NOW()) WHERE user_id=$1 AND cleared_at IS NULL`, userID)
 	return err
 }
 
@@ -627,7 +693,7 @@ func (r *sqlRepository) GetUsersByRole(roleID int64) ([]*models.User, error) {
 		SELECT u.id, u.username, u.email, u.display_name, u.avatar_url, u.banner_url, u.discord_id, u.created_at, u.bio, u.is_suspended, u.suspended_reason
 		FROM users u
 		JOIN user_roles ur ON u.id = ur.user_id
-		WHERE ur.role_id = $1
+		WHERE ur.role_id = $1 AND ur.inactive_at IS NULL AND u.deleted_at IS NULL
 		ORDER BY u.username ASC
 	`, roleID)
 	if err != nil {

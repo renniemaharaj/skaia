@@ -24,7 +24,8 @@ func NewCategoryRepository(db database.Executor) CategoryRepository {
 func (r *sqlCategoryRepository) GetByID(id int64) (*models.StoreCategory, error) {
 	c := &models.StoreCategory{}
 	err := r.db.QueryRow(
-		`SELECT id, name, description, display_order, created_at FROM store_categories WHERE id = $1`, id,
+		`SELECT id, name, description, display_order, created_at
+		 FROM store_categories WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&c.ID, &c.Name, &c.Description, &c.DisplayOrder, &c.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("category not found")
@@ -35,7 +36,8 @@ func (r *sqlCategoryRepository) GetByID(id int64) (*models.StoreCategory, error)
 func (r *sqlCategoryRepository) GetByName(name string) (*models.StoreCategory, error) {
 	c := &models.StoreCategory{}
 	err := r.db.QueryRow(
-		`SELECT id, name, description, display_order, created_at FROM store_categories WHERE name = $1`, name,
+		`SELECT id, name, description, display_order, created_at
+		 FROM store_categories WHERE name = $1 AND deleted_at IS NULL`, name,
 	).Scan(&c.ID, &c.Name, &c.Description, &c.DisplayOrder, &c.CreatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("category not found")
@@ -56,27 +58,33 @@ func (r *sqlCategoryRepository) Create(cat *models.StoreCategory) (*models.Store
 func (r *sqlCategoryRepository) Update(cat *models.StoreCategory) (*models.StoreCategory, error) {
 	err := r.db.QueryRow(
 		`UPDATE store_categories SET name=$1, description=$2, display_order=$3
-		 WHERE id=$4
+		 WHERE id=$4 AND deleted_at IS NULL
 		 RETURNING id, name, description, display_order, created_at`,
 		cat.Name, cat.Description, cat.DisplayOrder, cat.ID,
 	).Scan(&cat.ID, &cat.Name, &cat.Description, &cat.DisplayOrder, &cat.CreatedAt)
 	return cat, err
 }
 
-func (r *sqlCategoryRepository) Delete(id int64) error {
-	// order_items.product_id has no ON DELETE CASCADE; clear them before products cascade away.
-	if _, err := r.db.Exec(
-		`DELETE FROM order_items WHERE product_id IN (SELECT id FROM products WHERE category_id = $1)`, id,
-	); err != nil {
-		return err
-	}
-	_, err := r.db.Exec(`DELETE FROM store_categories WHERE id = $1`, id)
+func (r *sqlCategoryRepository) Delete(id, actorID int64) error {
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE store_categories
+		    SET deleted_at=COALESCE(deleted_at, NOW()),
+		        deleted_by=COALESCE(deleted_by, $2)
+		    WHERE id=$1 AND deleted_at IS NULL
+		    RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		 SELECT $2, 'store_category', id::text, 'delete' FROM changed`,
+		id, actorID,
+	)
 	return err
 }
 
 func (r *sqlCategoryRepository) List() ([]*models.StoreCategory, error) {
 	rows, err := r.db.Query(
-		`SELECT id, name, description, display_order, created_at FROM store_categories ORDER BY display_order ASC`,
+		`SELECT id, name, description, display_order, created_at
+		 FROM store_categories WHERE deleted_at IS NULL ORDER BY display_order ASC`,
 	)
 	if err != nil {
 		return nil, err
@@ -127,8 +135,9 @@ func (r *sqlProductRepository) GetByID(id int64) (*models.Product, error) {
 	rows, err := r.db.Query(
 		`SELECT `+productSelectFields+`
 		 FROM products p
+		 JOIN store_categories sc ON sc.id=p.category_id AND sc.deleted_at IS NULL
 		 LEFT JOIN users owner ON owner.id = p.owner_id
-		 WHERE p.id = $1`, id,
+		 WHERE p.id = $1 AND p.deleted_at IS NULL`, id,
 	)
 	if err != nil {
 		return nil, err
@@ -153,6 +162,13 @@ func productMediaJSON(media []models.ProductMedia) string {
 		return "[]"
 	}
 	return string(b)
+}
+
+func productSpecialActionsJSON(actions string) string {
+	if actions == "" || !json.Valid([]byte(actions)) {
+		return "[]"
+	}
+	return actions
 }
 
 func normalizeProductMedia(p *models.Product) {
@@ -213,8 +229,9 @@ func (r *sqlProductRepository) GetByCategory(categoryID int64, limit, offset int
 	rows, err := r.db.Query(
 		`SELECT `+productSelectFields+`
 		 FROM products p
+		 JOIN store_categories sc ON sc.id=p.category_id AND sc.deleted_at IS NULL
 		 LEFT JOIN users owner ON owner.id = p.owner_id
-		 WHERE p.category_id = $1 AND p.is_active = true
+		 WHERE p.category_id = $1 AND p.is_active = true AND p.deleted_at IS NULL
 		 ORDER BY p.created_at DESC LIMIT $2 OFFSET $3`,
 		categoryID, limit, offset,
 	)
@@ -229,9 +246,9 @@ func (r *sqlProductRepository) Create(p *models.Product) (*models.Product, error
 	normalizeProductMedia(p)
 	err := r.db.QueryRow(
 		`INSERT INTO products (category_id, owner_id, name, description, price, image_url, media, stock, stock_unlimited, is_active, special_actions)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11::jsonb)
 		 RETURNING id`,
-		p.CategoryID, p.OwnerID, p.Name, p.Description, p.Price, p.ImageURL, productMediaJSON(p.Media), p.Stock, p.StockUnlimited, p.IsActive, p.SpecialActions,
+		p.CategoryID, p.OwnerID, p.Name, p.Description, p.Price, p.ImageURL, productMediaJSON(p.Media), p.Stock, p.StockUnlimited, p.IsActive, productSpecialActionsJSON(p.SpecialActions),
 	).Scan(&p.ID)
 	if err != nil {
 		return p, err
@@ -242,10 +259,14 @@ func (r *sqlProductRepository) Create(p *models.Product) (*models.Product, error
 func (r *sqlProductRepository) Update(p *models.Product) (*models.Product, error) {
 	normalizeProductMedia(p)
 	err := r.db.QueryRow(
-		`UPDATE products SET category_id=$1, owner_id=$2, name=$3, description=$4, price=$5, image_url=$6, media=$7::jsonb, stock=$8, original_price=$9, stock_unlimited=$10, is_active=$11, special_actions=$12, updated_at=CURRENT_TIMESTAMP
-		 WHERE id=$13
+		`UPDATE products SET category_id=$1, owner_id=$2, name=$3, description=$4, price=$5, image_url=$6, media=$7::jsonb, stock=$8, original_price=$9, stock_unlimited=$10, is_active=$11, special_actions=$12::jsonb, updated_at=CURRENT_TIMESTAMP
+		 WHERE id=$13 AND deleted_at IS NULL
+		   AND EXISTS (
+		       SELECT 1 FROM store_categories
+		       WHERE id=$1 AND deleted_at IS NULL
+		   )
 		 RETURNING id`,
-		p.CategoryID, p.OwnerID, p.Name, p.Description, p.Price, p.ImageURL, productMediaJSON(p.Media), p.Stock, p.OriginalPrice, p.StockUnlimited, p.IsActive, p.SpecialActions, p.ID,
+		p.CategoryID, p.OwnerID, p.Name, p.Description, p.Price, p.ImageURL, productMediaJSON(p.Media), p.Stock, p.OriginalPrice, p.StockUnlimited, p.IsActive, productSpecialActionsJSON(p.SpecialActions), p.ID,
 	).Scan(&p.ID)
 	if err != nil {
 		return p, err
@@ -253,12 +274,19 @@ func (r *sqlProductRepository) Update(p *models.Product) (*models.Product, error
 	return r.GetByID(p.ID)
 }
 
-func (r *sqlProductRepository) Delete(id int64) error {
-	// order_items.product_id has no ON DELETE CASCADE; clear referencing rows first.
-	if _, err := r.db.Exec(`DELETE FROM order_items WHERE product_id = $1`, id); err != nil {
-		return err
-	}
-	_, err := r.db.Exec(`DELETE FROM products WHERE id = $1`, id)
+func (r *sqlProductRepository) Delete(id, actorID int64) error {
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE products
+		    SET deleted_at=COALESCE(deleted_at, NOW()),
+		        deleted_by=COALESCE(deleted_by, $2)
+		    WHERE id=$1 AND deleted_at IS NULL
+		    RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		 SELECT $2, 'product', id::text, 'delete' FROM changed`,
+		id, actorID,
+	)
 	return err
 }
 
@@ -266,7 +294,9 @@ func (r *sqlProductRepository) List(limit, offset int) ([]*models.Product, error
 	rows, err := r.db.Query(
 		`SELECT `+productSelectFields+`
 		 FROM products p
+		 JOIN store_categories sc ON sc.id=p.category_id AND sc.deleted_at IS NULL
 		 LEFT JOIN users owner ON owner.id = p.owner_id
+		 WHERE p.deleted_at IS NULL
 		 ORDER BY p.created_at DESC LIMIT $1 OFFSET $2`,
 		limit, offset,
 	)
@@ -300,7 +330,11 @@ func NewCartRepository(db database.Executor) CartRepository {
 func (r *sqlCartRepository) GetItem(userID, productID int64) (*models.CartItem, error) {
 	item := &models.CartItem{}
 	err := r.db.QueryRow(
-		`SELECT id, user_id, product_id, quantity, added_at FROM cart_items WHERE user_id = $1 AND product_id = $2`,
+		`SELECT ci.id,ci.user_id,ci.product_id,ci.quantity,ci.added_at
+		 FROM cart_items ci
+		 JOIN products p ON p.id=ci.product_id AND p.deleted_at IS NULL
+		 JOIN store_categories sc ON sc.id=p.category_id AND sc.deleted_at IS NULL
+		 WHERE ci.user_id=$1 AND ci.product_id=$2 AND ci.inactive_at IS NULL`,
 		userID, productID,
 	).Scan(&item.ID, &item.UserID, &item.ProductID, &item.Quantity, &item.AddedAt)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -311,7 +345,11 @@ func (r *sqlCartRepository) GetItem(userID, productID int64) (*models.CartItem, 
 
 func (r *sqlCartRepository) GetUserCart(userID int64) ([]*models.CartItem, error) {
 	rows, err := r.db.Query(
-		`SELECT id, user_id, product_id, quantity, added_at FROM cart_items WHERE user_id = $1 ORDER BY added_at DESC`,
+		`SELECT ci.id,ci.user_id,ci.product_id,ci.quantity,ci.added_at
+		 FROM cart_items ci
+		 JOIN products p ON p.id=ci.product_id AND p.deleted_at IS NULL
+		 JOIN store_categories sc ON sc.id=p.category_id AND sc.deleted_at IS NULL
+		 WHERE ci.user_id=$1 AND ci.inactive_at IS NULL ORDER BY ci.added_at DESC`,
 		userID,
 	)
 	if err != nil {
@@ -335,7 +373,9 @@ func (r *sqlCartRepository) AddToCart(userID, productID int64, quantity int) (*m
 	err := r.db.QueryRow(
 		`INSERT INTO cart_items (user_id, product_id, quantity)
 		 VALUES ($1, $2, $3)
-		 ON CONFLICT (user_id, product_id) DO UPDATE SET quantity = cart_items.quantity + EXCLUDED.quantity
+		 ON CONFLICT (user_id,product_id) DO UPDATE SET
+		   quantity=CASE WHEN cart_items.inactive_at IS NULL THEN cart_items.quantity+EXCLUDED.quantity ELSE EXCLUDED.quantity END,
+		   inactive_at=NULL,inactive_by=NULL,added_at=NOW()
 		 RETURNING id, user_id, product_id, quantity, added_at`,
 		userID, productID, quantity,
 	).Scan(&item.ID, &item.UserID, &item.ProductID, &item.Quantity, &item.AddedAt)
@@ -345,7 +385,7 @@ func (r *sqlCartRepository) AddToCart(userID, productID int64, quantity int) (*m
 func (r *sqlCartRepository) UpdateItem(userID, productID int64, quantity int) (*models.CartItem, error) {
 	item := &models.CartItem{}
 	err := r.db.QueryRow(
-		`UPDATE cart_items SET quantity=$1 WHERE user_id=$2 AND product_id=$3
+		`UPDATE cart_items SET quantity=$1 WHERE user_id=$2 AND product_id=$3 AND inactive_at IS NULL
 		 RETURNING id, user_id, product_id, quantity, added_at`,
 		quantity, userID, productID,
 	).Scan(&item.ID, &item.UserID, &item.ProductID, &item.Quantity, &item.AddedAt)
@@ -353,12 +393,14 @@ func (r *sqlCartRepository) UpdateItem(userID, productID int64, quantity int) (*
 }
 
 func (r *sqlCartRepository) RemoveFromCart(userID, productID int64) error {
-	_, err := r.db.Exec(`DELETE FROM cart_items WHERE user_id=$1 AND product_id=$2`, userID, productID)
+	_, err := r.db.Exec(`UPDATE cart_items SET inactive_at=COALESCE(inactive_at,NOW()),inactive_by=COALESCE(inactive_by,$1)
+		WHERE user_id=$1 AND product_id=$2 AND inactive_at IS NULL`, userID, productID)
 	return err
 }
 
 func (r *sqlCartRepository) ClearCart(userID int64) error {
-	_, err := r.db.Exec(`DELETE FROM cart_items WHERE user_id=$1`, userID)
+	_, err := r.db.Exec(`UPDATE cart_items SET inactive_at=COALESCE(inactive_at,NOW()),inactive_by=COALESCE(inactive_by,$1)
+		WHERE user_id=$1 AND inactive_at IS NULL`, userID)
 	return err
 }
 
@@ -539,7 +581,8 @@ func (r *sqlOrderRepository) Create(order *models.Order, items []*models.OrderIt
 func (r *sqlOrderRepository) GetByID(id int64) (*models.Order, error) {
 	o := &models.Order{}
 	err := r.db.QueryRow(
-		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at FROM orders WHERE id = $1`, id,
+		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at
+		 FROM orders WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("order not found")
@@ -553,7 +596,7 @@ func (r *sqlOrderRepository) GetByID(id int64) (*models.Order, error) {
 func (r *sqlOrderRepository) GetByUser(userID int64, limit, offset int) ([]*models.Order, error) {
 	rows, err := r.db.Query(
 		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at
-		 FROM orders WHERE user_id = $1
+		 FROM orders WHERE user_id = $1 AND deleted_at IS NULL
 		 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
 		userID, limit, offset,
 	)
@@ -582,7 +625,7 @@ func (r *sqlOrderRepository) GetByProductOwner(ownerID int64, limit, offset int)
 		 FROM orders o
 		 JOIN order_items oi ON oi.order_id = o.id
 		 JOIN products p ON p.id = oi.product_id
-		 WHERE p.owner_id = $1
+		 WHERE p.owner_id = $1 AND o.deleted_at IS NULL
 		 ORDER BY o.created_at DESC LIMIT $2 OFFSET $3`,
 		ownerID, limit, offset,
 	)
@@ -623,7 +666,11 @@ func (r *sqlOrderRepository) AcceptWithStockCheck(id int64) (*models.Order, erro
 	o := &models.Order{}
 	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
 		var currentStatus string
-		err := exec.QueryRow(`SELECT status FROM orders WHERE id = $1 FOR UPDATE`, id).Scan(&currentStatus)
+		err := exec.QueryRow(
+			`SELECT status FROM orders
+			 WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
+			id,
+		).Scan(&currentStatus)
 		if errors.Is(err, sql.ErrNoRows) {
 			return errors.New("order not found")
 		}
@@ -659,7 +706,8 @@ func (r *sqlOrderRepository) AcceptWithStockCheck(id int64) (*models.Order, erro
 					`UPDATE products
 				 SET stock = CASE WHEN stock_unlimited THEN stock ELSE stock - $2 END,
 				     updated_at = CURRENT_TIMESTAMP
-				 WHERE id = $1 AND (stock_unlimited = true OR stock >= $2)
+				 WHERE id = $1 AND deleted_at IS NULL
+				   AND (stock_unlimited = true OR stock >= $2)
 				 RETURNING name`,
 					item.ProductID, item.Quantity,
 				).Scan(&productName)
@@ -678,7 +726,8 @@ func (r *sqlOrderRepository) AcceptWithStockCheck(id int64) (*models.Order, erro
 		}
 
 		err = exec.QueryRow(
-			`UPDATE orders SET status='accepted', updated_at=CURRENT_TIMESTAMP WHERE id=$1
+			`UPDATE orders SET status='accepted', updated_at=CURRENT_TIMESTAMP
+			 WHERE id=$1 AND deleted_at IS NULL
 		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at`,
 			id,
 		).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
@@ -702,7 +751,8 @@ func (r *sqlOrderRepository) UpdateStatus(id int64, status string) (*models.Orde
 	o := &models.Order{}
 	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
 		err := exec.QueryRow(
-			`UPDATE orders SET status=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2
+			`UPDATE orders SET status=$1, updated_at=CURRENT_TIMESTAMP
+			 WHERE id=$2 AND deleted_at IS NULL
 			 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at`,
 			status, id,
 		).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
@@ -725,7 +775,11 @@ func (r *sqlOrderRepository) UpdateVendorStatus(id, ownerID int64, status, note 
 		return nil, fmt.Errorf("invalid vendor status")
 	}
 	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
-		if _, err := exec.Exec(`SELECT id FROM orders WHERE id = $1 FOR UPDATE`, id); err != nil {
+		if _, err := exec.Exec(
+			`SELECT id FROM orders
+			 WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
+			id,
+		); err != nil {
 			return err
 		}
 
@@ -774,7 +828,8 @@ func (r *sqlOrderRepository) UpdateVendorStatus(id, ownerID int64, status, note 
 					`UPDATE products
 					 SET stock = CASE WHEN stock_unlimited THEN stock ELSE stock - $2 END,
 					     updated_at = CURRENT_TIMESTAMP
-					 WHERE id = $1 AND (stock_unlimited = true OR stock >= $2)
+					 WHERE id = $1 AND deleted_at IS NULL
+					   AND (stock_unlimited = true OR stock >= $2)
 					 RETURNING name`,
 					item.productID, item.quantity,
 				).Scan(&productName)
@@ -825,7 +880,11 @@ func (r *sqlOrderRepository) UpdateVendorStatus(id, ownerID int64, status, note 
 		if err != nil {
 			return err
 		}
-		_, err = exec.Exec(`UPDATE orders SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, aggregateStatus, id)
+		_, err = exec.Exec(
+			`UPDATE orders SET status = $1, updated_at = CURRENT_TIMESTAMP
+			 WHERE id = $2 AND deleted_at IS NULL`,
+			aggregateStatus, id,
+		)
 		return err
 	})
 	if err != nil {
@@ -879,7 +938,8 @@ func (r *sqlOrderRepository) GetGuestOrder(id int64, email, phone string) (*mode
 	err := r.db.QueryRow(
 		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at
 		 FROM orders
-		 WHERE id = $1 AND is_guest = true AND guest_email = $2 AND guest_phone = $3`, id, email, phone,
+		 WHERE id = $1 AND is_guest = true AND guest_email = $2 AND guest_phone = $3
+		   AND deleted_at IS NULL`, id, email, phone,
 	).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("guest order not found")
@@ -894,6 +954,7 @@ func (r *sqlOrderRepository) ListAll(limit, offset int) ([]*models.Order, error)
 	rows, err := r.db.Query(
 		`SELECT id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at
 		 FROM orders
+		 WHERE deleted_at IS NULL
 		 ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
 		limit, offset,
 	)
@@ -916,8 +977,19 @@ func (r *sqlOrderRepository) ListAll(limit, offset int) ([]*models.Order, error)
 	return orders, rows.Err()
 }
 
-func (r *sqlOrderRepository) Delete(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM orders WHERE id=$1`, id)
+func (r *sqlOrderRepository) Delete(id, actorID int64) error {
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE orders
+		    SET deleted_at=COALESCE(deleted_at, NOW()),
+		        deleted_by=COALESCE(deleted_by, $2)
+		    WHERE id=$1 AND deleted_at IS NULL
+		    RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		 SELECT $2, 'order', id::text, 'delete' FROM changed`,
+		id, actorID,
+	)
 	return err
 }
 

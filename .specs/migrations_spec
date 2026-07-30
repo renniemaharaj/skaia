@@ -12,6 +12,7 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 ## Owns
 
 - `backend/internal/migrations/*.sql`
+- `internal/app/migrations/*.sql` for the `grengo` control database
 - Fresh schema: `backend/internal/migrations/001_schema.sql`
 - Seed data: `backend/internal/migrations/002_seed.sql`
 - Migration runner invoked by `grengo migrate <name|all>`
@@ -67,6 +68,11 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 | `031_page_theme_ordering_concurrency.sql` | Deferrable page-theme display ordering for transactional palette swaps |
 | `032_page_interactive_response_migration.sql` | Complete normalized response fields, stable respondent identity, and page parity state |
 | `033_page_section_cutover_controls.sql` | Sustained parity, rollback-drill, and legacy-write retirement telemetry |
+| `034_soft_delete_lifecycle.sql` | Entity tombstones, reversible relationships, secret/session lifecycle, audit events, active palette ordering, and the runtime hard-delete guard |
+
+Control-plane migration `002_soft_delete_lifecycle.sql` adds retained
+site/cluster deletion state, inactive API-key permissions, scrubbed passcodes,
+and matching hard-delete protection in `grengo`.
 
 ## Invariants
 
@@ -87,7 +93,8 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
   the bounded `page-section-shadow-backfill` command so schema SQL never parses
   heterogeneous or sensitive page content.
 - Migration 031 changes only the page-scoped theme-token order uniqueness timing;
-  the 0-63 bounds and final uniqueness still apply at transaction commit.
+  migration 034 replaces that constraint with active-row uniqueness and a
+  bounded 64-slot staging range used only inside palette transactions.
 - Migration 032 preserves Q&A moderation fields and respondent identity after a
   user-row deletion, scopes idempotency uniqueness to the stable respondent key,
   and adds content-free page response-migration readiness. Sensitive document
@@ -97,6 +104,12 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
   operational preflight must first prove every page ready, a complete quiet
   release window, empty dormant legacy tables, and an explicit external-job
   dependency review.
+- Migration 034 is additive/idempotent and runs after guarded historical cleanup.
+  Its delete triggers deliberately install last so migration-only `DELETE`
+  statements remain classified separately from forbidden runtime SQL.
+- The hard-delete bypass is the global NOLOGIN
+  `skaia_hard_delete_operator` role. Migrations create but never grant it;
+  operator use requires an explicit reviewed grant and revocation.
 
 ## Verify
 

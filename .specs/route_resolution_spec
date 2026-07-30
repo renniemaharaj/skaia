@@ -54,6 +54,11 @@ for UI badges and missed page pushes.
   the `page:{id}` subscription and include affected IDs/revisions only.
 - Other clients refetch if slug/id matches their current page.
 - Deletion broadcasts `page:update page_deleted` with `{ id, slug }`.
+- Page deletion clears `landing_page_slug` in the same transaction when the
+  deleted page is current. Restoring a page never silently selects it as the
+  homepage; the user must invoke `set-homepage` explicitly.
+- Deleted pages and tombstoned normalized sections/responses are absent from
+  slug, landing, browse, compatibility projection, and typed-mutation reads.
 
 ## Invariants
 

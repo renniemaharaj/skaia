@@ -13,7 +13,7 @@ import { apiRequest } from "../../utils/api";
 import ResourceAnalytics from "../analytics/ResourceAnalytics";
 import Button from "../input/Button";
 import Select from "../input/Select";
-import { customConfirm } from "../ui/Prompt";
+import { confirmDestructiveAction, customConfirm } from "../ui/Prompt";
 import { BlockRenderer } from "./BlockRenderer";
 import { PageBuilderContext, type SaveStatus } from "./PageBuilderContext";
 import PageComments from "./PageComments";
@@ -21,6 +21,8 @@ import PageOwnershipPanel from "./PageOwnershipPanel";
 import { PageSkeleton } from "./PageSkeleton";
 import { SaveStatusBar } from "./SaveStatusBar";
 import {
+  type TypedSectionMutationResponse,
+  type TypedSectionState,
   createTypedSection,
   deleteTypedSection,
   loadTypedSections,
@@ -28,8 +30,6 @@ import {
   typedLegacyKey,
   typedSectionMap,
   updateTypedSection,
-  type TypedSectionMutationResponse,
-  type TypedSectionState,
 } from "./typedSectionApi";
 import type { PageItem, PageSection, SectionEditor } from "./types";
 import "./PageBuilder.css";
@@ -218,9 +218,15 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const handleFactoryReset = useCallback(async () => {
     if (
-      !(await customConfirm(
-        "Reset all pages?\n\nThis will permanently delete ALL custom pages, page section sections, and reset page allocations.\n\nThis cannot be undone."
-      ))
+      !(await confirmDestructiveAction({
+        title: "Reset all pages?",
+        body: "All custom pages will move to Trash, legacy homepage sections will be cleared, and page allocations will be reconciled.",
+        confirmLabel: "Reset pages",
+        typedConfirmation: {
+          value: "RESET",
+          label: 'Type "RESET" to confirm this bulk reset.',
+        },
+      }))
     )
       return;
     setResetInProgress(true);
@@ -295,7 +301,14 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
 
   const handleDeletePage = useCallback(async () => {
     if (!page?.id) return;
-    if (!(await customConfirm("Delete this page? This cannot be undone."))) return;
+    if (
+      !(await confirmDestructiveAction({
+        title: `Delete ${page.title || page.slug}?`,
+        body: "The page will move to Trash. Its sections and responses remain retained but hidden.",
+        confirmLabel: "Delete page",
+      }))
+    )
+      return;
     try {
       await deletePage(page.id);
       toast.success("Page deleted");
@@ -664,7 +677,16 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   );
 
   const deleteSectionWrapper = useCallback(
-    (id: number) => {
+    async (id: number) => {
+      if (
+        !(await confirmDestructiveAction({
+          title: "Delete this section?",
+          body: "The section will move to Trash and can be restored from the Trash page.",
+          confirmLabel: "Delete section",
+        }))
+      ) {
+        return;
+      }
       const updated = sectionsRef.current.filter(section => section.id !== id);
       const ordered = sortSections(updated);
       setSections(ordered);
@@ -723,7 +745,16 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   );
 
   const deleteItemWrapper = useCallback(
-    (id: number) => {
+    async (id: number) => {
+      if (
+        !(await confirmDestructiveAction({
+          title: "Delete this item?",
+          body: "The item will move to Trash and can be restored while its section remains active.",
+          confirmLabel: "Delete item",
+        }))
+      ) {
+        return;
+      }
       const updated = sectionsRef.current.map(section => {
         if (!section.items) return section;
         return {

@@ -5,6 +5,7 @@ import { hasPermissionAtom, isAuthenticatedAtom } from "../../atoms/auth";
 import { useCommentsFeed } from "../../hooks/useCommentsFeed";
 import { apiRequest } from "../../utils/api";
 import CommentSection from "../comments/CommentSection";
+import { confirmDestructiveAction } from "../ui/Prompt";
 
 interface PageComment {
   id: number;
@@ -168,6 +169,14 @@ export default function PageComments({ pageId, pageSlug }: Props) {
   };
 
   const handleDelete = async (commentId: number) => {
+    if (
+      !(await confirmDestructiveAction({
+        title: "Delete page comment?",
+        body: "The comment will move to Trash.",
+        confirmLabel: "Delete comment",
+      }))
+    )
+      return;
     const previousComments = comments;
     setComments(prev => prev.filter(c => c.id !== commentId));
     try {

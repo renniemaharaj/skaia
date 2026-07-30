@@ -17,7 +17,7 @@ func NewRepository(db database.Executor) Repository { return &sqlRepository{db: 
 func (r *sqlRepository) GetConfig(key string) (*models.SiteConfig, error) {
 	sc := &models.SiteConfig{}
 	err := r.db.QueryRow(
-		`SELECT key, value::text, updated_at FROM site_config WHERE key=$1`, key,
+		`SELECT key, value::text, updated_at FROM site_config WHERE key=$1 AND deleted_at IS NULL`, key,
 	).Scan(&sc.Key, &sc.Value, &sc.UpdatedAt)
 	if err != nil {
 		return nil, err
@@ -28,25 +28,37 @@ func (r *sqlRepository) GetConfig(key string) (*models.SiteConfig, error) {
 func (r *sqlRepository) UpsertConfig(key, valueJSON string) error {
 	query := `INSERT INTO site_config (key, value, updated_at)
 		 VALUES ($1, $2::jsonb, CURRENT_TIMESTAMP)
-		 ON CONFLICT (key) DO UPDATE SET value = site_config.value || $2::jsonb, updated_at=CURRENT_TIMESTAMP`
+		 ON CONFLICT (key) DO UPDATE SET value=site_config.value||$2::jsonb,deleted_at=NULL,deleted_by=NULL,updated_at=CURRENT_TIMESTAMP`
 	if key == "landing_page_slug" {
 		query = `INSERT INTO site_config (key, value, updated_at)
 		 VALUES ($1, $2::jsonb, CURRENT_TIMESTAMP)
-		 ON CONFLICT (key) DO UPDATE SET value = $2::jsonb, updated_at=CURRENT_TIMESTAMP`
+		 ON CONFLICT (key) DO UPDATE SET value=$2::jsonb,deleted_at=NULL,deleted_by=NULL,updated_at=CURRENT_TIMESTAMP`
 	}
 	_, err := r.db.Exec(query, key, valueJSON)
 	return err
 }
 
 func (r *sqlRepository) DeleteConfig(key string) error {
-	_, err := r.db.Exec(`DELETE FROM site_config WHERE key = $1`, key)
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE site_config SET deleted_at=COALESCE(deleted_at,NOW())
+		    WHERE key=$1 AND deleted_at IS NULL RETURNING key
+		 )
+		 INSERT INTO resource_lifecycle_events(resource_type,resource_id,action)
+		 SELECT 'site_config',key,'delete' FROM changed`, key)
 	return err
 }
 
 // Landing sections
 
 func (r *sqlRepository) DeleteAllSections() error {
-	_, err := r.db.Exec(`DELETE FROM page_sections`)
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE page_sections SET deleted_at=COALESCE(deleted_at,NOW())
+		    WHERE deleted_at IS NULL RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(resource_type,resource_id,action)
+		 SELECT 'page_section',id::text,'delete' FROM changed`)
 	return err
 }
 
@@ -54,7 +66,7 @@ func (r *sqlRepository) ListSections() ([]*models.PageSection, error) {
 	rows, err := r.db.Query(
 		`SELECT id, display_order, section_type, heading, subheading,
 			 config::text, created_at, updated_at
-		 FROM page_sections ORDER BY display_order`)
+		 FROM page_sections WHERE deleted_at IS NULL ORDER BY display_order`)
 	if err != nil {
 		return nil, err
 	}
@@ -74,9 +86,12 @@ func (r *sqlRepository) ListSections() ([]*models.PageSection, error) {
 	// Load items for every section in one query
 	if len(sections) > 0 {
 		itemRows, err := r.db.Query(
-			`SELECT id, page_section_id, display_order, icon, heading, subheading,
-				  image_url, link_url, config::text, created_at, updated_at
-			  FROM page_items ORDER BY page_section_id, display_order`)
+			`SELECT pi.id,pi.page_section_id,pi.display_order,pi.icon,pi.heading,pi.subheading,
+				  pi.image_url,pi.link_url,pi.config::text,pi.created_at,pi.updated_at
+			  FROM page_items pi
+			  JOIN page_sections ps ON ps.id=pi.page_section_id AND ps.deleted_at IS NULL
+			  WHERE pi.deleted_at IS NULL
+			  ORDER BY pi.page_section_id,pi.display_order`)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +121,7 @@ func (r *sqlRepository) GetSection(id int64) (*models.PageSection, error) {
 	err := r.db.QueryRow(
 		`SELECT id, display_order, section_type, heading, subheading,
 			      config::text, created_at, updated_at
-		       FROM page_sections WHERE id=$1`, id,
+		       FROM page_sections WHERE id=$1 AND deleted_at IS NULL`, id,
 	).Scan(&s.ID, &s.DisplayOrder, &s.SectionType,
 		&s.Heading, &s.Subheading, &s.Config,
 		&s.CreatedAt, &s.UpdatedAt)
@@ -134,20 +149,26 @@ func (r *sqlRepository) UpdateSection(s *models.PageSection) error {
 	_, err := r.db.Exec(
 		`UPDATE page_sections
 		       SET display_order=$2, heading=$3, subheading=$4, config=$5::jsonb, updated_at=CURRENT_TIMESTAMP
-		       WHERE id=$1`,
+		       WHERE id=$1 AND deleted_at IS NULL`,
 		s.ID, s.DisplayOrder, s.Heading, s.Subheading, s.Config,
 	)
 	return err
 }
 
 func (r *sqlRepository) DeleteSection(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM page_sections WHERE id=$1`, id)
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE page_sections SET deleted_at=COALESCE(deleted_at,NOW())
+		    WHERE id=$1 AND deleted_at IS NULL RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(resource_type,resource_id,action)
+		 SELECT 'page_section',id::text,'delete' FROM changed`, id)
 	return err
 }
 
 func (r *sqlRepository) ShiftSections(fromOrder int) error {
 	_, err := r.db.Exec(
-		`UPDATE page_sections SET display_order = display_order + 1, updated_at=CURRENT_TIMESTAMP WHERE display_order >= $1`,
+		`UPDATE page_sections SET display_order=display_order+1,updated_at=CURRENT_TIMESTAMP WHERE display_order >= $1 AND deleted_at IS NULL`,
 		fromOrder,
 	)
 	return err
@@ -157,7 +178,7 @@ func (r *sqlRepository) ReorderSections(ids []int64) error {
 	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
 		for i, id := range ids {
 			if _, err := exec.Exec(
-				`UPDATE page_sections SET display_order=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2`,
+				`UPDATE page_sections SET display_order=$1,updated_at=CURRENT_TIMESTAMP WHERE id=$2 AND deleted_at IS NULL`,
 				i+1, id); err != nil {
 				return err
 			}
@@ -170,9 +191,11 @@ func (r *sqlRepository) ReorderSections(ids []int64) error {
 
 func (r *sqlRepository) ListItems(sectionID int64) ([]*models.PageItem, error) {
 	rows, err := r.db.Query(
-		`SELECT id, page_section_id, display_order, icon, heading, subheading,
-			 image_url, link_url, config::text, created_at, updated_at
-		 FROM page_items WHERE page_section_id=$1 ORDER BY display_order`, sectionID)
+		`SELECT pi.id,pi.page_section_id,pi.display_order,pi.icon,pi.heading,pi.subheading,
+			 pi.image_url,pi.link_url,pi.config::text,pi.created_at,pi.updated_at
+		 FROM page_items pi
+		 JOIN page_sections ps ON ps.id=pi.page_section_id AND ps.deleted_at IS NULL
+		 WHERE pi.page_section_id=$1 AND pi.deleted_at IS NULL ORDER BY pi.display_order`, sectionID)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +218,8 @@ func (r *sqlRepository) ListItems(sectionID int64) ([]*models.PageItem, error) {
 func (r *sqlRepository) CreateItem(item *models.PageItem) error {
 	return r.db.QueryRow(
 		`INSERT INTO page_items (page_section_id, display_order, icon, heading, subheading, image_url, link_url, config)
-		       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
+		       SELECT $1,$2,$3,$4,$5,$6,$7,$8::jsonb
+		       WHERE EXISTS (SELECT 1 FROM page_sections WHERE id=$1 AND deleted_at IS NULL)
 		       RETURNING id, created_at, updated_at`,
 		item.SectionID, item.DisplayOrder, item.Icon, item.Heading,
 		item.Subheading, item.ImageURL, item.LinkURL, item.Config,
@@ -205,9 +229,11 @@ func (r *sqlRepository) CreateItem(item *models.PageItem) error {
 func (r *sqlRepository) GetItem(id int64) (*models.PageItem, error) {
 	it := &models.PageItem{}
 	err := r.db.QueryRow(
-		`SELECT id, page_section_id, display_order, icon, heading, subheading,
-			      image_url, link_url, config::text, created_at, updated_at
-		       FROM page_items WHERE id=$1`, id,
+		`SELECT pi.id,pi.page_section_id,pi.display_order,pi.icon,pi.heading,pi.subheading,
+			      pi.image_url,pi.link_url,pi.config::text,pi.created_at,pi.updated_at
+		       FROM page_items pi
+		       JOIN page_sections ps ON ps.id=pi.page_section_id AND ps.deleted_at IS NULL
+		       WHERE pi.id=$1 AND pi.deleted_at IS NULL`, id,
 	).Scan(&it.ID, &it.SectionID, &it.DisplayOrder,
 		&it.Icon, &it.Heading, &it.Subheading,
 		&it.ImageURL, &it.LinkURL, &it.Config,
@@ -223,7 +249,7 @@ func (r *sqlRepository) UpdateItem(item *models.PageItem) error {
 		`UPDATE page_items
 				       SET icon=$2, heading=$3, subheading=$4, image_url=$5, link_url=$6,
 					       config=$7::jsonb, updated_at=CURRENT_TIMESTAMP
-				       WHERE id=$1`,
+				       WHERE id=$1 AND deleted_at IS NULL`,
 		item.ID, item.Icon, item.Heading, item.Subheading,
 		item.ImageURL, item.LinkURL, item.Config,
 	)
@@ -231,7 +257,13 @@ func (r *sqlRepository) UpdateItem(item *models.PageItem) error {
 }
 
 func (r *sqlRepository) DeleteItem(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM page_items WHERE id=$1`, id)
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE page_items SET deleted_at=COALESCE(deleted_at,NOW())
+		    WHERE id=$1 AND deleted_at IS NULL RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(resource_type,resource_id,action)
+		 SELECT 'page_item',id::text,'delete' FROM changed`, id)
 	return err
 }
 
@@ -240,7 +272,7 @@ func (r *sqlRepository) ReorderItems(sectionID int64, ids []int64) error {
 		for i, id := range ids {
 			if _, err := exec.Exec(
 				`UPDATE page_items SET display_order=$1, updated_at=CURRENT_TIMESTAMP
-			       WHERE id=$2 AND page_section_id=$3`,
+			       WHERE id=$2 AND page_section_id=$3 AND deleted_at IS NULL`,
 				i+1, id, sectionID); err != nil {
 				return err
 			}

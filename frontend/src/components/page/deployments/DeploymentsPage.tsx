@@ -16,8 +16,8 @@ import { socketAtom } from "../../../atoms/auth";
 import { apiRequest } from "../../../utils/api";
 import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
 import Button from "../../input/Button";
-import Select from "../../input/Select";
 import Input from "../../input/Input";
+import Select from "../../input/Select";
 import { Console, type ConsoleLine } from "../../ui/Console";
 import { customConfirm } from "../../ui/Prompt";
 import type { TableColumn } from "../../ui/TableView/TableView";
@@ -249,7 +249,19 @@ export function DeploymentsPage() {
   };
 
   const deleteInstance = async (id: number) => {
-    if (!(await customConfirm(`Are you sure you want to tear down instance #${id}?`))) return;
+    if (
+      !(await customConfirm({
+        title: `Permanently tear down instance #${id}?`,
+        body: "External containers, volumes, and instance files will be destroyed. The retained lifecycle record is not restorable.",
+        confirmLabel: "Tear down permanently",
+        destructive: true,
+        typedConfirmation: {
+          value: String(id),
+          label: `Type ${id} to continue`,
+        },
+      }))
+    )
+      return;
     try {
       await apiRequest(`/provisioning/instances/${id}`, { method: "DELETE" });
       toast.success("Instance torn down successfully.");
@@ -309,6 +321,15 @@ export function DeploymentsPage() {
   };
 
   const uninstallApp = async (id: number, app: string) => {
+    if (
+      !(await customConfirm({
+        title: `Uninstall ${app}?`,
+        body: "The app will be removed from the external instance and may remove app-owned data.",
+        confirmLabel: "Uninstall app",
+        destructive: true,
+      }))
+    )
+      return;
     try {
       await apiRequest(`/provisioning/instances/${id}/apps/${app}`, {
         method: "DELETE",

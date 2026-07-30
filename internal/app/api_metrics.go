@@ -283,13 +283,13 @@ func gatherStorage() *storageInfo {
 		if port == "" {
 			port = "1080"
 		}
-		
+
 		portInt, _ := strconv.Atoi(port)
 		grpcPort := strconv.Itoa(portInt + 100)
 		grpcAddr := fmt.Sprintf("127.0.0.1:%s", grpcPort)
 
 		var used int64
-		
+
 		conn, err := grpc.NewClient(grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err == nil {
 			client := pb.NewBackendServiceClient(conn)

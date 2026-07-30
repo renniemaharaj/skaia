@@ -142,7 +142,7 @@ func (w *grpcLogWriter) Write(p []byte) (n int, err error) {
 
 func (s *GrengoServer) ProvisionFrappe(req *pb.ProvisionFrappeRequest, stream pb.GrengoService_ProvisionFrappeServer) error {
 	writer := &grpcLogWriter{stream: stream, mu: sync.Mutex{}}
-	
+
 	args := []string{"frappe-provision", req.SiteName}
 	if req.Version != "" && req.Version != "16" {
 		args = append(args, "--version", req.Version)

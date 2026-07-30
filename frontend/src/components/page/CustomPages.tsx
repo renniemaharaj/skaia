@@ -33,7 +33,7 @@ import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import ResourceAnalytics from "../analytics/ResourceAnalytics";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
-import { customConfirm } from "../ui/Prompt";
+import { confirmDestructiveAction } from "../ui/Prompt";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
 import { DirectoryLayout } from "./layout/templates/DirectoryLayout";
@@ -292,7 +292,13 @@ export default function CustomPages() {
       event.preventDefault();
       event.stopPropagation();
       if (!page.id || !page.can_delete) return;
-      if (!(await customConfirm("Delete this page? This cannot be undone."))) {
+      if (
+        !(await confirmDestructiveAction({
+          title: `Delete ${page.title || page.slug}?`,
+          body: "The page will move to Trash. Its sections and responses remain retained but hidden.",
+          confirmLabel: "Delete page",
+        }))
+      ) {
         return;
       }
       setDeletingPageId(page.id);

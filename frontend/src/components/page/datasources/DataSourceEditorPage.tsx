@@ -241,7 +241,15 @@ export default function DataSourceEditorPage() {
 
   const handleDelete = async () => {
     if (isNew) return;
-    if (!(await customConfirm("Delete this data source?"))) return;
+    if (
+      !(await customConfirm({
+        title: "Delete this data source?",
+        body: "The data source will move to Trash. Dependent section presets stay hidden until it is restored.",
+        confirmLabel: "Delete data source",
+        destructive: true,
+      }))
+    )
+      return;
     try {
       await apiRequest(`/config/datasources/${id}`, { method: "DELETE" });
       toast.success("Deleted");

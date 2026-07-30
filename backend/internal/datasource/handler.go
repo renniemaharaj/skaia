@@ -190,12 +190,17 @@ func (h *Handler) deleteDataSource(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
+	actorID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid id")
 		return
 	}
-	if err := h.svc.Delete(id); err != nil {
+	if err := h.svc.Delete(id, actorID); err != nil {
 		log.Printf("datasource.delete: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "delete failed")
 		return

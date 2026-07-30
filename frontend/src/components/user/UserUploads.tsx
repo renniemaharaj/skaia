@@ -21,7 +21,7 @@ import { showUploadManagerAtom, uploader } from "../../atoms/uploadAtom";
 import { apiRequest } from "../../utils/api";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
-import { customConfirm } from "../ui/Prompt";
+import { confirmDestructiveAction, customAlert } from "../ui/Prompt";
 import { TableView } from "../ui/TableView/TableView";
 
 import "../page/layout/templates/DirectoryLayout.css";
@@ -137,7 +137,14 @@ const UserUploads = ({
 
   const handleDelete = useCallback(
     async (url: string) => {
-      if (!(await customConfirm("Delete this upload permanently?"))) return;
+      if (
+        !(await confirmDestructiveAction({
+          title: "Permanently delete upload?",
+          body: "The file bytes will be removed permanently and will not appear in Trash.",
+          confirmLabel: "Delete permanently",
+        }))
+      )
+        return;
       setDeletingSet(prev => new Set(prev).add(url));
       try {
         await apiRequest("/upload/file", {
@@ -153,7 +160,7 @@ const UserUploads = ({
         });
         fetchStorage();
       } catch {
-        alert("Failed to delete upload");
+        await customAlert("Failed to delete upload");
       } finally {
         setDeletingSet(prev => {
           const next = new Set(prev);
@@ -168,7 +175,21 @@ const UserUploads = ({
   const handleMultiDelete = async () => {
     const urls = Array.from(selectedItems);
     if (urls.length === 0) return;
-    if (!(await customConfirm(`Delete ${urls.length} upload(s) permanently?`))) return;
+    if (
+      !(await confirmDestructiveAction({
+        title: `Permanently delete ${urls.length} uploads?`,
+        body: "The selected file bytes will be removed permanently and cannot be restored.",
+        confirmLabel: "Delete permanently",
+        typedConfirmation:
+          urls.length >= 10
+            ? {
+                value: "DELETE",
+                label: 'Type "DELETE" to confirm this bulk file deletion.',
+              }
+            : undefined,
+      }))
+    )
+      return;
 
     const deleting = new Set(urls);
     setDeletingSet(prev => new Set([...prev, ...deleting]));
@@ -183,7 +204,7 @@ const UserUploads = ({
       setSelectedItems(new Set());
       fetchStorage();
     } catch {
-      alert("Failed to delete uploads");
+      await customAlert("Failed to delete uploads");
     } finally {
       setDeletingSet(prev => {
         const next = new Set(prev);

@@ -19,7 +19,7 @@ func (r *sqlRepository) GetByID(id int64) (*models.DataSource, error) {
 	var filesRaw []byte
 	err := r.db.QueryRow(
 		`SELECT id, name, description, code, files, env_data, cache_ttl, created_by, created_at, updated_at
-		 FROM data_sources WHERE id = $1`, id,
+		 FROM data_sources WHERE id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&ds.ID, &ds.Name, &ds.Description, &ds.Code, &filesRaw, &ds.EnvData, &ds.CacheTTL, &createdBy, &ds.CreatedAt, &ds.UpdatedAt)
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func (r *sqlRepository) GetByID(id int64) (*models.DataSource, error) {
 func (r *sqlRepository) List() ([]*models.DataSource, error) {
 	rows, err := r.db.Query(
 		`SELECT id, name, description, code, files, env_data, cache_ttl, created_by, created_at, updated_at
-		 FROM data_sources ORDER BY created_at DESC`)
+		 FROM data_sources WHERE deleted_at IS NULL ORDER BY created_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -71,26 +71,41 @@ func (r *sqlRepository) Update(ds *models.DataSource) error {
 	syncCodeFromFiles(ds)
 	_, err := r.db.Exec(
 		`UPDATE data_sources SET name = $1, description = $2, code = $3, files = $4, cache_ttl = $5, updated_at = NOW()
-		 WHERE id = $6`,
+		 WHERE id = $6 AND deleted_at IS NULL`,
 		ds.Name, ds.Description, ds.Code, ds.Files, ds.CacheTTL, ds.ID,
 	)
 	return err
 }
 
-func (r *sqlRepository) Delete(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM data_sources WHERE id = $1`, id)
+func (r *sqlRepository) Delete(id, actorID int64) error {
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE data_sources
+		    SET deleted_at=COALESCE(deleted_at, NOW()),
+		        deleted_by=COALESCE(deleted_by, $2)
+		    WHERE id=$1 AND deleted_at IS NULL
+		    RETURNING id
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
+		 SELECT $2, 'data_source', id::text, 'delete' FROM changed`,
+		id, actorID,
+	)
 	return err
 }
 
 func (r *sqlRepository) GetEnvData(id int64) (string, error) {
 	var envData string
-	err := r.db.QueryRow(`SELECT env_data FROM data_sources WHERE id = $1`, id).Scan(&envData)
+	err := r.db.QueryRow(
+		`SELECT env_data FROM data_sources WHERE id = $1 AND deleted_at IS NULL`,
+		id,
+	).Scan(&envData)
 	return envData, err
 }
 
 func (r *sqlRepository) UpdateEnvData(id int64, envData string) error {
 	_, err := r.db.Exec(
-		`UPDATE data_sources SET env_data = $1, updated_at = NOW() WHERE id = $2`,
+		`UPDATE data_sources SET env_data = $1, updated_at = NOW()
+		 WHERE id = $2 AND deleted_at IS NULL`,
 		envData, id)
 	return err
 }

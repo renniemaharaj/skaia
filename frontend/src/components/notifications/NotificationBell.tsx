@@ -25,6 +25,7 @@ import {
 } from "../../atoms/notifications";
 import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
+import { confirmDestructiveAction } from "../ui/Prompt";
 import "./NotificationBell.css";
 
 const PAGE_SIZE = 30;
@@ -159,6 +160,14 @@ const NotificationBell = () => {
 
   const deleteNotif = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (
+      !(await confirmDestructiveAction({
+        title: "Delete notification?",
+        body: "The notification will move to Trash.",
+        confirmLabel: "Delete notification",
+      }))
+    )
+      return;
     try {
       await apiRequest(`/notifications/${id}`, { method: "DELETE" });
       setNotifs(prev => prev.filter(n => n.id !== id));
@@ -166,6 +175,14 @@ const NotificationBell = () => {
   };
 
   const clearAll = async () => {
+    if (
+      !(await confirmDestructiveAction({
+        title: "Clear all notifications?",
+        body: "All notifications will move to Trash and can be restored individually.",
+        confirmLabel: "Clear all",
+      }))
+    )
+      return;
     try {
       await apiRequest("/notifications", { method: "DELETE" });
       setNotifs([]);

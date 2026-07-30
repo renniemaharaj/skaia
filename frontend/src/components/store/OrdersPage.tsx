@@ -31,6 +31,7 @@ import { apiRequest } from "../../utils/api";
 import { formatCents } from "../../utils/money";
 import Button from "../input/Button";
 import Select from "../input/Select";
+import { confirmDestructiveAction } from "../ui/Prompt";
 import { StorePageShell } from "./StorePageShell";
 import "../../styles/Cart.css";
 import "./OrdersPage.css";
@@ -202,7 +203,14 @@ export const OrdersPage = () => {
   };
 
   const deleteReferenceCode = async (id: string) => {
-    if (!confirm("Delete this reference code?")) return;
+    if (
+      !(await confirmDestructiveAction({
+        title: "Delete reference code?",
+        body: "The reference code will move to Trash and stop applying to new orders.",
+        confirmLabel: "Delete code",
+      }))
+    )
+      return;
     try {
       await apiRequest(`/store/reference-codes/${id}`, {
         method: "DELETE",
@@ -610,7 +618,14 @@ export const OrdersPage = () => {
   };
 
   const deleteOrder = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this order?")) return;
+    if (
+      !(await confirmDestructiveAction({
+        title: "Delete order?",
+        body: "The order will move to Trash. Financial and payment history remains immutable.",
+        confirmLabel: "Delete order",
+      }))
+    )
+      return;
     try {
       await apiRequest(`/store/orders/${id}`, { method: "DELETE" });
       toast.success("Order deleted");

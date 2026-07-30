@@ -53,7 +53,7 @@ func TestProductRepository_Delete(t *testing.T) {
 		IsActive:   true,
 	})
 	require.NoError(t, err)
-	require.NoError(t, prodRepo.Delete(p.ID))
+	require.NoError(t, prodRepo.Delete(p.ID, 1))
 	_, err = prodRepo.GetByID(p.ID)
 	require.Error(t, err, "deleted product must not be retrievable")
 }

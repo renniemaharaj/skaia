@@ -86,7 +86,7 @@ func (r *fakeReferenceCodeRepo) List(limit, offset int) ([]*models.ReferenceCode
 	return codes, nil
 }
 
-func (r *fakeReferenceCodeRepo) Delete(id int64) error {
+func (r *fakeReferenceCodeRepo) Delete(id, actorID int64) error {
 	return nil
 }
 

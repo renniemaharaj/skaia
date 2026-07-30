@@ -156,6 +156,16 @@ is not an architectural invariant and must not be treated as one.
   authentication events, superuser activity, and per-tenant activity.
 - Audit write failure policy is explicit per action. High-impact mutations fail
   closed or use a durable transactional/outbox mechanism; silent loss is forbidden.
+- Trash listing and restoration are domain-authorized service operations.
+  Manage-others permission lookup failure falls back to owner-only scope, and
+  unauthorized tombstones return the same not-found result as missing rows.
+- Auth deletion/revocation retains no usable password, TOTP, backup-code,
+  verification-token, reset-token, or passcode material. Lifecycle metadata is
+  safe and content-free.
+- Database hard-delete triggers protect lifecycle, relationship, immutable
+  ledger, audit, and migration-evidence rows from application connections.
+  The bypass role is NOLOGIN and SET access is granted only for reviewed
+  operator work.
 
 ## Current Baseline (2026-06-19)
 

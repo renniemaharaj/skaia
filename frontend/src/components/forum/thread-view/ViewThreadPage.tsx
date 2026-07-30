@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { Suspense, lazy } from "react";
 import { currentUserAtom } from "../../../atoms/auth";
 import { contextUserAtom } from "../../../atoms/contextUser";
 import { currentThreadAtom, threadPermissionsAtom } from "../../../atoms/forum";
@@ -21,12 +22,12 @@ import { apiRequest } from "../../../utils/api";
 import ResourceAnalytics from "../../analytics/ResourceAnalytics";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import WebRTCPanel from "../../page/layout/WebRTCPanel";
+import { confirmDestructiveAction } from "../../ui/Prompt";
 import type { Role } from "../../user/types";
 import RecentThreadsTile from "../RecentThreadsTile";
 import TableOfContentsTile from "../TableOfContentsTile";
 import ThreadMediaViewer from "../ThreadMediaViewer";
 import { ThreadUserTiles } from "../ThreadUserTiles";
-import { lazy, Suspense } from "react";
 const ViewThread = lazy(() => import("../ViewThread"));
 import ViewThreadComments from "../ViewThreadComments";
 import ViewThreadMeta from "../ViewThreadMeta";
@@ -132,6 +133,14 @@ const ViewThreadPage = () => {
   };
 
   const handleDelete = async () => {
+    if (
+      !(await confirmDestructiveAction({
+        title: "Delete forum thread?",
+        body: "The thread will move to Trash. Its comments remain retained but hidden.",
+        confirmLabel: "Delete thread",
+      }))
+    )
+      return;
     try {
       await apiRequest(`/forum/threads/${threadId}`, {
         method: "DELETE",

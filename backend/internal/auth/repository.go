@@ -44,7 +44,10 @@ func (r *SQLRepository) executor(ctx context.Context) database.Executor {
 // Implementations for credential, TOTP, and backup code methods will go here.
 // Credential methods
 func (r *SQLRepository) CreateCredential(ctx context.Context, userID int64, passwordHash string) (*models.Credential, error) {
-	row := r.executor(ctx).QueryRowContext(ctx, `INSERT INTO auth_credentials (user_id, password_hash) VALUES ($1, $2) RETURNING id, user_id, password_hash, created_at, updated_at`, userID, passwordHash)
+	row := r.executor(ctx).QueryRowContext(ctx, `
+		INSERT INTO auth_credentials (user_id,password_hash) VALUES ($1,$2)
+		ON CONFLICT (user_id) DO UPDATE SET password_hash=EXCLUDED.password_hash,cleared_at=NULL,updated_at=NOW()
+		RETURNING id,user_id,password_hash,created_at,updated_at`, userID, passwordHash)
 	cred := &models.Credential{}
 	if err := row.Scan(&cred.ID, &cred.UserID, &cred.PasswordHash, &cred.CreatedAt, &cred.UpdatedAt); err != nil {
 		return nil, err
@@ -53,7 +56,10 @@ func (r *SQLRepository) CreateCredential(ctx context.Context, userID int64, pass
 }
 
 func (r *SQLRepository) GetCredentialByUserID(ctx context.Context, userID int64) (*models.Credential, error) {
-	row := r.executor(ctx).QueryRowContext(ctx, `SELECT id, user_id, password_hash, created_at, updated_at FROM auth_credentials WHERE user_id = $1`, userID)
+	row := r.executor(ctx).QueryRowContext(ctx, `
+		SELECT c.id,c.user_id,c.password_hash,c.created_at,c.updated_at
+		FROM auth_credentials c JOIN users u ON u.id=c.user_id
+		WHERE c.user_id=$1 AND c.cleared_at IS NULL AND u.deleted_at IS NULL`, userID)
 	cred := &models.Credential{}
 	if err := row.Scan(&cred.ID, &cred.UserID, &cred.PasswordHash, &cred.CreatedAt, &cred.UpdatedAt); err != nil {
 		return nil, err
@@ -70,7 +76,9 @@ func (r *SQLRepository) UpdatePasswordHash(ctx context.Context, userID int64, ne
 		}
 		return err
 	}
-	_, err := r.executor(ctx).ExecContext(ctx, `UPDATE auth_credentials SET password_hash = $1, updated_at = NOW() WHERE user_id = $2`, newHash, userID)
+	_, err := r.executor(ctx).ExecContext(ctx, `
+		UPDATE auth_credentials SET password_hash=$1,cleared_at=NULL,updated_at=NOW()
+		WHERE user_id=$2 AND EXISTS (SELECT 1 FROM users WHERE id=$2 AND deleted_at IS NULL)`, newHash, userID)
 	return err
 }
 
@@ -79,7 +87,7 @@ func (r *SQLRepository) CreateTOTPSecret(ctx context.Context, userID int64, secr
 	row := r.executor(ctx).QueryRowContext(ctx, `
 		INSERT INTO auth_totp_secrets (user_id, totp_secret, enabled)
 		VALUES ($1, $2, false)
-		ON CONFLICT (user_id) DO UPDATE SET totp_secret = EXCLUDED.totp_secret, enabled = false, updated_at = NOW()
+		ON CONFLICT (user_id) DO UPDATE SET totp_secret=EXCLUDED.totp_secret,enabled=false,cleared_at=NULL,updated_at=NOW()
 		RETURNING id, user_id, totp_secret, enabled, created_at, updated_at
 	`, userID, secret)
 	t := &models.TOTPSecret{}
@@ -90,7 +98,10 @@ func (r *SQLRepository) CreateTOTPSecret(ctx context.Context, userID int64, secr
 }
 
 func (r *SQLRepository) GetTOTPSecretByUserID(ctx context.Context, userID int64) (*models.TOTPSecret, error) {
-	row := r.executor(ctx).QueryRowContext(ctx, `SELECT id, user_id, totp_secret, enabled, created_at, updated_at FROM auth_totp_secrets WHERE user_id = $1`, userID)
+	row := r.executor(ctx).QueryRowContext(ctx, `
+		SELECT s.id,s.user_id,s.totp_secret,s.enabled,s.created_at,s.updated_at
+		FROM auth_totp_secrets s JOIN users u ON u.id=s.user_id
+		WHERE s.user_id=$1 AND s.cleared_at IS NULL AND u.deleted_at IS NULL`, userID)
 	t := &models.TOTPSecret{}
 	if err := row.Scan(&t.ID, &t.UserID, &t.Secret, &t.Enabled, &t.CreatedAt, &t.UpdatedAt); err != nil {
 		return nil, err
@@ -99,12 +110,12 @@ func (r *SQLRepository) GetTOTPSecretByUserID(ctx context.Context, userID int64)
 }
 
 func (r *SQLRepository) SetTOTPEnabled(ctx context.Context, userID int64, enabled bool) error {
-	_, err := r.executor(ctx).ExecContext(ctx, `UPDATE auth_totp_secrets SET enabled = $1, updated_at = NOW() WHERE user_id = $2`, enabled, userID)
+	_, err := r.executor(ctx).ExecContext(ctx, `UPDATE auth_totp_secrets SET enabled=$1,updated_at=NOW() WHERE user_id=$2 AND cleared_at IS NULL`, enabled, userID)
 	return err
 }
 
 func (r *SQLRepository) GetTOTPEnabled(ctx context.Context, userID int64) (bool, error) {
-	row := r.executor(ctx).QueryRowContext(ctx, `SELECT enabled FROM auth_totp_secrets WHERE user_id = $1`, userID)
+	row := r.executor(ctx).QueryRowContext(ctx, `SELECT enabled FROM auth_totp_secrets WHERE user_id=$1 AND cleared_at IS NULL`, userID)
 	var enabled bool
 	if err := row.Scan(&enabled); err != nil {
 		return false, err
@@ -124,7 +135,7 @@ func (r *SQLRepository) CreateBackupCodes(ctx context.Context, userID int64, cod
 }
 
 func (r *SQLRepository) GetBackupCodes(ctx context.Context, userID int64) ([]*models.BackupCode, error) {
-	rows, err := r.executor(ctx).QueryContext(ctx, `SELECT id, user_id, code_hash, used, created_at FROM auth_backup_codes WHERE user_id = $1`, userID)
+	rows, err := r.executor(ctx).QueryContext(ctx, `SELECT id, user_id, code_hash, used, created_at FROM auth_backup_codes WHERE user_id = $1 AND cleared_at IS NULL`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +157,10 @@ func (r *SQLRepository) UseBackupCode(ctx context.Context, codeID int64) error {
 }
 
 func (r *SQLRepository) DeleteBackupCodes(ctx context.Context, userID int64) error {
-	_, err := r.executor(ctx).ExecContext(ctx, `DELETE FROM auth_backup_codes WHERE user_id = $1`, userID)
+	_, err := r.executor(ctx).ExecContext(ctx, `
+		UPDATE auth_backup_codes
+		SET code_hash=NULL, used=TRUE, cleared_at=COALESCE(cleared_at, NOW())
+		WHERE user_id = $1 AND cleared_at IS NULL`, userID)
 	return err
 }
 
@@ -162,12 +176,13 @@ func (r *SQLRepository) SetMFAChallenge(ctx context.Context, userID int64, requi
 			required = EXCLUDED.required,
 			reason_code = EXCLUDED.reason_code,
 			action = EXCLUDED.action,
+			cleared_at = NULL,
 			updated_at = NOW()`, userID, required, reason, action)
 	return err
 }
 
 func (r *SQLRepository) GetMFARequired(ctx context.Context, userID int64) (models.MFAChallengeStatus, error) {
-	row := r.executor(ctx).QueryRowContext(ctx, `SELECT required, reason_code, action, created_at, updated_at FROM mfa_challenge_required WHERE user_id = $1`, userID)
+	row := r.executor(ctx).QueryRowContext(ctx, `SELECT required,reason_code,action,created_at,updated_at FROM mfa_challenge_required WHERE user_id=$1 AND cleared_at IS NULL`, userID)
 	var status models.MFAChallengeStatus
 	status.UserID = userID
 	if err := row.Scan(&status.Required, &status.Reason, &status.Action, &status.CreatedAt, &status.UpdatedAt); err != nil {

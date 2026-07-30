@@ -31,7 +31,7 @@ func (r *sqlRepository) GetBlueprintByID(id int64) (*models.AppBlueprint, error)
 	bp := &models.AppBlueprint{}
 	err := r.db.QueryRow(`
 		SELECT id, name, description, supported_versions, config_schema, is_active, created_at, updated_at
-		 FROM app_blueprints WHERE id = $1`, id,
+		 FROM app_blueprints WHERE id=$1 AND deleted_at IS NULL`, id,
 	).Scan(&bp.ID, &bp.Name, &bp.Description, &bp.SupportedVersions, &bp.ConfigSchema, &bp.IsActive, &bp.CreatedAt, &bp.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("blueprint not found")
@@ -45,7 +45,7 @@ func (r *sqlRepository) GetBlueprintByID(id int64) (*models.AppBlueprint, error)
 func (r *sqlRepository) ListActiveBlueprints() ([]*models.AppBlueprint, error) {
 	rows, err := r.db.Query(`
 		SELECT id, name, description, supported_versions, config_schema, is_active, created_at, updated_at
-		 FROM app_blueprints WHERE is_active = true ORDER BY name ASC`,
+		 FROM app_blueprints WHERE is_active=true AND deleted_at IS NULL ORDER BY name ASC`,
 	)
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func (r *sqlRepository) GetInstanceByID(id int64) (*models.ProvisionedInstance, 
 	i := &models.ProvisionedInstance{}
 	err := r.db.QueryRow(
 		`SELECT id, client_id, blueprint_id, version_tag, status, config_payload, created_at, updated_at
-		 FROM provisioned_instances WHERE id = $1`, id,
+		 FROM provisioned_instances WHERE id=$1 AND deleted_at IS NULL`, id,
 	).Scan(&i.ID, &i.ClientID, &i.BlueprintID, &i.VersionTag, &i.Status, &i.ConfigPayload, &i.CreatedAt, &i.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errors.New("instance not found")
@@ -94,7 +94,7 @@ func (r *sqlRepository) GetInstanceByID(id int64) (*models.ProvisionedInstance, 
 func (r *sqlRepository) ListInstancesByClient(clientID int64) ([]*models.ProvisionedInstance, error) {
 	rows, err := r.db.Query(
 		`SELECT id, client_id, blueprint_id, version_tag, status, config_payload, created_at, updated_at
-		 FROM provisioned_instances WHERE client_id = $1 ORDER BY created_at DESC`, clientID,
+		 FROM provisioned_instances WHERE client_id=$1 AND deleted_at IS NULL ORDER BY created_at DESC`, clientID,
 	)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (r *sqlRepository) ListInstancesByClient(clientID int64) ([]*models.Provisi
 
 func (r *sqlRepository) UpdateInstanceStatus(id int64, status string) error {
 	_, err := r.db.Exec(
-		`UPDATE provisioned_instances SET status = $1, updated_at = NOW() WHERE id = $2`,
+		`UPDATE provisioned_instances SET status=$1,updated_at=NOW() WHERE id=$2 AND deleted_at IS NULL`,
 		status, id,
 	)
 	return err
@@ -122,13 +122,21 @@ func (r *sqlRepository) UpdateInstanceStatus(id int64, status string) error {
 
 func (r *sqlRepository) UpdateInstanceConfig(id int64, configPayload []byte) error {
 	_, err := r.db.Exec(
-		`UPDATE provisioned_instances SET config_payload = $1, updated_at = NOW() WHERE id = $2`,
+		`UPDATE provisioned_instances SET config_payload=$1,updated_at=NOW() WHERE id=$2 AND deleted_at IS NULL`,
 		configPayload, id,
 	)
 	return err
 }
 
 func (r *sqlRepository) DeleteInstance(id int64) error {
-	_, err := r.db.Exec(`DELETE FROM provisioned_instances WHERE id = $1`, id)
+	_, err := r.db.Exec(
+		`WITH changed AS (
+		    UPDATE provisioned_instances
+		    SET status='deleted',deleted_at=COALESCE(deleted_at,NOW()),
+		        deleted_by=COALESCE(deleted_by,client_id),updated_at=NOW()
+		    WHERE id=$1 AND deleted_at IS NULL RETURNING id,deleted_by
+		 )
+		 INSERT INTO resource_lifecycle_events(actor_id,resource_type,resource_id,action)
+		 SELECT deleted_by,'provisioned_instance',id::text,'delete' FROM changed`, id)
 	return err
 }

@@ -44,7 +44,15 @@ export default function DataSourcesPage() {
   const handleDelete = async (e: React.MouseEvent, id: number) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!(await customConfirm("Delete this data source?"))) return;
+    if (
+      !(await customConfirm({
+        title: "Delete this data source?",
+        body: "The data source will move to Trash. Dependent section presets stay hidden until it is restored.",
+        confirmLabel: "Delete data source",
+        destructive: true,
+      }))
+    )
+      return;
     try {
       await apiRequest(`/config/datasources/${id}`, { method: "DELETE" });
       toast.success("Data source deleted");

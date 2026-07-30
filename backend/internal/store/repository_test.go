@@ -51,7 +51,7 @@ func TestStoreCategoryRepository_Delete(t *testing.T) {
 	cat, err := repo.Create(&models.StoreCategory{Name: testutil.UniqueStr("del_scat")})
 	require.NoError(t, err)
 
-	require.NoError(t, repo.Delete(cat.ID))
+	require.NoError(t, repo.Delete(cat.ID, 1))
 
 	_, err = repo.GetByID(cat.ID)
 	require.Error(t, err)

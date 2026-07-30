@@ -313,7 +313,7 @@ func (s *Service) DeleteConversation(conversationID, callerID int64) error {
 			return errForbidden
 		}
 	}
-	return s.repo.DeleteConversation(conversationID)
+	return s.repo.DeleteConversation(conversationID, callerID)
 }
 
 func (s *Service) isManagerOrOwner(c *models.InboxConversation, userID int64) bool {
@@ -362,7 +362,7 @@ func (s *Service) KickParticipant(conversationID, callerID, targetID int64) erro
 			}
 		}
 	}
-	err = s.repo.RemoveParticipant(conversationID, targetID)
+	err = s.repo.RemoveParticipant(conversationID, targetID, callerID)
 	if err != nil {
 		return err
 	}

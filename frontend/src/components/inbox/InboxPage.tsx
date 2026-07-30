@@ -321,7 +321,15 @@ const InboxPage = () => {
 
   const handleDeleteConversation = async () => {
     if (!activeId) return;
-    if (!(await customConfirm("Delete this conversation and all messages?"))) return;
+    if (
+      !(await customConfirm({
+        title: "Delete this conversation?",
+        body: "The conversation will move to Trash. Its messages remain retained and hidden until restoration.",
+        confirmLabel: "Delete conversation",
+        destructive: true,
+      }))
+    )
+      return;
     try {
       await apiRequest(`/inbox/conversations/${activeId}`, {
         method: "DELETE",
