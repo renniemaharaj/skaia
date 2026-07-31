@@ -26,3 +26,7 @@ nginx/default.conf
 .grengo-api.pid
 exports/
 .pcode
+
+# Prevent Agents Clutter
+.codex
+.github
