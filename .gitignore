@@ -1,19 +1,23 @@
+# Frontend
 node_modules/
+dist/
+
+# Mounts
 postgres_data/
 redis_data/
-dist/
+pgadmin_data/
+mnt/
+
+# Backend
 .DS_Store
 *.log
 tmp_build
-pgadmin_data/
-integrate
 .env
 .env.local
 .env.*.local
 !backend/.env
 nginx/
 scratch/
-mnt/
 
 # Grengo state
 /grengo
