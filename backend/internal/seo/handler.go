@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -27,7 +28,8 @@ var (
 	multiSpaceRx = regexp.MustCompile(`\s+`)
 )
 
-// routeSEO represents the SEO metadata for a specific route, including title, description, image, and a flag indicating if the route was not found (Miss).
+// routeSEO represents the SEO metadata for a specific route, including title,
+// description, image, and whether the route was not found.
 type routeSEO struct {
 	Title   string
 	Desc    string
@@ -38,15 +40,38 @@ type routeSEO struct {
 }
 
 func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.HandlerFunc {
-	indexPath := os.Getenv("INDEX_FILE_PATH")
-	if indexPath == "" {
-		indexPath = "frontend/dist/index.html"
+	indexPath := "/app/frontend/dist/index.html"
+
+	var (
+		indexHTML []byte
+		indexMu   sync.RWMutex
+	)
+
+	loadIndexHTML := func() ([]byte, error) {
+		indexMu.RLock()
+		html := indexHTML
+		indexMu.RUnlock()
+
+		if html != nil {
+			return html, nil
+		}
+
+		html, err := os.ReadFile(indexPath)
+		if err != nil {
+			return nil, err
+		}
+
+		indexMu.Lock()
+		if indexHTML == nil {
+			indexHTML = html
+		} else {
+			html = indexHTML
+		}
+		indexMu.Unlock()
+
+		return html, nil
 	}
 
-	indexHTML, readErr := os.ReadFile(indexPath)
-	if readErr != nil {
-		log.Printf("seo: failed to read index file %s: %v", indexPath, readErr)
-	}
 	purgeCtx, cancelPurge := context.WithTimeout(context.Background(), 2*time.Second)
 	if err := seocache.PurgeLegacy(purgeCtx, rdb); err != nil {
 		log.Printf("seo: purge legacy cache: %v", err)
@@ -54,7 +79,9 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 	cancelPurge()
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		if readErr != nil {
+		indexHTML, err := loadIndexHTML()
+		if err != nil {
+			log.Printf("seo: failed to read index file %s: %v", indexPath, err)
 			http.Error(w, "not found", http.StatusNotFound)
 			return
 		}
@@ -80,7 +107,6 @@ func IndexHandler(cfgSvc *icfg.Service, rdb *redis.Client, db *sql.DB) http.Hand
 
 		branding, seo := loadSiteConfig(cfgSvc)
 		route := resolveRouteSEO(db, r)
-
 		meta := buildMeta(branding, seo, route)
 
 		if ttl, cacheable := routeCacheTTL(route); cacheable {

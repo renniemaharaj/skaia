@@ -4,5 +4,4 @@ mariadb_data/
 redis_data/
 armed/
 exports/
-backends/
 .git/
