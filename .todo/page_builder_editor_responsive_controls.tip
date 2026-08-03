@@ -1,0 +1,20 @@
+<--/------->
+
+## page_builder_editor_responsive_controls
+
+### Current Progress
+- **Phase 1: Diagnose and plan** - ✅ Complete
+- **Phase 2: Shared select migration** - ✅ Complete
+- **Phase 3: Responsive editor controls** - ✅ Complete
+- **Phase 4: Verification** - ✅ Complete
+
+### Next Steps
+- [x] Migrate Appearance choices to `Select` and preserve nested portal interaction.
+- [x] Reset desktop TipTap drag-control padding and add compact mobile editor rules.
+- [x] 2026-08-03: Focused `SectionShellControls` tests pass (4/4), including
+  visible-trigger focus and nested Select menu mutation without dismissing the
+  Appearance panel.
+- [x] 2026-08-03: Full Biome lint, affected-file Biome check, TypeScript, Vite
+  production build, raw-select grep, todo pairing, and `git diff --check` pass.
+
+<--/------->

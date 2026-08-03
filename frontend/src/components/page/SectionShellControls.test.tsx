@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { SectionShellControls, getAnchoredPanelPosition } from "./SectionShellControls";
 import { DEFAULT_SECTION_SHELL } from "./sectionContracts.generated";
-import { getAnchoredPanelPosition, SectionShellControls } from "./SectionShellControls";
 import { EMPTY_PAGE_THEME, type SharedSectionShell } from "./types";
 
 function rect({
@@ -72,7 +72,7 @@ describe("SectionShellControls", () => {
     expect(panel).toHaveAttribute("data-placement", "top");
     expect(panel).toHaveStyle({ top: "292px", left: "630px" });
     expect(panel.style.maxHeight).toBe("684px");
-    expect(screen.getByLabelText("Section container width")).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Section container width" })).toHaveFocus();
 
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "Section appearance" })).not.toBeInTheDocument();
@@ -95,6 +95,32 @@ describe("SectionShellControls", () => {
     expect(onChange).toHaveBeenLastCalledWith({
       ...shell,
       background_color: { mode: "literal", value: "#abcdef" },
+    });
+  });
+
+  it("uses shared selects and keeps the Appearance panel open while choosing an option", () => {
+    const onChange = vi.fn();
+    render(
+      <SectionShellControls
+        shell={DEFAULT_SECTION_SHELL}
+        theme={EMPTY_PAGE_THEME}
+        onChange={onChange}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+    const panel = screen.getByRole("dialog", { name: "Section appearance" });
+    expect(panel.querySelector("select:not(.sk-select__native)")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Section container width" }));
+    const wideOption = screen.getByRole("menuitem", { name: "Wide" });
+    fireEvent.mouseDown(wideOption);
+    fireEvent.click(wideOption);
+
+    expect(screen.getByRole("dialog", { name: "Section appearance" })).toBeInTheDocument();
+    expect(onChange).toHaveBeenLastCalledWith({
+      ...DEFAULT_SECTION_SHELL,
+      container_width: "wide",
     });
   });
 });

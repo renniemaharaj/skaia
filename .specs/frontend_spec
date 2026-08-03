@@ -218,6 +218,9 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
   below, max width around 1400px unless an editor needs more.
 - Fixed-format elements need stable dimensions to prevent hover/content layout shift.
 - Page-builder editor panes collapse below tablet widths.
+- Editable rich text keeps TipTap block add/modify controls in its desktop gutter;
+  at phone widths those pointer-oriented controls are hidden and editor content
+  uses compact full-width padding consistent with the read-only renderer.
 - Guest sandbox mode reveals management controls in the frontend only; backend auth
   remains the authority.
 - Do not add marketing landing pages when building app functionality.
@@ -233,7 +236,7 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 | `src/components/page/sectionContracts.generated.ts` | generated typed section registry |
 | `src/components/page/sectionAdapter.ts` | legacy document to normalized section compatibility boundary |
 | `src/components/page/SectionFrame.tsx` | shared presentation, collapse, suspense, and single-toolbar owner |
-| `src/components/page/SectionShellControls.tsx` | shared shell appearance editor |
+| `src/components/page/SectionShellControls.tsx` | shared shell appearance editor using shared selects and a nested-menu-safe body portal |
 | `src/components/page/sectionRendererRegistry.tsx` | exhaustive typed renderer metadata and clipboard dispatch |
 | `src/components/page/sectionTheme.ts` | safe page-palette variable and section-color resolution |
 | `src/components/page/typedSectionApi.ts` | typed section payload adaptation, stable-ID/revision API client |

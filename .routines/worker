@@ -118,6 +118,11 @@ update specs and .tip with durable facts
 
 ## Last Run Remarks
 
+- Completed `page_builder_editor_responsive_controls`: the Appearance editor now
+  uses shared Select controls with working nested portals and visible-trigger
+  focus, while TipTap drag controls survive global button styles on desktop and
+  editable content uses compact renderer-like padding without drag controls on
+  phones. Focused tests, full lint, TypeScript, and production build pass.
 - Completed `repository_hygiene_and_text_policy`: added the dependency-free Go
   tracked-text checker and tests, emoji path allowlist, safe formatting repair,
   and a read-only POSIX Husky hook covering every Go module and frontend gate.

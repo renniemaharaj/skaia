@@ -19,6 +19,12 @@
   min-height: auto !important;
 }
 
+/* TipTap fixes these controls at 28px; the app-wide button padding otherwise
+   consumes their content box and makes the plus/grip icons appear blank. */
+.editor-wrapper .drag-handle button {
+  padding: 0;
+}
+
 .renderer-editor {
   width: 900px;
   max-width: 100%;
@@ -39,6 +45,14 @@
   .renderer-editor .ProseMirror {
     padding: 0.25rem 0.5rem !important;
     font-size: 14px !important;
+  }
+
+  .editor-wrapper .reactjs-tiptap-editor .ProseMirror.ProseMirror.ProseMirror {
+    padding: 0.5rem 0.75rem !important;
+  }
+
+  .editor-wrapper .drag-handle {
+    display: none !important;
   }
 }
 

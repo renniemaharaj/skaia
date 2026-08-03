@@ -107,6 +107,11 @@ operational policies.
 
 ## Last Run Remarks
 
+- Created `page_builder_editor_responsive_controls` after diagnosing the dark-mode
+  Appearance select arrows and editable rich-text desktop/mobile layout. The
+  focused worker handoff reuses the shared Select primitive, preserves nested
+  portal interaction, restores TipTap block controls, and aligns mobile editor
+  padding with the renderer without duplicating the broader primitive plan.
 - Created and completed `repository_hygiene_and_text_policy` after deduplicating
   it from the narrower legacy-code plan. The handoff covered evidence-backed
   cleanup, a root Go checker, tracked-tree remediation, a non-mutating hook, and

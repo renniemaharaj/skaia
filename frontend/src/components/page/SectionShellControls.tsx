@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import Select from "../input/Select";
 import { ColorPickerButton } from "./EditControls";
 import { isSafeSectionColor } from "./sectionTheme";
 import type { PageTheme, SharedSectionShell } from "./types";
@@ -87,9 +88,15 @@ function ColorSourceControl({
   return (
     <div className="section-shell-color-row">
       <span className="section-shell-control-label">{label}</span>
-      <select
+      <Select
         aria-label={`${label} color source`}
+        size="sm"
         value={value.mode}
+        options={[
+          { value: "inherit", label: "Inherit" },
+          { value: "literal", label: "Custom" },
+          ...(theme.tokens.length > 0 ? [{ value: "palette", label: "Palette" }] : []),
+        ]}
         onChange={event => {
           const mode = event.target.value;
           if (mode === "literal") {
@@ -104,11 +111,7 @@ function ColorSourceControl({
             onChange({ mode: "inherit" });
           }
         }}
-      >
-        <option value="inherit">Inherit</option>
-        <option value="literal">Custom</option>
-        {theme.tokens.length > 0 && <option value="palette">Palette</option>}
-      </select>
+      />
       {value.mode === "literal" && (
         <div className="section-shell-color-value">
           <ColorPickerButton
@@ -126,17 +129,13 @@ function ColorSourceControl({
             style={{ backgroundColor: resolvedColor }}
             aria-hidden="true"
           />
-          <select
+          <Select
             aria-label={`${label} palette token`}
+            size="sm"
             value={value.token}
+            options={theme.tokens.map(token => ({ value: token.key, label: token.label }))}
             onChange={event => onChange({ mode: "palette", token: event.target.value })}
-          >
-            {theme.tokens.map(token => (
-              <option key={token.key} value={token.key}>
-                {token.label}
-              </option>
-            ))}
-          </select>
+          />
         </div>
       )}
       {value.mode === "inherit" && <span className="section-shell-inherit-hint">From page</span>}
@@ -192,7 +191,9 @@ export function SectionShellControls({ shell, theme, onChange }: SectionShellCon
     setPanelPosition(null);
     updatePanelPosition();
     panelRef.current
-      ?.querySelector<HTMLElement>("select, input:not([disabled]), button:not([disabled])")
+      ?.querySelector<HTMLElement>(
+        ".sk-select__trigger:not([disabled]), input:not([disabled]), button:not([disabled])"
+      )
       ?.focus();
   }, [open, updatePanelPosition]);
 
@@ -202,6 +203,7 @@ export function SectionShellControls({ shell, theme, onChange }: SectionShellCon
     const handleOutsidePointer = (event: MouseEvent) => {
       const target = event.target as Node;
       if (triggerRef.current?.contains(target) || panelRef.current?.contains(target)) return;
+      if (target instanceof Element && target.closest(".glass-menu-wrap")) return;
       setOpen(false);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -269,24 +271,26 @@ export function SectionShellControls({ shell, theme, onChange }: SectionShellCon
             aria-label="Section appearance"
             data-placement={panelPosition?.placement}
           >
-            <label>
+            <div className="section-shell-control-row">
               <span className="section-shell-control-label">Container</span>
-              <select
+              <Select
                 aria-label="Section container width"
+                size="sm"
                 value={shell.container_width}
+                options={[
+                  { value: "narrow", label: "Narrow" },
+                  { value: "content", label: "Content" },
+                  { value: "wide", label: "Wide" },
+                  { value: "full", label: "Full" },
+                ]}
                 onChange={event =>
                   update(
                     "container_width",
                     event.target.value as SharedSectionShell["container_width"]
                   )
                 }
-              >
-                <option value="narrow">Narrow</option>
-                <option value="content">Content</option>
-                <option value="wide">Wide</option>
-                <option value="full">Full</option>
-              </select>
-            </label>
+              />
+            </div>
             <label>
               <span className="section-shell-control-label">Content scale</span>
               <input

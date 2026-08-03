@@ -83,7 +83,8 @@ background/text pairs surface an editor contrast warning. The appearance editor
 is a fixed, body-portaled popover that follows its toolbar anchor, flips above or
 below according to available space, and remains bounded within the viewport.
 Literal colors use the shared native color picker while inherit and palette-token
-sources retain explicit controls.
+sources retain explicit shared Select controls whose portaled menus do not close
+the parent Appearance editor before applying a choice.
 
 ## Section-specific compatibility matrix
 
