@@ -100,7 +100,7 @@ func TestGenerateNginxConfigKeepsTenantRoutingIsolated(t *testing.T) {
 	t.Setenv("GRENGO_ROOT", root)
 
 	for name, env := range map[string]string{
-		"writer": "CLIENT_NAME=writer\nPORT=1080\nDOMAINS=thewriterco.com\n",
+		"writer": "CLIENT_NAME=writer\r\nPORT=1080\r\nDOMAINS=thewriterco.com\r\n",
 		"skaia":  "CLIENT_NAME=skaia\nPORT=1081\nDOMAINS=skaiacraft.com\n",
 	} {
 		dir := filepath.Join(root, "backends", name)
@@ -125,12 +125,15 @@ func TestGenerateNginxConfigKeepsTenantRoutingIsolated(t *testing.T) {
 		t.Fatal(err)
 	}
 	config := string(data)
+	if strings.Contains(config, "\r") {
+		t.Fatal("generated config contains a carriage return from CRLF environment data")
+	}
 
 	for _, expected := range []string{
-		"thewriterco.com",
-		`~^site[0-9]+\.thewriterco\.com$`,
-		"skaiacraft.com",
-		`~^site[0-9]+\.skaiacraft\.com$`,
+		`"thewriterco.com" "writer-backend";`,
+		`"~^site[0-9]+\\.thewriterco\\.com$" "writer-backend";`,
+		`"skaiacraft.com" "skaia-backend";`,
+		`"~^site[0-9]+\\.skaiacraft\\.com$" "skaia-backend";`,
 		nginxUnknownBackendMap,
 		"listen 80 default_server",
 		"location = /healthz",

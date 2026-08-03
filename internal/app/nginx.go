@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -18,6 +19,8 @@ type clientInfo struct {
 }
 
 const nginxUnknownBackendMap = `    default                 "";`
+
+var nginxClientNamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{0,31}$`)
 
 // cmdNginxReload regenerates the nginx config and hot-reloads it.
 func cmdNginxReload() {
@@ -131,10 +134,15 @@ func enabledClients() []clientInfo {
 		if _, err := os.Stat(envFile); err != nil {
 			continue
 		}
-		name := envVal(envFile, "CLIENT_NAME")
-		port := envVal(envFile, "PORT")
-		domainsStr := envVal(envFile, "DOMAINS")
+		name := strings.TrimSpace(envVal(envFile, "CLIENT_NAME"))
+		port := strings.TrimSpace(envVal(envFile, "PORT"))
+		domainsStr := strings.TrimSpace(envVal(envFile, "DOMAINS"))
 		if name == "" || port == "" {
+			continue
+		}
+		portNumber, portErr := strconv.Atoi(port)
+		if !nginxClientNamePattern.MatchString(name) || portErr != nil || portNumber < 1 || portNumber > 65535 {
+			warn("Ignoring invalid nginx client metadata in %s", envFile)
 			continue
 		}
 		var domains []string
@@ -205,7 +213,7 @@ gzip_types
 					continue
 				}
 				mappedHosts[host] = true
-				fmt.Fprintf(&b, "    %-24s%s-backend;\n", host, c.Name)
+				fmt.Fprintf(&b, "    %s %s;\n", strconv.Quote(host), strconv.Quote(c.Name+"-backend"))
 			}
 		}
 	}
