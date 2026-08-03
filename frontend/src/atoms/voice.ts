@@ -38,7 +38,6 @@ export const streamRoutePlaybackAtom = atom<StreamRoutePlaybackState>({
 
 export const useV2RTCAtom = atomWithStorage<boolean>("useV2RTC", false);
 // export const useLiveKitRTCAtom = atomWithStorage<boolean>("useLiveKitRTC", false);
-
 registerResource(
   "voice:control",
   voicePermissionsAtom,

@@ -51,7 +51,6 @@ func NewService(cats CategoryRepository, products ProductRepository, cart CartRe
 }
 
 // Category methods
-
 func (s *Service) GetCategory(id int64) (*models.StoreCategory, error) {
 	return s.categories.GetByID(id)
 }
@@ -88,7 +87,6 @@ func (s *Service) SendOrderInboxMessage(ownerID int64, order *models.Order, msgT
 }
 
 // Product methods
-
 func (s *Service) GetProduct(id int64) (*models.Product, error) {
 	if s.cache != nil {
 		if p, ok := s.cache.GetByID(id); ok {
@@ -163,7 +161,6 @@ func (s *Service) DeleteProduct(id, actorID int64) error {
 }
 
 // Review methods
-
 func (s *Service) GetProductReviews(ctx context.Context, productID int64) ([]*models.ProductReviewWithUser, error) {
 	return s.reviews.GetProductReviews(ctx, productID)
 }
@@ -173,7 +170,6 @@ func (s *Service) CreateProductReview(ctx context.Context, review *models.Produc
 }
 
 // Cart methods
-
 func (s *Service) GetUserCart(userID int64) ([]*models.CartItem, error) {
 	return s.cart.GetUserCart(userID)
 }
@@ -195,7 +191,6 @@ func (s *Service) ClearCart(userID int64) error {
 }
 
 // Order methods
-
 func (s *Service) CreateOrder(order *models.Order, items []*models.OrderItem) (*models.Order, error) {
 	return s.orders.Create(order, items)
 }
@@ -625,7 +620,6 @@ func providerOfEnv() string {
 }
 
 // Subscription plan methods
-
 func (s *Service) ListPlans() ([]*models.SubscriptionPlan, error) {
 	return s.plans.List()
 }
@@ -647,7 +641,6 @@ func (s *Service) DeletePlan(id, actorID int64) error {
 }
 
 // Subscription methods
-
 func (s *Service) Subscribe(userID, planID int64, email string) (*models.Subscription, error) {
 	plan, err := s.plans.GetByID(planID)
 	if err != nil {

@@ -2,8 +2,8 @@ package bench
 
 import (
 	"fmt"
-	"io"
 	"goftw/internal/entity"
+	"io"
 )
 
 // siteExistsInCfx checks if a site exists in the instance configuration

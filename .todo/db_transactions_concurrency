@@ -12,7 +12,7 @@ Currently, many repositories in the backend (`WalletRepository`, `OrderRepositor
 When multiple requests hit the `/checkout` or wallet routes simultaneously, race conditions can occur, leading to double-spending or over-selling stock.
 
 ### Action Plan
-- **Atomic Operations:** Instead of `SELECT stock` followed by `UPDATE stock`, we must strictly use atomic updates: 
+- **Atomic Operations:** Instead of `SELECT stock` followed by `UPDATE stock`, we must strictly use atomic updates:
   `UPDATE products SET stock = stock - $1 WHERE id = $2 AND stock >= $1`. If `RowsAffected == 0`, we abort the transaction due to insufficient stock.
 - **Row-Level Locking:** Use `SELECT ... FOR UPDATE` when querying user balances during a transaction to block other concurrent deductions from executing until the current transaction commits.
 - **Strict Database Constraints:** Add `CHECK (amount >= 0)` constraints where applicable to rely on the database engine to reject negative balances.

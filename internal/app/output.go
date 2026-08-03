@@ -15,28 +15,28 @@ const (
 	colorReset  = "\033[0m"
 )
 
-// log prints a success-style message with a green bullet.
+// log prints a success-style message.
 func log(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
-	fmt.Printf("%s▸%s %s\n", colorGreen, colorReset, msg)
+	fmt.Printf("%s[+]%s %s\n", colorGreen, colorReset, msg)
 }
 
-// info prints an informational message with a blue bullet.
+// info prints an informational message.
 func info(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
-	fmt.Printf("%sℹ%s %s\n", colorBlue, colorReset, msg)
+	fmt.Printf("%s[i]%s %s\n", colorBlue, colorReset, msg)
 }
 
-// warn prints a warning message with a yellow bullet.
+// warn prints a warning message.
 func warn(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
-	fmt.Printf("%s⚠%s %s\n", colorYellow, colorReset, msg)
+	fmt.Printf("%s[!]%s %s\n", colorYellow, colorReset, msg)
 }
 
-// errMsg prints an error message with a red cross to stderr.
+// errMsg prints an error message to stderr.
 func errMsg(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
-	fmt.Fprintf(os.Stderr, "%s✗%s %s\n", colorRed, colorReset, msg)
+	fmt.Fprintf(os.Stderr, "%s[x]%s %s\n", colorRed, colorReset, msg)
 }
 
 // die prints an error message and exits with code 1.

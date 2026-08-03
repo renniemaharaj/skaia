@@ -28,7 +28,7 @@ func CommentSlowMode(getConfig func() (bool, time.Duration)) func(http.Handler) 
 			httprate.WithKeyFuncs(KeyByClientID),
 			httprate.WithLimitCounter(counter),
 			httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-				writeRateLimitJSON(w, "comment slowmode active — please wait before another comment action", http.StatusTooManyRequests, int(interval.Seconds()))
+				writeRateLimitJSON(w, "comment slowmode active - please wait before another comment action", http.StatusTooManyRequests, int(interval.Seconds()))
 			}),
 		)
 	}

@@ -3,13 +3,13 @@
 ## ui_component_refactor_plan
 
 ### Current Progress
-- **Phase 1: Align with page model** — ✅ Complete
-- **Phase 2: Section metadata** — ✅ Complete
-- **Phase 3: Integration primitives** — ✅ Complete
-- **Phase 4: Component registry & bind-point contracts** — ✅ Complete
-- **Phase 5: Open derived/custom sections to registered components** — 🟡 In progress
-- **Phase 6: Convert routes to dynamic page rendering** — ⬜ Not started
-- **Phase 7: Section versioning/migration (tracked in `typed_page_sections_redesign`)** — ✅ Complete
+- **Phase 1: Align with page model** - ✅ Complete
+- **Phase 2: Section metadata** - ✅ Complete
+- **Phase 3: Integration primitives** - ✅ Complete
+- **Phase 4: Component registry & bind-point contracts** - ✅ Complete
+- **Phase 5: Open derived/custom sections to registered components** - 🟡 In progress
+- **Phase 6: Convert routes to dynamic page rendering** - ⬜ Not started
+- **Phase 7: Section versioning/migration (tracked in `typed_page_sections_redesign`)** - ✅ Complete
 
 ### Phase 5 Progress
 - [x] Component picker UI in `DerivedSectionBlock` and `CustomSectionBlock` (2026-06-09)

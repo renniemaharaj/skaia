@@ -78,7 +78,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
       await apiRequest(`/auth/admin/${user.id}/reset-password`, {
         method: "POST",
       });
-      toast.success("Password reset — new password sent to user's inbox");
+      toast.success("Password reset - new password sent to user's inbox");
     } catch {
       toast.error("Failed to reset password");
     } finally {

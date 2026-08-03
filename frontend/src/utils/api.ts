@@ -79,7 +79,6 @@ export interface ForgotPasswordResponse {
 }
 
 // Admin TOTP (2FA) Management
-
 export interface AdminTOTPEnableResponse {
   status: string;
   backup_codes: string[];
@@ -131,7 +130,6 @@ export async function adminGenerateBackupCodes(
 /**
  * API service for centralized HTTP requests with authentication
  */
-
 /**
  * Get authorization headers with token
  */
@@ -432,7 +430,7 @@ async function performApiRequest<T>(endpoint: string, options: RequestInit = {})
       const isTotpBypass = requestHeaders.has("X-TOTP-Code") || requestHeaders.has("x-totp-code");
 
       if (!isTotpBypass) {
-        toast.error(`${errorMessage}${retryAfter ? ` — retry after ${retryAfter}s` : ""}`);
+        toast.error(`${errorMessage}${retryAfter ? ` - retry after ${retryAfter}s` : ""}`);
         window.dispatchEvent(
           new CustomEvent("api:rate-limit", {
             detail: {
@@ -635,7 +633,6 @@ export async function uploadFile(file: File, endpoint: string): Promise<{ url: s
 }
 
 // Email Verification
-
 export async function verifyEmail(token: string): Promise<{ status: string }> {
   return apiRequest("/auth/verify-email", {
     method: "POST",
@@ -650,7 +647,6 @@ export async function resendVerificationEmail(): Promise<{ status: string }> {
 }
 
 // Password Reset
-
 export async function forgotPassword(
   email: string,
   guestSessionId?: string
@@ -693,7 +689,6 @@ export async function resetPassword(
 }
 
 // TOTP / 2FA
-
 export interface TOTPSetupResponse {
   secret: string;
   otpauth: string;

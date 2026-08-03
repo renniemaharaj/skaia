@@ -3,9 +3,9 @@
 ## audit_followup_code_quality
 
 ### Current Progress
-- **Phase 1: Consolidate IP extraction into utils.RealIP** — ✅ Complete
-- **Phase 2: Fix handler layering violation (direct repo access)** — ✅ Complete
-- **Phase 3: Remove OptionalJWTAuthMiddleware no-op** — ✅ Complete
+- **Phase 1: Consolidate IP extraction into utils.RealIP** - ✅ Complete
+- **Phase 2: Fix handler layering violation (direct repo access)** - ✅ Complete
+- **Phase 3: Remove OptionalJWTAuthMiddleware no-op** - ✅ Complete
 
 ### Next Steps
 - [x] Create `backend/internal/utils/ip.go` with `RealIP(r *http.Request) string`

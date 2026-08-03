@@ -1,4 +1,4 @@
-# DEFCON Adaptive Rate Limiter — Setup Guide
+# DEFCON Adaptive Rate Limiter - Setup Guide
 
 ## 1. Cloudflare API token (5 minutes)
 
@@ -17,7 +17,7 @@ You need a token with **Firewall: Edit** permission scoped to your account.
    - *(Optional but recommended)* Client IP Address Filtering: lock it to your
      server's outbound IP so the token is useless if it leaks
 5. Click **Continue to summary => Create token**
-6. **Copy the token now** — Cloudflare only shows it once.
+6. **Copy the token now** - Cloudflare only shows it once.
 
 Your Account ID is in the URL of your Cloudflare dashboard:
 `https://dash.cloudflare.com/<YOUR_ACCOUNT_ID>/...`
@@ -30,7 +30,7 @@ export CF_API_TOKEN="your-token-here"
 ```
 
 For production, store these in your secrets manager (AWS Secrets Manager,
-Vault, Doppler, etc.) — never commit them to source control.
+Vault, Doppler, etc.) - never commit them to source control.
 
 ---
 
@@ -69,7 +69,7 @@ import (
 )
 
 func main() {
-    //  Redis client 
+    //  Redis client
     // Assumes skaia-redis is reachable at REDIS_URL (e.g. "redis://localhost:6379")
     // or falls back to localhost.
     redisURL := os.Getenv("REDIS_URL")
@@ -90,16 +90,16 @@ func main() {
     }
     slog.Info("Redis connected", "url", redisURL)
 
-    //  Cloudflare (optional but recommended) 
+    //  Cloudflare (optional but recommended)
     ratelimit.InitCloudflare() // reads CF_ACCOUNT_ID and CF_API_TOKEN from env
 
-    //  Routes 
+    //  Routes
     mux := http.NewServeMux()
     mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
         w.Write([]byte("OK"))
     })
 
-    //  Apply the DEFCON middleware to your entire router 
+    //  Apply the DEFCON middleware to your entire router
     handler := middleware.DEFCONRateLimit(rdb)(mux)
 
     slog.Info("Server listening", "addr", ":8080")
@@ -121,7 +121,7 @@ func main() {
 | `ip:history:{IP}`    | String | 10 min        | Clean-request graduation counter   |
 | `ip:counter:{IP}`    | String | 1 min         | Sliding-window rate counter        |
 
-All keys garbage-collect themselves via TTL — no background cleanup job needed.
+All keys garbage-collect themselves via TTL - no background cleanup job needed.
 
 ---
 
@@ -141,7 +141,7 @@ All constants live in `config/ratelimit.go`. The most impactful ones:
 
 ## 7. Monitoring recommendations
 
-Log the `jailed_total` field from the jail log line — a sudden spike means
+Log the `jailed_total` field from the jail log line - a sudden spike means
 a botnet attack is in progress. Alert if it crosses, say, 100 jailed IPs
 in a 5-minute window.
 

@@ -15,7 +15,7 @@ import (
 
 // cfClient is a minimal Cloudflare Access Rules client.
 // It pushes IP blocks to Cloudflare's edge so your Go server stops
-// seeing the traffic entirely — the block happens before the TCP handshake.
+// seeing the traffic entirely - the block happens before the TCP handshake.
 type cfClient struct {
 	accountID string
 	apiToken  string
@@ -28,14 +28,14 @@ var cf *cfClient
 // InitCloudflare initialises the singleton CF client from environment variables.
 // Call this once in main() after loading your env.
 //
-//	CF_ACCOUNT_ID   — your Cloudflare account ID (from dashboard URL)
-//	CF_API_TOKEN    — an API token with Firewall:Edit permission (see setup guide)
+//	CF_ACCOUNT_ID   - your Cloudflare account ID (from dashboard URL)
+//	CF_API_TOKEN    - an API token with Firewall:Edit permission (see setup guide)
 func InitCloudflare() {
 	accountID := os.Getenv("CF_ACCOUNT_ID")
 	apiToken := os.Getenv("CF_API_TOKEN")
 
 	if accountID == "" || apiToken == "" {
-		slog.Warn("Cloudflare push disabled — CF_ACCOUNT_ID or CF_API_TOKEN not set")
+		slog.Warn("Cloudflare push disabled - CF_ACCOUNT_ID or CF_API_TOKEN not set")
 		return
 	}
 
@@ -51,16 +51,15 @@ func InitCloudflare() {
 }
 
 // PushBlockAsync fires the Cloudflare IP block in a background goroutine.
-// It NEVER blocks the request path — the caller returns a 429 immediately
+// It NEVER blocks the request path - the caller returns a 429 immediately
 // while this runs behind the scenes.
-//
 // Usage:
 //
 //	jailedCount, _ := ratelimit.JailIP(ctx, rdb, ip)
 //	ratelimit.PushBlockAsync(ip, jailedCount)
 func PushBlockAsync(ip string, jailedCount int64) {
 	if cf == nil {
-		return // CF push not configured — skip silently
+		return // CF push not configured - skip silently
 	}
 
 	go func() {
@@ -85,10 +84,7 @@ func PushBlockAsync(ip string, jailedCount int64) {
 	}()
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Cloudflare Access Rules API
-// ─────────────────────────────────────────────────────────────────────────────
-
 type cfAccessRuleRequest struct {
 	Mode          string            `json:"mode"`
 	Configuration cfIPConfiguration `json:"configuration"`
@@ -112,7 +108,7 @@ type cfResponseError struct {
 
 // blockIP calls the Cloudflare Account-level Firewall Access Rules API to
 // block a single IP at the edge. The block applies to ALL zones in your
-// account — matching how Cloudflare recommends handling botnet IPs.
+// account - matching how Cloudflare recommends handling botnet IPs.
 //
 // API reference:
 // https://developers.cloudflare.com/api/operations/account-level-firewall-access-rule-new-rule
@@ -161,7 +157,7 @@ func (c *cfClient) blockIP(ctx context.Context, ip string) error {
 	if !cfResp.Success {
 		if len(cfResp.Errors) > 0 {
 			e := cfResp.Errors[0]
-			// Code 10009 = "The rule already exists" — not an error for us.
+			// Code 10009 = "The rule already exists" - not an error for us.
 			if e.Code == 10009 {
 				return nil
 			}

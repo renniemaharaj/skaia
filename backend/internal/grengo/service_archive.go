@@ -121,7 +121,7 @@ func (s *Service) DownloadExport(w http.ResponseWriter, filename string) error {
 	if err != nil {
 		return fmt.Errorf("grengo API: %w", err)
 	}
-	
+
 	w.Header().Set("Content-Type", "application/gzip")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
 

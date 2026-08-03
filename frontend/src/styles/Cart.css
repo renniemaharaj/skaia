@@ -4,7 +4,6 @@
   padding: 2rem 1.5rem;
 }
 
-/* ── Header ── */
 .cart-header {
   margin-bottom: 2rem;
 }
@@ -55,7 +54,6 @@
   line-height: 1;
 }
 
-/* ── Two-column layout ── */
 .cart-content {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(20rem, 40rem);
@@ -184,7 +182,6 @@
   }
 }
 
-/* ── Cart items column ── */
 .cart-items {
   display: flex;
   flex-direction: column;
@@ -335,7 +332,6 @@
   margin-top: 0.5rem;
 }
 
-/* ── Summary / checkout panel ── */
 .cart-summary {
   display: flex;
   flex-direction: column;
@@ -385,7 +381,6 @@
   color: var(--text-primary);
 }
 
-/* ── Section blocks inside summary ── */
 .cart-summary-section {
   margin-bottom: 1.5rem;
 }
@@ -439,7 +434,6 @@
   line-height: 1.2;
 }
 
-/* ── Input group (icon + input) ── */
 .input-group {
   display: flex;
   align-items: center;
@@ -493,7 +487,6 @@
   margin-top: 1rem;
 }
 
-/* ── Map container ── */
 .cart-map-container {
   height: 220px;
   width: 100%;
@@ -503,7 +496,6 @@
   border: 1px solid var(--border-color);
 }
 
-/* ── Date + time row ── */
 .cart-datetime-row {
   display: flex;
   gap: 0.75rem;
@@ -520,7 +512,6 @@
   font-size: 0.875rem;
 }
 
-/* ── Textarea ── */
 .cart-textarea {
   width: 100%;
   padding: 0.75rem 0.8rem;
@@ -543,7 +534,6 @@
   box-shadow: var(--focus-ring);
 }
 
-/* ── Select ── */
 .cart-select {
   width: 100%;
 }
@@ -572,7 +562,6 @@
   box-shadow: var(--focus-ring);
 }
 
-/* ── Checkbox label ── */
 .cart-checkbox-label {
   display: flex;
   align-items: center;
@@ -588,14 +577,12 @@
   margin-bottom: 0;
 }
 
-/* ── Divider ── */
 .cart-divider {
   border: none;
   border-top: 1px solid var(--border-color);
   margin: 1.25rem 0;
 }
 
-/* ── Total row ── */
 .cart-total-row {
   display: flex;
   justify-content: space-between;
@@ -611,7 +598,6 @@
   font-size: 1.125rem;
 }
 
-/* ── Submit button ── */
 .cart-summary .btn.cart-submit-btn {
   width: min(100%, 12rem);
   margin-left: auto;
@@ -623,7 +609,6 @@
   gap: 0.5rem;
 }
 
-/* ── Spinner ── */
 .spin {
   animation: spin 0.8s linear infinite;
 }
@@ -634,7 +619,6 @@
   }
 }
 
-/* ── Empty cart ── */
 .empty-cart--compact {
   display: flex;
   min-height: 0;
@@ -697,7 +681,6 @@
   margin-bottom: 0;
 }
 
-/* ── Success state ── */
 .cart-success-icon {
   color: var(--success-color);
   margin: 0 auto 0.5rem;
@@ -727,7 +710,6 @@
   text-transform: capitalize;
 }
 
-/* ── Order status view ── */
 .order-status-view {
   max-width: 1480px;
 }
@@ -964,7 +946,6 @@
   border-color: var(--error-color);
   color: var(--error-color);
 }
-/* ── Mobile responsiveness ─────────────────────────────────────────────── */
 
 *,
 *::before,

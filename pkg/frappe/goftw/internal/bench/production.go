@@ -126,13 +126,12 @@ func (b *Bench) configurePatchNginx(bench *Bench, serverName string) error {
 		fmt.Printf("[PATCH] Injecting main log_format into %s\n", globalConf)
 		if err := internalExec.ExecRunPrintIO("sudo", "sed", "-i", "/http {/r "+logPatch, globalConf); err != nil {
 			fmt.Printf("[ERROR] Failed to inject main.patch.conf: %v\n", err)
-			// not fatal — continue
+			// not fatal - continue
 		}
 	}
 
 	// Note: Dynamic proxy (port 2020) is handled by a separate nginx service in docker-compose
 	// No need to patch server_name here for dynamic routing
-
 	// Symlink bench-generated config
 	err := internalExec.ExecRunPrintIO("sudo", "ln", "-sf", nginxConf, nginxConfDest)
 	if err != nil {
@@ -141,9 +140,6 @@ func (b *Bench) configurePatchNginx(bench *Bench, serverName string) error {
 	}
 
 	fmt.Printf("[NGINX] Nginx configured and symlinked\n")
-	// if str, err := internalExec.ReadFile(nginxConf); err == nil {
-	// 	fmt.Println(string(str))
-	// }
 	return nil
 }
 

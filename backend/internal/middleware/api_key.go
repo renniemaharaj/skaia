@@ -18,8 +18,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// ── Lazy DB connection ────────────────────────────────────────────────────────
-
 var grengoAPIKeyDB struct {
 	sync.Mutex
 	db *sql.DB
@@ -69,8 +67,6 @@ func deriveGrengoDSN(dsn string) string {
 	return u.String()
 }
 
-// ── Crypto helpers ────────────────────────────────────────────────────────────
-
 // hashAPIKey returns the hex-encoded SHA-256 of the raw key.
 func hashAPIKey(rawKey string) string {
 	sum := sha256.Sum256([]byte(rawKey))
@@ -84,8 +80,6 @@ func keyPrefix(rawKey string) string {
 	}
 	return rawKey
 }
-
-// ── Repository helpers ────────────────────────────────────────────────────────
 
 type apiKeyRecord struct {
 	keyID     int64
@@ -184,8 +178,6 @@ func moduleGrants(module string, canRead, canWrite bool) []string {
 	return grants
 }
 
-// ── Rate limiting ─────────────────────────────────────────────────────────────
-
 type apiKeyWindow struct {
 	start time.Time
 	count int
@@ -220,8 +212,6 @@ func apiKeyWithinLimit(prefix string, threshold int) bool {
 	return true
 }
 
-// ── Header extraction ─────────────────────────────────────────────────────────
-
 // apiKeyFromRequestHeaders extracts a raw API key from request headers.
 // Checks X-Skaia-API-Key / X-Grengo-API-Key / X-API-Key first, then the
 // "ApiKey <key>" Authorization scheme.
@@ -237,8 +227,6 @@ func apiKeyFromRequestHeaders(headers http.Header, authHeader string) string {
 	}
 	return ""
 }
-
-// ── Public entry point ────────────────────────────────────────────────────────
 
 // claimsFromAPIKey resolves a raw API key to JWT claims, or returns false when
 // the key is absent, unknown, revoked, or rate-limited.

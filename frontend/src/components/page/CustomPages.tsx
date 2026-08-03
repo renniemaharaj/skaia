@@ -417,7 +417,7 @@ export default function CustomPages() {
             header: "Description",
             width: "minmax(250px, 3fr)",
             className: "table-view__cell--muted",
-            cell: page => page.description || "—",
+            cell: page => page.description || "-",
           },
           {
             header: "Owner",
@@ -426,7 +426,7 @@ export default function CustomPages() {
               page.owner ? (
                 <UserChip user={page.owner} />
               ) : (
-                <span className="cp-list__none">—</span>
+                <span className="cp-list__none">-</span>
               ),
           },
           {
@@ -484,7 +484,7 @@ export default function CustomPages() {
                     <Trash2 size={14} />
                   </button>
                 ) : (
-                  <span className="cp-list__none">—</span>
+                  <span className="cp-list__none">-</span>
                 )}
               </div>
             ),

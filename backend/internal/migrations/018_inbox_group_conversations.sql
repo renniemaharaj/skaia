@@ -39,7 +39,7 @@ ALTER TABLE inbox_conversations DROP CONSTRAINT IF EXISTS inbox_conversations_us
 ALTER TABLE inbox_conversations ADD COLUMN IF NOT EXISTS is_group BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE inbox_conversations ADD COLUMN IF NOT EXISTS title VARCHAR(255);
 
--- We cannot drop user1_id and user2_id yet without breaking current code that might still be deploying, 
+-- We cannot drop user1_id and user2_id yet without breaking current code that might still be deploying,
 -- but since this is a dev environment migration, we can drop them directly.
 ALTER TABLE inbox_conversations DROP COLUMN IF EXISTS user1_id;
 ALTER TABLE inbox_conversations DROP COLUMN IF EXISTS user2_id;

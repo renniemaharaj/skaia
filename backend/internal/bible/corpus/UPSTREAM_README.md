@@ -6,12 +6,12 @@ machine-readable source whose exact contents can be audited and fingerprinted.
 
 ## Repository contents
 
-- `*.json` — one UTF-8 JSON file per Bible book
-- `kjv.json` — translation identity, history, and repository provenance
-- `markers/*.json` — paragraph, added-word, and red-letter rendering DTOs
-- `SHA512SUMS` — SHA-512 digest of every exact JSON file
-- `script.py` — structural, integrity, marker, and external comparison checks
-- `names.py` / `names.ts` — TypeScript filename-list generator and output
+- `*.json` - one UTF-8 JSON file per Bible book
+- `kjv.json` - translation identity, history, and repository provenance
+- `markers/*.json` - paragraph, added-word, and red-letter rendering DTOs
+- `SHA512SUMS` - SHA-512 digest of every exact JSON file
+- `script.py` - structural, integrity, marker, and external comparison checks
+- `names.py` / `names.ts` - TypeScript filename-list generator and output
 
 ## Verify the corpus
 

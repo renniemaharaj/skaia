@@ -33,7 +33,6 @@ import Select from "../input/Select";
 import "../ui/GlassMenu.css";
 
 // Types
-
 interface SiteInfo {
   name: string;
   port: string;
@@ -120,7 +119,6 @@ const DEFAULT_FEATURES = "landing,store,forum,cart,users,inbox,presence";
 const KEEPALIVE_MS = 2 * 60 * 1000;
 
 // Component
-
 export default function GrengoDashboard() {
   useWebSocketSync();
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -184,7 +182,6 @@ export default function GrengoDashboard() {
   const keepAliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Session-scoped API helper
-
   const apiBase = `/grengo/s/${sessionId}`;
 
   const grengoRequest = useCallback(
@@ -195,7 +192,6 @@ export default function GrengoDashboard() {
   );
 
   // Session validation & keep-alive
-
   const validateSession = useCallback(async () => {
     if (!sessionId) {
       setSessionValid(false);
@@ -240,7 +236,6 @@ export default function GrengoDashboard() {
   }, [sessionValid, validateSession, navigate]);
 
   // Lock / end session
-
   const handleLock = async () => {
     try {
       await apiRequest(`${apiBase}`, { method: "DELETE" });
@@ -251,7 +246,6 @@ export default function GrengoDashboard() {
   };
 
   // Fetch sites
-
   const fetchSites = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -266,7 +260,6 @@ export default function GrengoDashboard() {
   }, [grengoRequest]);
 
   // Fetch exports
-
   const fetchExports = useCallback(async () => {
     setFetchingExports(true);
     try {
@@ -281,7 +274,6 @@ export default function GrengoDashboard() {
   }, [grengoRequest]);
 
   // Fetch jobs
-
   const fetchJobs = useCallback(async () => {
     try {
       const data = await grengoRequest<any[]>("/jobs");
@@ -326,7 +318,6 @@ export default function GrengoDashboard() {
   }, [sessionValid, fetchExports]);
 
   // Fetch stats
-
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
     try {
@@ -361,7 +352,6 @@ export default function GrengoDashboard() {
   }, [sessionValid]);
 
   // Fetch storage
-
   const fetchStorage = useCallback(async () => {
     try {
       const data = await grengoRequest<StorageInfo>("/storage");
@@ -383,7 +373,6 @@ export default function GrengoDashboard() {
   }, [sessionValid]);
 
   // Fetch sysinfo
-
   const fetchSysInfo = useCallback(async () => {
     try {
       const data = await grengoRequest<SysInfo>("/sysinfo");
@@ -406,7 +395,6 @@ export default function GrengoDashboard() {
   }, [sessionValid, fetchSites, fetchExports, fetchJobs, fetchStats, fetchStorage, fetchSysInfo]);
 
   // Compose actions
-
   const handleComposeUp = async (build: boolean) => {
     setComposeBusy(true);
     setComposeOutput("");
@@ -519,7 +507,6 @@ export default function GrengoDashboard() {
   }, []);
 
   // Migrate actions
-
   const handleMigrate = async (name: string, rebuild = false) => {
     setMigrateBusy(prev => ({ ...prev, [name]: true }));
     setMigrateOutput(prev => ({ ...prev, [name]: "" }));
@@ -559,7 +546,6 @@ export default function GrengoDashboard() {
   };
 
   // Node export / import
-
   const triggerAndWaitForJob = (
     actionType: string,
     jobIDPromise: Promise<string>
@@ -676,7 +662,6 @@ export default function GrengoDashboard() {
   };
 
   // Site actions
-
   const siteAction = async (name: string, action: string, _method = "POST") => {
     setBusy(prev => ({ ...prev, [name]: true }));
     try {
@@ -725,7 +710,6 @@ export default function GrengoDashboard() {
   };
 
   // Env editor
-
   const openEnvEditor = async (name: string) => {
     setEnvSite(name);
     setEnvLoading(true);
@@ -768,7 +752,6 @@ export default function GrengoDashboard() {
   const envDirty = envDraft !== envContent;
 
   // Render: Loading / validating
-
   if (sessionValid === null) {
     return (
       <ContentFlatCard className="grengo-gate grengo-flat-card">
@@ -778,7 +761,6 @@ export default function GrengoDashboard() {
   }
 
   // Render: Dashboard
-
   return (
     <div className="grengo-dashboard">
       <h3>Grengo Dashboard</h3>
@@ -1174,7 +1156,6 @@ function Gauge({
 }
 
 // SysInfoBar
-
 function SysInfoBar({ sysInfo }: { sysInfo: SysInfo }) {
   return (
     <ContentFlatCard className="grengo-sysinfo grengo-flat-card">
@@ -1225,7 +1206,6 @@ function SysInfoBar({ sysInfo }: { sysInfo: SysInfo }) {
 }
 
 // SiteTable
-
 function SiteTable({
   sites,
   storage,
@@ -1311,7 +1291,7 @@ function SiteTable({
                       </div>
                     </div>
                   ) : (
-                    "—"
+                    "-"
                   )}
                 </td>
                 <td className="domains">{site.domains.join(", ")}</td>
@@ -1440,7 +1420,6 @@ function SiteTable({
 }
 
 // EnvEditorPanel
-
 function EnvEditorPanel({
   envSite,
   envContent,
@@ -1465,7 +1444,7 @@ function EnvEditorPanel({
   return (
     <ContentFlatCard className="grengo-env-editor grengo-flat-card">
       <div className="grengo-env-header">
-        <h3>.env — {envSite}</h3>
+        <h3>.env - {envSite}</h3>
         <div className="grengo-env-actions">
           {envDirty && <span className="grengo-env-unsaved">unsaved changes</span>}
           <button className="action-btn" onClick={onSave} disabled={!envDirty || envSaving}>
@@ -1493,7 +1472,6 @@ function EnvEditorPanel({
 }
 
 // StoragePanel
-
 function StoragePanel({
   storage,
   hardwareInfo,
@@ -1603,7 +1581,6 @@ function StoragePanel({
 }
 
 // PerformanceMetrics
-
 function PerformanceMetrics({
   stats,
   statsLoading,
@@ -1721,7 +1698,6 @@ function PerformanceMetrics({
 }
 
 // Container Stats Panel
-
 function ContainerStatsPanel({ stats }: { stats: ContainerStats[] }) {
   if (stats.length === 0) return null;
   return (
@@ -1778,7 +1754,6 @@ function ContainerStatsPanel({ stats }: { stats: ContainerStats[] }) {
 }
 
 // Helpers
-
 function barClass(pct: number): string {
   if (pct >= 80) return "bar-danger";
   if (pct >= 50) return "bar-warning";
@@ -1796,7 +1771,6 @@ function parseMemMB(s: string): number {
 }
 
 // Stats Overview
-
 function StatsOverview({ stats }: { stats: ContainerStats[] }) {
   const totalCPU = stats.reduce((sum, s) => sum + s.cpu_percent, 0);
   const totalMemMB = stats.reduce((sum, s) => sum + parseMemMB(s.mem_usage), 0);
@@ -1832,7 +1806,6 @@ function StatsOverview({ stats }: { stats: ContainerStats[] }) {
 }
 
 // Create Site Form
-
 function CreateSiteForm({
   onCreated,
   triggerAndWaitForJob,
@@ -1967,7 +1940,6 @@ function CreateSiteForm({
 }
 
 // Import Site Form
-
 function ImportSiteForm({
   apiBase,
   onImported,
@@ -2055,7 +2027,6 @@ function ImportSiteForm({
 }
 
 // Import Node Form
-
 function ImportNodeForm({
   apiBase,
   onImported,

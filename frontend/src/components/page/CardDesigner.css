@@ -477,7 +477,6 @@
 }
 
 /* Compact inline controls (inspector-density) */
-
 .cd-ctrl-row {
   display: flex;
   align-items: center;
@@ -570,7 +569,6 @@
 }
 
 /* Compact toggle pills */
-
 .cd-toggle {
   display: inline-flex;
   align-items: center;
@@ -613,7 +611,6 @@
 }
 
 /* Compact range row */
-
 .cd-range-row {
   display: flex;
   align-items: center;

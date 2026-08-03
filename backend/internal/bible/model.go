@@ -6,7 +6,7 @@ const (
 	CorpusChapters  = 1189
 	CorpusVerses    = 31102
 	CorpusSHA512    = "7c2eff0219d59c683b1d12739a64facb22807770e05daf20cf1a4d22ef1b739d5ec03268abb8c3201fd69eb1014cc45a37697cb8abaceccd316c2e473db0b264"
-	RenderingSHA512 = "fdcd899c46e9bcd03136e9af6b972fbdae7aa6c61cb8db4552ac0487e3691de38fe6fe3be2b82e62ff41a9fb1bbd80a159c2daa956152adb94bda2efd136db9d"
+	RenderingSHA512 = "16e487012df549a2b6f8661db65c626064fc054b95e31e8d4e7ca0ced37f28d6ad35a70e75c1c0b86edad0494f3110fec9114169a663731d2bf46970b2ebf5a8"
 	SourceCommit    = "88723a44bb3e3f229a34f9cf11ce1b7acf971eee"
 )
 

@@ -471,13 +471,11 @@
 }
 
 /* Logo edit controls (prevent navigation on click) */
-
 .logo-edit-controls {
   display: contents;
 }
 
 /* "New" / attention nav link */
-
 .header-new-link {
   display: inline-flex;
   align-items: center;
@@ -522,7 +520,6 @@
 }
 
 /* "More" nav overflow dropdown */
-
 .header-more-wrap {
   position: relative;
   display: flex;
@@ -581,7 +578,6 @@
 }
 
 /* Mobile Menu Variant 2: Fullscreen overlay */
-
 @media (max-width: 768px) {
   .menu-v2 .nav {
     display: none;

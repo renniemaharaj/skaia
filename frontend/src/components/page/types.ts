@@ -1,5 +1,4 @@
 /** Types for the page block system. */
-
 import {
   SECTION_TYPES,
   type SectionConfig,
@@ -164,7 +163,6 @@ export interface FooterConfig {
 }
 
 /** All section types the renderer knows about are generated from backend contracts. */
-
 export const LEGACY_SECTION_TYPE_ALIASES = {
   features: "feature_grid",
 } as const satisfies Record<string, SectionType>;
@@ -264,7 +262,6 @@ export const PREVIEW_TYPE_LABELS: Record<PreviewType, string> = {
 };
 
 /* Column-mapped (fact-table) rendering */
-
 /** Section types that support datasource-driven rendering. */
 export const RENDERABLE_SECTION_TYPES = [
   "card_group",
@@ -304,7 +301,6 @@ export type ColumnMap = Partial<Record<MappableField, string>>;
 export type RowOverrides = Record<string, Partial<Record<MappableField, string>>>;
 
 /* Card Designer types */
-
 /** Card width options for grid-based card layouts. */
 export type CardWidth = "narrow" | "regular" | "wide" | "halfway" | "full";
 
@@ -498,7 +494,6 @@ export interface SectionPreset {
 export type CustomSection = SectionPreset;
 
 /*  Component Registry Types (Phase 4)  */
-
 /** Data contract categories a bind point can accept. */
 export const BIND_POINT_KINDS = [
   "text",
@@ -540,7 +535,6 @@ export interface ComponentDefinition {
 }
 
 /*  Component Groups (Phase 5)  */
-
 /** A single component within a group layout. */
 export interface ComponentGroupItem {
   id: string;

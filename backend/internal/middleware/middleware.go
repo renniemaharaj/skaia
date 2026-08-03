@@ -21,7 +21,6 @@ type penaltyBox struct {
 }
 
 // No global penalty boxes. Instantiate them per rate limiter.
-
 func newPenaltyBox() *penaltyBox {
 	pb := &penaltyBox{entries: make(map[string]time.Time)}
 	go pb.cleanup()

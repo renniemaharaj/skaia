@@ -6,7 +6,6 @@ import (
 )
 
 // Passcode verification endpoints
-
 // apiVerifyPasscode checks a passcode pair against the stored .pcode file.
 func apiVerifyPasscode(w http.ResponseWriter, r *http.Request) {
 	var req struct {

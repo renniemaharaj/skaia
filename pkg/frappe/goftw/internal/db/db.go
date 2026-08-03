@@ -33,9 +33,6 @@ func WaitForDB(cfg Config) error {
 			fmt.Sprintf("-p%s", cfg.Password),
 			"--silent",
 		)
-		// if err != nil {
-		// 	return err
-		// }
 		if err == nil {
 			fmt.Println("[OK] MariaDB reachable.")
 			return nil

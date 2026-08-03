@@ -8,8 +8,8 @@ Use `.todo/` for work that is planned but not fully complete. Use `.specs/` for 
 
 Each active todo is a pair:
 
-- `.todo/<name>` — the plan, scope, requirements, references, and execution notes
-- `.todo/<name>.tip` — the current status entrypoint and next action list
+- `.todo/<name>` - the plan, scope, requirements, references, and execution notes
+- `.todo/<name>.tip` - the current status entrypoint and next action list
 
 Rules:
 
@@ -76,9 +76,9 @@ Use this structure for `.todo/<name>.tip`:
 ## <name>
 
 ### Current Progress
-- **Phase 1: ...** — ⬜ Not started
-- **Phase 2: ...** — 🟡 In progress
-- **Phase 3: ...** — ✅ Complete
+- **Phase 1: ...** - ⬜ Not started
+- **Phase 2: ...** - 🟡 In progress
+- **Phase 3: ...** - ✅ Complete
 
 ### Next Steps
 - [ ] <Next concrete action>
@@ -146,9 +146,9 @@ done
 
 ## Related Systems
 
-- `.routines/README.md` — routine routing and invocation contract
-- `.routines/planner` — todo creation, dedupe, split, retirement, and spec upkeep
-- `.routines/worker` — todo execution and verification
-- `.routines/auditor` — strict whole-repo quality/security/UX audit
-- `.routines/correctness` — drift and contradiction checks
-- `.specs/README.md` — durable project specification system
+- `.routines/README.md` - routine routing and invocation contract
+- `.routines/planner` - todo creation, dedupe, split, retirement, and spec upkeep
+- `.routines/worker` - todo execution and verification
+- `.routines/auditor` - strict whole-repo quality/security/UX audit
+- `.routines/correctness` - drift and contradiction checks
+- `.specs/README.md` - durable project specification system

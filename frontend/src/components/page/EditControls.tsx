@@ -107,7 +107,6 @@ export function setSectionLayout(config: string, nextLayout: SectionLayout): str
 }
 
 // Margin helpers
-
 export interface SectionMargins {
   marginTop: number;
   marginRight: number;
@@ -146,7 +145,6 @@ export function setSectionMargins(config: string, margins: Partial<SectionMargin
 }
 
 // Animation helpers
-
 export const SECTION_ANIMATIONS = [
   "none",
   "fade-in",
@@ -171,7 +169,6 @@ export function setSectionAnimation(config: string, animation: SectionAnimation)
 }
 
 // Animation intensity helpers
-
 export const ANIMATION_INTENSITIES = ["subtle", "normal", "dramatic"] as const;
 export type AnimationIntensity = (typeof ANIMATION_INTENSITIES)[number];
 
@@ -190,7 +187,6 @@ export function setSectionAnimationIntensity(
 }
 
 // Background color helpers
-
 export function getSectionBgColor(config: string): string {
   const parsed = safeParseConfig(config);
   return parsed.bg_color ?? "";

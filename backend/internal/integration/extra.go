@@ -23,7 +23,6 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 	})
 
 	// auth middleware enforcement
-
 	s.Add("middleware/protected_route_rejects_missing_token", func(t *T) {
 		resp := s.GET("/api/users/profile", nil)
 		t.Require(resp.StatusCode == 401,
@@ -50,7 +49,6 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 	})
 
 	// auth: duplicate registration
-
 	s.Add("auth/register_duplicate_username_rejected", func(t *T) {
 		username := uniq("dupuser")
 		email1 := uniq("dup1") + "@skaia.test"
@@ -105,7 +103,6 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 	})
 
 	// forum: threads by category listing
-
 	s.Add("forum/threads_by_category_listing", func(t *T) {
 		// Create a fresh admin to avoid rate limit conflicts.
 		adminEmail := uniq("tbc_admin") + "@skaia.test"
@@ -161,7 +158,6 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 	})
 
 	// forum: view count increments on fetch
-
 	s.Add("forum/view_count_increments", func(t *T) {
 		adminEmail := uniq("vc_admin") + "@skaia.test"
 		resp := s.POST("/api/auth/register", map[string]any{
@@ -215,7 +211,6 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 	})
 
 	// store: product filtering by category
-
 	s.Add("store/products_by_category", func(t *T) {
 		adminEmail := uniq("pbc_admin") + "@skaia.test"
 		resp := s.POST("/api/auth/register", map[string]any{
@@ -276,7 +271,6 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 	})
 
 	// store: order history for user
-
 	s.Add("store/order_history", func(t *T) {
 		adminEmail := uniq("oh_admin") + "@skaia.test"
 		resp := s.POST("/api/auth/register", map[string]any{
@@ -337,7 +331,6 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 	})
 
 	// user: suspension workflow
-
 	s.Add("user/suspend_and_unsuspend", func(t *T) {
 		// Create admin.
 		adminEmail := uniq("sus_admin") + "@skaia.test"
@@ -391,7 +384,6 @@ func RegisterExtraTests(s *Suite, db *sql.DB) {
 	})
 
 	// forum: pagination
-
 	s.Add("forum/thread_pagination", func(t *T) {
 		adminEmail := uniq("pag_admin") + "@skaia.test"
 		resp := s.POST("/api/auth/register", map[string]any{

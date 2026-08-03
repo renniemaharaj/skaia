@@ -20,7 +20,7 @@ service GoFTWService {
   rpc CheckoutSites (CheckoutSitesRequest) returns (stream LogStreamResponse);
   rpc StartDeployment (StartDeploymentRequest) returns (stream LogStreamResponse);
   rpc InstallApps (InstallAppsRequest) returns (stream LogStreamResponse);
-  
+
   rpc ListSites (ListSitesRequest) returns (ListSitesResponse);
   rpc CheckSite (CheckSiteRequest) returns (CheckSiteResponse);
   rpc ReloadNginx (ReloadNginxRequest) returns (ReloadNginxResponse);
@@ -28,14 +28,12 @@ service GoFTWService {
   rpc GetSiteApps (GetSiteAppsRequest) returns (GetSiteAppsResponse);
   rpc InstallApp (InstallAppRequest) returns (stream LogStreamResponse);
   rpc UninstallApp (UninstallAppRequest) returns (stream LogStreamResponse);
-  
+
   // New method for creating a site
   rpc NewSite (NewSiteRequest) returns (stream LogStreamResponse);
 }
 
-// ----------------------------------------------------
 // GrengoService Messages
-// ----------------------------------------------------
 message ReportStatusRequest {
   string node_id = 1;
   string status = 2;
@@ -45,19 +43,15 @@ message ReportStatusResponse {
   bool success = 1;
 }
 
-// ----------------------------------------------------
 // BackendService Messages
-// ----------------------------------------------------
 message GetStorageRequest {}
 
 message GetStorageResponse {
   // We can serialize the existing JSON response or define strict fields
-  string storage_json = 1; 
+  string storage_json = 1;
 }
 
-// ----------------------------------------------------
 // GoFTWService Messages
-// ----------------------------------------------------
 message LogStreamResponse {
   string output = 1;
 }

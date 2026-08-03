@@ -131,19 +131,19 @@ func (h *Handler) restartJobs(w http.ResponseWriter, r *http.Request) {
 		if client != nil {
 			ctx := context.Background()
 			key := fmt.Sprintf("mediascraper:ratelimit:restart:%d", userID)
-			
+
 			// Increment the counter
 			count, err := client.Incr(ctx, key).Result()
 			if err != nil {
 				writeJSONError(w, "failed to process rate limit", http.StatusInternalServerError)
 				return
 			}
-			
+
 			// Set expiration to 1 hour on the first request
 			if count == 1 {
 				client.Expire(ctx, key, time.Hour)
 			}
-			
+
 			if count > 5 {
 				writeJSONError(w, "Rate limit exceeded. You can only restart jobs 5 times per hour.", http.StatusTooManyRequests)
 				return

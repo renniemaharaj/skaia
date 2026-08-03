@@ -108,8 +108,8 @@ const UserManagePanel = ({
       {!canManageTarget && (
         <div className="up-manage-notice">
           <div>
-            You cannot modify this user — they have equal or greater power level than you (
-            {actorPower}⚡ is not greater than {targetPower}⚡).
+            You cannot modify this user - they have equal or greater power level than you (
+            power {actorPower} is not greater than power {targetPower}).
           </div>
           {currentUserRoles.includes("superuser") && (user.roles ?? []).includes("superuser") && (
             <SuperUsersDemotionVoteButton targetUserId={user.id} />
@@ -137,7 +137,7 @@ const UserManagePanel = ({
                   disabled={disabled}
                 />
                 <span className="up-checkbox-label">{role.name}</span>
-                <span className="up-checkbox-power">⚡{role.power_level}</span>
+                <span className="up-checkbox-power">Power {role.power_level}</span>
                 {role.description && <span className="up-checkbox-desc">{role.description}</span>}
                 {toggling && <span className="up-spinner" />}
               </label>

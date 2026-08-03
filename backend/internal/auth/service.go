@@ -592,7 +592,6 @@ func (s *Service) ChangePassword(ctx context.Context, userID int64, oldPassword,
 }
 
 // --- Service methods for handlers ---
-
 // RefreshToken validates the refresh token and issues a new access token.
 func (s *Service) RefreshToken(ctx context.Context, refreshToken string) (string, error) {
 	if refreshToken == "" {

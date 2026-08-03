@@ -114,7 +114,6 @@ func (h *Handler) parseID(r *http.Request, param string) (int64, error) {
 }
 
 // Category handlers
-
 func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 	cats, err := h.svc.ListCategories()
 	if err != nil {
@@ -265,7 +264,6 @@ func (h *Handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 }
 
 // Product handlers
-
 // listCategoryProducts handles GET /store/categories/{id}/products
 func (h *Handler) listCategoryProducts(w http.ResponseWriter, r *http.Request) {
 	id, err := h.parseID(r, "id")
@@ -586,7 +584,6 @@ func (h *Handler) deleteProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 // Cart handlers
-
 func (h *Handler) getCart(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
@@ -934,7 +931,6 @@ func (h *Handler) clearCart(w http.ResponseWriter, r *http.Request) {
 }
 
 // Order handlers
-
 func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
@@ -1299,7 +1295,6 @@ func (h *Handler) guestLookupOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 // Checkout handler
-
 func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
 	var req models.CheckoutRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Items) == 0 {
@@ -1499,7 +1494,6 @@ func (h *Handler) notifyOrderProductsChanged(order *models.Order) {
 }
 
 // Subscription plan handlers
-
 func (h *Handler) listPlans(w http.ResponseWriter, r *http.Request) {
 	plans, err := h.svc.ListPlans()
 	if err != nil {
@@ -1677,7 +1671,6 @@ func (h *Handler) deletePlan(w http.ResponseWriter, r *http.Request) {
 }
 
 // Subscription handlers
-
 func (h *Handler) subscribe(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
@@ -1778,7 +1771,6 @@ func (h *Handler) cancelSubscription(w http.ResponseWriter, r *http.Request) {
 }
 
 // Payment status handler
-
 func (h *Handler) getPaymentStatus(w http.ResponseWriter, r *http.Request) {
 	_, ok := utils.UserIDFromCtx(r)
 	if !ok {

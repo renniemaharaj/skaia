@@ -13,7 +13,6 @@ import (
 )
 
 // --- Category tests ---
-
 func TestStoreCategoryRepository_CreateAndGet(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	repo := store.NewCategoryRepository(db)
@@ -58,7 +57,6 @@ func TestStoreCategoryRepository_Delete(t *testing.T) {
 }
 
 // --- Product tests ---
-
 func TestProductRepository_CreateAndGet(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	catRepo := store.NewCategoryRepository(db)
@@ -128,7 +126,6 @@ func TestProductRepository_Update(t *testing.T) {
 }
 
 // --- Cart tests ---
-
 func TestCartRepository_AddAndGet(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	catRepo := store.NewCategoryRepository(db)
@@ -203,7 +200,6 @@ func TestCartRepository_RemoveFromCart(t *testing.T) {
 }
 
 // --- Order tests ---
-
 func TestOrderRepository_CreateAndGet(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	catRepo := store.NewCategoryRepository(db)

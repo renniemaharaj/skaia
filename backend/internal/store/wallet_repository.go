@@ -117,7 +117,7 @@ func (r *sqlWalletRepository) GetTransactions(userID int64, limit, offset int) (
 
 func (r *sqlWalletRepository) GetBalance(userID int64) (int64, error) {
 	query := `
-		SELECT 
+		SELECT
 			COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE 0 END), 0) -
 			COALESCE(SUM(CASE WHEN type = 'debit' THEN amount ELSE 0 END), 0)
 		FROM user_wallet_transactions

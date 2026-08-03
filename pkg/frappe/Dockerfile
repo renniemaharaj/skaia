@@ -49,7 +49,6 @@ RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 # Chromium and dependencies for pdf generation
 # COST OPTIMIZATION: Disabled for demo (can be enabled if needed)
 # RUN apt-get update && apt-get install -y chromium fonts-liberation ...
-
 # Python tooling
 RUN pip install --upgrade pip setuptools wheel \
     && pip install "frappe-bench==${BENCH_VERSION}" "gunicorn==${GUNICORN_VERSION}" "supervisor==${SUPERVISOR_VERSION}"

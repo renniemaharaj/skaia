@@ -136,9 +136,7 @@ func (h *Handler) setPageAsHomepage(w http.ResponseWriter, r *http.Request) {
 }
 
 // Config-only endpoints (not user-facing) remain under /config
-
 // helpers
-
 func (h *Handler) requireHomeManage(r *http.Request) bool {
 	uid, ok := utils.UserIDFromCtx(r)
 	if !ok {
@@ -193,7 +191,6 @@ func (h *Handler) canDeletePageForPage(r *http.Request, p *models.Page) bool {
 }
 
 // handlers
-
 // getLandingSlug returns just the configured landing page slug.
 // The frontend uses this to resolve the slug, then fetches the page by slug
 // directly - avoiding the single /pages/index CDN cache key.
@@ -901,7 +898,6 @@ func (h *Handler) deletePage(w http.ResponseWriter, r *http.Request) {
 }
 
 // browse (public feed of custom pages)
-
 func (h *Handler) browsePages(w http.ResponseWriter, r *http.Request) {
 	pages, err := h.svc.ListWithOwnership()
 	if err != nil {
@@ -958,7 +954,6 @@ func (h *Handler) browsePages(w http.ResponseWriter, r *http.Request) {
 }
 
 // ownership & editor management
-
 func (h *Handler) setOwner(w http.ResponseWriter, r *http.Request) {
 	// Only admin can assign/transfer ownership
 	if !h.requireHomeManage(r) {
@@ -1152,7 +1147,6 @@ func (h *Handler) removeEditor(w http.ResponseWriter, r *http.Request) {
 }
 
 // engagement handlers
-
 func (h *Handler) recordView(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	p, err := h.svc.GetBySlug(slug)
@@ -1447,114 +1441,7 @@ func (h *Handler) unlikeComment(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"likes": count, "is_liked": false})
 }
 
-// landing page config
-
-func (h *Handler) setLandingPage(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
-	var body struct {
-		Slug string `json:"slug"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
-		return
-	}
-	val, _ := json.Marshal(body.Slug)
-	if err := h.configSvc.UpsertConfig("landing_page_slug", string(val)); err != nil {
-		log.Printf("page.setLandingPage: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "failed")
-		return
-	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok", "slug": body.Slug})
-
-	// Resolve only page identity for a content-free client invalidation.
-	var fullPage *models.Page
-	if body.Slug != "" {
-		if p, err := h.svc.GetBySlug(body.Slug); err == nil {
-			h.svc.EnrichPage(p)
-			fullPage = p
-		}
-	}
-
-	userID, _ := utils.UserIDFromCtx(r)
-	h.dispatcher.Dispatch(ievents.Job{
-		UserID:   userID,
-		Activity: ievents.ActPageUpdated,
-		Resource: ievents.ResConfig,
-		IP:       ievents.ClientIP(r),
-		Meta:     map[string]interface{}{"action": "set_landing_page", "slug": body.Slug},
-		Fn: func() {
-			if fullPage != nil {
-				h.hub.BroadcastPage("landing_page_changed", pageInvalidation(fullPage))
-			}
-			h.hub.BroadcastConfig("landing_page_updated", map[string]string{"slug": body.Slug})
-		},
-	})
-}
-
-// factory reset
-
-// factoryResetHomepage deletes all custom pages, legacy landing sections/items,
-// stale config keys, and page allocations. No default page is created - the
-// user must create a page and set it as the landing page via config.
-func (h *Handler) factoryResetHomepage(w http.ResponseWriter, r *http.Request) {
-	if !h.requireHomeManage(r) {
-		utils.WriteError(w, http.StatusForbidden, "forbidden")
-		return
-	}
-	actorID, ok := utils.UserIDFromCtx(r)
-	if !ok {
-		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	// 1. Delete all custom pages (cascades: editors, likes, comments, views).
-	if err := h.svc.DeleteAll(actorID); err != nil {
-		log.Printf("factoryReset: delete pages: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "failed to delete pages")
-		return
-	}
-
-	// 2. Delete legacy landing_sections + landing_items.
-	if err := h.configSvc.DeleteAllSections(); err != nil {
-		log.Printf("factoryReset: delete sections: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "failed to delete landing sections")
-		return
-	}
-
-	// 3. Remove stale config keys that accumulate from landing usage.
-	for _, key := range []string{"landing_page_slug"} {
-		_ = h.configSvc.DeleteConfig(key)
-	}
-
-	// 4. Reset all user page allocations to zero used.
-	allocs, _ := h.svc.ListAllocations()
-	for _, a := range allocs {
-		_ = h.svc.ReconcileUsedCount(a.UserID)
-	}
-
-	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
-		"status":  "ok",
-		"message": "factory reset complete — all pages removed",
-	})
-
-	userID, _ := utils.UserIDFromCtx(r)
-	h.dispatcher.Dispatch(ievents.Job{
-		UserID:   userID,
-		Activity: ievents.ActPageUpdated,
-		Resource: ievents.ResConfig,
-		IP:       ievents.ClientIP(r),
-		Meta:     map[string]interface{}{"action": "factory_reset_homepage"},
-		Fn: func() {
-			h.hub.BroadcastConfig("landing_page_updated", map[string]string{"action": "factory_reset"})
-		},
-	})
-}
-
 // page allocation: user-facing
-
 func (h *Handler) getMyAllocation(w http.ResponseWriter, r *http.Request) {
 	uid, ok := utils.UserIDFromCtx(r)
 	if !ok {
@@ -1622,7 +1509,6 @@ func (h *Handler) claimPage(w http.ResponseWriter, r *http.Request) {
 }
 
 // page allocation: admin management
-
 func (h *Handler) listAllocations(w http.ResponseWriter, r *http.Request) {
 	if !h.requireHomeManage(r) {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")

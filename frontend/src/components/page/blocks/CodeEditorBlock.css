@@ -1,5 +1,4 @@
 /* Code Editor Block */
-
 .code-editor-block {
   padding: 40px;
   max-width: 1400px;
@@ -202,7 +201,6 @@
 }
 
 /* Responsive */
-
 @media (max-width: 768px) {
   .code-editor-block {
     padding: 20px;

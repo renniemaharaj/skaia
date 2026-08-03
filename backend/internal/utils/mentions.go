@@ -32,7 +32,7 @@ func DiffMentions(oldMentions, newMentions []string) []string {
 	for _, id := range oldMentions {
 		oldSet[id] = true
 	}
-	
+
 	var added []string
 	for _, id := range newMentions {
 		if !oldSet[id] {

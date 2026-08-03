@@ -4,10 +4,10 @@
 
 ### Current Progress
 
-- **Phase 1: Post-reset audit and contract reconciliation** — ✅ Complete
-- **Phase 2: Privacy, authorization, and integrity containment** — ✅ Complete
-- **Phase 3: Realtime and participant UX remediation** — ✅ Complete
-- **Phase 4: Regression coverage and final verification** — ✅ Complete
+- **Phase 1: Post-reset audit and contract reconciliation** - ✅ Complete
+- **Phase 2: Privacy, authorization, and integrity containment** - ✅ Complete
+- **Phase 3: Realtime and participant UX remediation** - ✅ Complete
+- **Phase 4: Regression coverage and final verification** - ✅ Complete
 
 ### Remediated Findings
 

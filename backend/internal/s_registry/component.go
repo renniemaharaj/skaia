@@ -25,13 +25,6 @@ const (
 	BindAny      BindPointKind = "any"
 )
 
-var validBindKinds = map[BindPointKind]bool{
-	BindText: true, BindRichText: true, BindNumber: true,
-	BindBoolean: true, BindURL: true, BindMedia: true,
-	BindImage: true, BindVideo: true, BindObject: true,
-	BindArray: true, BindAction: true, BindAny: true,
-}
-
 // BindPoint describes a single data target on a component.
 type BindPoint struct {
 	Key         string        `json:"key"`
@@ -60,25 +53,24 @@ type ComponentDefinition struct {
 var componentsByType map[string]ComponentDefinition
 
 var componentDefinitions = []ComponentDefinition{
-	// ────── Primitives ──────
 	{
-		Type:        "primitive.div",
-		Label:       "Container",
-		Group:       "primitive",
-		Description: "Generic container for layout and grouping.",
-		Repeatable:  true,
-		PropsSchema: json.RawMessage(`{}`),
+		Type:         "primitive.div",
+		Label:        "Container",
+		Group:        "primitive",
+		Description:  "Generic container for layout and grouping.",
+		Repeatable:   true,
+		PropsSchema:  json.RawMessage(`{}`),
 		StyleTargets: []string{"root"},
 		BindPoints:   []BindPoint{},
 		Version:      1,
 	},
 	{
-		Type:        "primitive.text",
-		Label:       "Text",
-		Group:       "primitive",
-		Description: "Single or multi-line text display.",
-		Repeatable:  true,
-		PropsSchema: json.RawMessage(`{}`),
+		Type:         "primitive.text",
+		Label:        "Text",
+		Group:        "primitive",
+		Description:  "Single or multi-line text display.",
+		Repeatable:   true,
+		PropsSchema:  json.RawMessage(`{}`),
 		StyleTargets: []string{"root"},
 		BindPoints: []BindPoint{
 			{Key: "body", Label: "Body", Description: "Text content to display.", Kind: BindText, Required: true},
@@ -86,12 +78,12 @@ var componentDefinitions = []ComponentDefinition{
 		Version: 1,
 	},
 	{
-		Type:        "primitive.button",
-		Label:       "Button",
-		Group:       "primitive",
-		Description: "Clickable button with text label.",
-		Repeatable:  true,
-		PropsSchema: json.RawMessage(`{}`),
+		Type:         "primitive.button",
+		Label:        "Button",
+		Group:        "primitive",
+		Description:  "Clickable button with text label.",
+		Repeatable:   true,
+		PropsSchema:  json.RawMessage(`{}`),
 		StyleTargets: []string{"root"},
 		BindPoints: []BindPoint{
 			{Key: "title", Label: "Label", Description: "Button label text.", Kind: BindText, Required: true},
@@ -101,12 +93,12 @@ var componentDefinitions = []ComponentDefinition{
 		Version: 1,
 	},
 	{
-		Type:        "primitive.checkbox",
-		Label:       "Checkbox",
-		Group:       "primitive",
-		Description: "Boolean checkbox input.",
-		Repeatable:  true,
-		PropsSchema: json.RawMessage(`{}`),
+		Type:         "primitive.checkbox",
+		Label:        "Checkbox",
+		Group:        "primitive",
+		Description:  "Boolean checkbox input.",
+		Repeatable:   true,
+		PropsSchema:  json.RawMessage(`{}`),
 		StyleTargets: []string{"root", "label"},
 		BindPoints: []BindPoint{
 			{Key: "checked", Label: "Checked", Description: "Whether the checkbox is checked.", Kind: BindBoolean, Required: true},
@@ -116,12 +108,12 @@ var componentDefinitions = []ComponentDefinition{
 		Version: 1,
 	},
 	{
-		Type:        "primitive.image",
-		Label:       "Image",
-		Group:       "primitive",
-		Description: "Image display with alt text.",
-		Repeatable:  true,
-		PropsSchema: json.RawMessage(`{}`),
+		Type:         "primitive.image",
+		Label:        "Image",
+		Group:        "primitive",
+		Description:  "Image display with alt text.",
+		Repeatable:   true,
+		PropsSchema:  json.RawMessage(`{}`),
 		StyleTargets: []string{"root", "image"},
 		BindPoints: []BindPoint{
 			{Key: "media", Label: "Source", Description: "Image URL.", Kind: BindImage, Required: true},
@@ -131,12 +123,12 @@ var componentDefinitions = []ComponentDefinition{
 		Version: 1,
 	},
 	{
-		Type:        "primitive.link",
-		Label:       "Link",
-		Group:       "primitive",
-		Description: "Hyperlink with text label.",
-		Repeatable:  true,
-		PropsSchema: json.RawMessage(`{}`),
+		Type:         "primitive.link",
+		Label:        "Link",
+		Group:        "primitive",
+		Description:  "Hyperlink with text label.",
+		Repeatable:   true,
+		PropsSchema:  json.RawMessage(`{}`),
 		StyleTargets: []string{"root"},
 		BindPoints: []BindPoint{
 			{Key: "title", Label: "Label", Description: "Link display text.", Kind: BindText, Required: true},
@@ -145,12 +137,12 @@ var componentDefinitions = []ComponentDefinition{
 		Version: 1,
 	},
 	{
-		Type:        "primitive.icon",
-		Label:       "Icon / Badge",
-		Group:       "primitive",
-		Description: "Status icon or badge indicator.",
-		Repeatable:  true,
-		PropsSchema: json.RawMessage(`{}`),
+		Type:         "primitive.icon",
+		Label:        "Icon / Badge",
+		Group:        "primitive",
+		Description:  "Status icon or badge indicator.",
+		Repeatable:   true,
+		PropsSchema:  json.RawMessage(`{}`),
 		StyleTargets: []string{"root"},
 		BindPoints: []BindPoint{
 			{Key: "icon", Label: "Icon", Description: "Icon key or URL.", Kind: BindText, Required: true},
@@ -159,14 +151,13 @@ var componentDefinitions = []ComponentDefinition{
 		Version: 1,
 	},
 
-	// ────── Compound ──────
 	{
-		Type:        "compound.card",
-		Label:       "Card",
-		Group:       "compound",
-		Description: "Surface with heading, body, image, and link zones.",
-		Repeatable:  true,
-		PropsSchema: json.RawMessage(`{}`),
+		Type:         "compound.card",
+		Label:        "Card",
+		Group:        "compound",
+		Description:  "Surface with heading, body, image, and link zones.",
+		Repeatable:   true,
+		PropsSchema:  json.RawMessage(`{}`),
 		StyleTargets: []string{"root", "header", "body", "image", "footer"},
 		BindPoints: []BindPoint{
 			{Key: "title", Label: "Title", Description: "Card heading text.", Kind: BindText, Required: false},
@@ -178,12 +169,12 @@ var componentDefinitions = []ComponentDefinition{
 		Version: 1,
 	},
 	{
-		Type:        "compound.stat",
-		Label:       "Stat Card",
-		Group:       "compound",
-		Description: "Metric display with value, label, and icon.",
-		Repeatable:  true,
-		PropsSchema: json.RawMessage(`{}`),
+		Type:         "compound.stat",
+		Label:        "Stat Card",
+		Group:        "compound",
+		Description:  "Metric display with value, label, and icon.",
+		Repeatable:   true,
+		PropsSchema:  json.RawMessage(`{}`),
 		StyleTargets: []string{"root", "value", "label", "icon"},
 		BindPoints: []BindPoint{
 			{Key: "title", Label: "Value", Description: "Metric value text.", Kind: BindText, Required: true},
@@ -193,12 +184,12 @@ var componentDefinitions = []ComponentDefinition{
 		Version: 1,
 	},
 	{
-		Type:        "compound.media_card",
-		Label:       "Media Card",
-		Group:       "compound",
-		Description: "Card optimized for image/video display with caption.",
-		Repeatable:  true,
-		PropsSchema: json.RawMessage(`{}`),
+		Type:         "compound.media_card",
+		Label:        "Media Card",
+		Group:        "compound",
+		Description:  "Card optimized for image/video display with caption.",
+		Repeatable:   true,
+		PropsSchema:  json.RawMessage(`{}`),
 		StyleTargets: []string{"root", "media", "caption"},
 		BindPoints: []BindPoint{
 			{Key: "media", Label: "Media", Description: "Image or video URL.", Kind: BindMedia, Required: true},
@@ -208,12 +199,12 @@ var componentDefinitions = []ComponentDefinition{
 		Version: 1,
 	},
 	{
-		Type:        "compound.profile",
-		Label:       "Profile Card",
-		Group:       "compound",
-		Description: "User/entity profile with avatar, name, and bio.",
-		Repeatable:  true,
-		PropsSchema: json.RawMessage(`{}`),
+		Type:         "compound.profile",
+		Label:        "Profile Card",
+		Group:        "compound",
+		Description:  "User/entity profile with avatar, name, and bio.",
+		Repeatable:   true,
+		PropsSchema:  json.RawMessage(`{}`),
 		StyleTargets: []string{"root", "avatar", "name", "bio"},
 		BindPoints: []BindPoint{
 			{Key: "media", Label: "Avatar", Description: "Profile image.", Kind: BindImage, Required: false},
@@ -224,12 +215,12 @@ var componentDefinitions = []ComponentDefinition{
 		Version: 1,
 	},
 	{
-		Type:        "compound.mediascraper",
-		Label:       "Media Scraper",
-		Group:       "compound",
-		Description: "Fetches and displays media from a given URL binding.",
-		Repeatable:  true,
-		PropsSchema: json.RawMessage(`{}`),
+		Type:         "compound.mediascraper",
+		Label:        "Media Scraper",
+		Group:        "compound",
+		Description:  "Fetches and displays media from a given URL binding.",
+		Repeatable:   true,
+		PropsSchema:  json.RawMessage(`{}`),
 		StyleTargets: []string{"root"},
 		BindPoints: []BindPoint{
 			{Key: "url", Label: "Target URL", Description: "The URL to scrape media from.", Kind: BindURL, Required: true},
@@ -288,7 +279,7 @@ var allowedStyleProperties = map[string]bool{
 func ValidateComponentConfig(cfg map[string]interface{}) error {
 	compTypeRaw, hasType := cfg["component_type"]
 	if !hasType {
-		return nil // no component selection — nothing to validate
+		return nil // no component selection - nothing to validate
 	}
 
 	compType, ok := compTypeRaw.(string)
@@ -330,7 +321,7 @@ func ValidateComponentConfig(cfg map[string]interface{}) error {
 			}
 		}
 	} else {
-		// No bindings at all — check if any are required without fallback
+		// No bindings at all - check if any are required without fallback
 		for _, bp := range comp.BindPoints {
 			if bp.Required && bp.Fallback == nil {
 				return fmt.Errorf("required bind-point %q is not mapped for component %q", bp.Key, compType)

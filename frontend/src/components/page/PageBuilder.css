@@ -1,9 +1,4 @@
-/* ══════════════════════════════════════════════════════════════════════════
-   Page Builder - styles for the page builder shell.
-   Core infrastructure lives in ./page-builder-core.css.
-   Block styles live in ./blocks/<Block>.css.
-   ══════════════════════════════════════════════════════════════════════════ */
-
+/* Page builder shell styles; core and block styles live in their respective files. */
 /* Page builder core + all block styles */
 @import "./page-builder-core.css";
 @import "./blocks/HeroBlock.css";
@@ -22,7 +17,6 @@
 @import "./blocks/CustomSectionBlock.css";
 
 /* Landing container */
-
 .pb-container {
   position: relative;
   min-height: 100vh;
@@ -50,7 +44,6 @@
 }
 
 /* Guest sandbox */
-
 .guest-sandbox {
   display: inline-flex;
   align-items: center;
@@ -119,7 +112,6 @@
 }
 
 /* Page admin bar (visible to editors on index) */
-
 .page-admin-bar {
   display: flex;
   flex-wrap: wrap;
@@ -205,7 +197,6 @@
 }
 
 /* Landing page selector dropdown */
-
 .page-admin-dropdown-wrap {
   position: relative;
   display: inline-flex;
@@ -343,7 +334,6 @@
 }
 
 /* Engagement bar */
-
 .page-engagement-bar {
   display: flex;
   align-items: center;

@@ -80,9 +80,18 @@ docs disagree.
 
 ## Last Ran
 
-- 2026-07-30
+- 2026-08-03
 
 ## Last Run Remarks
+
+- Reconciled repository hygiene policy with implementation: all tracked
+  maintainable text now passes the Go checker, generated/vendor comments retain
+  their source ownership, and fingerprinted Bible metadata was updated with its
+  governed rendering hash while verse payload checksums remained unchanged.
+- Removed only evidence-backed dead artifacts and declarations. Complete Go,
+  frontend, static-analysis, contract, corpus, hook, and diff gates pass.
+
+## Previous Run Remarks (2026-07-30)
 
 - Reconciled the multi-tenant SEO implementation with the backend, caching/CDN,
   infrastructure, and security contracts. Canonical identity is configuration

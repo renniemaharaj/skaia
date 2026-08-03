@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronRight, Zap } from "lucide-react";
 /**
- * EventHookEditor — collapsible panel for writing TypeScript event handlers
+ * EventHookEditor - collapsible panel for writing TypeScript event handlers
  * on a component. Each supported event gets a code textarea.
  */
 import { useState } from "react";

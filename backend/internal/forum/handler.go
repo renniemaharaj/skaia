@@ -82,7 +82,6 @@ func (h *Handler) parseID(r *http.Request, param string) (int64, error) {
 }
 
 // Category handlers
-
 func (h *Handler) listCategories(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	var categories []*models.ForumCategory
@@ -345,7 +344,6 @@ func (h *Handler) updateCategory(w http.ResponseWriter, r *http.Request) {
 }
 
 // Thread handlers
-
 func (h *Handler) listThreads(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
@@ -847,7 +845,6 @@ func (h *Handler) unlikeThread(w http.ResponseWriter, r *http.Request) {
 }
 
 // Comment handlers
-
 func (h *Handler) listComments(w http.ResponseWriter, r *http.Request) {
 	id, err := h.parseID(r, "id")
 	if err != nil {

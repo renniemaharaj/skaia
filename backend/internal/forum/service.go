@@ -23,7 +23,6 @@ func NewService(cats CategoryRepository, threads ThreadRepository, comments Comm
 }
 
 // Category methods
-
 func (s *Service) GetCategory(id int64) (*models.ForumCategory, error) {
 	return s.categories.GetByID(id)
 }
@@ -53,7 +52,6 @@ func (s *Service) DeleteCategory(id, actorID int64) error {
 }
 
 // Thread methods
-
 func (s *Service) GetThread(id int64) (*models.ForumThread, error) {
 	if t, ok := s.cache.GetByID(id); ok {
 		return t, nil
@@ -127,7 +125,6 @@ func (s *Service) IsThreadLikedByUser(threadID, userID int64) (bool, error) {
 }
 
 // Comment methods
-
 func (s *Service) GetComment(id int64) (*models.ThreadComment, error) {
 	return s.comments.GetByID(id)
 }

@@ -12,7 +12,6 @@ import (
 )
 
 // Site listing, env, arm/disarm
-
 // apiSiteInfo holds structured site data returned by the internal API.
 type apiSiteInfo struct {
 	Name     string   `json:"name"`
@@ -85,7 +84,6 @@ func apiListSites(w http.ResponseWriter, r *http.Request) {
 }
 
 // Site .env read/write
-
 func apiGetEnv(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	if name == "" {
@@ -143,7 +141,6 @@ func apiPutEnv(w http.ResponseWriter, r *http.Request) {
 }
 
 // Arm / Disarm
-
 // apiArmSite creates a .armed sentinel file in the site's armed/ directory.
 func apiArmSite(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
@@ -165,7 +162,6 @@ func apiArmSite(w http.ResponseWriter, r *http.Request) {
 	// Also write into the running container's armed/ dir (mounted at /app/armed).
 	// The site container reads from its own local armed/ directory.
 	// Since we volume-mount ./armed:/app/armed we've already written the file above.
-
 	apiJSON(w, http.StatusOK, map[string]any{"ok": true, "armed": true})
 }
 

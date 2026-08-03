@@ -11,7 +11,6 @@ import (
 )
 
 // Command execution (sync)
-
 // apiExec is the generic command executor.
 // POST /exec  {"command":"start","args":["mysite"]}
 // Runs `grengo <command> <args...>` as a subprocess and returns the output.
@@ -125,7 +124,6 @@ func logPrefix(parts ...string) string {
 }
 
 // Async job runners (site-cmd, global-cmd)
-
 func startSiteCommand(name, command string, extraArgs []string) string {
 	jobID := fmt.Sprintf("job-cmd-%d", time.Now().UnixNano())
 
@@ -259,7 +257,6 @@ func startGenericCommand(command string, args []string) string {
 }
 
 // Migrate (sync)
-
 // apiMigrateSite runs migrations for a single site.
 func apiMigrateSite(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")

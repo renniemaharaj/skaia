@@ -1,5 +1,4 @@
 /* Column Mapper */
-
 .column-mapper {
   display: flex;
   flex-direction: column;
@@ -37,7 +36,6 @@
 }
 
 /* Available columns (source) */
-
 .column-mapper-sources {
   display: flex;
   flex-wrap: wrap;
@@ -82,7 +80,6 @@
 }
 
 /* Target slots (card fields) */
-
 .column-mapper-targets {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -177,7 +174,6 @@
 }
 
 /* Separator */
-
 .column-mapper-divider {
   height: 1px;
   background: var(--border-color);
@@ -185,7 +181,6 @@
 }
 
 /* Responsive */
-
 @media (max-width: 640px) {
   .column-mapper-targets {
     grid-template-columns: 1fr;

@@ -4,14 +4,14 @@
 
 ### Current Progress
 
-- **Phase 1: Existing behavior inventory and contract fixtures** — ✅ Complete
-- **Phase 2: Canonical schemas and typed registry** — ✅ Complete
-- **Phase 3: Shared frontend section shell** — ✅ Complete
-- **Phase 4: Shadow normalized persistence** — ✅ Complete
-- **Phase 5: Typed APIs and concurrency cutover** — ✅ Complete
-- **Phase 6: Sensitive-data and preset migration** — ✅ Complete
-- **Phase 7: Cutover, rollback window, and cleanup** — ✅ Complete
-- **Final UX hardening and production audit** — ✅ Complete
+- **Phase 1: Existing behavior inventory and contract fixtures** - ✅ Complete
+- **Phase 2: Canonical schemas and typed registry** - ✅ Complete
+- **Phase 3: Shared frontend section shell** - ✅ Complete
+- **Phase 4: Shadow normalized persistence** - ✅ Complete
+- **Phase 5: Typed APIs and concurrency cutover** - ✅ Complete
+- **Phase 6: Sensitive-data and preset migration** - ✅ Complete
+- **Phase 7: Cutover, rollback window, and cleanup** - ✅ Complete
+- **Final UX hardening and production audit** - ✅ Complete
 
 ### Completed Work (Phases 1-3)
 

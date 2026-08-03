@@ -12,6 +12,8 @@ mnt/
 .DS_Store
 *.log
 tmp_build
+/backend/main
+/backend/skaia.db
 .env
 .env.local
 .env.*.local
@@ -21,6 +23,9 @@ scratch/
 
 # Grengo state
 /grengo
+/cli
+/pkg/frappe/goftw/main
+/pkg/frappe/goftw/vendor/
 backends/
 nginx/default.conf
 .grengo-api.pid

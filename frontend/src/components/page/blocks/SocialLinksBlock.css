@@ -1,5 +1,4 @@
 /* Social Links Block */
-
 .social-links {
   max-width: 1400px;
   margin: 0 auto;
@@ -31,7 +30,6 @@
 }
 
 /* Responsive */
-
 @media (max-width: 768px) {
   .social-links {
     flex-direction: row;

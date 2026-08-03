@@ -7,7 +7,7 @@ import (
 	"net"
 	"os"
 	"sync"
-	
+
 	pb "github.com/skaia/grpc/skaia"
 	"goftw/internal/bench"
 	"goftw/internal/entity"
@@ -61,7 +61,7 @@ func (s *GoFTWServer) SetupInit(req *pb.SetupInitRequest, stream pb.GoFTWService
 	if branch == "" {
 		branch = s.Bench.Branch
 	}
-	
+
 	safeStream := &safeStreamWrapper{send: stream.Send}
 	defer safeStream.Close()
 

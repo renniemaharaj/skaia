@@ -2,13 +2,13 @@
 -- This migration renames tables, indexes, and foreign keys as per .todo/migration
 -- Wrapped in a DO block to ensure idempotency on fresh databases.
 
-DO $$ 
+DO $$
 BEGIN
     -- 1. Rename tables
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'landing_sections') THEN
         ALTER TABLE landing_sections RENAME TO page_sections;
     END IF;
-    
+
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'landing_items') THEN
         ALTER TABLE landing_items RENAME TO page_items;
     END IF;

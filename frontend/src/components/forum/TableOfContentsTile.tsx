@@ -77,7 +77,6 @@ const TableOfContentsTile: React.FC<TableOfContentsTileProps> = ({ htmlContent }
     // RichTextEditor might wipe IDs if it cleanses HTML, but if we assign IDs before rendering or search by text content.
     // Actually, reactjs-tiptap-editor generates IDs for headings if configured, but if not we might just scroll to the nearest element with that text.
     // Let's look for an element with matching text content or matching tag if ID fails.
-
     let el = document.getElementById(id);
 
     // If we found an element but it's not inside the main content, ignore it

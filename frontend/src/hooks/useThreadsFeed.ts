@@ -73,7 +73,6 @@ export function useThreadsFeed({
   const prevCountRef = useRef(0);
 
   // Scroll helpers
-
   const scrollToBottom = useCallback(() => {
     if (feedRef.current) {
       feedRef.current.scrollTop = feedRef.current.scrollHeight;
@@ -88,7 +87,6 @@ export function useThreadsFeed({
   }, []);
 
   // URL builder
-
   const buildUrl = useCallback(
     (offset: number) => {
       let param = "";
@@ -104,7 +102,6 @@ export function useThreadsFeed({
   );
 
   // Initial load
-
   const loadInitial = useCallback(async () => {
     if (!filterKey) return;
     setIsLoading(true);
@@ -128,7 +125,6 @@ export function useThreadsFeed({
   }, [filterKey, buildUrl, limit, setThreads]);
 
   // Load older (top sentinel)
-
   const loadOlder = useCallback(async () => {
     if (!filterKey || loadingRef.current || exhaustedRef.current) return;
     loadingRef.current = true;
@@ -162,7 +158,6 @@ export function useThreadsFeed({
   }, [filterKey, buildUrl, limit, setThreads]);
 
   // Register active feed + trigger initial load when filter changes
-
   useEffect(() => {
     if (!filterKey) return;
     setActiveId(filterKey);
@@ -173,7 +168,6 @@ export function useThreadsFeed({
   }, [filterKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll to bottom once the initial load completes
-
   useEffect(() => {
     if (!isLoading) {
       requestAnimationFrame(scrollToBottom);
@@ -183,7 +177,6 @@ export function useThreadsFeed({
   }, [isLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-scroll when WS appends a new thread
-
   useEffect(() => {
     if (isInitialLoadRef.current) return;
     const prev = prevCountRef.current;
@@ -194,7 +187,6 @@ export function useThreadsFeed({
   }, [threads.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // IntersectionObserver on the top sentinel
-
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;

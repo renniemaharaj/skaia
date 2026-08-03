@@ -192,9 +192,7 @@ export function DeploymentsPage() {
   }, []);
 
   // Available apps are now statically defined above
-
   // Handled inside Console component
-
   // Auto-subscribe to provisioning_logs for every known instance so the status
   // badge updates in real-time without requiring the user to expand the row.
   useEffect(() => {

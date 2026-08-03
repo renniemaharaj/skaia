@@ -1,7 +1,6 @@
 import type React from "react";
 import "./LoadingPage.css";
 // import { ContentStandOutCard } from "../components/cards/ContentStandOutCard";
-
 interface LoadingPageProps {
   message?: string;
   subMessage?: string;

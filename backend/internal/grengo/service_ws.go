@@ -53,7 +53,6 @@ func (s *Service) WatchJobs() {
 
 		waitingForPasscode = false
 		// fmt.Println("grengo gRPC: opened WatchJobs stream")
-
 		for {
 			resp, err := stream.Recv()
 			if err == io.EOF {
@@ -250,7 +249,6 @@ func (s *Service) WatchLogs() {
 
 		waitingForPasscode = false
 		// fmt.Println("grengo gRPC: opened WatchLogs stream")
-
 		for {
 			resp, err := stream.Recv()
 			if err == io.EOF {

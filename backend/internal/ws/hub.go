@@ -21,7 +21,6 @@ var pkgLog = log.New("WebSocket")
 // Environment-driven configuration
 // All values default to production-ready settings tuned for 100K concurrent
 // connections. Override via environment variables.
-
 // HubConfig holds runtime-tunable WebSocket hub settings read from the
 // environment at startup. Use loadHubConfig() to populate.
 type HubConfig struct {
@@ -227,7 +226,7 @@ type Hub struct {
 // NewHub creates and initialises a Hub ready to be started with Run.
 func NewHub() *Hub {
 	cfg := loadHubConfig()
-	log.Printf("ws: hub config — max_conn=%d workers=%d session_size=%d chat_ring=%d presence_ms=%d",
+	log.Printf("ws: hub config - max_conn=%d workers=%d session_size=%d chat_ring=%d presence_ms=%d",
 		cfg.MaxConnections, cfg.MaxWorkers, cfg.SessionSize, cfg.ChatRingSize, cfg.PresenceInterval.Milliseconds())
 	return &Hub{
 		cfg:             cfg,
@@ -398,7 +397,6 @@ func (h *Hub) markPresenceDirty() {
 }
 
 // Public API
-
 // MediaActions returns a channel providing raw media sync actions directly from connected clients
 func (h *Hub) MediaActions() <-chan MediaUpdateAction {
 	return h.mediaUpdates

@@ -350,7 +350,7 @@ export default function SecuritySettings({
     setVerifyLoading(true);
     try {
       await resendVerificationEmail();
-      toast.success("Verification email sent — check your inbox");
+      toast.success("Verification email sent - check your inbox");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to send verification email");
     } finally {

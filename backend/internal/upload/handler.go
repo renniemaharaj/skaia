@@ -578,7 +578,6 @@ func (h *Handler) uploadBanner(w http.ResponseWriter, r *http.Request) {
 }
 
 // Internal helpers
-
 // userDir returns (and creates) ./uploads/users/{userID}/{subdir}.
 func userDir(userID int64, subdir string) (string, error) {
 	dir := filepath.Join(UsersDir, strconv.FormatInt(userID, 10), subdir)

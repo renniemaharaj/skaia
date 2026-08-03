@@ -14,7 +14,6 @@ import (
 )
 
 // Category repository
-
 type sqlCategoryRepository struct{ db database.Executor }
 
 func NewCategoryRepository(db database.Executor) CategoryRepository {
@@ -103,7 +102,6 @@ func (r *sqlCategoryRepository) List() ([]*models.StoreCategory, error) {
 }
 
 // Product repository
-
 type sqlProductRepository struct{ db database.Executor }
 
 func NewProductRepository(db database.Executor) ProductRepository {
@@ -320,7 +318,6 @@ func scanProducts(rows *sql.Rows) ([]*models.Product, error) {
 }
 
 // Cart repository
-
 type sqlCartRepository struct{ db database.Executor }
 
 func NewCartRepository(db database.Executor) CartRepository {
@@ -405,7 +402,6 @@ func (r *sqlCartRepository) ClearCart(userID int64) error {
 }
 
 // Order repository
-
 type sqlOrderRepository struct{ db database.Executor }
 
 func NewOrderRepository(db database.Executor) OrderRepository {
@@ -994,7 +990,6 @@ func (r *sqlOrderRepository) Delete(id, actorID int64) error {
 }
 
 // Payment repository
-
 type sqlPaymentRepository struct{ db database.Executor }
 
 func NewPaymentRepository(db database.Executor) PaymentRepository {

@@ -27,7 +27,6 @@ type archiveMeta struct {
 }
 
 // Client Export
-
 // cmdExportClient packs a single client (env, compose, uploads, DB dump) into
 // a portable tar.gz archive.
 func cmdExportClient(name, outFile string) {
@@ -70,18 +69,17 @@ func cmdExportClient(name, outFile string) {
 			log("Dumping database '%s'…", dbName)
 			err := addPgDumpToArchive(tw, dbName, "db.sql")
 			if err != nil {
-				warn("Database dump failed: %v — archive will not include DB data", err)
+				warn("Database dump failed: %v - archive will not include DB data", err)
 			}
 		}
 	} else {
-		warn("PostgreSQL is not running — archive will not include DB data")
+		warn("PostgreSQL is not running - archive will not include DB data")
 	}
 
 	log("Client '%s' exported => %s", name, outFile)
 }
 
 // Client Import
-
 // cmdImportClient restores a single-client archive onto this node.
 // newName overrides the archived client name; newPort overrides the port.
 func cmdImportClient(archivePath, newName, newPort string) {
@@ -89,7 +87,7 @@ func cmdImportClient(archivePath, newName, newPort string) {
 	meta := parseMeta(files)
 
 	if meta.Type != "client" {
-		die("Archive type is '%s' — use 'grengo import-node' for node archives", meta.Type)
+		die("Archive type is '%s' - use 'grengo import-node' for node archives", meta.Type)
 	}
 
 	name := meta.Name
@@ -97,11 +95,11 @@ func cmdImportClient(archivePath, newName, newPort string) {
 		name = newName
 	}
 	if name == "" {
-		die("Cannot determine client name — use --name <name>")
+		die("Cannot determine client name - use --name <name>")
 	}
 	validateName(name)
 	if clientExists(name) {
-		die("Client '%s' already exists — use --name to import under a different name", name)
+		die("Client '%s' already exists - use --name to import under a different name", name)
 	}
 
 	envData, ok := files["env"]
@@ -119,7 +117,6 @@ func cmdImportClient(archivePath, newName, newPort string) {
 }
 
 // Node Export
-
 // cmdExportNode packs every client on this node into a single tar.gz archive.
 func cmdExportNode(outFile string) {
 	entries, err := os.ReadDir(backendsDir())
@@ -164,7 +161,7 @@ func cmdExportNode(outFile string) {
 
 	pgUp := pgRunning()
 	if !pgUp {
-		warn("PostgreSQL is not running — archives will not include DB data")
+		warn("PostgreSQL is not running - archives will not include DB data")
 	}
 
 	for _, name := range names {
@@ -193,7 +190,6 @@ func cmdExportNode(outFile string) {
 }
 
 // Node Import
-
 // cmdImportNode restores all clients from a node archive onto this node.
 // Clients that already exist are skipped; port conflicts are auto-resolved.
 func cmdImportNode(archivePath string) {
@@ -201,7 +197,7 @@ func cmdImportNode(archivePath string) {
 	meta := parseMeta(files)
 
 	if meta.Type != "node" {
-		die("Archive type is '%s' — use 'grengo import' for single-client archives", meta.Type)
+		die("Archive type is '%s' - use 'grengo import' for single-client archives", meta.Type)
 	}
 
 	ensureWritableDir(backendsDir())
@@ -212,13 +208,13 @@ func cmdImportNode(archivePath string) {
 		log("Importing client '%s'…", name)
 
 		if clientExists(name) {
-			warn("  Client '%s' already exists — skipping", name)
+			warn("  Client '%s' already exists - skipping", name)
 			continue
 		}
 
 		envData, ok := files[pfx+"env"]
 		if !ok {
-			warn("  Client '%s' missing env — skipping", name)
+			warn("  Client '%s' missing env - skipping", name)
 			continue
 		}
 		envMap := parseEnvBytes(envData)
@@ -234,13 +230,12 @@ func cmdImportNode(archivePath string) {
 		imported++
 	}
 
-	log("Node import complete — %d/%d client(s) restored", imported, len(meta.Clients))
+	log("Node import complete - %d/%d client(s) restored", imported, len(meta.Clients))
 	generateNginxConfig()
 	reloadNginxIfRunning()
 }
 
 // Shared setup helper
-
 // setupClientFromFiles creates the client directory structure, writes the patched
 // env and compose files, extracts uploaded files, and restores the database dump.
 //
@@ -298,20 +293,19 @@ func setupClientFromFiles(
 			createSQL := fmt.Sprintf(`CREATE DATABASE "%s";`, dbName)
 			_ = dockerExec("skaia-postgres", "psql", "-U", env.PostgresUser, "-d", "template1", "-c", createSQL)
 			if err := dockerExecInput("skaia-postgres", dbSQL, "psql", "-U", env.PostgresUser, "-d", dbName); err != nil {
-				warn("  DB restore failed: %v — run 'grengo db init %s' for a fresh schema", err, name)
+				warn("  DB restore failed: %v - run 'grengo db init %s' for a fresh schema", err, name)
 			} else {
 				log("  Database '%s' restored", dbName)
 			}
 		} else {
-			warn("  PostgreSQL not running — skipping DB restore")
+			warn("  PostgreSQL not running - skipping DB restore")
 		}
 	} else {
-		info("  No DB dump in archive — run 'grengo db init %s' to initialise", name)
+		info("  No DB dump in archive - run 'grengo db init %s' to initialise", name)
 	}
 }
 
 // Port helper
-
 // resolvePort returns an available port. If override is given it is used
 // (erroring on conflict). Otherwise the archived port is used if free, or the
 // next available port is auto-assigned.
@@ -330,12 +324,11 @@ func resolvePort(archived, override string) string {
 		return archived
 	}
 	next := strconv.Itoa(nextPort())
-	info("Port conflict — auto-assigning %s", next)
+	info("Port conflict - auto-assigning %s", next)
 	return next
 }
 
 // Archive low-level helpers
-
 // readArchive opens a .tar.gz file and returns all regular-file contents
 // keyed by their path inside the archive.
 func readArchive(path string) map[string][]byte {
@@ -377,7 +370,7 @@ func readArchive(path string) map[string][]byte {
 func parseMeta(files map[string][]byte) archiveMeta {
 	data, ok := files["meta.json"]
 	if !ok {
-		die("Invalid archive — meta.json not found")
+		die("Invalid archive - meta.json not found")
 	}
 	var m archiveMeta
 	if err := json.Unmarshal(data, &m); err != nil {
@@ -501,7 +494,6 @@ func addDirToArchive(tw *tar.Writer, dir, archivePrefix string) {
 }
 
 // Postgres helpers
-
 // addPgDumpToArchive runs pg_dump inside the postgres container and streams the output to the tar archive.
 func addPgDumpToArchive(tw *tar.Writer, dbName, archiveName string) error {
 	env := loadSharedEnv()
@@ -522,7 +514,6 @@ func addPgDumpToArchive(tw *tar.Writer, dbName, archiveName string) error {
 	// Wait, standard tar format requires size in the header! If we don't know the size, we can't write it to the tar stream without buffering it.
 	// Is there a way to write a tar header without size? No.
 	// Instead, we can dump it to a temporary file, stat it, and stream it!
-
 	tmpFile, err := os.CreateTemp("", "pgdump-*.sql")
 	if err != nil {
 		return err
@@ -603,7 +594,6 @@ func (pr *dumpProgressReader) Read(p []byte) (int, error) {
 }
 
 // Env helpers
-
 // parseEnvBytes parses raw .env bytes into a key=>value map.
 // Comments and blank lines are ignored.
 func parseEnvBytes(data []byte) map[string]string {

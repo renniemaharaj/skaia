@@ -1,5 +1,4 @@
 /* Profile Card Block */
-
 .profile-card-section {
   padding: 80px 40px;
   max-width: 1200px;
@@ -165,7 +164,6 @@
 }
 
 /* Responsive */
-
 @media (max-width: 900px) {
   .profile-card-section {
     padding: 60px 20px;

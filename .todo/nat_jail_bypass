@@ -20,7 +20,7 @@ When an admin shares a public IP address with a malicious actor (e.g., behind a 
 5. **Cleanup:** Remove the old logic that clears the jail state or promotes the entire IP to Trusted when an individual admin authenticates.
 
 ## Verification
-- Simulate a jailed IP. 
+- Simulate a jailed IP.
 - Send a standard `cURL` request without a token -> Verify `429 Too Many Requests`.
 - Send a `cURL` request with the Admin Bypass token from the exact same IP -> Verify `200 OK`.
 - Ensure the Redis `ip:jailed:<ip>` key still exists after the admin successfully loads a page.

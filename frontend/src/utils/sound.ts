@@ -5,7 +5,6 @@
  * chat) - NOT for optimistic UI updates.  Uses the Web Audio API to synthesise
  * tones so we don't need to ship any audio files.
  */
-
 let _audioCtx: AudioContext | null = null;
 
 function getAudioCtx(): AudioContext {
@@ -21,7 +20,6 @@ function getAudioCtx(): AudioContext {
 }
 
 // Sound-enabled preference (persisted in localStorage)
-
 const SOUND_KEY = "skaia:sound_enabled";
 const VOLUME_KEY = "skaia:sound_volume";
 const DEFAULT_VOLUME = 0.7;
@@ -68,7 +66,6 @@ export function setSoundVolume(level: number) {
 }
 
 // Tone presets
-
 type SoundPreset = "notification" | "message" | "chat";
 
 interface ToneParams {
@@ -136,7 +133,6 @@ function playTone(params: ToneParams) {
 }
 
 // Public API
-
 /** Play a notification sound (for social notifications from the server). */
 export function playNotificationSound() {
   if (!isSoundEnabled()) return;

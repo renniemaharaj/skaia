@@ -18,7 +18,6 @@ func newUserRepo(t *testing.T, db *sql.DB) user.Repository {
 }
 
 // Roles
-
 func TestUserRepository_GetAllRoles(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	repo := newUserRepo(t, db)
@@ -70,7 +69,6 @@ func TestUserRepository_AddRole_Then_RemoveRole(t *testing.T) {
 }
 
 // Permissions
-
 func TestUserRepository_GetAllPermissions(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	repo := newUserRepo(t, db)
@@ -103,7 +101,6 @@ func TestUserRepository_AddPermission_HasPermission_RemovePermission(t *testing.
 }
 
 // Suspension
-
 func TestUserRepository_Suspend_And_Unsuspend(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	repo := newUserRepo(t, db)
@@ -126,7 +123,6 @@ func TestUserRepository_Suspend_And_Unsuspend(t *testing.T) {
 }
 
 // Edge cases
-
 func TestUserRepository_UpdatePreservesEmail(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	repo := newUserRepo(t, db)

@@ -32,7 +32,6 @@ export type OptionGroup = {
  * @property {string} options[].displayText - Display name of the node type.
  * @property {string} options[].value - Unique identifier for the node type.
  */
-
 /**
  * List of node groups used for organizing nodes in the flow editor UI.
  * Each group contains display text and options for nodes related to a specific category.

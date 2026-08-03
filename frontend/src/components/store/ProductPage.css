@@ -5,7 +5,6 @@
   padding: 2rem 1.5rem;
 }
 
-/* ── Hero row: image + details ── */
 .product-page-layout {
   display: flex;
   flex-direction: column;
@@ -26,7 +25,6 @@
   }
 }
 
-/* ── Image ── */
 .product-page-image-container {
   position: relative;
   width: 100%;
@@ -117,7 +115,6 @@
   backdrop-filter: blur(10px);
 }
 
-/* ── Details ── */
 .product-page-details {
   display: flex;
   flex-direction: column;
@@ -242,7 +239,6 @@
   transform: none;
 }
 
-/* ── Bottom two-column grid ── */
 .product-page-bottom {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -305,7 +301,6 @@
   color: var(--primary-dark);
 }
 
-/* ── Similar products ── */
 .product-page-similar {
   display: flex;
   flex-direction: column;
@@ -422,7 +417,6 @@
   font-size: 0.86rem;
 }
 
-/* ── Skeleton shimmer ── */
 .similar-skeleton-item {
   display: flex;
   align-items: center;
@@ -458,14 +452,12 @@
   width: 30%;
 }
 
-/* ── Reviews column ── */
 .product-page-reviews {
   /* min-width: 350px; */
   display: flex;
   flex-direction: column;
 }
 
-/* ── Loading / not found states ── */
 .product-page-loading,
 .product-page-not-found {
   text-align: center;

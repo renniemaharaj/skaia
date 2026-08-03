@@ -97,7 +97,6 @@ export const threadCommentsAtom = atom<ThreadComment[]>([]);
 // These are updated in real-time by the WebSocket handler.
 // The "active" atoms tell the WS handler which feed is currently visible
 // so it can route broadcast thread_created / thread_deleted events correctly.
-
 export const categoryFeedThreadsAtom = atom<ForumThread[]>([]);
 export const activeCategoryFeedIdAtom = atom<string | null>(null);
 

@@ -8,7 +8,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
+
+var titleCaser = cases.Title(language.Und)
 
 // Sender sends transactional emails via SMTP.
 type Sender struct {
@@ -43,7 +48,7 @@ func NewSenderFromEnv() *Sender {
 	fromName := os.Getenv("SMTP_FROM_NAME")
 	if fromName == "" {
 		if cn := os.Getenv("CLIENT_NAME"); cn != "" {
-			fromName = strings.Title(cn)
+			fromName = titleCaser.String(cn)
 		} else {
 			fromName = "Skaia"
 		}

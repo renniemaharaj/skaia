@@ -33,7 +33,7 @@ export const findTwickPlayer = (root: HTMLElement): TwickPlayerElement | null =>
  * Finds the canvas that actually renders frames for capture.
  *
  * Note: @twick/video-editor runs in canvasMode, which means there are two
- * canvases in the DOM at once — the <twick-player>'s own render canvas, and a
+ * canvases in the DOM at once - the <twick-player>'s own render canvas, and a
  * separate plain <canvas class="twick-editor-canvas"> used to draw a single
  * static frame while playback is paused (for selection/editing). Opacity is
  * toggled between the two, but both keep rendering regardless of visibility.

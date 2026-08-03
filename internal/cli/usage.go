@@ -2,7 +2,7 @@ package cli
 
 import "fmt"
 
-const usageText = `grengo — Multi-tenant management CLI for Skaia
+const usageText = `grengo - Multi-tenant management CLI for Skaia
 
 Commands:
   new [<name>] [--domain <d>]… [--port <p>] Create a new client (interactive)

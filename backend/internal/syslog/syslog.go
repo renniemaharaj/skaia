@@ -2,7 +2,7 @@ package syslog
 
 import (
 	"fmt"
-	
+
 	"github.com/renniemaharaj/grouplogs/pkg/logger"
 )
 
@@ -17,29 +17,28 @@ var (
 
 func init() {
 	GlobalGroup = logger.NewGroup()
-	
-	defaultLogger = logger.New().
+
+	defaultLogger = logger.NewLogger().
 		Prefix("System").
 		DebugMode(true).
 		STDOUT(true)
-		
+
 	GlobalGroup.Join(defaultLogger)
 }
 
 // New creates a new logger with the given prefix and automatically joins it to the GlobalGroup.
 func New(prefix string) *logger.Logger {
-	l := logger.New().
+	l := logger.NewLogger().
 		Prefix(prefix).
 		DebugMode(true).
 		STDOUT(true)
-	
+
 	GlobalGroup.Join(l)
 	return l
 }
 
 // --- Standard 'log' package drop-in replacements ---
 // These allow replacing 'import "log"' with 'import log "github.com/skaia/backend/internal/syslog"'
-
 func Print(v ...interface{}) {
 	defaultLogger.Print(v...)
 }
@@ -77,7 +76,6 @@ func Panicln(v ...interface{}) {
 }
 
 // --- Extended logging functions ---
-
 func Info(v ...interface{}) {
 	defaultLogger.Info(fmt.Sprint(v...))
 }

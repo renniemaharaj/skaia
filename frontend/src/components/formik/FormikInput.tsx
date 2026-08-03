@@ -5,7 +5,6 @@ import "./Formik.css";
 // Formik bindings for standard inputs.
 // Note: your existing Input.tsx is heavily specialized for chat messages.
 // This implements a standard Formik input that matches your select/checkbox philosophy.
-
 export interface FormikInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   name: string;
   label?: string;

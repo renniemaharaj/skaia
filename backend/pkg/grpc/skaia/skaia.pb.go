@@ -21,9 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ----------------------------------------------------
 // GrengoService Messages
-// ----------------------------------------------------
 type ReportStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	NodeId        string                 `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
@@ -120,9 +118,7 @@ func (x *ReportStatusResponse) GetSuccess() bool {
 	return false
 }
 
-// ----------------------------------------------------
 // BackendService Messages
-// ----------------------------------------------------
 type GetStorageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -204,9 +200,7 @@ func (x *GetStorageResponse) GetStorageJson() string {
 	return ""
 }
 
-// ----------------------------------------------------
 // GoFTWService Messages
-// ----------------------------------------------------
 type LogStreamResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Output        string                 `protobuf:"bytes,1,opt,name=output,proto3" json:"output,omitempty"`

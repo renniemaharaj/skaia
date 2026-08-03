@@ -110,7 +110,7 @@ const CursorOverlay = () => {
     return () => clearInterval(id);
   }, [setCursors]);
 
-  // Physics and Animation Loop — runs once, reads cursors via ref to avoid
+  // Physics and Animation Loop - runs once, reads cursors via ref to avoid
   // restarting the RAF loop on every cursor position update.
   useEffect(() => {
     const updatePhysics = () => {

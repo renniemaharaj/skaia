@@ -11,7 +11,6 @@ import (
 )
 
 // StoreCategoryRepository extra
-
 func TestStoreCategoryRepository_GetByName(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	repo := store.NewCategoryRepository(db)
@@ -40,7 +39,6 @@ func TestStoreCategoryRepository_Update(t *testing.T) {
 }
 
 // ProductRepository extra
-
 func TestProductRepository_Delete(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	catRepo := store.NewCategoryRepository(db)
@@ -121,7 +119,6 @@ func TestProductRepository_GetByCategory_Pagination(t *testing.T) {
 }
 
 // CartRepository extra
-
 func TestCartRepository_GetItem(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	catRepo := store.NewCategoryRepository(db)
@@ -238,7 +235,6 @@ func TestCheckout_CashOnDeliveryClearsPersistedCart(t *testing.T) {
 }
 
 // OrderRepository extra
-
 func TestOrderRepository_GetByUser(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	catRepo := store.NewCategoryRepository(db)

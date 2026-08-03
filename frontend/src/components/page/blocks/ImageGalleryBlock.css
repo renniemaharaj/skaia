@@ -1,5 +1,4 @@
 /* Image Gallery Block (Showcase + Gallery Album) */
-
 .showcase {
   padding: 80px 40px;
   max-width: 1400px;
@@ -69,7 +68,6 @@
 }
 
 /* Gallery Album System */
-
 .gallery-album-tabs {
   display: flex;
   gap: 8px;
@@ -359,7 +357,6 @@
 }
 
 /* Responsive */
-
 @media (max-width: 768px) {
   .showcase {
     padding: 40px 20px;

@@ -130,7 +130,7 @@ export const ColumnMapper = ({ availableColumns, columnMap, onChange }: ColumnMa
                   variant="minimal"
                   block
                 >
-                  <option value="">— none —</option>
+                  <option value="">- none -</option>
                   {availableColumns.map(col => (
                     <option key={col} value={col}>
                       {col}

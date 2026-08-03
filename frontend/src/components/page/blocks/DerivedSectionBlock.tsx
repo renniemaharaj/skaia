@@ -145,7 +145,7 @@ export const DerivedSectionBlock = ({ section, canEdit, onUpdate }: Props) => {
       setCompileCached(true);
       setLastRunAt(cachedAt);
       setDsCacheTTL(cacheTTL);
-      toast.success(`Evaluated data source — ${rows.length} row(s)`);
+      toast.success(`Evaluated data source - ${rows.length} row(s)`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       const auth = isAuthError(msg);
@@ -271,7 +271,7 @@ export const DerivedSectionBlock = ({ section, canEdit, onUpdate }: Props) => {
                 onChange={e => handleDatasourceChange(Number(e.target.value))}
                 size="sm"
               >
-                <option value="">— Select a data source —</option>
+                <option value="">- Select a data source -</option>
                 {dataSources.map(ds => (
                   <option key={ds.id} value={ds.id}>
                     {ds.name}
@@ -290,7 +290,7 @@ export const DerivedSectionBlock = ({ section, canEdit, onUpdate }: Props) => {
                 onChange={e => handleRowKeyColumnChange(e.target.value)}
                 size="sm"
               >
-                <option value="">— index —</option>
+                <option value="">- index -</option>
                 {availableColumns.map(col => (
                   <option key={col} value={col}>
                     {col}
@@ -326,7 +326,7 @@ export const DerivedSectionBlock = ({ section, canEdit, onUpdate }: Props) => {
                   onChange={e => handleComponentChange(e.target.value)}
                   size="sm"
                 >
-                  <option value="">— Designed cards —</option>
+                  <option value="">- Designed cards -</option>
                   {componentsList
                     .filter(component => component.repeatable)
                     .map(component => (

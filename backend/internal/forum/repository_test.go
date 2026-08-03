@@ -12,7 +12,6 @@ import (
 )
 
 // --- Category tests ---
-
 func TestCategoryRepository_CreateAndGet(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	repo := forum.NewCategoryRepository(db)
@@ -57,7 +56,6 @@ func TestCategoryRepository_Delete(t *testing.T) {
 }
 
 // --- Thread tests ---
-
 func TestThreadRepository_CreateAndGet(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 
@@ -136,7 +134,6 @@ func TestThreadRepository_LikeUnlike(t *testing.T) {
 }
 
 // --- Comment tests ---
-
 func TestCommentRepository_CreateAndGet(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 

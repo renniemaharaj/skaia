@@ -92,7 +92,6 @@ const EXIT_REASON_LABELS: Record<RunStats["exitReason"], string> = {
 
 const DEFAULT_CODE = `// Return an array of items:
 // { heading, subheading, icon?, image_url?, link_url? }
-
 return [
  { heading: "Example", subheading: "Hello world" },
 ];
@@ -472,7 +471,7 @@ export default function DataSourceEditorPage() {
       setActivePanel("preview");
       if (skippedItems > 0) {
         toast.warning(
-          `${sanitized.length} item(s) returned — ${skippedItems} skipped (missing heading/subheading)`
+          `${sanitized.length} item(s) returned - ${skippedItems} skipped (missing heading/subheading)`
         );
       } else {
         toast.success(`${sanitized.length} item(s) returned`);
@@ -907,7 +906,6 @@ export default function DataSourceEditorPage() {
 }
 
 // Sub-components
-
 function RunSummaryCard({ runStats }: { runStats: RunStats }) {
   return (
     <div className="ds-run-summary">

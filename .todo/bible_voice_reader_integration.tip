@@ -3,12 +3,12 @@
 ## bible_voice_reader_integration
 
 ### Current Progress
-- **Reference discovery and dependency staging** — ✅ Complete
-- **Internal corpus and backend API** — ✅ Complete
-- **Frontend state, URL codec, and data client** — ✅ Complete
-- **Bible browser and reader UI translation** — ✅ Complete
-- **Browser narration and shortcuts** — ✅ Complete
-- **Routes, navigation, verification, and specs** — ✅ Complete
+- **Reference discovery and dependency staging** - ✅ Complete
+- **Internal corpus and backend API** - ✅ Complete
+- **Frontend state, URL codec, and data client** - ✅ Complete
+- **Bible browser and reader UI translation** - ✅ Complete
+- **Browser narration and shortcuts** - ✅ Complete
+- **Routes, navigation, verification, and specs** - ✅ Complete
 
 Reference verification passed 2026-07-30: staged dependency files are
 byte-identical to TheWriterCo commit `fbdd6bf`; KJV `python script.py audit`

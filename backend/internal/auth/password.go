@@ -10,19 +10,6 @@ import (
 
 const bcryptCost = 12
 
-// Token helpers
-
-const tokenChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-// func generateSecureToken(length int) string {
-// 	b := make([]byte, length)
-// 	for i := range b {
-// 		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(tokenChars))))
-// 		b[i] = tokenChars[n.Int64()]
-// 	}
-// 	return string(b)
-// }
-
 func generateSecurePassword() string {
 	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@$"
 	b := make([]byte, 12)

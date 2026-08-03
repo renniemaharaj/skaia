@@ -216,7 +216,7 @@ INSERT INTO users (username, email, display_name, bio,
                                      avatar_url, banner_url, photo_url,
                                      is_suspended, created_at, updated_at)
 SELECT 'noreply', 'noreply@system.local',
-             'System', 'Automated system notifications — this account cannot be messaged.',
+             'System', 'Automated system notifications - this account cannot be messaged.',
              '', '', '', FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'noreply');
 

@@ -429,7 +429,6 @@ func (h *Handler) getExecuteJob(w http.ResponseWriter, r *http.Request) {
 }
 
 // Environment variables per datasource
-
 func (h *Handler) getEnvData(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {

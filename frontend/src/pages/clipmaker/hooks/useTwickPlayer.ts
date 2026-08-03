@@ -49,7 +49,7 @@ export const useTwickPlayer = () => {
    *
    * Deliberately does NOT touch playerState/PLAYING here: driving playback
    * via togglePlayback() while also seeking frame-by-frame fights the
-   * player's own render loop and produces a frozen first frame — that's the
+   * player's own render loop and produces a frozen first frame - that's the
    * root cause of the "nothing records" bug.
    */
   const seekToFrame = useCallback(

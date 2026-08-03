@@ -49,7 +49,6 @@ func NewService(repo Repository, options ...ServiceOption) *Service {
 }
 
 // Site config
-
 func (s *Service) GetConfig(key string) (*models.SiteConfig, error) {
 	return s.repo.GetConfig(key)
 }
@@ -79,7 +78,6 @@ func (s *Service) DeleteAllSections() error {
 }
 
 // Landing sections
-
 func (s *Service) ListSections() ([]*models.PageSection, error) {
 	return s.repo.ListSections()
 }
@@ -131,7 +129,6 @@ func (s *Service) ReorderSections(ids []int64) error {
 }
 
 // Page items
-
 func (s *Service) ListItems(sectionID int64) ([]*models.PageItem, error) {
 	return s.repo.ListItems(sectionID)
 }

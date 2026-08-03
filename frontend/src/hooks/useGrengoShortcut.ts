@@ -44,7 +44,7 @@ export function useGrengoShortcut() {
       setArmed(true);
       if (isAdmin) {
         setShowDialog(true);
-        setError("Site is armed — open a Grengo session to manage it.");
+        setError("Site is armed - open a Grengo session to manage it.");
       }
     };
     window.addEventListener("site:armed", handler);
@@ -61,7 +61,7 @@ export function useGrengoShortcut() {
           setArmed(true);
           if (isAdmin) {
             setShowDialog(true);
-            setError("Site is armed — open a Grengo session to manage it.");
+            setError("Site is armed - open a Grengo session to manage it.");
           }
         }
       })

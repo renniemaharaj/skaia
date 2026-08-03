@@ -3,10 +3,10 @@
 ## grengo_backend_refactor
 
 ### Current Progress
-- **Phase 1: Critical Fixes (export-node, SQL injection, API auth)** — ✅ Complete
-- **Phase 2: API Robustness Fixes** — ✅ Complete
-- **Phase 3: Modularity Refactor** — ✅ Complete (via grengo_cli_refactor)
-- **Phase 4: Code Quality** — 🔄 In Progress
+- **Phase 1: Critical Fixes (export-node, SQL injection, API auth)** - ✅ Complete
+- **Phase 2: API Robustness Fixes** - ✅ Complete
+- **Phase 3: Modularity Refactor** - ✅ Complete
+- **Phase 4: Code Quality** - 🟡 In progress
 
 ### Completed This Run
 - [x] Fixed `dbExists` SQL injection in `docker.go`: added `sanitizeDBName()` helper that strips non-safe characters before string interpolation into SQL query.

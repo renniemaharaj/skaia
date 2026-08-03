@@ -446,10 +446,10 @@ export default function RolesManagementPage() {
                     {role.name}
                   </span>
                   {role.description && <span className="rmp-role-desc">{role.description}</span>}
-                  <span className="rmp-power-badge">⚡ {role.power_level}</span>
+                  <span className="rmp-power-badge">Power {role.power_level}</span>
                   {role.storage_bonus > 0 && (
                     <span className="rmp-power-badge" style={{ background: "var(--bg-tertiary)" }}>
-                      💾 +{(role.storage_bonus / (1024 * 1024)).toFixed(0)} MB
+                      Storage +{(role.storage_bonus / (1024 * 1024)).toFixed(0)} MB
                     </span>
                   )}
                 </div>

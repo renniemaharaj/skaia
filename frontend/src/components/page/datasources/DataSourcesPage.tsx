@@ -209,7 +209,7 @@ export default function DataSourcesPage() {
           header: "Description",
           width: "minmax(250px, 3fr)",
           className: "table-view__cell--muted",
-          cell: ds => ds.description || "—",
+          cell: ds => ds.description || "-",
         },
         {
           header: "Creator",

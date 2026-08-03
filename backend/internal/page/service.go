@@ -322,7 +322,6 @@ func (s *Service) Delete(id, actorID int64) error {
 }
 
 // Ownership & editors
-
 func (s *Service) SetOwner(pageID, ownerID int64) error {
 	return s.repo.SetOwner(pageID, ownerID)
 }
@@ -420,7 +419,6 @@ func (s *Service) CanDelete(pageID, userID int64, isAdmin bool) bool {
 }
 
 // Engagement
-
 func (s *Service) LikePage(pageID, userID int64) (int64, error) {
 	return s.repo.LikePage(pageID, userID)
 }
@@ -460,7 +458,6 @@ func (s *Service) EnrichPageEngagement(p *models.Page, userID *int64) {
 }
 
 // Comments
-
 func (s *Service) CreateComment(c *models.PageComment) (*models.PageComment, error) {
 	return s.repo.CreateComment(c)
 }
@@ -494,7 +491,6 @@ func (s *Service) IsCommentLikedByUser(commentID, userID int64) (bool, error) {
 }
 
 // Page allocations
-
 func (s *Service) GetAllocation(userID int64) (*models.UserPageAllocation, error) {
 	return s.repo.GetAllocation(userID)
 }
@@ -517,7 +513,7 @@ func (s *Service) ClaimPage(userID int64, slug string, isAdmin bool) (*models.Pa
 	if !isAdmin {
 		alloc, err := s.repo.GetAllocation(userID)
 		if err != nil {
-			return nil, fmt.Errorf("no page allocation found — you have not been granted any custom pages")
+			return nil, fmt.Errorf("no page allocation found - you have not been granted any custom pages")
 		}
 		if alloc.UsedPages >= alloc.MaxPages {
 			return nil, fmt.Errorf("page limit reached (%d/%d)", alloc.UsedPages, alloc.MaxPages)

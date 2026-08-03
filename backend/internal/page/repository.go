@@ -15,7 +15,6 @@ type sqlRepository struct{ db database.Executor }
 func NewRepository(db database.Executor) Repository { return &sqlRepository{db: db} }
 
 // reads
-
 func (r *sqlRepository) GetBySlug(slug string) (*models.Page, error) {
 	p := &models.Page{}
 	var ownerID sql.NullInt64
@@ -85,7 +84,6 @@ func (r *sqlRepository) List() ([]*models.Page, error) {
 }
 
 // writes
-
 func (r *sqlRepository) Create(p *models.Page) error {
 	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
 		if err := exec.QueryRow(
@@ -231,7 +229,6 @@ func (r *sqlRepository) DeleteAll(actorID int64) error {
 }
 
 // ownership & editors
-
 func (r *sqlRepository) SetOwner(pageID, ownerID int64) error {
 	_, err := r.db.Exec(
 		`UPDATE pages SET owner_id = $2, updated_at = CURRENT_TIMESTAMP
@@ -390,7 +387,6 @@ func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 }
 
 // engagement: likes, comments
-
 func (r *sqlRepository) LikePage(pageID, userID int64) (int64, error) {
 	_, err := r.db.Exec(
 		`INSERT INTO page_likes (page_id, user_id, inactive_at, inactive_by)
@@ -460,7 +456,6 @@ func (r *sqlRepository) GetPageCommentCount(pageID int64) (int, error) {
 }
 
 // page comments
-
 func (r *sqlRepository) CreateComment(c *models.PageComment) (*models.PageComment, error) {
 	err := r.db.QueryRow(
 		`INSERT INTO page_comments (page_id, user_id, content)
@@ -590,7 +585,6 @@ func (r *sqlRepository) IsCommentLikedByUser(commentID, userID int64) (bool, err
 }
 
 // page allocations
-
 func (r *sqlRepository) GetAllocation(userID int64) (*models.UserPageAllocation, error) {
 	a := &models.UserPageAllocation{}
 	err := r.db.QueryRow(

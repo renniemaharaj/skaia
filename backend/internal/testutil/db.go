@@ -18,7 +18,6 @@ import (
 // OpenTestDB opens a PostgreSQL connection using TEST_DATABASE_URL and applies
 // all migrations so every integration test starts from a fully-seeded schema.
 // The test is skipped automatically when TEST_DATABASE_URL is not set.
-//
 // Example:
 //
 //	func TestFoo(t *testing.T) {
@@ -30,7 +29,7 @@ func OpenTestDB(t testing.TB) *sql.DB {
 
 	url := os.Getenv("TEST_DATABASE_URL")
 	if url == "" {
-		t.Skip("TEST_DATABASE_URL not set — skipping integration test")
+		t.Skip("TEST_DATABASE_URL not set - skipping integration test")
 	}
 
 	db, err := sql.Open("postgres", url)

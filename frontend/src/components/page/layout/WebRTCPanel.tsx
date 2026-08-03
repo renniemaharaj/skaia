@@ -368,7 +368,6 @@ export default function WebRTCPanel({
   useEffect(() => {
     if (autoplayBlocked) {
       toast("Browser blocked audio autoplay. Please interact with the page.", {
-        icon: "🔇",
         duration: 5000,
       });
       setAutoplayBlocked(false);

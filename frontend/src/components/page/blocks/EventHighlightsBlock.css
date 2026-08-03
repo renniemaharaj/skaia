@@ -1,5 +1,4 @@
 /* Event Highlights Block */
-
 .event-highlights {
   padding: 80px 40px;
   max-width: 1400px;
@@ -66,7 +65,6 @@
 }
 
 /* Responsive */
-
 @media (max-width: 768px) {
   .event-highlights {
     padding: 60px 20px;

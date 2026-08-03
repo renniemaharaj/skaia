@@ -6,13 +6,13 @@
 
 ### Current Progress
 
-- **Phase 1: Align with current Skaia page model** — ✅ Complete
-- **Phase 2: Add explicit section metadata** — ✅ Complete (section types/constants in code, backend section registry API, schema metadata, and save-time section type validation are implemented)
-- **Phase 3: Enforce integration primitives** — ✅ Complete (integration block types are present, and backend page saves reject invalid datasource/custom-section references)
-- **Phase 4: Add component registry and bind-point contracts** — ⬜ Not started
-- **Phase 5: Open derived/custom sections to registered primitive components** — ⬜ Not started
-- **Phase 6: Convert routes to dynamic page rendering** — ⬜ Not started
-- **Phase 7: Add versioning and migration** — ✅ Complete in
+- **Phase 1: Align with current Skaia page model** - ✅ Complete
+- **Phase 2: Add explicit section metadata** - ✅ Complete (section types/constants in code, backend section registry API, schema metadata, and save-time section type validation are implemented)
+- **Phase 3: Enforce integration primitives** - ✅ Complete (integration block types are present, and backend page saves reject invalid datasource/custom-section references)
+- **Phase 4: Add component registry and bind-point contracts** - ⬜ Not started
+- **Phase 5: Open derived/custom sections to registered primitive components** - ⬜ Not started
+- **Phase 6: Convert routes to dynamic page rendering** - ⬜ Not started
+- **Phase 7: Add versioning and migration** - ✅ Complete in
   `.todo/typed_page_sections_redesign`
 
 ### Next Steps
@@ -339,32 +339,32 @@ Migration rule:
 
 # Phased Implementation
 
-Phase 1 — Align with current Skaia page model
+Phase 1 - Align with current Skaia page model
 
 - Keep existing `pages` table and `Content` JSON storage.
 - Treat page section/block JSON and current section block types as the canonical schema.
 - Ensure page builder uses current block components and section metadata.
 
-Phase 2 — Add explicit section metadata
+Phase 2 - Add explicit section metadata
 
 - Introduce a section registry API for allowed block types and config schema.
 - Add backend validation for supported `section_type`s and datasource references.
 - Wire builder dropdowns to the registry metadata.
 
-Phase 3 — Enforce integration primitives
+Phase 3 - Enforce integration primitives
 
 - Make `data_sources`, `derived_section`, and `custom_section` first-class builder primitives.
 - Ensure builder can only save those blocks when referenced backends exist.
 - Validate custom-section templates and datasource execution metadata.
 
-Phase 4 — Add component registry and bind-point contracts
+Phase 4 - Add component registry and bind-point contracts
 
 - Introduce canonical component definitions for supported primitive and compound components.
 - Document bind points, value kinds, style targets, repeatability, and validation schemas.
 - Add backend validation for selected component type, bind mappings, required bind points, and style override safety.
 - Add registry API endpoints for component metadata and, later, custom component inspection.
 
-Phase 5 — Open derived/custom sections to registered primitive components
+Phase 5 - Open derived/custom sections to registered primitive components
 
 - Let `derived_section` choose a row component from the component registry instead of assuming one fixed card layout.
 - Let `custom_section` choose or embed a saved custom component definition with explicit bind points.
@@ -372,13 +372,13 @@ Phase 5 — Open derived/custom sections to registered primitive components
 - Support media, link, text/rich text, boolean, object, and array bindings with clear validation feedback.
 - Replicate the selected component per datasource row using `row_key_column`, `bindings`, `row_overrides`, and `style_overrides`.
 
-Phase 6 — Convert routes to dynamic page rendering
+Phase 6 - Convert routes to dynamic page rendering
 
 - Render landing page and custom pages fully from stored page content.
 - Replace hardcoded route UI with registry-driven page blocks where feasible.
 - Keep comments/likes and ownership flows intact.
 
-Phase 7 — Add versioning and migration
+Phase 7 - Add versioning and migration
 
 - Add version metadata for block and component schema.
 - Support fallback/render path for legacy saved section payloads.

@@ -3,12 +3,12 @@
 ## multi_tenant_seo_origin_integrity
 
 ### Current Progress
-- **Production incident diagnosis** — ✅ Complete
-- **Regression tests and canonical-origin contract** — ✅ Complete
-- **Cache and metadata remediation** — ✅ Complete
-- **Nginx, proxy, and image-probe hardening** — ✅ Complete
-- **Transient-failure and template lifecycle remediation** — ✅ Complete
-- **Multi-tenant rollout and recrawl verification** — 🟡 In progress
+- **Production incident diagnosis** - ✅ Complete
+- **Regression tests and canonical-origin contract** - ✅ Complete
+- **Cache and metadata remediation** - ✅ Complete
+- **Nginx, proxy, and image-probe hardening** - ✅ Complete
+- **Transient-failure and template lifecycle remediation** - ✅ Complete
+- **Multi-tenant rollout and recrawl verification** - 🟡 In progress
 
 ### Next Steps
 - [x] Add the apex/`www`/subdomain/localhost/hostile-host/protocol/auth request-order matrix.

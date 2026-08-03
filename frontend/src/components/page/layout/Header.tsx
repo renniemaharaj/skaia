@@ -285,7 +285,6 @@ export const Header: React.FC<HeaderProps> = ({
 };
 
 // HeaderNavLinks
-
 const MAX_NAV_VISIBLE = 3;
 
 function HeaderNavLinks({
@@ -360,7 +359,6 @@ function HeaderNavLinks({
 }
 
 // SoundControl
-
 function SoundControl() {
   const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
   const [volume, setVolume] = useState(() => getSoundVolume());
@@ -433,7 +431,6 @@ function SoundControl() {
 }
 
 // HeaderUserMenu
-
 function HeaderUserMenu({
   user,
   routeAllowed,

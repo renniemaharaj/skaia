@@ -3,10 +3,10 @@
 ## critical_fixes_stabilization
 
 ### Current Progress
-- **Phase 1: Critical Fixes** — ✅ Complete
-- **Phase 2: General Fixes** — ✅ Complete
-- **Phase 3: UI Stabilization** — ✅ Complete
-- **Phase 4: Project Audit & Todo Cleanup** — ✅ Complete
+- **Phase 1: Critical Fixes** - ✅ Complete
+- **Phase 2: General Fixes** - ✅ Complete
+- **Phase 3: UI Stabilization** - ✅ Complete
+- **Phase 4: Project Audit & Todo Cleanup** - ✅ Complete
 
 ### Completed Work (2026-06-11)
 - [x] Added `validateScrapeURL` SSRF protection: scheme whitelist, private/loopback IP blocking

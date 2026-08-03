@@ -304,7 +304,7 @@ export const CardDesigner = ({ template, onChange, mode = "card" }: CardDesigner
                     min={0}
                     max={800}
                     step={20}
-                    placeholder="—"
+                    placeholder="-"
                     value={template.minHeight ?? ""}
                     onChange={e =>
                       updateTemplate({
@@ -320,7 +320,7 @@ export const CardDesigner = ({ template, onChange, mode = "card" }: CardDesigner
                     min={0}
                     max={1200}
                     step={20}
-                    placeholder="—"
+                    placeholder="-"
                     value={template.maxHeight ?? ""}
                     onChange={e =>
                       updateTemplate({
@@ -433,7 +433,7 @@ export const CardDesigner = ({ template, onChange, mode = "card" }: CardDesigner
                     min={0}
                     max={600}
                     step={20}
-                    placeholder="—"
+                    placeholder="-"
                     value={template.imageHeight ?? ""}
                     onChange={e =>
                       updateTemplate({

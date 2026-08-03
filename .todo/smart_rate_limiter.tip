@@ -3,14 +3,14 @@
 ## smart_rate_limiter
 
 ### Current Progress
-- **Phase 1: Design** — ⬜ Not started
-- **Phase 2: Core Limiter Implementation** — ⬜ Not started
-- **Phase 3: Room Management** — ⬜ Not started
-- **Phase 4: Event Logging** — ⬜ Not started
-- **Phase 5: Admin Dashboard** — ⬜ Not started
-- **Phase 6: Integration** — ⬜ Not started
-- **Phase 7: Testing** — ⬜ Not started
-- **Phase 8: MFA Challenge Integration** — ✅ Complete
+- **Phase 1: Design** - ⬜ Not started
+- **Phase 2: Core Limiter Implementation** - ⬜ Not started
+- **Phase 3: Room Management** - ⬜ Not started
+- **Phase 4: Event Logging** - ⬜ Not started
+- **Phase 5: Admin Dashboard** - ⬜ Not started
+- **Phase 6: Integration** - ⬜ Not started
+- **Phase 7: Testing** - ⬜ Not started
+- **Phase 8: MFA Challenge Integration** - ✅ Complete
 
 ### Next Steps
 - [ ] Design rooms and event policy

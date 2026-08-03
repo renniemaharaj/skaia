@@ -107,16 +107,26 @@ update specs and .tip with durable facts
 
 ## Extension/See Also
 
-- `.routines/planner` — planning, todo lifecycle management, and specs upkeep
-- `.routines/auditor` — whole-repo quality, security, backend/frontend, and UI audit standards
-- `.routines/correctness` — drift and anti-pattern checks
-- `.specs/` — authoritative project specifications
+- `.routines/planner` - planning, todo lifecycle management, and specs upkeep
+- `.routines/auditor` - whole-repo quality, security, backend/frontend, and UI audit standards
+- `.routines/correctness` - drift and anti-pattern checks
+- `.specs/` - authoritative project specifications
 
 ## Last Ran
 
-- 2026-08-02
+- 2026-08-03
 
 ## Last Run Remarks
+
+- Completed `repository_hygiene_and_text_policy`: added the dependency-free Go
+  tracked-text checker and tests, emoji path allowlist, safe formatting repair,
+  and a read-only POSIX Husky hook covering every Go module and frontend gate.
+- Removed proven build/runtime artifacts, unreachable declarations and router
+  wiring, inert commented code, unused frontend dependencies, policy violations,
+  and orphaned todo material. Full hook, test, vet, staticcheck, corpus,
+  generated-contract, and diff verification passes.
+
+## Previous Run Remarks (2026-08-02)
 
 - Completed the blocking `multi_tenant_seo_origin_integrity` regression pass:
   retryable per-response `INDEX_FILE_PATH` loading with hot-ship replacement,

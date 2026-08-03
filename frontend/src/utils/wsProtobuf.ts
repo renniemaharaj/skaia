@@ -89,7 +89,7 @@ export const encodeWebSocketProto = (
     .encode({ type: message.type, userId: message.user_id ?? 0, payload })
     .finish();
 
-  // Force ArrayBuffer (not SharedArrayBuffer) — satisfies ws.send()
+  // Force ArrayBuffer (not SharedArrayBuffer) - satisfies ws.send()
   return new Uint8Array(
     encoded.buffer.slice(encoded.byteOffset, encoded.byteOffset + encoded.byteLength) as ArrayBuffer
   );

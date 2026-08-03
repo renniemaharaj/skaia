@@ -47,12 +47,12 @@ All four primitives created in `src/components/input/`:
 
 **Phase 2 Completion:**
 Migrated core routes to new primitives:
-- `MetaControlPanel.tsx` — 1 Select, 4 Buttons
-- `GrengoDashboard.tsx` — 1 Select, 26+ Buttons
-- `Auth.tsx` — 1 submit Button
-- `auth/SecuritySettings.tsx` — 16 Buttons
-- `ProfileSettings.tsx` — 1 Select, 9 Buttons
-- `pages/settings/SecuritySettings.tsx` — 1 submit Button
-- `RolesManagementPage.tsx` — 12+ Buttons, 1 Checkbox (permission toggle)
+- `MetaControlPanel.tsx` - 1 Select, 4 Buttons
+- `GrengoDashboard.tsx` - 1 Select, 26+ Buttons
+- `Auth.tsx` - 1 submit Button
+- `auth/SecuritySettings.tsx` - 16 Buttons
+- `ProfileSettings.tsx` - 1 Select, 9 Buttons
+- `pages/settings/SecuritySettings.tsx` - 1 submit Button
+- `RolesManagementPage.tsx` - 12+ Buttons, 1 Checkbox (permission toggle)
 - **Cleanup:** Removed unused `Loader` imports from `Auth.tsx` and `SecuritySettings.tsx`.
 - **Verification**: `tsc --noEmit` clean, `npm run build` clean.

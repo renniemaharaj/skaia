@@ -511,7 +511,6 @@ func (c *Client) WritePump() {
 }
 
 // Internal helpers
-
 func (c *Client) handleSubscribe(msg Message) {
 	var payload map[string]interface{}
 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {

@@ -59,7 +59,7 @@ func (s *Service) DownloadJob(id string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("create temp file: %w", err)
 	}
-	
+
 	for {
 		chunk, err := stream.Recv()
 		if err == io.EOF {

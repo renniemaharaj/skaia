@@ -173,7 +173,7 @@ func generateNginxConfig() {
 	b.WriteString("# Do not edit manually; run 'grengo nginx reload' to regenerate.\n\n")
 
 	// gzip
-	b.WriteString(`# ── gzip ───────────────────────────────────────────────────────────────────
+	b.WriteString(`# gzip
 gzip              on;
 gzip_comp_level   5;
 gzip_min_length   256;
@@ -188,13 +188,13 @@ gzip_types
 `)
 
 	// Upstreams
-	b.WriteString("# ── Upstreams ──────────────────────────────────────────────────────────────\n")
+	b.WriteString("# Upstreams\n")
 	for _, c := range clients {
 		fmt.Fprintf(&b, "upstream %s-backend {\n    server 127.0.0.1:%s;\n    keepalive 32;\n}\n\n", c.Name, c.Port)
 	}
 
 	// Host => backend mapping
-	b.WriteString("# ── Host => backend mapping ────────────────────────────────────────────────\n")
+	b.WriteString("# Host to backend mapping\n")
 	b.WriteString("map $host $backend_upstream {\n")
 	b.WriteString("    hostnames;\n")
 	mappedHosts := map[string]bool{}
@@ -213,7 +213,7 @@ gzip_types
 	b.WriteString("}\n\n")
 
 	// WebSocket upgrade map
-	b.WriteString(`# ── WebSocket upgrade ─────────────────────────────────────────────────────
+	b.WriteString(`# WebSocket upgrade
 map $http_upgrade $connection_upgrade {
     default upgrade;
     ''      close;
@@ -222,7 +222,7 @@ map $http_upgrade $connection_upgrade {
 `)
 
 	// Upload cache
-	b.WriteString(`# ── Upload cache ──────────────────────────────────────────────────────────
+	b.WriteString(`# Upload cache
 proxy_cache_path /var/cache/nginx/uploads
                  levels=1:2 keys_zone=uploads_cache:10m
                  max_size=1g inactive=30d use_temp_path=off;
@@ -297,7 +297,7 @@ proxy_cache_path /var/cache/nginx/uploads
 `)
 
 	// Uploads location
-	b.WriteString(`    # ── Uploads (cached) ──────────────────────────────────────────────────
+	b.WriteString(`    # Cached uploads
     location ^~ /uploads/ {
         proxy_pass         http://$backend_upstream;
         proxy_http_version 1.1;
@@ -322,7 +322,7 @@ proxy_cache_path /var/cache/nginx/uploads
 `)
 
 	// API location
-	b.WriteString(`    # ── API ───────────────────────────────────────────────────────────────
+	b.WriteString(`    # API
     location /api/ {
         proxy_pass         http://$backend_upstream;
         proxy_http_version 1.1;
@@ -344,7 +344,6 @@ proxy_cache_path /var/cache/nginx/uploads
         add_header Pragma        "no-cache" always;
     }
 
-    # ── Downloads (No Buffering) ──────────────────────────────────────────
     location ~ ^/api/s/.*/(?:exports|jobs)/.*/download$ {
         proxy_pass         http://$backend_upstream;
         proxy_http_version 1.1;
@@ -354,13 +353,12 @@ proxy_cache_path /var/cache/nginx/uploads
         proxy_set_header   X-Forwarded-Proto $scheme;
         proxy_set_header   Connection        "";
         proxy_buffering    off;
-        
+
         # Prevent timeouts during long downloads
         proxy_read_timeout 3600;
         proxy_send_timeout 3600;
     }
 
-    # ── Config / page endpoints ───────────────────────────────────────────
     location /config/ {
         proxy_pass         http://$backend_upstream;
         proxy_http_version 1.1;
@@ -378,7 +376,7 @@ proxy_cache_path /var/cache/nginx/uploads
 `)
 
 	// WebSocket locations
-	b.WriteString(`    # ── WebSocket ─────────────────────────────────────────────────────────
+	b.WriteString(`    # WebSocket
     location = /ws {
         proxy_pass         http://$backend_upstream;
         proxy_http_version 1.1;
@@ -410,7 +408,7 @@ proxy_cache_path /var/cache/nginx/uploads
 	b.WriteString(liveKitNginxLocation())
 
 	// Webhook location
-	fmt.Fprintf(&b, `    # ── Webhook ───────────────────────────────────────────────────────────
+	fmt.Fprintf(&b, `    # Webhook
     location = /webhook/github {
         proxy_pass         http://127.0.0.1:%d;
         proxy_http_version 1.1;
@@ -423,7 +421,7 @@ proxy_cache_path /var/cache/nginx/uploads
 `, DefaultAPIPort)
 
 	// Health location
-	b.WriteString(`    # ── Health ────────────────────────────────────────────────────────────
+	b.WriteString(`    # Health
     location = /health {
         proxy_pass         http://$backend_upstream;
         proxy_http_version 1.1;
@@ -434,7 +432,7 @@ proxy_cache_path /var/cache/nginx/uploads
 `)
 
 	// Catch-all
-	b.WriteString(`    # ── Catch-all => SSR / SPA ────────────────────────────────────────────
+	b.WriteString(`    # Catch-all for SSR and SPA routes
     location / {
         proxy_pass         http://$backend_upstream;
         proxy_http_version 1.1;

@@ -26,7 +26,7 @@ production build pass because these boundaries are not covered by current tests.
 
 ## Findings and Steps
 
-1. **Critical — contain record egress and replay reads**
+1. **Critical - contain record egress and replay reads**
    - Replace full-page WebSocket payloads in landing-page and ownership broadcasts
      with record-free metadata or an authorized REST-refresh signal. Existing calls
      at `backend/internal/page/handler.go:123`, `:729`, and `:1208` can serialize raw
@@ -40,7 +40,7 @@ production build pass because these boundaries are not covered by current tests.
    - Add WebSocket/clipboard/idempotency tests that assert answer values, user IDs,
      respondent metadata, and idempotency keys are absent from unauthorized output.
 
-2. **High — restore server-owned integrity and authorization**
+2. **High - restore server-owned integrity and authorization**
    - Reject or strip client-supplied records from page create/update, including a
      newly added or re-keyed interactive section; only the transactional response
      mutation may create records.
@@ -55,7 +55,7 @@ production build pass because these boundaries are not covered by current tests.
    - Make missing/invalid result-visibility policy fail closed instead of exposing
      aggregates by default.
 
-3. **Medium — fix creation, realtime, and participant UX regressions**
+3. **Medium - fix creation, realtime, and participant UX regressions**
    - Persist `defaultInteractiveConfig(type)` when a block is created. The current
      `{}` stored by `BlockRenderer` renders client defaults but causes the first
      server submission to fail with an unknown answer.
@@ -70,7 +70,7 @@ production build pass because these boundaries are not covered by current tests.
    - Render boolean, consent, rating, scale, and NPS aggregates already produced by
      the backend, and add explicit moderation failure feedback.
 
-4. **Low — remove redundancy and close coverage gaps**
+4. **Low - remove redundancy and close coverage gaps**
    - Remove the now-unused page repository `Update` method after all page saves were
      moved to `UpdatePreservingInteractive`.
    - Remove duplicated `PageItem` declarations and duplicated adjacent comments in

@@ -284,14 +284,12 @@ export const CartPage = () => {
       </>
     ) : null;
 
-  /* ── Success screen ── */
   if (successOrder) {
     return (
       <OrderSubmittedView order={successOrder} cartItems={successCartItems} onBackLink="/store" />
     );
   }
 
-  /* ── Empty cart ── */
   if (cartItems.length === 0) {
     return (
       <StorePageShell backTo="/store">
@@ -300,7 +298,6 @@ export const CartPage = () => {
     );
   }
 
-  /* ── Main cart ── */
   return (
     <StorePageShell className="cart-page-container" backTo="/store" meta={savedCheckoutMeta}>
       <CartHeader />

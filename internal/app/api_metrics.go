@@ -19,7 +19,6 @@ import (
 )
 
 // Docker stats, storage, and system info
-
 type containerStats struct {
 	Name     string  `json:"name"`
 	CPU      float64 `json:"cpu_percent"`
@@ -245,7 +244,6 @@ func apiStats(w http.ResponseWriter, r *http.Request) {
 }
 
 // Storage
-
 type storageInfo struct {
 	Sites      []siteStorageInfo `json:"sites"`
 	TotalUsed  int64             `json:"total_used"`
@@ -344,7 +342,6 @@ func apiStorage(w http.ResponseWriter, r *http.Request) {
 }
 
 // System Info
-
 // apiSysInfo returns host CPU info, server time, and uptime.
 func apiSysInfo(w http.ResponseWriter, r *http.Request) {
 	info := map[string]any{

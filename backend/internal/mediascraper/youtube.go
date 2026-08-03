@@ -31,13 +31,13 @@ func getCachedYouTubeResults(query string) []YouTubeSearchResult {
 	if client == nil {
 		return nil
 	}
-	
+
 	key := getYouTubeCacheKey(query)
 	val, err := client.Get(context.Background(), key).Result()
 	if err != nil {
 		return nil
 	}
-	
+
 	var res []YouTubeSearchResult
 	if json.Unmarshal([]byte(val), &res) == nil {
 		return res
@@ -50,7 +50,7 @@ func cacheYouTubeResults(query string, results []YouTubeSearchResult) {
 	if client == nil || len(results) == 0 {
 		return
 	}
-	
+
 	key := getYouTubeCacheKey(query)
 	data, err := json.Marshal(results)
 	if err == nil {
@@ -71,18 +71,18 @@ func searchYouTubeAPI(ctx context.Context, query string) ([]YouTubeSearchResult,
 		if err != nil {
 			continue
 		}
-		
+
 		resp, err := youtubeHTTPClient.Do(req)
 		if err != nil {
 			continue
 		}
-		
+
 		results := func() []YouTubeSearchResult {
 			defer resp.Body.Close()
 			if resp.StatusCode != http.StatusOK {
 				return nil
 			}
-			
+
 			var rawData interface{}
 			if err := json.NewDecoder(resp.Body).Decode(&rawData); err != nil {
 				return nil
@@ -106,7 +106,7 @@ func searchYouTubeAPI(ctx context.Context, query string) ([]YouTubeSearchResult,
 				if !ok {
 					continue
 				}
-				
+
 				itemURL, _ := item["url"].(string)
 				itemTitle, _ := item["title"].(string)
 
@@ -129,7 +129,7 @@ func searchYouTubeAPI(ctx context.Context, query string) ([]YouTubeSearchResult,
 			}
 			return parsedResults
 		}()
-		
+
 		if len(results) > 0 {
 			return results, nil
 		}
@@ -149,7 +149,7 @@ func SearchYouTube(ctx context.Context, query string) ([]YouTubeSearchResult, er
 
 	b := Get().Context(ctxRod)
 	page, err := b.Page(proto.TargetCreateTarget{URL: searchURL})
-	
+
 	if err != nil {
 		ResetBrowser()
 		// fallback to API
@@ -202,7 +202,7 @@ func SearchYouTube(ctx context.Context, query string) ([]YouTubeSearchResult, er
 
 		if !seen[actualURL] {
 			seen[actualURL] = true
-			
+
 			titleAttr, _ := link.Attribute("title")
 			title := ""
 			if titleAttr != nil && *titleAttr != "" {
@@ -211,7 +211,7 @@ func SearchYouTube(ctx context.Context, query string) ([]YouTubeSearchResult, er
 				text, _ := link.Text()
 				title = strings.TrimSpace(text)
 			}
-			
+
 			if title == "" {
 				continue
 			}

@@ -16,7 +16,7 @@ const animationStyles = `
       opacity: 1;
     }
   }
-  
+
   .submit-btn-animated {
     animation: spinCheck 0.6s linear;
   }

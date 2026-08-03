@@ -27,7 +27,7 @@ func siteName() string {
 		return v
 	}
 	if cn := os.Getenv("CLIENT_NAME"); cn != "" {
-		return strings.Title(cn)
+		return titleCaser.String(cn)
 	}
 	return "Skaia"
 }

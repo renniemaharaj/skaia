@@ -3,11 +3,11 @@
 ## store_orders
 
 ### Current Progress
-- **Phase 1: Backend Models & Schema** — ✅ Complete
-- **Phase 2: Backend Checkout & Lookup APIs** — ✅ Complete
-- **Phase 3: Backend Admin APIs** — ✅ Complete
-- **Phase 4: Frontend Cart & Checkout UI** — ✅ Complete
-- **Phase 5: Frontend Lookup & Admin UI** — ✅ Complete
+- **Phase 1: Backend Models & Schema** - ✅ Complete
+- **Phase 2: Backend Checkout & Lookup APIs** - ✅ Complete
+- **Phase 3: Backend Admin APIs** - ✅ Complete
+- **Phase 4: Frontend Cart & Checkout UI** - ✅ Complete
+- **Phase 5: Frontend Lookup & Admin UI** - ✅ Complete
 
 ### Next Steps
 - [x] 2026-06-16 regression hotfix: authenticated cart quantity edits now persist via `/store/cart/update`.

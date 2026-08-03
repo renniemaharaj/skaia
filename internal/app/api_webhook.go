@@ -48,7 +48,7 @@ func apiWebhookGithub(w http.ResponseWriter, r *http.Request) {
 		for _, file := range allFiles {
 			ext := filepath.Ext(file)
 
-			// Neutral files (.md, .tip, no extension) — skip classification
+			// Neutral files (.md, .tip, no extension) - skip classification
 			if ext == ".md" || ext == ".tip" || ext == "" {
 				continue
 			}

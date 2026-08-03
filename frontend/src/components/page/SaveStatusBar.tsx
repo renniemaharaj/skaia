@@ -45,7 +45,7 @@ export const SaveStatusBar = () => {
       {saveStatus === "error" && (
         <>
           <AlertCircle size={12} />
-          <span>Save failed — changes may be lost</span>
+          <span>Save failed - changes may be lost</span>
         </>
       )}
     </div>

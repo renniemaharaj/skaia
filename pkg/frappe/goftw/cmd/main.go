@@ -8,12 +8,8 @@ import (
 	"goftw/internal/db"
 	"goftw/internal/entity"
 	"goftw/internal/environ"
-	"goftw/internal/redis"
 	"goftw/internal/grpcserver"
-
-	// "goftw/internal/ssh"
-
-
+	"goftw/internal/redis"
 )
 
 func main() {
@@ -36,8 +32,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load common_site_config.json: %v", err)
 	}
-	// deployment := instanceCfx.Deployment
-
 	// Wait for DB
 	if err := db.WaitForDB(dbCfg); err != nil {
 		log.Fatalf("database check failed: %v", err)
@@ -61,7 +55,6 @@ func main() {
 	}
 
 	// Bench is defined but not automatically initialized. It must be initialized via API.
-
 	// Ensure Bench struct is ready for API calls
 	if _, err := os.Stat(bench.Path); err == nil {
 		log.Printf("[BENCH] Bench directory %s exists", bench.Path)

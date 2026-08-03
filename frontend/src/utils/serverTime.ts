@@ -12,7 +12,6 @@
  * Solution:
  *  1. On startup call `syncServerTime()` once.  It sends a single GET /time
  *     request, measures the round-trip, and computes:
- *
  *       offsetMs = serverTimeAtMidpoint - clientTimeAtMidpoint
  *
  *  2. `getServerNow()` returns Date.now() + offsetMs - a clock that stays in
@@ -28,7 +27,6 @@
  *     times - it handles DST, regional number formats, and 12/24-hour
  *     preferences without any manual config.
  */
-
 /** Offset (ms) between the server's clock and the client's clock. */
 let _offsetMs = 0;
 

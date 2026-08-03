@@ -1,5 +1,4 @@
 /* Custom Section Block */
-
 .custom-section-block {
   padding: 1.5rem 0;
 }
@@ -341,7 +340,6 @@
 }
 
 /* Responsive */
-
 @media (max-width: 640px) {
   .custom-section-grid,
   .custom-section-stats-grid {

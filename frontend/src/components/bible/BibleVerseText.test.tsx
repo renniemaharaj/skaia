@@ -11,9 +11,9 @@ const markers: BibleVerseMarkers = {
 
 describe("Bible verse rendering markers", () => {
   it("segments Unicode code-point offsets and composes overlapping treatments", () => {
-    expect(segmentBibleVerse("A😀BCDE", markers)).toEqual([
+    expect(segmentBibleVerse("A界BCDE", markers)).toEqual([
       { text: "A", addedWord: false, wordsOfChrist: false },
-      { text: "😀", addedWord: true, wordsOfChrist: false },
+      { text: "界", addedWord: true, wordsOfChrist: false },
       { text: "BC", addedWord: true, wordsOfChrist: true },
       { text: "D", addedWord: false, wordsOfChrist: true },
       { text: "E", addedWord: false, wordsOfChrist: false },
@@ -21,10 +21,10 @@ describe("Bible verse rendering markers", () => {
   });
 
   it("renders added words and words of Christ without changing clean verse text", () => {
-    const { container } = render(<BibleVerseText text="A😀BCDE" markers={markers} />);
+    const { container } = render(<BibleVerseText text="A界BCDE" markers={markers} />);
 
-    expect(container.textContent).toBe("A😀BCDE");
-    expect(container.querySelector(".bible-verse-mark--added")?.textContent).toBe("😀");
+    expect(container.textContent).toBe("A界BCDE");
+    expect(container.querySelector(".bible-verse-mark--added")?.textContent).toBe("界");
     expect(
       container.querySelector(".bible-verse-mark--added.bible-verse-mark--christ")?.textContent
     ).toBe("BC");

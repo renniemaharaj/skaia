@@ -1,5 +1,4 @@
 /* Card Group Block (Community Legacy) */
-
 .community-legacy {
   padding: 80px 40px;
   max-width: 1400px;
@@ -83,7 +82,6 @@
 }
 
 /* Responsive */
-
 @media (max-width: 768px) {
   .community-legacy {
     padding: 40px 20px;

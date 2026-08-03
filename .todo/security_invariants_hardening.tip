@@ -3,13 +3,13 @@
 ## security_invariants_hardening
 
 ### Current Progress
-- **Phase 1: Standards and inventory** — 🟡 In progress
-- **Phase 2: Central policy package** — ⬜ Not started
-- **Phase 3: Sensitive action migration** — ⬜ Not started
-- **Phase 4: Session-bound step-up** — ⬜ Not started
-- **Phase 5: Audit and observability** — ⬜ Not started
-- **Phase 6: Availability and anomaly controls** — ⬜ Not started
-- **Phase 7: Adversarial verification** — ⬜ Not started
+- **Phase 1: Standards and inventory** - 🟡 In progress
+- **Phase 2: Central policy package** - ⬜ Not started
+- **Phase 3: Sensitive action migration** - ⬜ Not started
+- **Phase 4: Session-bound step-up** - ⬜ Not started
+- **Phase 5: Audit and observability** - ⬜ Not started
+- **Phase 6: Availability and anomaly controls** - ⬜ Not started
+- **Phase 7: Adversarial verification** - ⬜ Not started
 
 ### Completed Work
 - [x] 2026-06-19: Added persisted MFA `reason_code` and server-owned `action`

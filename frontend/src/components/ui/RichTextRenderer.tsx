@@ -36,7 +36,6 @@ export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
           domNode.attribs.label ||
           (domNode.children?.[0] ? (domNode.children[0] as any).data : "");
         // const type = domNode.attribs["data-mention-type"] || "user"; // Assume user by default, or maybe id has 'role-' prefix
-
         let badgeClass = "mention-badge";
         let text = `@${label || id}`;
 

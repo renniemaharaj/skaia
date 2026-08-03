@@ -134,7 +134,7 @@ func QueueScrape(targetURL string) error {
 
 			atomic.AddInt32(&activeJobs, 1)
 			broadcastJobsUpdate()
-			
+
 			defer func() {
 				atomic.AddInt32(&activeJobs, -1)
 				broadcastJobsUpdate()

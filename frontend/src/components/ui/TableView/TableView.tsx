@@ -27,7 +27,7 @@ export interface TableViewProps<T> {
   /**
    * When true (default for tables with > AUTO_LAZY_THRESHOLD rows), rows that
    * are not yet visible in the viewport are replaced with a lightweight
-   * skeleton placeholder — they render their real content only when the user
+   * skeleton placeholder - they render their real content only when the user
    * scrolls them into view.  Set to false to always render all rows eagerly.
    */
   lazyRows?: boolean;

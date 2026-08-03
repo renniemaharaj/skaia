@@ -400,7 +400,6 @@ export const ProductPage = () => {
   return (
     <StorePageShell className="product-page-container" backTo="/store">
       <div className="product-page-layout">
-        {/* ── Hero: image + details ── */}
         <ContentStandOutCard className="product-page-hero">
           <div className={`product-page-image-container${!activeMedia ? " fallback" : ""}`}>
             {activeMedia ? (
@@ -550,7 +549,6 @@ export const ProductPage = () => {
           <ProductMediaTable media={media} />
         </ContentFlatCard>
 
-        {/* ── Bottom: similar products + reviews ── */}
         <div className="product-page-bottom">
           {/* Similar products */}
           <div className="product-page-similar">

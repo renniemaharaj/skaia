@@ -307,7 +307,6 @@
 }
 
 /* Variant cycler wrapper */
-
 .footer-variant-cycler-wrapper {
   position: absolute;
   top: 12px;
@@ -316,7 +315,6 @@
 }
 
 /* Footer Variant 2 */
-
 .footer-v2 {
   background: var(--bg-secondary);
 }

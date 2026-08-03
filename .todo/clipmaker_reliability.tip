@@ -3,9 +3,9 @@
 ## clipmaker_reliability
 
 ### Current Progress
-- **Phase 1: Naming contract** — ✅ Complete
-- **Phase 2: Twick stability** — ✅ Complete
-- **Phase 3: Verification and documentation** — ✅ Complete
+- **Phase 1: Naming contract** - ✅ Complete
+- **Phase 2: Twick stability** - ✅ Complete
+- **Phase 3: Verification and documentation** - ✅ Complete
 
 ### Next Steps
 - [x] `npm run build` passed in `frontend/` on 2026-07-11.

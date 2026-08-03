@@ -151,7 +151,6 @@ func (s *Service) GetUserSessions(ctx context.Context, userID int64) ([]*Session
 }
 
 // Helpers
-
 // hashUserAgent produces a hex SHA-256 digest of the User-Agent string.
 func hashUserAgent(ua string) string {
 	h := sha256.Sum256([]byte(ua))

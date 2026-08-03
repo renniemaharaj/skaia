@@ -5,13 +5,11 @@
 # - Meta DB + BigQuery drivers as optional layers
 # - Runs Superset behind Gunicorn
 ######################################################################
-
 FROM python:3.11-slim-bookworm AS superset
 
 # Build-time args and environment variables
 #   - SUPERSET_VERSION: allows pinning or overriding at build time
 #   - SUPERSET_HOME: directory for Superset runtime files
-
 ARG SUPERSET_VERSION=5.0.0
 ENV SUPERSET_VERSION=${SUPERSET_VERSION} \
     SUPERSET_HOME=/app/superset_home

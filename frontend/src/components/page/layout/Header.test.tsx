@@ -15,7 +15,6 @@ import { ThemeProvider } from "../../../hooks/theme/ThemeProvider";
 import { Header } from "./Header";
 
 // Helpers
-
 const testUser: User = {
   id: "123",
   username: "testuser",
@@ -94,7 +93,6 @@ function renderHeader(
 }
 
 // Tests
-
 describe("Header Component", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -106,7 +104,6 @@ describe("Header Component", () => {
   });
 
   // Unauthenticated
-
   describe("Unauthenticated State", () => {
     it("renders sign-in button when not authenticated", () => {
       renderHeader();
@@ -129,7 +126,6 @@ describe("Header Component", () => {
   });
 
   // Authenticated
-
   describe("Authenticated State", () => {
     it("renders user display name when authenticated", () => {
       renderHeader({ authenticated: true });
@@ -176,7 +172,6 @@ describe("Header Component", () => {
   });
 
   // Navigation Links
-
   describe("Navigation Links", () => {
     it("renders all navigation links", () => {
       renderHeader();
@@ -195,7 +190,6 @@ describe("Header Component", () => {
   });
 
   // Cart Icon
-
   describe("Cart Icon", () => {
     it("displays cart count badge when cart has items", () => {
       renderHeader({ cartCount: 5 });
@@ -218,7 +212,6 @@ describe("Header Component", () => {
   });
 
   // Dark Mode Toggle
-
   describe("Dark Mode Toggle", () => {
     it("renders theme toggle button", () => {
       renderHeader();
@@ -228,7 +221,6 @@ describe("Header Component", () => {
   });
 
   // Mobile Menu
-
   describe("Mobile Menu", () => {
     it("renders menu toggle button", () => {
       const { container } = renderHeader();
@@ -266,7 +258,6 @@ describe("Header Component", () => {
   });
 
   // Logo and Branding
-
   describe("Logo and Branding", () => {
     it("renders logo link to home", () => {
       renderHeader();
@@ -286,7 +277,6 @@ describe("Header Component", () => {
   });
 
   // Responsive Behavior
-
   describe("Responsive Behavior", () => {
     it("renders header element", () => {
       renderHeader();

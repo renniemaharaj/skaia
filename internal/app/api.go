@@ -25,18 +25,11 @@ const (
 	pidFileName    = ".grengo-api.pid"
 )
 
-var apiHandlerFactory func() http.Handler
-
-func ConfigureAPIHandler(factory func() http.Handler) {
-	apiHandlerFactory = factory
-}
-
 func pidFilePath() string {
 	return repo.New(ProjectRoot()).PIDFile()
 }
 
 // API lifecycle commands
-
 // cmdAPIStart launches the internal grengo API server.
 // It binds to 0.0.0.0 so Docker containers on the host can reach it,
 // but it is NOT meant to be exposed to the internet (keep behind firewall).
@@ -127,7 +120,7 @@ func cmdAPIStop() {
 			return
 		}
 	}
-	warn("Process %d did not exit in 5s — may still be shutting down", pid)
+	warn("Process %d did not exit in 5s - may still be shutting down", pid)
 }
 
 func cmdAPIStatus() {
@@ -145,7 +138,6 @@ func cmdAPIStatus() {
 }
 
 // Helpers
-
 func readPIDFile() (int, error) {
 	data, err := os.ReadFile(pidFilePath())
 	if err != nil {

@@ -71,7 +71,6 @@ func runMigrations(dbName string, env SharedEnv) {
 }
 
 // Migrate
-
 // cmdMigrate re-runs all migration SQL files against an existing client database.
 // Because every migration uses IF NOT EXISTS / ON CONFLICT DO NOTHING, this is
 // safe to run on a live database - existing objects are untouched and any new
@@ -114,7 +113,7 @@ func cmdMigrateClient(name string, rebuild bool) {
 		die("POSTGRES_DB not set in %s", clientEnvFile(name))
 	}
 	if !dbExists(dbName, env) {
-		die("Database '%s' does not exist — use 'grengo db init %s' first", dbName, name)
+		die("Database '%s' does not exist - use 'grengo db init %s' first", dbName, name)
 	}
 
 	if rebuild {
@@ -207,7 +206,6 @@ func cmdMigrateAll(rebuild bool) {
 }
 
 // Helpers
-
 // backupDatabase creates a timestamped pg_dump of dbName in the client directory
 // and returns the resulting file path. Old backups beyond maxBackups are pruned.
 func backupDatabase(name, dbName string) string {

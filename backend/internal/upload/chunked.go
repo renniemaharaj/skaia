@@ -150,7 +150,7 @@ func (h *Handler) UploadChunk(w http.ResponseWriter, r *http.Request) {
 
 	_, err = io.Copy(out, file)
 	out.Close()
-	
+
 	if err != nil {
 		os.Remove(tmpChunkPath)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to write chunk")
@@ -308,18 +308,18 @@ func (h *Handler) GetIncompleteUploads(w http.ResponseWriter, r *http.Request) {
 			}
 			uploadID := entry.Name()
 			uploadDir := filepath.Join(tmpDir, uploadID)
-			
+
 			metaPath := filepath.Join(uploadDir, "meta.json")
 			metaBytes, err := os.ReadFile(metaPath)
 			if err != nil {
 				continue
 			}
-			
+
 			var req InitChunkedReq
 			if err := json.Unmarshal(metaBytes, &req); err != nil {
 				continue
 			}
-			
+
 			var completedChunks []int
 			chunks, _ := os.ReadDir(uploadDir)
 			for _, chunk := range chunks {
@@ -330,7 +330,7 @@ func (h *Handler) GetIncompleteUploads(w http.ResponseWriter, r *http.Request) {
 					completedChunks = append(completedChunks, idx)
 				}
 			}
-			
+
 			if completedChunks == nil {
 				completedChunks = []int{}
 			}
@@ -345,7 +345,7 @@ func (h *Handler) GetIncompleteUploads(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
-	
+
 	if incomplete == nil {
 		incomplete = []IncompleteUpload{}
 	}

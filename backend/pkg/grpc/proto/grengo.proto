@@ -18,17 +18,17 @@ service GrengoService {
   rpc DisableSite (SiteRequest) returns (EmptyResponse);
   rpc ArmSite (SiteRequest) returns (EmptyResponse);
   rpc DisarmSite (SiteRequest) returns (EmptyResponse);
-  
+
   // Environment
   rpc GetSiteEnv (SiteRequest) returns (GetSiteEnvResponse);
   rpc UpdateSiteEnv (UpdateSiteEnvRequest) returns (EmptyResponse);
-  
+
   // Metrics & SysInfo
   rpc Stats (EmptyRequest) returns (StatsResponse);
   rpc Storage (EmptyRequest) returns (StorageResponse);
   rpc GetSysInfo (EmptyRequest) returns (SysInfoResponse);
   rpc GetHardware (EmptyRequest) returns (HardwareResponse);
-  
+
   // Archives & Migrations
   rpc ExportSite (SiteRequest) returns (ExportSiteResponse);
   rpc ImportSite (ImportSiteRequest) returns (ImportSiteResponse);
@@ -39,17 +39,17 @@ service GrengoService {
   rpc ListExports (EmptyRequest) returns (ListExportsResponse);
   rpc DownloadExport (DownloadExportRequest) returns (stream FileChunk);
   rpc DeleteExport (DeleteExportRequest) returns (EmptyResponse);
-  
+
   // Jobs
   rpc ListJobs (EmptyRequest) returns (ListJobsResponse);
   rpc GetJob (GetJobRequest) returns (GetJobResponse);
   rpc DownloadJob (DownloadJobRequest) returns (stream FileChunk);
   rpc WatchJobs (EmptyRequest) returns (stream JobEvent);
   rpc WatchLogs (EmptyRequest) returns (stream LogStreamResponse);
-  
+
   // WS proxy replacement
   rpc SendAction (SendActionRequest) returns (SendActionResponse);
-  
+
   // Auth
   rpc PasscodeStatus (EmptyRequest) returns (PasscodeStatusResponse);
   rpc VerifyPasscode (VerifyPasscodeRequest) returns (VerifyPasscodeResponse);

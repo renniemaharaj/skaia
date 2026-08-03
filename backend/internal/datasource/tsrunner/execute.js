@@ -14,7 +14,6 @@
  *
  * Exit code 0 on success; exit code 1 on fatal errors.
  */
-
 const ts = require("typescript");
 const vm = require("vm");
 

@@ -34,7 +34,7 @@ func cmdWipeAll() {
 	for _, d := range []string{"postgres_data", "redis_data"} {
 		path := filepath.Join(ProjectRoot(), d)
 		if err := os.RemoveAll(path); err != nil {
-			warn("Cannot remove %s as current user — retrying with sudo…", path)
+			warn("Cannot remove %s as current user - retrying with sudo…", path)
 			cmd := exec.Command("sudo", "rm", "-rf", path)
 			cmd.Stdin = os.Stdin
 			cmd.Stdout = os.Stdout

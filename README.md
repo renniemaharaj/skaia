@@ -12,19 +12,19 @@ We're excited to make this project open source as **skaia-repo**.
 
 Thank you for taking the time to explore the platform and browse our current store offerings 🙏
 
-As a self-hosted platform, each tenant gets an isolated database, independent feature toggles, and its own domain — all managed from a single codebase and the **grengo** CLI.
+As a self-hosted platform, each tenant gets an isolated database, independent feature toggles, and its own domain - all managed from a single codebase and the **grengo** CLI.
 
 ## Features
 
-- **Forum** — categories, threads, comments, likes, real-time updates
-- **Store** — products, cart, checkout (Stripe or demo provider), orders, subscriptions
-- **Inbox** — 1-to-1 direct messaging with real-time delivery
-- **Notifications** — typed, per-user, delivered via WebSocket
-- **CMS** — slug-based pages with JSONB block content, homepage (landing) and generic page builder (see route_resolution_spec)
-- **Real-time** — WebSocket presence, global chat, cursor sharing, admin teleport
-- **RBAC** — 4 default roles, 18 granular permissions, instant permission propagation
-- **SEO** — server-side meta injection, dynamic sitemap
-- **Collaborative Planning** — `.todo/` directory for human-AI planning, status, and specifications
+- **Forum** - categories, threads, comments, likes, real-time updates
+- **Store** - products, cart, checkout (Stripe or demo provider), orders, subscriptions
+- **Inbox** - 1-to-1 direct messaging with real-time delivery
+- **Notifications** - typed, per-user, delivered via WebSocket
+- **CMS** - slug-based pages with JSONB block content, homepage (landing) and generic page builder (see route_resolution_spec)
+- **Real-time** - WebSocket presence, global chat, cursor sharing, admin teleport
+- **RBAC** - 4 default roles, 18 granular permissions, instant permission propagation
+- **SEO** - server-side meta injection, dynamic sitemap
+- **Collaborative Planning** - `.todo/` directory for human-AI planning, status, and specifications
 
 ## Container Orchestration & Gateway
 
@@ -109,14 +109,14 @@ cd backend/frontend && npm test
 
 All collaborative planning, status tracking, specifications, and automation routines are now kept in the `.todo/`, `.specs/`, and `.routines/` directories:
 
-- `.todo/README.md` — Directory usage, rules, and emoji policy
-- `.todo/<name>.tip` — Per-plan status tracker and entrypoint for beginning todo-backed work
-- `.specs/` — Human-AI specifications and design docs
-- `.todo/*` — Individual todo plans (no extension)
-- `.routines/` — First-class directory for routine definitions (project maintenance, automation, specialist roles)
-  - `.routines/README.md` — Routine structure and usage
-  - `.routines/planner` — Planning, todo lifecycle, specs, technology, and infrastructure context upkeep
-  - `.routines/auditor`, `.routines/worker`, and `.routines/correctness` — Core project routines
+- `.todo/README.md` - Directory usage, rules, and emoji policy
+- `.todo/<name>.tip` - Per-plan status tracker and entrypoint for beginning todo-backed work
+- `.specs/` - Human-AI specifications and design docs
+- `.todo/*` - Individual todo plans (no extension)
+- `.routines/` - First-class directory for routine definitions (project maintenance, automation, specialist roles)
+  - `.routines/README.md` - Routine structure and usage
+  - `.routines/planner` - Planning, todo lifecycle, specs, technology, and infrastructure context upkeep
+  - `.routines/auditor`, `.routines/worker`, and `.routines/correctness` - Core project routines
 
 Specs previously in `.todo/.specs` are now in `.specs/`.
 
@@ -128,10 +128,10 @@ Specs previously in `.todo/.specs` are now in `.specs/`.
 
 This project uses a structured Human-AI planning and integration approach, with dedicated directories for incorporating artificial intelligence code, modeling acceleration, and maintaining high-quality documentation and routines. The system is designed to gatekeep and guide intelligence through:
 
-- `.routines/` — Automation, maintenance, and specialist routines, including routines for maintaining documentation and enforcing standards.
-- `.specs/` — Detailed, living specifications and design documents for all major features and integrations.
-- `.todo/` — Active planning, tracking, and iterative problem breakdown. Each entry in `.todo/` should have its own `.tip` file, enabling multiple agents to work independently on different todos without conflict. This promotes parallelism and clear ownership.
-- `.todo/<name>.tip` — Per-todo implementation entrypoint with phase status, next steps, and verification notes.
+- `.routines/` - Automation, maintenance, and specialist routines, including routines for maintaining documentation and enforcing standards.
+- `.specs/` - Detailed, living specifications and design documents for all major features and integrations.
+- `.todo/` - Active planning, tracking, and iterative problem breakdown. Each entry in `.todo/` should have its own `.tip` file, enabling multiple agents to work independently on different todos without conflict. This promotes parallelism and clear ownership.
+- `.todo/<name>.tip` - Per-todo implementation entrypoint with phase status, next steps, and verification notes.
 
 This structure enables:
 

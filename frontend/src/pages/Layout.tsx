@@ -37,7 +37,7 @@ import { syncServerTime } from "../utils/serverTime";
 import MFAChallenge from "./MFAChallenge";
 import RateLimitedPage from "./RateLimitedPage";
 
-// Heavy ambient/overlay widgets — lazy-loaded so they never block the
+// Heavy ambient/overlay widgets - lazy-loaded so they never block the
 // critical paint path.  Null fallbacks are intentional: these are decorative
 // overlays and showing a spinner in their place would be jarring.
 const PresencePanel = lazy(() => import("../components/page/layout/PresencePanel"));
@@ -415,7 +415,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }, [location.pathname, location.hash, isPending]);
 
-  // Teleport to user logic — reads cursor positions lazily from the Jotai store
+  // Teleport to user logic - reads cursor positions lazily from the Jotai store
   // rather than subscribing to the atom (avoids Layout re-renders on cursor ticks).
   useEffect(() => {
     if (!isPending && pendingTpUser) {
@@ -444,7 +444,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       toast("You are being teleported", {
         description: `Heading to ${pendingTpRoute}`,
         duration: 4000,
-        icon: "⚡",
       });
       navigate(pendingTpRoute);
       clearTpRoute(null);

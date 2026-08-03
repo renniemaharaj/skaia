@@ -39,7 +39,6 @@ func (b *Bench) CopyCommonSitesConfig() error {
 	// Ensure ownership of sites directory
 	if err := internalExec.ExecRunPrintIO("sudo", "chown", "-R",
 		fmt.Sprintf("%d:%d", os.Getuid(), os.Getgid()), sitesPath); err != nil {
-		// return fmt.Errorf("failed to chown sites directory: %w", err)
 		fmt.Printf("[Warn] Failed to chown existing: %s", sitesPath)
 	}
 
@@ -92,7 +91,7 @@ func (b *Bench) Initialize(frappeBranch string) error {
 				healCmd := fmt.Sprintf("cd %s && bench setup requirements && bench build", benchPath)
 				if err := whoiam.ExecRunPrintIO("sh", "-c", healCmd); err != nil {
 					fmt.Printf("[WARN] Auto-healing failed: %v\n", err)
-					// Not fatal — log and continue.
+					// Not fatal - log and continue.
 				}
 			}
 

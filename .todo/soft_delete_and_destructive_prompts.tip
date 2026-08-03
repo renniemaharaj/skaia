@@ -3,12 +3,12 @@
 ## soft_delete_and_destructive_prompts
 
 ### Current Progress
-- **Phase 1: Inventory and drift resolution** — ✅ Complete
-- **Phase 2: Tenant/control-plane migrations** — ✅ Complete
-- **Phase 3: Active-scope reads and mutations** — ✅ Complete
-- **Phase 4: Restore, realtime, and cache** — ✅ Complete
-- **Phase 5: Destructive prompt standardization** — ✅ Complete
-- **Phase 6: Rollout, verification, and specs** — 🟨 Code complete; deployment pending
+- **Phase 1: Inventory and drift resolution** - ✅ Complete
+- **Phase 2: Tenant/control-plane migrations** - ✅ Complete
+- **Phase 3: Active-scope reads and mutations** - ✅ Complete
+- **Phase 4: Restore, realtime, and cache** - ✅ Complete
+- **Phase 5: Destructive prompt standardization** - ✅ Complete
+- **Phase 6: Rollout, verification, and specs** - 🟡 In progress
 
 ### Completed
 - [x] Built the checked table/operation ledger from fresh tenant/control-plane
@@ -62,7 +62,7 @@
   bulk deletion. The shared route intentionally exposes only reauthorized
   per-item undo today.
 
-### Correctness Follow-up — 2026-07-30
+### Correctness Follow-up - 2026-07-30
 - [x] Fixed PostgreSQL `42P18` in the manager-only `page_allocation` trash
   listing by matching its placeholders and arguments.
 - [x] Fixed the same latent mismatch in manager-only role listing/restoration

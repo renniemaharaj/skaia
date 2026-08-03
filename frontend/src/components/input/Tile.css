@@ -1,11 +1,4 @@
-/* 
- * Tile primitive — component-level CSS
- *
- * Layout, spacing, and transitions only.
- * All colours reference design tokens from index.css.
- *  */
-
-/* Base -------------------------------------------------------------------- */
+/* Tile primitive layout; colors use design tokens from index.css. */
 .sk-tile {
   display: flex;
   flex-direction: column;
@@ -19,7 +12,6 @@
     cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Interactive variant ----------------------------------------------------- */
 .sk-tile--interactive {
   cursor: pointer;
   user-select: none;
@@ -43,12 +35,10 @@
   border-color: var(--primary-color);
 }
 
-/* Static variant ---------------------------------------------------------- */
 .sk-tile--static {
   cursor: default;
 }
 
-/* Selected state ---------------------------------------------------------- */
 .sk-tile--selected {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 1px var(--primary-color), var(--card-shadow);
@@ -58,13 +48,11 @@
   box-shadow: 0 0 0 1px var(--primary-color), var(--card-shadow-hover);
 }
 
-/* Compact ----------------------------------------------------------------- */
 .sk-tile--compact {
   padding: 0.4rem 0.5rem;
   border-radius: 0;
 }
 
-/* Disabled ---------------------------------------------------------------- */
 .sk-tile--disabled {
   opacity: 0.5;
   pointer-events: none;

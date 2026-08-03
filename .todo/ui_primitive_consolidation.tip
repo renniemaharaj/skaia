@@ -3,10 +3,10 @@
 ## ui_primitive_consolidation
 
 ### Current Progress
-- **Phase 1: Primitive Components** — ✅ Complete
-- **Phase 2: Input & Control Standardization** — ✅ Complete
-- **Phase 3: Route & Layout Consolidation** — ✅ Builder/editor target slice complete
-- **Phase 4: Design Token Hardening** — 🔄 Started
+- **Phase 1: Primitive Components** - ✅ Complete
+- **Phase 2: Input & Control Standardization** - ✅ Complete
+- **Phase 3: Route & Layout Consolidation** - ✅ Complete
+- **Phase 4: Design Token Hardening** - 🟡 In progress
 
 ### Next Steps
 - [x] 2026-06-09: `DerivedSectionBlock` and `CustomSectionBlock` now share the registered component picker/bind mapper path used by datasource previews.

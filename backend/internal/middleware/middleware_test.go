@@ -40,7 +40,6 @@ func adminToken(t *testing.T) string {
 }
 
 // JWTAuthMiddleware
-
 func TestJWTAuthMiddleware_NoContext_Returns401(t *testing.T) {
 	h := mw.JWTAuthMiddleware(okHandler())
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -90,7 +89,6 @@ func TestJWTAuthMiddleware_SetsRolesInContext(t *testing.T) {
 }
 
 // ExtractTokenMiddleware
-
 func TestExtractTokenMiddleware_NoHeader_Passes(t *testing.T) {
 	h := mw.ExtractTokenMiddleware(okHandler())
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -141,7 +139,6 @@ func TestExtractTokenMiddleware_InvalidToken_StillPasses(t *testing.T) {
 }
 
 // PermissionMiddleware
-
 func TestPermissionMiddleware_NoClaims_Returns401(t *testing.T) {
 	h := mw.PermissionMiddleware("read:data")(okHandler())
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -205,7 +202,6 @@ func TestPermissionMiddleware_MultiplePermissions_PassesOnMatch(t *testing.T) {
 }
 
 // RateLimitMiddleware
-
 func TestRateLimitMiddleware_NormalLoad_NeverBlocked(t *testing.T) {
 	// 100 req/min limit - 10 rapid requests must never be rate limited.
 	limiter := mw.RateLimitMiddleware()

@@ -49,7 +49,6 @@
 /* .editor-wrapper .ProseMirror {
   min-height: var(--editor-min-height) !important;
 } */
-
 /* Import HTML button toolbar */
 .editor-toolbar {
   display: flex;

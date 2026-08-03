@@ -636,7 +636,6 @@
 }
 
 /* Input toolbar (emoji, file upload) */
-
 .inbox-file-input {
   display: none;
 }
@@ -727,7 +726,6 @@
 }
 
 /* Page card (system DM) */
-
 .inbox-page-card {
   display: flex;
   align-items: flex-start;

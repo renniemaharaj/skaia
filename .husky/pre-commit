@@ -1,20 +1,30 @@
+#!/bin/sh
+set -eu
+
 export JWT_SECRET=test
 export POSTGRES_URL=postgres://postgres:postgres@localhost:5432/skaia_db?sslmode=disable
 export REDIS_URL=redis://localhost:6379/0
 
-while read -r mod; do
-  dir=$(dirname "$mod")
-  echo "Testing Go module in $dir..."
-  cd "$dir"
-  if [ "$dir" != "." ]; then
-    go test ./... || exit 1
-  fi
-  cd - > /dev/null
-done < <(find . -type d \( -name node_modules -o -name postgres_data -o -name redis_data -o -name pgadmin_data -o -name .git \) -prune -o -name "go.mod" -print)
+go run ./cmd/checktextpolicy
 
-cd frontend
-npm run lint
-npm run format
-git add .
-npm run build
-cd ..
+git ls-files '*go.mod' | while IFS= read -r module_file; do
+  module_dir=${module_file%/go.mod}
+  if [ "$module_dir" = "$module_file" ]; then
+    module_dir=.
+  fi
+  echo "Testing Go module in $module_dir..."
+  if [ "$module_dir" = "." ]; then
+    go test . ./cmd/... ./internal/...
+  else
+    (cd "$module_dir" && go test ./...)
+  fi
+done
+
+(
+  cd frontend
+  npm run contracts:check
+  npm run check:native-dialogs
+  npm run lint
+  npm test -- --run
+  npm run build
+)

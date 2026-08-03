@@ -11,7 +11,6 @@ import (
 )
 
 // CategoryRepository extra
-
 func TestCategoryRepository_GetByName(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	repo := forum.NewCategoryRepository(db)
@@ -41,7 +40,6 @@ func TestCategoryRepository_Update(t *testing.T) {
 }
 
 // ThreadRepository extra
-
 func TestThreadRepository_Update(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	catRepo := forum.NewCategoryRepository(db)
@@ -193,7 +191,6 @@ func TestThreadRepository_LikeIdempotent(t *testing.T) {
 }
 
 // CommentRepository extra
-
 func TestCommentRepository_GetByThread(t *testing.T) {
 	db := testutil.OpenTestDB(t)
 	catRepo := forum.NewCategoryRepository(db)

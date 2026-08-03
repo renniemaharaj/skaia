@@ -1,7 +1,5 @@
 /* Card Parts  Reusable card zone components */
-
 /* Image */
-
 .cdp-image {
   position: relative;
   overflow: hidden;
@@ -37,7 +35,6 @@
 }
 
 /* Heading */
-
 .cdp-heading {
   margin: 0;
   color: var(--text-primary);
@@ -62,7 +59,6 @@
 }
 
 /* Subheading */
-
 .cdp-subheading {
   margin: 0;
   color: var(--text-secondary);
@@ -84,7 +80,6 @@
 }
 
 /* Icon */
-
 .cdp-icon {
   display: flex;
   justify-content: center;
@@ -102,7 +97,6 @@
 }
 
 /* Link */
-
 .cdp-link {
   margin: 0;
   text-align: center;

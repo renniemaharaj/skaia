@@ -553,7 +553,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 					}
 					httpPort, ok := frappeHTTPPort(id)
 					if !ok {
-						// Port not yet recorded — instance is likely still provisioning.
+						// Port not yet recorded - instance is likely still provisioning.
 						http.Error(w, `{"error":"instance not ready","armed":true}`, http.StatusServiceUnavailable)
 						return
 					}

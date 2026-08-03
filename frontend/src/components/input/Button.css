@@ -1,11 +1,4 @@
-/* 
- * Button primitive — component-level CSS
- *
- * Layout, spacing, and transitions only.
- * All colours reference design tokens from index.css.
- *  */
-
-/* Base -------------------------------------------------------------------- */
+/* Button primitive layout; colors use design tokens from index.css. */
 .sk-btn {
   position: relative;
   display: inline-flex;
@@ -35,7 +28,6 @@
   box-shadow: var(--focus-ring);
 }
 
-/* Sizes ------------------------------------------------------------------- */
 .sk-btn--sm {
   padding: 0.2rem 0.45rem;
   font-size: 0.72rem;
@@ -64,7 +56,6 @@
   border-radius: var(--radius-sm);
 }
 
-/* Variants ---------------------------------------------------------------- */
 
 /* Action */
 .sk-btn--action {
@@ -168,17 +159,14 @@
   border-color: var(--warning-color);
 }
 
-/* Block ------------------------------------------------------------------- */
 .sk-btn--block {
   width: 100%;
 }
 
-/* Pill -------------------------------------------------------------------- */
 .sk-btn--pill {
   border-radius: var(--radius-full);
 }
 
-/* Disabled ---------------------------------------------------------------- */
 .sk-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -186,7 +174,6 @@
   box-shadow: none !important;
 }
 
-/* Loading ----------------------------------------------------------------- */
 .sk-btn--loading {
   pointer-events: none;
 }
@@ -206,7 +193,6 @@
   }
 }
 
-/* Icon slots -------------------------------------------------------------- */
 .sk-btn__icon {
   display: inline-flex;
   align-items: center;
@@ -215,7 +201,6 @@
   line-height: 0;
 }
 
-/* Label slot -------------------------------------------------------------- */
 .sk-btn__label {
   display: inline-flex;
   align-items: center;

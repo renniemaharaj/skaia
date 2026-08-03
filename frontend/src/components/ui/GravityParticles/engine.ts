@@ -120,7 +120,6 @@ export type PhysicsSettings = {
 };
 
 // Constants
-
 export const BOUNDING_BOX_DAMPING = 0.75;
 export const CURSOR_REPULSION_DIST = 100;
 export const MAX_TRAIL_LENGTH = 12;
@@ -157,7 +156,6 @@ export const defaultSettings: PhysicsSettings = {
 };
 
 // Colour helpers
-
 export const hexToRgbStr = (hex: string): string => {
   hex = hex.replace(/^#/, "");
   if (hex.length === 3)
@@ -191,7 +189,6 @@ export const blendColors = (c1: string, c2: string, m1: number, m2: number): str
 };
 
 // Geometry helpers
-
 export const getRadius = (mass: number): number => Math.sqrt(mass) * 1.5;
 
 const softeningEpsilonSq = (r1: number, r2: number): number => {
@@ -200,7 +197,6 @@ const softeningEpsilonSq = (r1: number, r2: number): number => {
 };
 
 // Particle factory
-
 export const spawnParticle = (
   x: number,
   y: number,
@@ -241,11 +237,9 @@ export const spawnParticle = (
 };
 
 // Alive behaviour helpers
-
 let _arrivalCounter = 0;
 
 // System analysis
-
 type SystemInfo = {
   cx: number;
   cy: number;
@@ -304,7 +298,6 @@ const computeLocalSystem = (
 };
 
 // Pressure scan
-
 const scanPressure = (
   p: Particle,
   parts: Particle[],
@@ -338,7 +331,6 @@ const scanPressure = (
 };
 
 // Destination picker
-
 const pickDestination = (
   p: Particle,
   pressure: number[],
@@ -396,7 +388,6 @@ const pickDestination = (
 };
 
 // Ring slot assignment
-
 const computeTargetRing = (
   p: Particle,
   systemParticles: Particle[],
@@ -425,7 +416,6 @@ const computeTargetRing = (
 };
 
 // Ring stabilisation force
-
 /**
  * Returns the combined radial + tangential + neighbour-repulsion force for a
  * particle trying to hold its orbital ring.
@@ -503,11 +493,9 @@ const computeRingForce = (
 };
 
 // Escape force
-
 /**
  * For antisocial particles in a gravitational trap:
  * Compute the force needed to counteract local gravity and then some.
- *
  * escapeForce = gravAccel × mass × (1 + antisocialLevel × boostFactor)
  *
  * Direction: away from system CoM, blended with the particle's desired angle
@@ -547,7 +535,6 @@ const computeEscapeForce = (
 };
 
 // Look-ahead collision avoidance
-
 const computeAvoidanceForce = (
   p: Particle,
   parts: Particle[],
@@ -606,7 +593,6 @@ const computeAvoidanceForce = (
 };
 
 // Spatial Hash Grid
-
 class SpatialHash {
   private cells = new Map<number, number[]>();
   private cellSize: number;
@@ -650,7 +636,6 @@ class SpatialHash {
 }
 
 // stepPhysics
-
 export const stepPhysics = (
   parts: Particle[],
   explosions: Explosion[],
@@ -900,7 +885,6 @@ export const stepPhysics = (
       }
 
       // ALIVE BEHAVIOUR
-
       if (particlesAreAlive && p1.antisocialLevel !== undefined) {
         const al = p1.antisocialLevel;
 
@@ -1029,7 +1013,6 @@ export const stepPhysics = (
         }
 
         // Every-tick alive forces
-
         // 1. Escape burn - sustained anti-gravity for trapped antisocial particles
         if ((p1.escapeBurnTicks ?? 0) > 0 && p1.systemCoM) {
           p1.escapeBurnTicks!--;
@@ -1107,7 +1090,6 @@ export const stepPhysics = (
       }
 
       // END ALIVE
-
       if (toRemove.has(p1.id)) continue;
 
       // Integrate

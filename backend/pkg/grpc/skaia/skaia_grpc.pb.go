@@ -23,7 +23,6 @@ const (
 )
 
 // GrengoServiceClient is the client API for GrengoService service.
-//
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
 // GrengoService handles incoming communication from backend nodes to the central orchestrator
@@ -129,9 +128,7 @@ const (
 )
 
 // BackendServiceClient is the client API for BackendService service.
-//
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
 // BackendService handles communication from Grengo to individual backend nodes
 type BackendServiceClient interface {
 	GetStorage(ctx context.Context, in *GetStorageRequest, opts ...grpc.CallOption) (*GetStorageResponse, error)
@@ -246,9 +243,7 @@ const (
 )
 
 // GoFTWServiceClient is the client API for GoFTWService service.
-//
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
 // GoFTWService handles orchestration of the frappe cluster instances
 type GoFTWServiceClient interface {
 	SetupInit(ctx context.Context, in *SetupInitRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogStreamResponse], error)

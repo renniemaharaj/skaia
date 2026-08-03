@@ -84,7 +84,7 @@ type SiteHealthStatus struct {
 func checkSite(client *http.Client, site string) SiteHealthStatus {
 	status := SiteHealthStatus{Site: site}
 
-	// 1. GoFTW API probe — CheckSite over gRPC
+	// 1. GoFTW API probe - CheckSite over gRPC
 	conn, err := grpc.NewClient(frappeGRPCEndpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		status.Error = fmt.Sprintf("API probe error (dial): %v", err)
@@ -149,7 +149,7 @@ func triggerDeploy() (bool, error) {
 		return false, fmt.Errorf("rpc: %w", err)
 	}
 
-	fmt.Printf("[HEALTH][DEPLOY] gRPC ReloadNginx → success: %v\n", resp.Success)
+	fmt.Printf("[HEALTH][DEPLOY] gRPC ReloadNginx -> success: %v\n", resp.Success)
 
 	return resp.Success, nil
 }
@@ -164,11 +164,4 @@ func logStatus(s SiteHealthStatus) {
 		httpMark = "✗"
 	}
 	fmt.Printf("[HEALTH][%s] API:%s HTTP:%s\n", s.Site, apiMark, httpMark)
-}
-
-func truncate(s string, n int) string {
-	if len(s) <= n {
-		return s
-	}
-	return s[:n] + "…"
 }

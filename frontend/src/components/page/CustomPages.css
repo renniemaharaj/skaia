@@ -1,5 +1,4 @@
 /* Page-specific components (header/toolbar/grid/list are handled by DirectoryLayout) */
-
 .cp-new-page-btn {
   display: inline-flex;
   align-items: center;
@@ -133,7 +132,6 @@
 }
 
 /* Grid card */
-
 .cp-card {
   display: flex;
   flex-direction: column;
@@ -236,7 +234,6 @@
 }
 
 /* Page thumbnail (scaled-down render) */
-
 .cp-card__thumb {
   position: relative;
   height: 160px;

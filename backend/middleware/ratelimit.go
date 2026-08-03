@@ -22,7 +22,6 @@ import (
 
 // DEFCONRateLimit returns an http.Handler middleware that enforces adaptive
 // three-tier rate limiting using Redis.
-//
 // Drop it into any standard net/http chain:
 //
 //	mux := http.NewServeMux()
@@ -88,7 +87,7 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 				return
 			}
 
-			//  Step 3: Purgatory — adaptive allowance
+			//  Step 3: Purgatory - adaptive allowance
 			allowance, err := ratelimit.AdaptiveAllowance(ctx, rdb)
 			if err != nil {
 				slog.Error("allowance compute failed", "ip", ip, "err", err)
@@ -141,7 +140,7 @@ func DEFCONRateLimit(rdb *redis.Client, userSvc *user.Service, authSvc *auth.Ser
 				}
 			}
 
-			//  All checks passed — forward the request
+			//  All checks passed - forward the request
 			next.ServeHTTP(w, r)
 		})
 	}

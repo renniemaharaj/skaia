@@ -25,7 +25,7 @@ func (s *BackendServer) GetStorage(ctx context.Context, req *pb.GetStorageReques
 		Limit: upload.MaxUploadTotal,
 		Used:  used,
 	}
-	
+
 	data, err := json.Marshal(info)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func StartServer(port string) {
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterBackendServiceServer(grpcServer, &BackendServer{})
-	
+
 	// Register reflection service on gRPC server for debugging
 	reflection.Register(grpcServer)
 

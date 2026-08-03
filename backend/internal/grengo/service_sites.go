@@ -200,7 +200,7 @@ func (s *Service) ProvisionFrappeVersion(siteName, version string, onLog func(st
 	if version == "" {
 		version = "16"
 	}
-	
+
 	output, err := s.provisionFrappeStream(siteName, version, onLog)
 	if err != nil {
 		return nil, err

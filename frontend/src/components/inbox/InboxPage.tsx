@@ -289,7 +289,6 @@ const InboxPage = () => {
     }
   };
   // Infinite scroll handler for search results
-
   const activeConv = conversations.find(c => c.id === activeId);
   const blockedByCurrentUser = activeConv?.blocked_by_current_user ?? false;
   const blockedByOtherUser = activeConv?.blocked_by_other_user ?? false;
@@ -825,7 +824,6 @@ const InboxPage = () => {
 export default InboxPage;
 
 // Sub-components
-
 function ConversationRow({
   c,
   activeId,

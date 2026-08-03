@@ -44,7 +44,7 @@ const choiceField = (type: InteractiveFieldType) =>
 const displayValue = (value: unknown) => {
   if (Array.isArray(value)) return value.join(", ");
   if (typeof value === "boolean") return value ? "Yes" : "No";
-  return value == null || value === "" ? "—" : String(value);
+  return value == null || value === "" ? "-" : String(value);
 };
 
 function FormikStarRating({

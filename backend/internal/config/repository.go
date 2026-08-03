@@ -13,7 +13,6 @@ type sqlRepository struct{ db database.Executor }
 func NewRepository(db database.Executor) Repository { return &sqlRepository{db: db} }
 
 // Site config
-
 func (r *sqlRepository) GetConfig(key string) (*models.SiteConfig, error) {
 	sc := &models.SiteConfig{}
 	err := r.db.QueryRow(
@@ -50,7 +49,6 @@ func (r *sqlRepository) DeleteConfig(key string) error {
 }
 
 // Landing sections
-
 func (r *sqlRepository) DeleteAllSections() error {
 	_, err := r.db.Exec(
 		`WITH changed AS (
@@ -188,7 +186,6 @@ func (r *sqlRepository) ReorderSections(ids []int64) error {
 }
 
 // Landing items
-
 func (r *sqlRepository) ListItems(sectionID int64) ([]*models.PageItem, error) {
 	rows, err := r.db.Query(
 		`SELECT pi.id,pi.page_section_id,pi.display_order,pi.icon,pi.heading,pi.subheading,

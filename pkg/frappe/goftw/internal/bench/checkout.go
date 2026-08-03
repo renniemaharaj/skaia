@@ -68,10 +68,5 @@ func (b *Bench) CheckoutSite(site entity.Site, dbRootUser, dbRootPass string) er
 		fmt.Printf("[ERROR] Failed to install missing apps for site %s: %v\n", site.SiteName, err)
 		return err
 	}
-	// if err := b.uninstallExtraApps(site.SiteName, currentAppNames, expectedApps); err != nil {
-	// 	fmt.Printf("[ERROR] Failed to uninstall extra apps for site %s: %v\n", site.SiteName, err)
-	// 	return err
-	// }
-
 	return nil
 }

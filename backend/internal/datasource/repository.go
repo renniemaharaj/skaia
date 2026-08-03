@@ -140,7 +140,7 @@ func syncCodeFromFiles(ds *models.DataSource) {
 			}
 		}
 	}
-	if ds.Files == nil || len(ds.Files) == 0 {
+	if len(ds.Files) == 0 {
 		ds.Files = json.RawMessage(`{}`)
 	}
 }

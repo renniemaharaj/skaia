@@ -103,9 +103,19 @@ operational policies.
 
 ## Last Ran
 
-- 2026-08-02
+- 2026-08-03
 
 ## Last Run Remarks
+
+- Created and completed `repository_hygiene_and_text_policy` after deduplicating
+  it from the narrower legacy-code plan. The handoff covered evidence-backed
+  cleanup, a root Go checker, tracked-tree remediation, a non-mutating hook, and
+  full verification.
+- Removed the orphaned soft-delete ledger after confirming its durable contracts
+  already exist in specs and its history remains in the matching plan/tip; todo
+  pairing, filename, and status-vocabulary checks now pass.
+
+## Previous Run Remarks (2026-08-02)
 
 - Extended `multi_tenant_seo_origin_integrity` rather than creating an
   overlapping todo after the 2026-08-02 auditor/correctness review of commits

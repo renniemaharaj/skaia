@@ -659,9 +659,3 @@ func (s *Service) SendSystemMessage(recipientID int64, content, messageType stri
 	}
 	return nil
 }
-
-// // SendNoreplyToUser delivers an automated message to a user's inbox from the
-// // system "noreply" account. The noreply user must exist (seeded in 002_seed.sql).
-// func (s *Service) SendNoreplyToUser(recipientID int64, content string) error {
-// 	return s.SendSystemMessage(recipientID, content, "text")
-// }

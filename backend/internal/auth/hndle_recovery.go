@@ -237,7 +237,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	content := fmt.Sprintf(
-		"Hello %s,\n\nYour password has been reset by an administrator.\n\nYour new temporary password is:\n\n%s\n\nPlease log in and change your password immediately.\n\n— System",
+		"Hello %s,\n\nYour password has been reset by an administrator.\n\nYour new temporary password is:\n\n%s\n\nPlease log in and change your password immediately.\n\n- System",
 		displayName, newPw,
 	)
 	if err2 := h.inboxSvc.SendSystemMessage(targetID, content, "text"); err2 != nil {
@@ -245,7 +245,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	if actorID != targetID {
 		adminContent := fmt.Sprintf(
-			"Hello,\n\nYou have reset the password for %s.\n\nThe new temporary password is:\n\n%s\n\nA copy of this reset has been sent to your inbox. Keep it secure and delete it when no longer needed.\n\n— System",
+			"Hello,\n\nYou have reset the password for %s.\n\nThe new temporary password is:\n\n%s\n\nA copy of this reset has been sent to your inbox. Keep it secure and delete it when no longer needed.\n\n- System",
 			displayName, newPw,
 		)
 		if err2 := h.inboxSvc.SendSystemMessage(actorID, adminContent, "text"); err2 != nil {
@@ -337,7 +337,7 @@ func (h *Handler) AdminResetPassword(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	content := fmt.Sprintf(
-		"Hello %s,\n\nYour password has been reset by an administrator.\n\nYour new temporary password is:\n\n%s\n\nPlease log in and change your password immediately.\n\n— System",
+		"Hello %s,\n\nYour password has been reset by an administrator.\n\nYour new temporary password is:\n\n%s\n\nPlease log in and change your password immediately.\n\n- System",
 		displayName, newPw,
 	)
 	if err2 := h.inboxSvc.SendSystemMessage(targetID, content, "text"); err2 != nil {
@@ -345,7 +345,7 @@ func (h *Handler) AdminResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	content2 := fmt.Sprintf(
-		"Hello,\n\nYou have reset the password for %s.\n\nThe new temporary password is:\n\n%s\n\nA copy of this reset has been sent to your inbox. Keep it secure and delete it when no longer needed.\n\n— System",
+		"Hello,\n\nYou have reset the password for %s.\n\nThe new temporary password is:\n\n%s\n\nA copy of this reset has been sent to your inbox. Keep it secure and delete it when no longer needed.\n\n- System",
 		displayName, newPw,
 	)
 

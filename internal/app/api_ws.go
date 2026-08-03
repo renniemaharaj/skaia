@@ -16,7 +16,6 @@ import (
 )
 
 // WebSocket & Background Jobs
-
 type jobStatus struct {
 	ID        string    `json:"id"`
 	Type      string    `json:"type"`             // "export-node", "export-site"
@@ -173,7 +172,6 @@ func broadcastStatsAndStorageLoop() {
 }
 
 // Job HTTP endpoints
-
 func apiGetJob(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	jobsMu.RLock()

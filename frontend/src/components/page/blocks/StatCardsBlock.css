@@ -1,5 +1,4 @@
 /* Stat Cards Block */
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -84,7 +83,6 @@
 }
 
 /* Responsive */
-
 @media (max-width: 768px) {
   .stats-section {
     padding: 40px 20px;

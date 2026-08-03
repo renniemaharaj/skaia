@@ -1,5 +1,4 @@
 /* Derived Section Block */
-
 .derived-section-block {
   position: relative;
   padding: 1.5rem 0;
@@ -233,7 +232,6 @@
 }
 
 /* Responsive */
-
 @media (max-width: 640px) {
   .derived-section-grid {
     grid-template-columns: 1fr !important;

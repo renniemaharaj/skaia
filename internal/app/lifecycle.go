@@ -94,7 +94,7 @@ func cmdRemove(name string) {
 	}
 	if err := os.RemoveAll(dir); err != nil {
 		// Likely root-owned files from Docker volume mounts.
-		warn("Cannot remove as current user — retrying with sudo…")
+		warn("Cannot remove as current user - retrying with sudo…")
 		cmd := exec.Command("sudo", "rm", "-rf", dir)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout

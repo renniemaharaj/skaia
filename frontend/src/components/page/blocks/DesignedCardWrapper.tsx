@@ -3,7 +3,7 @@ import type { CardTemplate } from "../types";
 import { migrateCardTemplate } from "../types";
 
 /**
- * Basic CSS sanitization — strips constructs that could execute scripts or
+ * Basic CSS sanitization - strips constructs that could execute scripts or
  * load external resources when injected into a <style> tag.
  */
 function sanitizeCSS(css: string): string {

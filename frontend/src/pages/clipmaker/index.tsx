@@ -9,7 +9,7 @@ import "./isolated-studio.css";
 /**
  * Lives inside TimelineProvider + LivePlayerProvider so useClipExport can use
  * the real Twick context hooks (this is why it can't just be inline in
- * ClipMakerPage — TwickStudio and the export hook must be siblings under the
+ * ClipMakerPage - TwickStudio and the export hook must be siblings under the
  * same providers).
  */
 const StudioWithExport = memo(

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"net/http"
 	"os"
 
 	"github.com/skaia/grengo/internal/app"
@@ -9,8 +8,5 @@ import (
 )
 
 func main() {
-	app.ConfigureAPIHandler(func() http.Handler {
-		return apiPasscodeMiddleware(newAPIRouter(app.Handlers()))
-	})
 	cli.Run(os.Args[1:], app.CLICommands())
 }

@@ -1069,11 +1069,7 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-/*
- * Icon-only button utility.
- *
- * The bare `button` selector above sets padding: 0.6em 1.2em for text buttons.
-/* --- Action Utility Icon Buttons --- */
+/* Icon-only action buttons override the global text button padding. */
 .action-btn {
   background: color-mix(in srgb, var(--bg-secondary) 50%, transparent);
   border: 1px solid transparent;

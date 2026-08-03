@@ -19,8 +19,6 @@ func (b *Bench) StartBench() error {
 		fmt.Printf("[ERROR] Development process already running")
 	}
 	fmt.Printf("[MODE] DEVELOPMENT\n")
-	// benchDir := environ.GetBenchPath()
-
 	developmentCMD, err := b.ExecStartInBenchPrintIO("bench", "start")
 	// Start without waiting (non-blocking)
 	if err != nil {

@@ -73,7 +73,6 @@ func (c *CompileCache) Set(source string, result *CompileResult) {
 }
 
 // ExecuteCache
-
 var executeCachePrefix = datasourceClientPrefix() + "datasource:exec:"
 
 func executeCacheKey(dsID int64) string {

@@ -9,7 +9,6 @@ import (
 )
 
 // Subscription plan repository
-
 type sqlSubscriptionPlanRepository struct{ db database.Executor }
 
 func NewSubscriptionPlanRepository(db database.Executor) SubscriptionPlanRepository {
@@ -88,7 +87,6 @@ func (r *sqlSubscriptionPlanRepository) List() ([]*models.SubscriptionPlan, erro
 }
 
 // Subscription repository
-
 type sqlSubscriptionRepository struct{ db database.Executor }
 
 func NewSubscriptionRepository(db database.Executor) SubscriptionRepository {

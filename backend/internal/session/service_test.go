@@ -13,7 +13,6 @@ import (
 )
 
 // In-memory repository for unit tests
-
 type fakeRepository struct {
 	sessions map[string]*Session
 }
@@ -95,7 +94,6 @@ func (r *fakeRepository) DeleteExpired(_ context.Context) (int64, error) {
 }
 
 // Tests
-
 func newTestService() *Service {
 	svc := &Service{
 		repo:               newFakeRepository(),

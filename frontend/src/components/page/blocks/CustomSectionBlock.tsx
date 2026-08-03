@@ -271,7 +271,7 @@ export const CustomSectionBlock = ({ section, canEdit, onUpdate }: Props) => {
       setCompileCached(true);
       setLastRunAt(cachedAt);
       setDsCacheTTL(cacheTTL);
-      toast.success(`"${selectedCS.name}" — ${rows.length} row(s)`);
+      toast.success(`"${selectedCS.name}" - ${rows.length} row(s)`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       const auth = isAuthError(msg);
@@ -438,7 +438,7 @@ export const CustomSectionBlock = ({ section, canEdit, onUpdate }: Props) => {
                 onChange={e => handleCSChange(Number(e.target.value))}
                 size="sm"
               >
-                <option value="">— Select a saved section —</option>
+                <option value="">- Select a saved section -</option>
                 {customSections.map(cs => (
                   <option key={cs.id} value={cs.id}>
                     {cs.name} ({cs.section_type})
@@ -457,7 +457,7 @@ export const CustomSectionBlock = ({ section, canEdit, onUpdate }: Props) => {
                 onChange={e => handleRowKeyColumnChange(e.target.value)}
                 size="sm"
               >
-                <option value="">— index —</option>
+                <option value="">- index -</option>
                 {availableColumns.map(col => (
                   <option key={col} value={col}>
                     {col}
@@ -493,7 +493,7 @@ export const CustomSectionBlock = ({ section, canEdit, onUpdate }: Props) => {
                   onChange={e => handleComponentChange(e.target.value)}
                   size="sm"
                 >
-                  <option value="">— Saved layout —</option>
+                  <option value="">- Saved layout -</option>
                   {componentsList
                     .filter(component => component.repeatable)
                     .map(component => (

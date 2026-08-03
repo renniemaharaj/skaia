@@ -1,5 +1,4 @@
 /* Feature Grid Block */
-
 .features {
   padding: 80px 40px;
   max-width: 1400px;
@@ -22,7 +21,6 @@
 }
 
 /* Responsive */
-
 @media (max-width: 768px) {
   .features {
     padding: 40px 20px;

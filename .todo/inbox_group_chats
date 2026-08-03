@@ -14,7 +14,7 @@ The inbox currently supports direct messages. It needs to be extended to support
 - Global public channels (group chats are private to invited members).
 
 ## Steps
-1. **Schema Updates**: 
+1. **Schema Updates**:
    - Ensure the inbox system supports multi-user participants. Might need a `chat_threads` and `chat_participants` table with roles (e.g. `member`, `editor`, `admin`).
 2. **Backend API**:
    - Create endpoints to manage group chats (create group, add/remove members, update roles).

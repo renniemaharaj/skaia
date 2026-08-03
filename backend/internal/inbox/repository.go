@@ -17,7 +17,6 @@ func NewRepository(db database.Executor) Repository {
 }
 
 // Conversations
-
 func (r *sqlRepository) GetConversation(id int64) (*models.InboxConversation, error) {
 	c := &models.InboxConversation{}
 	var title sql.NullString
@@ -190,7 +189,6 @@ func (r *sqlRepository) AddParticipant(conversationID, userID int64, role string
 }
 
 // Messages
-
 func (r *sqlRepository) GetMessage(id int64) (*models.InboxMessage, error) {
 	m := &models.InboxMessage{}
 	err := r.db.QueryRow(
@@ -363,7 +361,6 @@ func (r *sqlRepository) DeleteConversation(id, actorID int64) error {
 }
 
 // Blocks
-
 func (r *sqlRepository) BlockUser(blockerID, blockedID int64) error {
 	_, err := r.db.Exec(
 		`INSERT INTO user_blocks (blocker_id, blocked_id)

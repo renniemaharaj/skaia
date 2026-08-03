@@ -1,5 +1,4 @@
 /* Tabbed Editor */
-
 .tabbed-editor {
   border: 1px solid var(--border-color);
   border-radius: 10px;
@@ -8,7 +7,6 @@
 }
 
 /* Tab bar */
-
 .tabbed-editor__tabs {
   display: flex;
   align-items: center;
@@ -102,7 +100,6 @@
 }
 
 /* Add button */
-
 .tabbed-editor__add-btn {
   display: inline-flex;
   align-items: center;
@@ -123,7 +120,6 @@
 }
 
 /* Actions area (right side of tab bar) */
-
 .tabbed-editor__actions {
   display: flex;
   align-items: center;
@@ -133,7 +129,6 @@
 }
 
 /* Diagnostic badges on tabs */
-
 .tabbed-editor__badge {
   display: inline-flex;
   align-items: center;
@@ -158,7 +153,6 @@
 }
 
 /* Diagnostic summary in actions bar */
-
 .tabbed-editor__diag-summary {
   display: flex;
   align-items: center;
@@ -179,7 +173,6 @@
 }
 
 /* Env locked placeholder */
-
 .tabbed-editor__env-locked {
   display: flex;
   flex-direction: column;
@@ -207,7 +200,6 @@
 }
 
 /* Editor wrapper */
-
 .tabbed-editor__editor-wrap {
   overflow: hidden;
 }

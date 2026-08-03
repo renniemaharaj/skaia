@@ -1,5 +1,4 @@
-#
-# Skaia — Shared infrastructure
+# Skaia - Shared infrastructure
 #
 # This compose file runs the shared services: nginx, postgres, redis.
 # Individual backend instances live in backends/<name>/compose.yml and are
@@ -9,7 +8,6 @@
 #   grengo compose up
 #   grengo compose down
 #
-
 services:
   #  Nginx reverse-proxy (shared across all tenants)
   nginx:
@@ -139,7 +137,6 @@ services:
   #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
   #   networks:
   #     - skaia-network
-
 networks:
   skaia-network:
     name: skaia-network

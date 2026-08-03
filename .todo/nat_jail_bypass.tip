@@ -3,9 +3,9 @@
 ## nat_jail_bypass
 
 ### Current Progress
-- **Phase 1: Middleware Auth Evaluation Updates** — ✅ Complete
-- **Phase 2: Durable Bypass Token Issuing** — ✅ Complete
-- **Phase 3: Verification (Dual Role on Single IP)** — ✅ Complete
+- **Phase 1: Middleware Auth Evaluation Updates** - ✅ Complete
+- **Phase 2: Durable Bypass Token Issuing** - ✅ Complete
+- **Phase 3: Verification (Dual Role on Single IP)** - ✅ Complete
 
 ### Next Steps
 - [x] Update `backend/middleware/ratelimit.go` to invoke `next.ServeHTTP` directly when an admin token is found on a jailed IP.

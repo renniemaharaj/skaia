@@ -27,7 +27,7 @@ func StartServer(port string) {
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterGrengoServiceServer(grpcServer, &GrengoServer{})
-	
+
 	reflection.Register(grpcServer)
 
 	log.Printf("Starting gRPC GrengoService server on %s", port)

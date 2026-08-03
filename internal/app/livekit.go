@@ -203,7 +203,7 @@ func recreateLiveKitAndClients(clientNames []string, distDir string) {
 }
 
 func liveKitNginxLocation() string {
-	return `    # ── LiveKit ────────────────────────────────────────────────────────────
+	return `    # LiveKit
     location ^~ /livekit/ {
         proxy_pass         http://127.0.0.1:7880/;
         proxy_http_version 1.1;

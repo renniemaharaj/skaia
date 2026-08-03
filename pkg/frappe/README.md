@@ -5,7 +5,7 @@
 This Docker Compose project sets up a full **Frappe development environment** with automatic app management. You can choose between two implementations:
 
 * **Go-based implementation** (recommended): Provides a foundation for remote control, microservices, extensions, and automations. It powers site/app management, integrates with system services, and applies changes from `instance.json` to the instance. Currently, it does **not** update `instance.json` itself.
-* **Shell script implementation**: Lightweight alternative for direct shell usage. Supports the same rich development workflow and full handling of `instance.json`, but is limited in scope — it will never support advanced features beyond site/app management, as those are reserved for the Go implementation.
+* **Shell script implementation**: Lightweight alternative for direct shell usage. Supports the same rich development workflow and full handling of `instance.json`, but is limited in scope - it will never support advanced features beyond site/app management, as those are reserved for the Go implementation.
 
 ### Services Included
 
@@ -19,7 +19,7 @@ This Docker Compose project sets up a full **Frappe development environment** wi
 
 ## Features
 
-* **Zero manual steps** after first run — sites and apps are provisioned automatically.
+* **Zero manual steps** after first run - sites and apps are provisioned automatically.
 * **App management logic**:
 
   * Apps required by each site are installed automatically.
@@ -56,8 +56,8 @@ The entrypoint (Go or shell) handles site management automatically:
 
 ### Files
 
-* `instance.json` (repo root) — controls deployment mode, sites, apps, and branch.
-* `common_site_config.json` (repo root) — Frappe-specific site settings (redis urls, socketio port, etc.). Copied into `sites/common_site_config.json` inside the bench.
+* `instance.json` (repo root) - controls deployment mode, sites, apps, and branch.
+* `common_site_config.json` (repo root) - Frappe-specific site settings (redis urls, socketio port, etc.). Copied into `sites/common_site_config.json` inside the bench.
 
 ### Example `instance.json` (repo root)
 
@@ -142,7 +142,7 @@ docker compose logs -f frappe
 3. **Access services:**
 
 * Development: `http://localhost:8000`
-* Production: `http://<sitename>` (e.g., `http://frontend`) — edit hosts file as needed.
+* Production: `http://<sitename>` (e.g., `http://frontend`) - edit hosts file as needed.
 
 4. **Stop the environment:**
 
@@ -198,7 +198,7 @@ bench --site frontend migrate
 
 * Database issues: remove `./mysqldata` to reset MariaDB (deletes data).
 * Redis issues: remove Redis volumes and restart containers.
-* Incorrect apps: check `instance.json` — the entrypoint enforces required apps per site.
+* Incorrect apps: check `instance.json` - the entrypoint enforces required apps per site.
 * If `bench new-site` prompts for a password, ensure `MARIADB_ROOT_PASSWORD` is set and visible to the `frappe` service.
 
 ## Volumes

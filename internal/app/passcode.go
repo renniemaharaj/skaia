@@ -17,7 +17,6 @@ func pcodePath() string {
 }
 
 // cmdPasscodeSet hashes a two-part passcode and stores it in the grengo DB.
-//
 // Usage:
 //
 //	grengo passcode set [<p1> <p2>]
@@ -110,7 +109,7 @@ func cmdPasscodeClear() {
 		warn("API access may still be enabled when the grengo DB is available")
 		return
 	}
-	log("Passcode cleared — grengo API access is now disabled")
+	log("Passcode cleared - grengo API access is now disabled")
 }
 
 func storedPasscodePayload() (string, error) {
@@ -157,13 +156,12 @@ func cmdPasscodeStatus() {
 	if passcodeConfigured() {
 		log("Passcode is configured")
 	} else {
-		info("No passcode configured — grengo API is disabled")
+		info("No passcode configured - grengo API is disabled")
 		info("Set one with: grengo passcode set")
 	}
 }
 
 // helpers
-
 // hashPasscode computes SHA-256(salt + p1 + ":" + p2).
 func hashPasscode(salt []byte, p1, p2 string) []byte {
 	h := sha256.New()

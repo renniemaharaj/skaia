@@ -65,7 +65,7 @@ export default function EnvVarsEditor({ datasourceId, value, onChange }: Props) 
       <div className="env-vars-header">
         <div className="env-vars-title">
           <span className="env-vars-label">Environment Variables</span>
-          <span className="env-vars-hint">.env format — injected at runtime</span>
+          <span className="env-vars-hint">.env format - injected at runtime</span>
         </div>
         <div className="env-vars-actions">
           <button

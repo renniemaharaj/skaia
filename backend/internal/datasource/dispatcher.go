@@ -86,7 +86,7 @@ func (d *CompileDispatcher) Stop() {
 
 func (d *CompileDispatcher) Dispatch(job CompileJob) (<-chan Result[CompileResult], bool) {
 	ch := make(chan Result[CompileResult], 1)
-	
+
 	d.manager.B.Push(conveyor.CreateJob(
 		context.Background(),
 		job,
@@ -160,7 +160,7 @@ func NewExecuteDispatcher(cache *ExecuteCache, eventsDispatcher *events.Dispatch
 	workersCount := envIntDefault("DATASOURCE_EXECUTE_WORKERS", workers.Budget(workers.DomainDSExecute))
 	queueLen := envIntDefault("DATASOURCE_EXECUTE_QUEUE", 500)
 	m := conveyor.CreateManager().SetMinWorkers(1).SetMaxWorkers(workersCount).SetSafeQueueLength(queueLen)
-	
+
 	d := &ExecuteDispatcher{
 		manager: m,
 		cache:   cache,

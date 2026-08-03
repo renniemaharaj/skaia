@@ -11,7 +11,6 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({ role, className = "", styl
   // If we're given a string, we optionally look up the color from an atom if it's available,
   // but usually it's better to pass the color if we already have it.
   // Actually, let's just make it simpler:
-
   const roleName = typeof role === "string" ? role : role.name;
   const roleColor = typeof role === "string" ? undefined : role.theme_color || role.glow_color;
 

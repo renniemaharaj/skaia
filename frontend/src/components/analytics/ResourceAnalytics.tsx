@@ -18,7 +18,6 @@ import UserProfileOverlay from "../user/UserProfileOverlay";
 import "./ResourceAnalytics.css";
 
 /* types */
-
 interface ViewStat {
   date: string;
   views: number;
@@ -58,7 +57,6 @@ interface Props {
 }
 
 /* constants */
-
 type Tab = "overview" | "visitors";
 const PAGE_SIZE = 50;
 
@@ -85,7 +83,6 @@ const formatTimestamp = (iso: string) => {
 };
 
 /* component */
-
 export default function ResourceAnalytics({ resource, resourceId, title, onClose }: Props) {
   const [tab, setTab] = useState<Tab>("overview");
   const [data, setData] = useState<StatsResponse | null>(null);
@@ -101,7 +98,6 @@ export default function ResourceAnalytics({ resource, resourceId, title, onClose
   const [identifiedOnly, setIdentifiedOnly] = useState(false);
 
   /* load overview stats */
-
   const loadStats = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -125,7 +121,6 @@ export default function ResourceAnalytics({ resource, resourceId, title, onClose
   }, [loadStats]);
 
   /* load visitors */
-
   const loadVisitors = useCallback(
     async (offset: number) => {
       setVisitorsLoading(true);
@@ -161,7 +156,6 @@ export default function ResourceAnalytics({ resource, resourceId, title, onClose
   }, [tab, identifiedOnly]);
 
   /* keyboard */
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -171,7 +165,6 @@ export default function ResourceAnalytics({ resource, resourceId, title, onClose
   }, [onClose]);
 
   /* derived */
-
   const chartColor = "var(--primary-color)";
   const daily = data?.daily ?? [];
 
@@ -258,7 +251,6 @@ export default function ResourceAnalytics({ resource, resourceId, title, onClose
     return groups;
   };
   /* render */
-
   return (
     <div className="ra-overlay" onClick={onClose}>
       <ContentStandOutCard className="ra-panel" onClick={e => e.stopPropagation()}>
@@ -267,7 +259,7 @@ export default function ResourceAnalytics({ resource, resourceId, title, onClose
           <h3>
             <BarChart3 size={16} />
             {title
-              ? `Analytics — ${title}`
+              ? `Analytics - ${title}`
               : `${resource === "page" ? "Page" : "Thread"} Analytics`}
           </h3>
           <button type="button" className="action-btn" onClick={onClose} title="Close">
@@ -459,7 +451,7 @@ export default function ResourceAnalytics({ resource, resourceId, title, onClose
                           <tr key={`${group.key}-${group.head.id}`}>
                             <td>{formatTimestamp(group.head.created_at)}</td>
                             <td>
-                              <span className="ra-ip">{group.head.ip || "—"}</span>
+                              <span className="ra-ip">{group.head.ip || "-"}</span>
                             </td>
                             <td>
                               <span className="ra-visitor-user">
@@ -486,7 +478,7 @@ export default function ResourceAnalytics({ resource, resourceId, title, onClose
                                         <span className="ra-visitor-group-time">
                                           {formatTimestamp(visit.created_at)}
                                         </span>
-                                        <span className="ra-ip">{visit.ip || "—"}</span>
+                                        <span className="ra-ip">{visit.ip || "-"}</span>
                                         <span>{visitorLabel(visit)}</span>
                                       </div>
                                     ))}

@@ -68,13 +68,10 @@ interface DefconInfo {
   threat_level: DefconThreatLevel;
 }
 
-// ---------------------------------------------------------------------------
 // Memoized sub-components hoisted to module scope.
 // Defined OUTSIDE PresencePanel so React sees a stable component identity
 // across parent re-renders (cursor updates, theme changes, etc.) and never
 // destroys / remounts the existing DOM nodes unnecessarily.
-// ---------------------------------------------------------------------------
-
 interface UserRowProps {
   u: OnlineUser;
   dim?: boolean;
@@ -384,7 +381,7 @@ const PresencePanel = () => {
     }
   }, [defconResetting]);
 
-  // Row actions — wrapped in useMemo so the array reference is stable across
+  // Row actions - wrapped in useMemo so the array reference is stable across
   // renders, allowing React.memo on UserRow to actually skip re-renders.
   // Add future actions here; they appear on hover in declaration order.
   const rowActions: PresenceRowAction[] = useMemo(
@@ -426,7 +423,6 @@ const PresencePanel = () => {
           toast(`${u.user_name || "User"} summoned`, {
             description: `Teleporting them to ${location.pathname}`,
             duration: 4000,
-            icon: "⚡",
           });
         },
       },
@@ -641,7 +637,7 @@ const PresencePanel = () => {
                 slowModeLoading
                   ? "Loading…"
                   : slowModeEnabled
-                    ? `Slow mode on — ${slowModeInterval}s`
+                    ? `Slow mode on - ${slowModeInterval}s`
                     : "Enable slow mode"
               }
             >

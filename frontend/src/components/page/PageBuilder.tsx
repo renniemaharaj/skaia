@@ -85,7 +85,7 @@ function mutationFailureMessage(error: unknown): string {
   if (error instanceof Error && (error as Error & { status?: number }).status === 409) {
     return "This section changed in another editor. The latest version has been reloaded.";
   }
-  return "Failed to save changes — reloading page";
+  return "Failed to save changes - reloading page";
 }
 
 interface PageBuilderProps {
@@ -205,8 +205,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       setIsArmed(!isArmed);
       toast.success(
         isArmed
-          ? "Site disarmed — normal operation restored."
-          : "Site armed — maintenance mode enabled."
+          ? "Site disarmed - normal operation restored."
+          : "Site armed - maintenance mode enabled."
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : `Failed to ${action} the site`;
@@ -239,7 +239,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       pendingSectionsRef.current = null;
 
       await apiRequest("/pages/factory-reset", { method: "POST" });
-      toast.success("Reset complete — all pages removed.");
+      toast.success("Reset complete - all pages removed.");
 
       // Clear local sections so the old content doesn't persist in state.
       setSections([]);
@@ -283,7 +283,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   }, [isAdmin, showToolbar]);
 
   // Remove old handleSetLandingPage, use handleSetHomepage from hook
-
   const handleLikePage = async () => {
     if (!page?.id || !isAuthenticated) return;
     const wasLiked = pageIsLiked;
@@ -456,7 +455,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   // per rapid successive change up to 3500 ms). When any component signals
   // edit mode (rich text, code editor, color picker) the timer is held and
   // restarted 800 ms after the last editor is released.
-
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const editingCountRef = useRef(0);
   const pendingSectionsRef = useRef<PageSection[] | null>(null);

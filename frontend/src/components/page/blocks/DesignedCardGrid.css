@@ -1,5 +1,4 @@
 /* Designed Card Grid */
-
 .dcard-grid {
   display: flex;
   flex-wrap: wrap;
@@ -15,7 +14,6 @@
 }
 
 /* Card widths (flex-based layout) */
-
 .dcard--narrow {
   flex: 0 1 25%;
 }
@@ -37,7 +35,6 @@
 }
 
 /* Card structure */
-
 .dcard {
   display: flex;
   flex-direction: column;
@@ -62,7 +59,6 @@
 }
 
 /* Card style variants */
-
 .dcard--flat {
   box-shadow: none;
   border: 1px solid var(--border-color);
@@ -130,7 +126,6 @@
 }
 
 /* Responsive */
-
 @media (max-width: 768px) {
   .dcard-grid {
     grid-template-columns: 1fr;

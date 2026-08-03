@@ -1,6 +1,6 @@
 import { GripVertical, Plus, Trash2 } from "lucide-react";
 /**
- * ComponentGroupEditor — manages a group of components rendered together per row.
+ * ComponentGroupEditor - manages a group of components rendered together per row.
  *
  * Users can add/remove components, select types, resize widths via controls and
  * mouse drag handles, and map columns to bind points for each component. The

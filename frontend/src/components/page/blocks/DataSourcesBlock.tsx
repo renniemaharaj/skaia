@@ -269,7 +269,7 @@ export const DataSourcesBlock = ({ section, canEdit }: Props) => {
                   <tr key={ds.id}>
                     <td className="data-sources-id">{ds.id}</td>
                     <td className="data-sources-name">{ds.name}</td>
-                    <td className="data-sources-desc">{ds.description || "—"}</td>
+                    <td className="data-sources-desc">{ds.description || "-"}</td>
                     <td className="data-sources-date">
                       {new Date(ds.updated_at).toLocaleDateString()}
                     </td>

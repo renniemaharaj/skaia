@@ -1,19 +1,11 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-# ==========================
 # Defaults
-# ==========================
 PORT=${SUPERSET_PORT:-8088}
 WORKERS=${WORKERS:-4}
 
-# export SUPERSET_CONFIG_PATH=/app/superset_config.py
-# export FLASK_ENV=production
-# export SUPERSET_ENV=production
-
-# ==========================
 # Bootstrap Superset
-# ==========================
 bootstrap() {
   echo "++++++----- Begin Running DB migrations -----++++++"
   superset db upgrade
@@ -32,27 +24,9 @@ bootstrap() {
     --password "${SUPERSET_ADMIN_PASSWORD:-admin}" || true
 }
 
-# # ==========================
-# # Install drivers if needed
-# # ==========================
-# install_postgres_drivers() {
-#   if [[ "$DATABASE_DIALECT" == postgres* ]] && [ "$(whoami)" = "root" ]; then
-#     echo "++++++----- Installing Postgres requirements -----++++++"
-#     if command -v uv > /dev/null 2>&1; then
-#       uv pip install -e .[postgres]
-#     else
-#       pip install -e .[postgres]
-#     fi
-#     echo "++++++----- Postgres requirements installed -----++++++"
-#   fi
-# }
-
-# ==========================
 # Entrypoint command switch
-# ==========================
 case "$1" in
   app)
-    # install_postgres_drivers
     bootstrap
     echo "++++++----- Starting Superset with Gunicorn -----++++++"
     exec gunicorn \
@@ -66,13 +40,11 @@ case "$1" in
       "superset.app:create_app()"
     ;;
   worker)
-    # install_postgres_drivers
     bootstrap
     echo "++++++----- Starting Celery worker -----++++++"
     exec celery --app=superset.tasks.celery_app:app worker -O fair -l INFO --concurrency=${CELERYD_CONCURRENCY:-2}
     ;;
   beat)
-    # install_postgres_drivers
     bootstrap
     echo "++++++----- Starting Celery beat -----++++++"
     rm -f /tmp/celerybeat.pid

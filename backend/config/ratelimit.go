@@ -6,15 +6,13 @@ import "time"
 // Adjust these values to match your traffic profile; nothing else needs to change.
 var RateLimit = rateLimitConfig{
 
-	// ── Tier 1: Jail ─────────────────────────────────────────────────────────
 	// How long a jailed IP stays blocked before being automatically released.
 	JailTTL: 5 * time.Minute,
 
 	// How long an admin user can bypass an IP jail before needing to re-auth
 	BypassTTL: 1 * time.Hour,
 
-	// ── Tier 2: Trusted citizens ─────────────────────────────────────────────
-	// Maximum requests per minute for a trusted IP (hard ceiling — not bypassed
+	// Maximum requests per minute for a trusted IP (hard ceiling - not bypassed
 	// entirely, because trusted machines can be compromised).
 	TrustedLimitPerMin: 1500,
 
@@ -23,7 +21,6 @@ var RateLimit = rateLimitConfig{
 	// drops back to Purgatory on their next visit.
 	TrustedTTL: 24 * time.Hour,
 
-	// ── Tier 3: Purgatory (unknown IPs) ──────────────────────────────────────
 	// Starting allowance for a brand-new IP with no history.
 	BaseLimitPerMin: 256,
 
@@ -36,37 +33,31 @@ var RateLimit = rateLimitConfig{
 	// many requests per minute so a brand-new legitimate user isn't locked out.
 	MinFloorPerMin: 60,
 
-	// ── Graduation thresholds ────────────────────────────────────────────────
 	// A Purgatory IP graduates to Trusted after this many requests WITHOUT ever
-	// hitting the rate limiter — they must complete all of these cleanly.
+	// hitting the rate limiter - they must complete all of these cleanly.
 	GraduationRequests: 1280,
 
 	// The window in which those GraduationRequests must occur.
 	GraduationWindow: 10 * time.Minute,
 
-	// ── Sliding window (rate counter) ────────────────────────────────────────
 	// The window size used for per-IP request counting.
-	// Changing this also changes what "per minute" means for the limits above —
+	// Changing this also changes what "per minute" means for the limits above -
 	// keep them consistent (both in seconds, or both as time.Duration).
 	CounterWindow: 1 * time.Minute,
 
-	// ── Cloudflare ───────────────────────────────────────────────────────────
 	// Your Cloudflare Account ID (from the dashboard URL: /accounts/<ID>).
 	CloudflareAccountID: "", // set via CF_ACCOUNT_ID env var at runtime
 
 	// The Firewall Rules API endpoint template.
-	// Filled in by cloudflare.go — you don't touch this directly.
+	// Filled in by cloudflare.go - you don't touch this directly.
 	CloudflareAPIBase: "https://api.cloudflare.com/client/v4",
 
 	// Timeout for the async Cloudflare push goroutine.
-	// Kept short — this must never block your hot path.
+	// Kept short - this must never block your hot path.
 	CloudflarePushTimeout: 3 * time.Second,
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Internal type — edit the var above, not this struct.
-// ─────────────────────────────────────────────────────────────────────────────
-
+// Internal type - edit the var above, not this struct.
 type rateLimitConfig struct {
 	JailTTL               time.Duration
 	BypassTTL             time.Duration

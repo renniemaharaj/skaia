@@ -13,7 +13,6 @@
  * Exit code 0 on success (even with diagnostics - caller decides severity).
  * Exit code 1 on fatal errors (e.g. missing TS module).
  */
-
 const ts = require("typescript");
 
 function readStdin() {

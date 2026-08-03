@@ -3,7 +3,7 @@ import { apiRequest } from "../../utils/api";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { type MediaScrapeJob, MediaViewer } from "../mediascraper/MediaViewer";
 /**
- * ComponentRenderer — renders a single registered component using bound row data.
+ * ComponentRenderer - renders a single registered component using bound row data.
  *
  * Given a ComponentDefinition, a bindings map, and a raw data row, it resolves
  * each bind-point value and renders the correct visual for the component type.
@@ -12,7 +12,6 @@ import type { ComponentDefinition } from "./types";
 import "./ComponentRenderer.css";
 
 /*  helpers  */
-
 type Resolved = Record<string, unknown>;
 type StyleMap = Record<string, React.CSSProperties | undefined>;
 
@@ -56,7 +55,6 @@ function resolveStyles(
 }
 
 /*  primitive renderers  */
-
 function PrimitiveDiv({ styles }: { styles: StyleMap }) {
   return <div className="cr-div" style={styles.root} />;
 }
@@ -169,7 +167,6 @@ function PrimitiveIcon({ data, styles }: { data: Resolved; styles: StyleMap }) {
 }
 
 /*  compound renderers  */
-
 function CompoundCard({
   data,
   styles,
@@ -403,7 +400,6 @@ function CompoundProfile({
 }
 
 /*  public API  */
-
 export interface ComponentRendererProps {
   component: ComponentDefinition;
   bindings: Record<string, string>;

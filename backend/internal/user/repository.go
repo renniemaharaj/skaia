@@ -622,7 +622,6 @@ func (r *sqlRepository) RemovePermissionFromRole(roleID int64, permissionName st
 }
 
 // Email verification
-
 func (r *sqlRepository) CreateEmailVerificationToken(userID int64, token string, expiresAt interface{}) error {
 	_, err := r.db.Exec(
 		`INSERT INTO email_verification_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)`,
@@ -657,7 +656,6 @@ func (r *sqlRepository) DeleteEmailVerificationTokens(userID int64) error {
 }
 
 // Password reset
-
 func (r *sqlRepository) CreatePasswordResetToken(userID int64, token string, expiresAt interface{}) error {
 	_, err := r.db.Exec(
 		`INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)`,

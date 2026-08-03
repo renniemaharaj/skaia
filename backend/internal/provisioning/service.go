@@ -185,7 +185,6 @@ func (s *service) ProvisionInstance(ctx context.Context, clientID int64, req Pro
 	// If the number of sites on the active bench >= MaxSitesPerBench,
 	// we spin up a new bench cluster container/deployment and assign its ID.
 	// For now, we'll store the assigned cluster ID in the config payload.
-
 	// 5. Dispatch the job to conveyorbelt
 	type jobPayload struct {
 		ID            int64
@@ -207,7 +206,7 @@ func (s *service) ProvisionInstance(ctx context.Context, clientID int64, req Pro
 		}()
 		p := param.(jobPayload)
 
-		l := logger.New().Prefix(fmt.Sprintf("%d", p.ID)).JsonMode(true).Subscribable(true)
+		l := logger.NewLogger().Prefix(fmt.Sprintf("%d", p.ID)).JsonMode(true).Subscribable(true)
 		s.logGroup.Join(l)
 		defer s.logGroup.Remove(l)
 
@@ -293,7 +292,7 @@ func (s *service) StartInstance(id int64) error {
 		return err
 	}
 	if isFrappe {
-		return errors.New("Not supported for multi-tenant")
+		return errors.New("not supported for multi-tenant")
 	}
 
 	dir, err := s.findInstanceDir(id)
@@ -323,7 +322,7 @@ func (s *service) StopInstance(id int64) error {
 		return err
 	}
 	if isFrappe {
-		return errors.New("Not supported for multi-tenant")
+		return errors.New("not supported for multi-tenant")
 	}
 
 	dir, err := s.findInstanceDir(id)
@@ -353,7 +352,7 @@ func (s *service) RestartInstance(id int64) error {
 		return err
 	}
 	if isFrappe {
-		return errors.New("Not supported for multi-tenant")
+		return errors.New("not supported for multi-tenant")
 	}
 
 	dir, err := s.findInstanceDir(id)
@@ -376,7 +375,7 @@ func (s *service) RestartInstance(id int64) error {
 	})
 
 	// Log to websocket
-	l := logger.New().Prefix(fmt.Sprintf("%d", id)).JsonMode(true).Subscribable(true)
+	l := logger.NewLogger().Prefix(fmt.Sprintf("%d", id)).JsonMode(true).Subscribable(true)
 	s.logGroup.Join(l)
 	defer s.logGroup.Remove(l)
 	l.Info("Instance restarted successfully")
@@ -502,7 +501,7 @@ func (s *service) frappeSiteName(id int64) string {
 }
 
 func (s *service) InstallApp(id int64, appName string) error {
-	l := logger.New().Prefix(fmt.Sprintf("%d", id)).JsonMode(true).Subscribable(true)
+	l := logger.NewLogger().Prefix(fmt.Sprintf("%d", id)).JsonMode(true).Subscribable(true)
 	s.logGroup.Join(l)
 	defer s.logGroup.Remove(l)
 
@@ -549,7 +548,7 @@ func (s *service) InstallApp(id int64, appName string) error {
 }
 
 func (s *service) UninstallApp(id int64, appName string) error {
-	l := logger.New().Prefix(fmt.Sprintf("%d", id)).JsonMode(true).Subscribable(true)
+	l := logger.NewLogger().Prefix(fmt.Sprintf("%d", id)).JsonMode(true).Subscribable(true)
 	s.logGroup.Join(l)
 	defer s.logGroup.Remove(l)
 

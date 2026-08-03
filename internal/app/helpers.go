@@ -41,7 +41,7 @@ func ensureRootEnv() {
 	}
 
 	fmt.Println()
-	info("No root %s.env%s found — let's set up shared database credentials.", colorBold, colorReset)
+	info("No root %s.env%s found - let's set up shared database credentials.", colorBold, colorReset)
 	fmt.Println()
 
 	pgUser := prompt("PostgreSQL user", "skaia", false)

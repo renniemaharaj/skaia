@@ -56,7 +56,7 @@ func ClearCache() {
 		return
 	}
 	ctx := context.Background()
-	
+
 	var cursor uint64
 	for {
 		var keys []string

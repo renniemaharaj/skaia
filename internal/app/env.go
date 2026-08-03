@@ -128,7 +128,7 @@ func syncEnvDefaults(name string) int {
 			content += "\n"
 		}
 
-		content += fmt.Sprintf("\n# ── New defaults added by grengo migrate – %s ──\n", time.Now().Format(time.RFC3339))
+		content += fmt.Sprintf("\n# New defaults added by grengo migrate: %s\n", time.Now().Format(time.RFC3339))
 
 		lastSection := ""
 		for _, d := range toAdd {
@@ -235,7 +235,7 @@ func syncEnvFileDefaults(envFile string, defaults []envDefaultEntry, optionalKey
 			content += "\n"
 		}
 
-		content += fmt.Sprintf("\n# ── New defaults added by grengo migrate – %s ──\n", time.Now().Format(time.RFC3339))
+		content += fmt.Sprintf("\n# New defaults added by grengo migrate: %s\n", time.Now().Format(time.RFC3339))
 
 		lastSection := ""
 		for _, d := range toAdd {
@@ -612,9 +612,4 @@ func removeEnvVals(file string, keys ...string) (int, error) {
 // clientDir returns the path to a client directory.
 func clientDir(name string) string {
 	return filepath.Join(backendsDir(), name)
-}
-
-// formatListRow formats a table row for the list command.
-func formatListRow(name, port, status, running, domains string) string {
-	return fmt.Sprintf("%-20s %-8s %-22s %-22s %s", name, port, status, running, domains)
 }

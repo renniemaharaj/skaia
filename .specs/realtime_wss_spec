@@ -165,7 +165,7 @@ shared mutations converge through WS:
 - Store cart updates target the owner; catalog updates broadcast.
 - Page updates exclude the sender when the HTTP response is already authoritative.
 - Typed page mutations propagate only to `page:{id}` subscribers and carry page
-  identity, affected section IDs/revisions, or theme revision—never documents.
+  identity, affected section IDs/revisions, or theme revision-never documents.
 - Interactive response mutations and landing-page changes use content-free partial
   page invalidations. Clients refetch through REST; full `pages.content` documents
   are never broadcast because they can contain authorization-scoped records.

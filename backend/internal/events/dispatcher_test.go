@@ -66,7 +66,7 @@ func TestFnPanicRecovery(t *testing.T) {
 	case <-done:
 		// Worker survived the panic and processed the next job.
 	case <-time.After(5 * time.Second):
-		t.Fatal("timed out waiting for job after panic — worker did not recover")
+		t.Fatal("timed out waiting for job after panic - worker did not recover")
 	}
 	d.Stop()
 }

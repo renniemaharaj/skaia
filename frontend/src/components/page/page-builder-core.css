@@ -1,10 +1,5 @@
-/* ══════════════════════════════════════════════════════════════════════════
-   Page Builder Core - infrastructure styles for the section-based editor.
-   Imported by PageBuilder.tsx + BlockRenderer.tsx.
-   ══════════════════════════════════════════════════════════════════════════ */
-
+/* Infrastructure styles for the section-based editor. */
 /* Variant Cycler */
-
 .pb-variant-cycler {
   display: inline-flex;
   align-items: center;
@@ -27,7 +22,6 @@
 }
 
 /* Shared section header (used by feature_grid, card_group, etc.) */
-
 .pb-section-unsupported {
   display: flex;
   align-items: center;
@@ -84,7 +78,6 @@
 }
 
 /* Edit controls */
-
 .pb-inline-input {
   background: transparent;
   border: 1px dashed var(--border-color);
@@ -119,7 +112,6 @@
 }
 
 /* Icon picker */
-
 .pb-icon-picker {
   position: relative;
   display: inline-block;
@@ -173,7 +165,6 @@
 }
 
 /* Section toolbar */
-
 .pb-section-toolbar {
   display: flex;
   flex-direction: column;
@@ -230,7 +221,6 @@
 }
 
 /* Last edited by badge */
-
 .pb-last-edited-badge {
   display: inline-flex;
   align-items: center;
@@ -271,7 +261,6 @@
 }
 
 /* Layout wrapper for all sections */
-
 .pb-section-layout {
   position: relative;
 }
@@ -537,7 +526,6 @@
 }
 
 /* Section move buttons */
-
 .pb-section-move-btns {
   display: inline-flex;
   gap: 2px;
@@ -556,7 +544,6 @@
 }
 
 /* Add / delete item buttons */
-
 .pb-add-item-btn {
   display: flex;
   flex-direction: column;
@@ -602,7 +589,6 @@
 }
 
 /* Generic action button (image picker, etc.) */
-
 .pb-action-btn {
   background: color-mix(in srgb, var(--bg-color) 80%, transparent);
   border: 1px solid var(--border-color);
@@ -629,7 +615,6 @@
 }
 
 /* Add section */
-
 .pb-add-section {
   display: flex;
   flex-direction: column;
@@ -752,7 +737,6 @@
 }
 
 /* Spinner */
-
 @keyframes pb-spin {
   to {
     transform: rotate(360deg);
@@ -764,7 +748,6 @@
 }
 
 /* Page builder skeleton */
-
 .skeleton-pb-hero {
   height: 500px;
   display: flex;
@@ -848,7 +831,6 @@
 }
 
 /* Color Picker / Swatch */
-
 .pb-color-picker-wrap {
   position: relative;
   display: inline-flex;
@@ -869,7 +851,6 @@
 }
 
 /* Section margins & spacing controls */
-
 .section-spacing-capture {
   display: inline-flex;
   align-items: center;
@@ -1011,9 +992,7 @@
 }
 
 /* Section animation classes (scroll-triggered) */
-
 /* Sections with animation start invisible until scrolled into view */
-
 /* Section is hidden before animation-in, or animating out */
 .pb-section-layout[data-animation]:not([data-in-view]):not([data-out-view]) {
   opacity: 0;
@@ -1234,7 +1213,6 @@
 }
 
 /* Animation intensity picker */
-
 .section-intensity-control {
   display: inline-flex;
   align-items: stretch;
@@ -1274,7 +1252,6 @@
 }
 
 /* Save status pill */
-
 .page-save-bar {
   position: fixed;
   bottom: 1.25rem;
@@ -1339,7 +1316,6 @@
 }
 
 /* Responsive overrides for shared section header */
-
 @media (max-width: 768px) {
   .section-header h2 {
     font-size: 1.8rem;

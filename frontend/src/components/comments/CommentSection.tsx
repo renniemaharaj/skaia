@@ -112,7 +112,7 @@ const CommentSection = ({
           {slowModeEnabled && !showSlowModeControl ? (
             <span className="comment-slowmode-indicator">
               Slow mode active
-              {slowModeInterval ? ` — ${slowModeInterval}s` : ""}
+              {slowModeInterval ? ` - ${slowModeInterval}s` : ""}
             </span>
           ) : null}
           {showSlowModeControl ? (

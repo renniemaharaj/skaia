@@ -10,7 +10,6 @@ import (
 )
 
 // Category repository
-
 type sqlCategoryRepository struct{ db database.Executor }
 
 func NewCategoryRepository(db database.Executor) CategoryRepository {
@@ -135,7 +134,6 @@ func (r *sqlCategoryRepository) Search(query string) ([]*models.ForumCategory, e
 }
 
 // Thread repository
-
 type sqlThreadRepository struct{ db database.Executor }
 
 func NewThreadRepository(db database.Executor) ThreadRepository {
@@ -628,7 +626,6 @@ func (r *sqlThreadRepository) GetThreadContributorsUsers(threadID int64, limit, 
 }
 
 // Comment repository
-
 type sqlCommentRepository struct{ db database.Executor }
 
 func NewCommentRepository(db database.Executor) CommentRepository {

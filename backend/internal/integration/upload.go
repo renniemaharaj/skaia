@@ -62,9 +62,8 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 
 	// upload/banner_requires_auth
 	s.Add("upload/banner_requires_auth", func(t *T) {
-		body, ct := buildMultipartImage(t, "banner.png", makePNG(800, 350))
 		// Use "banner" field name as the handler expects.
-		body, ct = buildMultipartRaw(t, "banner", "banner.png", encodePNG(makePNG(800, 350)))
+		body, ct := buildMultipartRaw(t, "banner", "banner.png", encodePNG(makePNG(800, 350)))
 		resp := doMultipart(s, "POST", "/api/upload/banner", body, ct, nil)
 		t.Require(resp.StatusCode == 401,
 			"banner upload without auth must return 401, got %d", resp.StatusCode)
@@ -174,7 +173,6 @@ func RegisterUploadTests(s *Suite, db *sql.DB) {
 }
 
 // helpers
-
 // makePNG creates an in-memory RGBA image of width×height.
 func makePNG(width, height int) *image.RGBA {
 	img := image.NewRGBA(image.Rect(0, 0, width, height))

@@ -5,15 +5,15 @@
 Identified during the 2026-06-19 auditor run. Three code-quality issues remain after the initial
 batch of hot-fixes:
 
-1. **IP extraction is duplicated in 4 places** — `realIP`, `extractRealIP`, `ClientIP`, and
+1. **IP extraction is duplicated in 4 places** - `realIP`, `extractRealIP`, `ClientIP`, and
    `ssrRealIP` are independent implementations of identical logic. Critically, `events.ClientIP`
    does **not** check `CF-Connecting-IP`, so Cloudflare-proxied requests log Cloudflare's edge IP
    rather than the real client IP in the audit/event log.
 
-2. **Handler bypasses service layer** — `auth/handlers.go:121` calls `h.svc.repo.GetBackupCodes`
+2. **Handler bypasses service layer** - `auth/handlers.go:121` calls `h.svc.repo.GetBackupCodes`
    directly, skipping the public service API and coupling the HTTP layer to the repository.
 
-3. **`OptionalJWTAuthMiddleware` is a documented no-op** passed to 6 `Mount` call-sites — wastes
+3. **`OptionalJWTAuthMiddleware` is a documented no-op** passed to 6 `Mount` call-sites - wastes
    a function call per request and misleads readers into thinking optional-auth is handled there.
 
 ## Goal
@@ -30,12 +30,12 @@ batch of hot-fixes:
 ## Steps
 
 1. Create `backend/internal/utils/ip.go` with a single exported `RealIP(r *http.Request) string`
-   that checks CF-Connecting-IP → X-Forwarded-For (first element) → X-Real-IP → RemoteAddr.
+   that checks CF-Connecting-IP -> X-Forwarded-For (first element) -> X-Real-IP -> RemoteAddr.
 2. Replace all 4 existing implementations with calls to `utils.RealIP`:
-   - `backend/middleware/ratelimit.go` → `realIP` / `RealIP`
-   - `backend/internal/middleware/ip_hopping.go` → `extractRealIP`
-   - `backend/internal/events/ip.go` → `ClientIP`
-   - `backend/internal/ssr/handler.go` → `ssrRealIP`
+   - `backend/middleware/ratelimit.go` -> `realIP` / `RealIP`
+   - `backend/internal/middleware/ip_hopping.go` -> `extractRealIP`
+   - `backend/internal/events/ip.go` -> `ClientIP`
+   - `backend/internal/ssr/handler.go` -> `ssrRealIP`
 3. Fix the layering violation: replace `h.svc.repo.GetBackupCodes(...)` in
    `auth/handlers.go:121` with `h.svc.GetBackupCodes(r.Context(), user.ID)`.
 4. Delete `OptionalJWTAuthMiddleware` from `internal/middleware/auth.go` and remove all
