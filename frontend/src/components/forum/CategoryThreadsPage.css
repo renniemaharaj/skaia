@@ -1,0 +1,116 @@
+.category-threads-page__toggle-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.4rem 0.65rem;
+}
+
+.category-threads-page__toggle {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 2.75rem;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.category-threads-page__directory {
+  max-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: max-height 0.55s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.55s;
+}
+
+.category-threads-page__directory.is-expanded {
+  max-height: 2000px;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.forum-container.category-threads-page {
+  padding-top: 1rem;
+}
+
+.category-threads-page__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.category-threads-page__header-left {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.category-threads-page__identity {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.category-threads-page__identity-icon {
+  flex-shrink: 0;
+  color: var(--primary-color);
+}
+
+.category-threads-page__identity-copy {
+  min-width: 0;
+}
+
+.forum-header .category-threads-page__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  overflow-wrap: anywhere;
+}
+
+.forum-header .category-threads-page__description {
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.category-threads-page__header-actions {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.category-threads-page__header-actions .forum-search-field {
+  max-width: 100%;
+}
+
+@media (max-width: 760px) {
+  .category-threads-page__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .category-threads-page__header-left {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .category-threads-page__header-actions,
+  .category-threads-page__header-actions .forum-search-field,
+  .category-threads-page__header-actions .filter-bar__search {
+    width: 100%;
+  }
+
+  .category-threads-page__header-actions .filter-bar__search {
+    min-width: 0;
+  }
+
+  .category-threads-page__header-actions .filter-bar__controls {
+    justify-content: flex-end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-threads-page__directory {
+    transition: none;
+  }
+}

@@ -118,6 +118,12 @@ update specs and .tip with durable facts
 
 ## Last Run Remarks
 
+- Completed `forum_category_mobile_layout`: the category thread header no longer
+  lets its non-shrinking search controls compress the category identity on real
+  narrow mobile viewports. The identity and controls now occupy separate mobile
+  rows, long text wraps safely, and the optional forum directory starts collapsed
+  without a timed layout shift. All 155 frontend tests, lint, TypeScript, build,
+  and diff checks pass.
 - Completed `page_builder_editor_responsive_controls`: the Appearance editor now
   uses shared Select controls with working nested portals and visible-trigger
   focus, while TipTap drag controls survive global button styles on desktop and

@@ -14,15 +14,14 @@ import { confirmDestructiveAction } from "../ui/Prompt";
 import CategoryThreadsFeed from "./CategoryThreadsFeed";
 import { Forum } from "./Forum";
 
-import "./NewThread.css";
-
+import "./CategoryThreadsPage.css";
 import "./IconButton.css";
 
 const CategoryThreadsPage = () => {
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
   const categories = useAtomValue(forumCategoriesAtom);
-  const [forumExpanded, setForumExpanded] = useState(true);
+  const [forumExpanded, setForumExpanded] = useState(false);
 
   const category = categories.find(c => String(c.id) === String(categoryId));
   const currentUser = useAtomValue(currentUserAtom);
@@ -39,12 +38,6 @@ const CategoryThreadsPage = () => {
     categoryId,
     searchQuery: debouncedSearch,
   });
-
-  // Show the forum briefly on mount, then retract so the transition is visible
-  useEffect(() => {
-    const t = setTimeout(() => setForumExpanded(false), 700);
-    return () => clearTimeout(t);
-  }, []);
 
   const canDeleteCategory =
     currentUser?.permissions?.includes("forum.category-delete") || guestSandboxMode;
@@ -88,80 +81,41 @@ const CategoryThreadsPage = () => {
 
   return (
     <>
-      {/* Toggle bar */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          padding: "6px 10px",
-        }}
-      >
+      <div className="category-threads-page__toggle-row">
         <button
+          className="action-btn category-threads-page__toggle"
           onClick={() => setForumExpanded(v => !v)}
           title={forumExpanded ? "Collapse forum" : "Expand forum"}
-          style={{
-            borderRadius: "50%",
-            aspectRatio: "1",
-            padding: "6px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            transition: "color 0.2s ease, background 0.2s ease",
-          }}
+          aria-controls="category-threads-forum-directory"
+          aria-expanded={forumExpanded}
         >
           {forumExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
         </button>
       </div>
 
-      {/* Collapsible Forum */}
       <div
-        style={{
-          overflow: "hidden",
-          maxHeight: forumExpanded ? "2000px" : "0px",
-          transition: "max-height 0.55s cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
+        id="category-threads-forum-directory"
+        className={`category-threads-page__directory${forumExpanded ? " is-expanded" : ""}`}
+        aria-hidden={!forumExpanded}
       >
         <Forum />
       </div>
-      <div className="forum-container" style={{ paddingTop: forumExpanded ? 0 : "40px" }}>
-        {/* Header and Controls */}
-        <div
-          className="forum-header"
-          style={{
-            marginBottom: "24px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-            flexWrap: "wrap",
-            gap: "16px",
-          }}
-        >
-          <div className="forum-header-left" style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <MessageSquare size={28} style={{ color: "var(--primary-color)", flexShrink: 0 }} />
-              <div>
-                <h1 style={{ margin: 0, fontSize: "2rem", color: "var(--text-primary)" }}>
+      <div className="forum-container category-threads-page">
+        <div className="forum-header category-threads-page__header">
+          <div className="category-threads-page__header-left">
+            <div className="category-threads-page__identity">
+              <MessageSquare size={28} className="category-threads-page__identity-icon" />
+              <div className="category-threads-page__identity-copy">
+                <h1 className="category-threads-page__title">
                   {category?.name ?? `Category #${categoryId}`}
                 </h1>
                 {category?.description && (
-                  <p
-                    style={{
-                      margin: "4px 0 0",
-                      color: "var(--text-secondary)",
-                      fontSize: "0.95rem",
-                    }}
-                  >
-                    {category.description}
-                  </p>
+                  <p className="category-threads-page__description">{category.description}</p>
                 )}
               </div>
             </div>
           </div>
-          <div
-            className="forum-header-actions"
-            style={{ display: "flex", gap: "10px", alignItems: "center", flexShrink: 0 }}
-          >
+          <div className="category-threads-page__header-actions">
             <FilterBar
               compact
               searchValue={searchQuery}
@@ -198,7 +152,6 @@ const CategoryThreadsPage = () => {
           </div>
         </div>
 
-        {/* Thread feed */}
         <div className="forums-grid" style={{ display: "block" }}>
           <CategoryThreadsFeed
             threads={threads}

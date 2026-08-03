@@ -107,6 +107,11 @@ operational policies.
 
 ## Last Run Remarks
 
+- Created and completed `forum_category_mobile_layout` after tracing the
+  real-device category corruption to a non-shrinking toolbar sharing a flex row
+  with a title explicitly allowed to shrink to zero. The focused worker handoff
+  owns route-scoped responsive layout, removal of the automatic mount shift, and
+  regression/quality gates without changing shared forum contracts.
 - Created `page_builder_editor_responsive_controls` after diagnosing the dark-mode
   Appearance select arrows and editable rich-text desktop/mobile layout. The
   focused worker handoff reuses the shared Select primitive, preserves nested
