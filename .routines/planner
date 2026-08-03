@@ -103,9 +103,19 @@ operational policies.
 
 ## Last Ran
 
-- 2026-07-30
+- 2026-08-02
 
 ## Last Run Remarks
+
+- Extended `multi_tenant_seo_origin_integrity` rather than creating an
+  overlapping todo after the 2026-08-02 auditor/correctness review of commits
+  `57f3dcb3` and `c4381994`. The new blocking phase covers transient template and
+  database/config failure classification, hot-shipped index refresh,
+  `INDEX_FILE_PATH`, correct `503` semantics, authoritative negative caching,
+  deterministic handler/cache tests, restoration of the secret-bearing
+  `backends/` Docker exclusion, and pre-rollout quality gates.
+
+## Previous Run Remarks (2026-07-30)
 
 - Created `multi_tenant_seo_origin_integrity` after reproducing production
   cross-host SEO contamination across TheWriterCo and CueballCraft. The review

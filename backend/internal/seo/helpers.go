@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"net/http"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	icfg "github.com/skaia/backend/internal/config"
 	ictx "github.com/skaia/backend/internal/ctx"
 	ijwt "github.com/skaia/backend/internal/jwt"
 	"github.com/skaia/backend/internal/streammeta"
@@ -107,242 +107,319 @@ func jailedWithoutBypass(ctx context.Context, r *http.Request, rdb *redis.Client
 	return active <= 0
 }
 
-func getCachedMeta(ctx context.Context, rdb *redis.Client, key string) (CachedMeta, bool) {
+func getCachedMetaResult(ctx context.Context, rdb *redis.Client, key string) (CachedMeta, bool, error) {
 	var meta CachedMeta
 	if rdb == nil {
-		return meta, false
+		return meta, false, nil
 	}
 
 	cached, err := rdb.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return meta, false, nil
+	}
 	if err != nil {
-		return meta, false
+		return meta, false, err
 	}
 
-	if json.Unmarshal([]byte(cached), &meta) != nil {
-		return meta, false
+	if err := json.Unmarshal([]byte(cached), &meta); err != nil {
+		return meta, false, err
 	}
 	if meta.Version != cachedMetaVersion {
-		return CachedMeta{}, false
+		return CachedMeta{}, false, nil
 	}
 
-	return meta, true
+	return meta, true, nil
 }
 
-func setCachedMeta(ctx context.Context, rdb *redis.Client, key string, meta CachedMeta, ttl time.Duration) {
+func setCachedMeta(ctx context.Context, rdb *redis.Client, key string, meta CachedMeta, ttl time.Duration) error {
 	if rdb == nil {
-		return
+		return nil
 	}
 	b, err := json.Marshal(meta)
 	if err != nil {
-		return
+		return err
 	}
 
-	_ = rdb.Set(ctx, key, b, ttl).Err()
+	return rdb.Set(ctx, key, b, ttl).Err()
 }
 
-func loadSiteConfig(cfgSvc *icfg.Service) (models.Branding, models.SEO) {
+func loadSiteConfig(cfgSvc configProvider) (models.Branding, models.SEO, error) {
 	var branding models.Branding
 	var seo models.SEO
-
-	if sc, err := cfgSvc.GetConfig("branding"); err == nil && sc != nil {
-		_ = json.Unmarshal([]byte(sc.Value), &branding)
+	if cfgSvc == nil {
+		return branding, seo, errors.New("SEO config provider is unavailable")
 	}
 
-	if sc, err := cfgSvc.GetConfig("seo"); err == nil && sc != nil {
-		_ = json.Unmarshal([]byte(sc.Value), &seo)
+	if sc, err := cfgSvc.GetConfig("branding"); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return branding, seo, fmt.Errorf("load branding: %w", err)
+	} else if err == nil && sc != nil {
+		if err := json.Unmarshal([]byte(sc.Value), &branding); err != nil {
+			return branding, seo, fmt.Errorf("decode branding: %w", err)
+		}
 	}
 
-	return branding, seo
+	if sc, err := cfgSvc.GetConfig("seo"); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return branding, seo, fmt.Errorf("load SEO config: %w", err)
+	} else if err == nil && sc != nil {
+		if err := json.Unmarshal([]byte(sc.Value), &seo); err != nil {
+			return branding, seo, fmt.Errorf("decode SEO config: %w", err)
+		}
+	}
+
+	return branding, seo, nil
 }
 
-func resolveRouteSEO(db *sql.DB, r *http.Request) routeSEO {
+type rowScanner interface {
+	Scan(dest ...any) error
+}
+
+type rowQueryer interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) rowScanner
+}
+
+type sqlQueryer struct{ db *sql.DB }
+
+func (q sqlQueryer) QueryRowContext(ctx context.Context, query string, args ...any) rowScanner {
+	if q.db == nil {
+		return errorRow{err: errors.New("SEO database is unavailable")}
+	}
+	return q.db.QueryRowContext(ctx, query, args...)
+}
+
+type errorRow struct{ err error }
+
+func (r errorRow) Scan(...any) error { return r.err }
+
+func resolveRouteSEO(ctx context.Context, db rowQueryer, r *http.Request) seoResolution {
 	path := r.URL.Path
 
 	if match := threadRx.FindStringSubmatch(path); match != nil {
-		return resolveThreadSEO(db, r, match[1])
+		return resolveThreadSEO(ctx, db, r, match[1])
 	}
 
 	if match := itemRx.FindStringSubmatch(path); match != nil {
-		return resolveProductSEO(db, match[1])
+		return resolveProductSEO(ctx, db, match[1])
 	}
 
 	if match := pageRx.FindStringSubmatch(path); match != nil {
-		return resolvePageSEO(db, match[1])
+		return resolvePageSEO(ctx, db, match[1])
 	}
 
 	if match := streamRx.FindStringSubmatch(path); match != nil {
-		return resolveStreamSEO(db, match[1])
+		return resolveStreamSEO(ctx, db, match[1])
 	}
 
 	if match := staticPageRx.FindStringSubmatch(path); match != nil {
-		return resolvePageSEO(db, match[1])
+		return resolvePageSEO(ctx, db, match[1])
 	}
 
 	if usersRx.MatchString(path) {
-		return resolveUsersSEO(db)
+		return resolveUsersSEO(ctx, db)
 	}
 
 	if match := userRx.FindStringSubmatch(path); match != nil {
-		return resolveUserSEO(db, match[1], "profile")
+		return resolveUserSEO(ctx, db, match[1], "profile")
 	}
 
 	if match := directoryRx.FindStringSubmatch(path); match != nil {
-		return resolveUserSEO(db, match[1], "directory")
+		return resolveUserSEO(ctx, db, match[1], "directory")
 	}
 
 	if routeNoIndex(path) {
-		return routeSEO{NoIndex: true}
+		return seoResolution{Route: routeSEO{NoIndex: true}, State: resolutionSuccess}
 	}
 	if routeIsPublicShell(path) {
-		return routeSEO{}
+		return seoResolution{State: resolutionSuccess}
 	}
-	return routeSEO{Miss: true, NoIndex: true}
+	return absentRoute(routeSEO{Miss: true, NoIndex: true})
 }
 
-func resolveThreadSEO(db *sql.DB, r *http.Request, idStr string) routeSEO {
+func resolveThreadSEO(ctx context.Context, db rowQueryer, r *http.Request, idStr string) seoResolution {
 	if _, err := strconv.ParseInt(idStr, 10, 64); err != nil {
-		return routeSEO{Miss: true}
+		return absentRoute(routeSEO{Miss: true})
 	}
 
 	var title, content string
-	err := db.QueryRow(
+	err := db.QueryRowContext(ctx,
 		"SELECT title, content FROM forum_threads WHERE id = $1",
 		idStr,
 	).Scan(&title, &content)
-
+	if errors.Is(err, sql.ErrNoRows) {
+		return absentRoute(routeSEO{Miss: true})
+	}
 	if err != nil {
-		return routeSEO{Miss: true}
+		return dependencyFailure(err)
 	}
 
-	image := firstNonEmpty(
-		firstImageFromHTML(content),
-		firstYouTubeThumbnailFromText(content),
-		latestRouteMediaThumbnail(db, r.URL.Path),
-	)
-
-	return routeSEO{
+	result := seoResolution{Route: routeSEO{
 		Title: title,
 		Desc:  snip(stripHTML(content), 160),
-		Image: image,
+		Image: firstNonEmpty(firstImageFromHTML(content), firstYouTubeThumbnailFromText(content)),
+	}, State: resolutionSuccess}
+	if result.Route.Image != "" {
+		return result
 	}
+	image, err := latestRouteMediaThumbnail(ctx, db, r.URL.Path)
+	if err != nil {
+		result.State = resolutionDegraded
+		result.Err = err
+		return result
+	}
+	result.Route.Image = image
+	return result
 }
 
-func resolveProductSEO(db *sql.DB, idStr string) routeSEO {
+func resolveProductSEO(ctx context.Context, db rowQueryer, idStr string) seoResolution {
 	if _, err := strconv.ParseInt(idStr, 10, 64); err != nil {
-		return routeSEO{Miss: true}
+		return absentRoute(routeSEO{Miss: true})
 	}
 
 	var title string
 	var desc, img, media sql.NullString
-	err := db.QueryRow(
+	err := db.QueryRowContext(ctx,
 		"SELECT name, description, image_url, media::text FROM products WHERE id = $1",
 		idStr,
 	).Scan(&title, &desc, &img, &media)
-
+	if errors.Is(err, sql.ErrNoRows) {
+		return absentRoute(routeSEO{Miss: true})
+	}
 	if err != nil {
-		return routeSEO{Miss: true}
+		return dependencyFailure(err)
 	}
 
-	return routeSEO{
+	mediaImage, mediaErr := firstImageFromJSONResult(media.String)
+	result := seoResolution{Route: routeSEO{
 		Title: title,
 		Desc:  snip(stripHTML(desc.String), 160),
-		Image: firstNonEmpty(img.String, firstImageFromJSON(media.String)),
+		Image: firstNonEmpty(img.String, mediaImage),
+	}, State: resolutionSuccess}
+	if mediaErr != nil && strings.TrimSpace(img.String) == "" {
+		result.State = resolutionDegraded
+		result.Err = fmt.Errorf("decode product media: %w", mediaErr)
 	}
+	return result
 }
 
-func resolvePageSEO(db *sql.DB, slug string) routeSEO {
+func resolvePageSEO(ctx context.Context, db rowQueryer, slug string) seoResolution {
 	if len(slug) > 100 {
-		return routeSEO{Miss: true}
+		return absentRoute(routeSEO{Miss: true})
 	}
 
 	var title, desc, content string
-	err := db.QueryRow(
+	err := db.QueryRowContext(ctx,
 		"SELECT title, description, content::text FROM pages WHERE slug = $1 AND visibility IN ('public', 'unlisted')",
 		slug,
 	).Scan(&title, &desc, &content)
-
+	if errors.Is(err, sql.ErrNoRows) {
+		return absentRoute(routeSEO{Miss: true})
+	}
 	if err != nil {
-		return routeSEO{Miss: true}
+		return dependencyFailure(err)
 	}
 
-	return routeSEO{
+	image, imageErr := firstImageFromJSONResult(content)
+	result := seoResolution{Route: routeSEO{
 		Title: title,
 		Desc:  snip(stripHTML(desc), 160),
-		Image: firstImageFromJSON(content),
+		Image: image,
+	}, State: resolutionSuccess}
+	if imageErr != nil {
+		result.State = resolutionDegraded
+		result.Err = fmt.Errorf("decode page content: %w", imageErr)
 	}
+	return result
 }
 
-func resolveUsersSEO(db *sql.DB) routeSEO {
+func resolveUsersSEO(ctx context.Context, db rowQueryer) seoResolution {
 	var count int
-	_ = db.QueryRow("SELECT COUNT(*) FROM users WHERE COALESCE(is_suspended, false) = false").Scan(&count)
+	err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM users WHERE COALESCE(is_suspended, false) = false").Scan(&count)
 
 	desc := "Browse community profiles and creators."
-	if count > 0 {
+	if err == nil && count > 0 {
 		desc = fmt.Sprintf("Browse %d community profiles and creators.", count)
 	}
 
-	return routeSEO{
+	result := seoResolution{Route: routeSEO{
 		Title: "User Directory",
 		Desc:  desc,
+	}, State: resolutionSuccess}
+	if err != nil {
+		result.State = resolutionDegraded
+		result.Err = fmt.Errorf("count directory users: %w", err)
 	}
+	return result
 }
 
-func resolveStreamSEO(db *sql.DB, id string) routeSEO {
+func resolveStreamSEO(ctx context.Context, db rowQueryer, id string) seoResolution {
 	meta, ok := streammeta.DefaultStore.Get(id)
 	if !ok {
-		return routeSEO{Miss: true, Live: true}
+		return absentRoute(routeSEO{Miss: true, Live: true})
 	}
 
-	image := streamOwnerImage(db, meta.OwnerID)
+	image := ""
+	var enrichmentErr error
 	if len(meta.Thumbnail) > 0 {
 		image = "/stream-preview/" + meta.ID
 		if meta.Revision != "" {
 			image += "?v=" + meta.Revision
 		}
+	} else {
+		image, enrichmentErr = streamOwnerImage(ctx, db, meta.OwnerID)
 	}
 
-	return routeSEO{
+	result := seoResolution{Route: routeSEO{
 		Title: firstNonEmpty(meta.Title, "Stream"),
 		Desc:  snip(stripHTML(firstNonEmpty(meta.Description, "Watch this stream.")), 160),
 		Image: image,
 		Live:  true,
+	}, State: resolutionSuccess}
+	if enrichmentErr != nil {
+		result.State = resolutionDegraded
+		result.Err = enrichmentErr
 	}
+	return result
 }
 
-func streamOwnerImage(db *sql.DB, ownerID int64) string {
+func streamOwnerImage(ctx context.Context, db rowQueryer, ownerID int64) (string, error) {
 	if ownerID <= 0 {
-		return ""
+		return "", nil
 	}
 
 	var avatar, banner, photo, cardArt sql.NullString
-	err := db.QueryRow(
+	err := db.QueryRowContext(ctx,
 		`SELECT avatar_url, banner_url, photo_url, profile_card_art_url
 		   FROM users
 		  WHERE id = $1 AND COALESCE(is_suspended, false) = false`,
 		ownerID,
 	).Scan(&avatar, &banner, &photo, &cardArt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
 	if err != nil {
-		return ""
+		return "", fmt.Errorf("load stream owner image: %w", err)
 	}
 
-	return firstNonEmpty(avatar.String, banner.String, photo.String, cardArt.String)
+	return firstNonEmpty(avatar.String, banner.String, photo.String, cardArt.String), nil
 }
 
-func resolveUserSEO(db *sql.DB, idStr, kind string) routeSEO {
+func resolveUserSEO(ctx context.Context, db rowQueryer, idStr, kind string) seoResolution {
 	if _, err := strconv.ParseInt(idStr, 10, 64); err != nil {
-		return routeSEO{Miss: true}
+		return absentRoute(routeSEO{Miss: true})
 	}
 
 	var username string
 	var displayName, bio, avatar, banner, photo, cardArt sql.NullString
-	err := db.QueryRow(
+	err := db.QueryRowContext(ctx,
 		`SELECT username, display_name, bio, avatar_url, banner_url, photo_url, profile_card_art_url
 		   FROM users
 		  WHERE id = $1 AND COALESCE(is_suspended, false) = false`,
 		idStr,
 	).Scan(&username, &displayName, &bio, &avatar, &banner, &photo, &cardArt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return absentRoute(routeSEO{Miss: true})
+	}
 	if err != nil {
-		return routeSEO{Miss: true}
+		return dependencyFailure(err)
 	}
 
 	name := firstNonEmpty(displayName.String, username)
@@ -353,11 +430,16 @@ func resolveUserSEO(db *sql.DB, idStr, kind string) routeSEO {
 		desc = firstNonEmpty(bio.String, "Browse uploads shared by "+name+".")
 	}
 
-	return routeSEO{
+	return seoResolution{Route: routeSEO{
 		Title: title,
 		Desc:  snip(stripHTML(desc), 160),
 		Image: firstNonEmpty(cardArt.String, avatar.String, banner.String, photo.String),
-	}
+	}, State: resolutionSuccess}
+}
+
+func absentRoute(route routeSEO) seoResolution {
+	route.Miss = true
+	return seoResolution{Route: route, State: resolutionAbsence}
 }
 
 func buildMeta(branding models.Branding, seo models.SEO, route routeSEO) CachedMeta {
@@ -472,30 +554,33 @@ func youtubeThumbnail(videoID string) string {
 	return "https://img.youtube.com/vi/" + videoID + "/hqdefault.jpg"
 }
 
-func latestRouteMediaThumbnail(db *sql.DB, route string) string {
+func latestRouteMediaThumbnail(ctx context.Context, db rowQueryer, route string) (string, error) {
 	var videoID string
-	err := db.QueryRow(
+	err := db.QueryRowContext(ctx,
 		`SELECT video_id FROM media_history WHERE route = $1 ORDER BY created_at DESC LIMIT 1`,
 		route,
 	).Scan(&videoID)
-	if err != nil {
-		return ""
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
 	}
-	return youtubeThumbnail(videoID)
+	if err != nil {
+		return "", fmt.Errorf("load route media thumbnail: %w", err)
+	}
+	return youtubeThumbnail(videoID), nil
 }
 
-func firstImageFromJSON(raw string) string {
+func firstImageFromJSONResult(raw string) (string, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return ""
+		return "", nil
 	}
 
 	var value any
 	if err := json.Unmarshal([]byte(raw), &value); err != nil {
-		return ""
+		return "", err
 	}
 
-	return firstImageFromValue(value)
+	return firstImageFromValue(value), nil
 }
 
 func firstImageFromValue(value any) string {

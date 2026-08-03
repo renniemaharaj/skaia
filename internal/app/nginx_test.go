@@ -61,7 +61,7 @@ func TestExpandDomainsNormalizesConfiguredOrigins(t *testing.T) {
 
 func TestNginxDefaultServerIsTenantIndependent(t *testing.T) {
 	block := nginxDefaultServerBlock()
-	for _, expected := range []string{"listen 80 default_server", "location = /healthz", `return 200 "ok\n"`, "return 444"} {
+	for _, expected := range []string{"listen 80 default_server", "location = /healthz", `return 200 "ok\n"`, "location /", "return 444"} {
 		if !strings.Contains(block, expected) {
 			t.Fatalf("default server missing %q:\n%s", expected, block)
 		}
@@ -87,10 +87,10 @@ func TestSharedHealthcheckUsesDedicatedEndpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	content := string(data)
-	if !strings.Contains(content, "http://localhost:80/healthz") {
+	if !strings.Contains(content, "http://127.0.0.1:80/healthz") {
 		t.Fatalf("compose healthcheck does not use /healthz")
 	}
-	if strings.Contains(content, `"http://localhost:80",`) {
+	if strings.Contains(content, `"http://127.0.0.1:80",`) {
 		t.Fatalf("compose healthcheck still warms tenant root")
 	}
 }
@@ -111,7 +111,7 @@ func TestGenerateNginxConfigKeepsTenantRoutingIsolated(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	indexDir := filepath.Join(root, "backend", "frontend", "dist")
+	indexDir := filepath.Join(root, "frontend", "dist")
 	if err := os.MkdirAll(indexDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -134,6 +134,7 @@ func TestGenerateNginxConfigKeepsTenantRoutingIsolated(t *testing.T) {
 		nginxUnknownBackendMap,
 		"listen 80 default_server",
 		"location = /healthz",
+		"<title>Starting...</title>",
 	} {
 		if !strings.Contains(config, expected) {
 			t.Errorf("generated config missing %q", expected)

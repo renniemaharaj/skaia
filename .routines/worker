@@ -114,9 +114,27 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-07-30T17:18:02-04:00
+- 2026-08-02
 
 ## Last Run Remarks
+
+- Completed the blocking `multi_tenant_seo_origin_integrity` regression pass:
+  retryable per-response `INDEX_FILE_PATH` loading with hot-ship replacement,
+  uncached 503/noindex dependency failures, typed authoritative/absence/degraded/
+  error resolution, v3 authoritative-only metadata caching, best-effort Redis
+  writes, and restored root `backends/` Docker exclusion.
+- Added deterministic handler, SQL/config failure, cache, hot-ship, Docker-context,
+  and race coverage; updated the backend, cache/CDN, infrastructure, security,
+  and frontend-path contracts. Focused/full tests, race/static analysis, vet,
+  builds, frontend production build, and diff checks pass. Production rollout
+  and recrawl verification remain external to this checkout.
+- The live local rollout exposed and repaired two additional legacy-state gaps:
+  existing `/frontend/dist/index.html` tenant env values now migrate to `/app`,
+  and default-server `444` handling no longer preempts the explicit IPv4 nginx
+  healthcheck. The `home` backend and nginx were recreated and verified healthy
+  with a raw `200` application response.
+
+## Previous Run Remarks (2026-07-30T17:18:02-04:00)
 
 - Implemented `multi_tenant_seo_origin_integrity` through the deployable code
   boundary: deterministic tenant canonical origins, origin-independent semantic

@@ -86,7 +86,7 @@ var rootLiveKitDefaults = []envDefaultEntry{
 // empty. Returns the number of keys added or initialized.
 func syncEnvDefaults(name string) int {
 	envFile := clientEnvFile(name)
-	canonicalUpdates := syncCanonicalURLDefaults(envFile)
+	migrationUpdates := syncCanonicalURLDefaults(envFile) + syncFrontendIndexPathDefault(envFile)
 	existing := loadEnvKeys(envFile) // includes both active and commented-out keys
 	active := loadEnvMap(envFile)
 	activeKeys := loadActiveEnvKeys(envFile)
@@ -111,7 +111,7 @@ func syncEnvDefaults(name string) int {
 	}
 
 	if len(toAdd) == 0 && len(toSet) == 0 {
-		return canonicalUpdates
+		return migrationUpdates
 	}
 
 	if len(toAdd) > 0 {
@@ -119,7 +119,7 @@ func syncEnvDefaults(name string) int {
 		raw, err := os.ReadFile(envFile)
 		if err != nil {
 			warn("Cannot read %s: %v", envFile, err)
-			return canonicalUpdates
+			return migrationUpdates
 		}
 
 		content := string(raw)
@@ -146,20 +146,34 @@ func syncEnvDefaults(name string) int {
 
 		if err := os.WriteFile(envFile, []byte(content), 0644); err != nil {
 			warn("Cannot write %s: %v", envFile, err)
-			return canonicalUpdates
+			return migrationUpdates
 		}
 	}
 
 	for _, d := range toSet {
 		if err := setEnvVal(envFile, d.Key, envDefaultValue(d)); err != nil {
 			warn("Cannot update %s in %s: %v", d.Key, envFile, err)
-			return canonicalUpdates + len(toAdd)
+			return migrationUpdates + len(toAdd)
 		}
 	}
 
 	upgradeEnvPerformanceKeys(envFile)
 
-	return canonicalUpdates + len(toAdd) + len(toSet)
+	return migrationUpdates + len(toAdd) + len(toSet)
+}
+
+// syncFrontendIndexPathDefault repairs the path emitted by older grengo
+// versions. Exact known legacy defaults are safe to migrate; operator-supplied
+// custom INDEX_FILE_PATH values remain untouched.
+func syncFrontendIndexPathDefault(envFile string) int {
+	if strings.TrimSpace(envVal(envFile, "INDEX_FILE_PATH")) != "/frontend/dist/index.html" {
+		return 0
+	}
+	if err := setEnvVal(envFile, "INDEX_FILE_PATH", "/app/frontend/dist/index.html"); err != nil {
+		warn("Cannot migrate INDEX_FILE_PATH in %s: %v", envFile, err)
+		return 0
+	}
+	return 1
 }
 
 func envDefaultValue(d envDefaultEntry) string {

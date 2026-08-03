@@ -86,6 +86,49 @@ func TestSyncClientComposeRootEnvAddsRootEnvAfterClientEnv(t *testing.T) {
 	}
 }
 
+func TestSyncFrontendIndexPathDefaultMigratesOnlyKnownLegacyPath(t *testing.T) {
+	tests := []struct {
+		name        string
+		initial     string
+		want        string
+		wantChanged int
+	}{
+		{
+			name:        "legacy generated path",
+			initial:     "/frontend/dist/index.html",
+			want:        "/app/frontend/dist/index.html",
+			wantChanged: 1,
+		},
+		{
+			name:        "current generated path",
+			initial:     "/app/frontend/dist/index.html",
+			want:        "/app/frontend/dist/index.html",
+			wantChanged: 0,
+		},
+		{
+			name:        "operator override",
+			initial:     "/srv/custom/index.html",
+			want:        "/srv/custom/index.html",
+			wantChanged: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			envFile := filepath.Join(t.TempDir(), ".env")
+			if err := os.WriteFile(envFile, []byte("INDEX_FILE_PATH="+tt.initial+"\n"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if changed := syncFrontendIndexPathDefault(envFile); changed != tt.wantChanged {
+				t.Fatalf("changed = %d, want %d", changed, tt.wantChanged)
+			}
+			if got := envVal(envFile, "INDEX_FILE_PATH"); got != tt.want {
+				t.Fatalf("INDEX_FILE_PATH = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestSyncRootComposeLiveKitEnvReplacesEmptyEnvFile(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("GRENGO_ROOT", root)

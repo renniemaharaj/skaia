@@ -10,7 +10,7 @@ import (
 
 const (
 	legacyNamespace = "ssr:meta:"
-	namespace       = "seo:meta:v2:"
+	namespace       = "seo:meta:v3:"
 )
 
 func clientPrefix() string {

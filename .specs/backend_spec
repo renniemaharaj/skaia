@@ -33,6 +33,13 @@ auth, store, cache, WebSocket emission, uploads, SSR, or grengo proxy behavior.
   metadata identity, exact marker alignment/span bounds, the aggregate corpus
   SHA-512, and Skaia's metadata/marker snapshot SHA-512.
 - Redis caches are best-effort, tenant-prefixed, read-through, and invalidated on writes.
+- SSR SEO uses a typed success/absence/degraded/error resolution boundary. Only
+  authoritative success and genuine absence are cacheable; core SQL/config
+  errors return uncached `503`, while optional enrichment errors serve safe base
+  metadata uncached. `sql.ErrNoRows` is the SQL absence boundary.
+- The SSR handler reads `INDEX_FILE_PATH` on every response so startup failure is
+  retryable and `grengo ship frontend` replacements are observed without a
+  backend restart. Template failures return `503`, `Retry-After`, and noindex.
 - Normalized page-section values use the embedded Draft 2020-12 contracts through
   `s_registry.ValidateContractValue`; external schema references are forbidden,
   CSS colors receive explicit checks, and validation errors do not echo config.

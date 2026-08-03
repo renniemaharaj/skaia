@@ -12,16 +12,16 @@ Requires `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `CORS_ORIGINS` in the enviro
 
 ## Frontend build
 
-The repository now includes a Vite-based React frontend under `backend/frontend`.
-The Docker build process takes care of compiling it:
+The Vite frontend lives at the repository root in `frontend/`. Build it with
+`npm run build` from that directory. `grengo ship frontend` builds the same
+source and hot-copies `frontend/dist/` into each running backend container at
+`/app/frontend/dist`.
 
-1. The builder image installs Node.js and npm.
-2. `npm ci` and `npm run build` are executed in `backend/frontend`, producing `dist/`.
-3. The resulting `dist` folder is copied into the runtime image at `/app/frontend/dist`.
-
-At runtime the backend serves the built SPA under `/index`, injecting SEO tags
-into `frontend/dist/index.html`. Override the location with
-`INDEX_FILE_PATH` if needed.
+At runtime the backend injects SEO tags into the entry document selected by
+`INDEX_FILE_PATH`; generated tenant env uses `/app/frontend/dist/index.html`,
+while local development falls back to `frontend/dist/index.html`. The entry
+document is read per SSR response so a missing startup file is retryable and a
+hot-shipped replacement is visible without restarting the backend.
 
 ## Structure
 

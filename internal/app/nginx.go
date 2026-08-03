@@ -94,7 +94,9 @@ func nginxDefaultServerBlock() string {
         return 200 "ok\n";
     }
 
-    return 444;
+    location / {
+        return 444;
+    }
 }
 `
 }
@@ -250,7 +252,7 @@ proxy_cache_path /var/cache/nginx/uploads
 	b.WriteString(nginxHealthLocation())
 
 	// Load frontend shell index.html for fallback
-	indexPath := filepath.Join(ProjectRoot(), "backend", "frontend", "dist", "index.html")
+	indexPath := filepath.Join(ProjectRoot(), "frontend", "dist", "index.html")
 	indexBytes, err := os.ReadFile(indexPath)
 	if err != nil {
 		// If running in production where source isn't checked out, extract it from the docker image

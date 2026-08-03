@@ -114,7 +114,9 @@ is not an architectural invariant and must not be treated as one.
 - Tenant SEO identity is configuration-owned, never Host-header- or
   first-request-owned. Unknown hosts fail at nginx, healthchecks do not enter a
   tenant, rendered absolute metadata is not cached, and SSR performs no outbound
-  request to content-controlled image URLs.
+  request to content-controlled image URLs. Core route/config dependency failure
+  returns uncached `503`; it never becomes a cacheable absence or incomplete
+  metadata entry. Root Docker contexts exclude tenant `backends/` state.
 - Normalized custom-page contracts resolve only embedded schemas. User config
   cannot trigger remote schema fetches; CSS colors require explicit safe-value
   validation, and contract errors never echo page config or response values.

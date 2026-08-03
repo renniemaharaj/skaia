@@ -1,6 +1,7 @@
 package seo
 
 import (
+	"context"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -107,8 +108,9 @@ func TestSemanticCacheOutputIsHostAndAuthenticationIndependent(t *testing.T) {
 func TestMissingRouteIs404AndNoIndex(t *testing.T) {
 	t.Setenv("DOMAINS", "example.com")
 	req := httptest.NewRequest("GET", "https://example.com/does-not-exist", nil)
-	route := resolveRouteSEO(nil, req)
-	if !route.Miss || !route.NoIndex {
+	resolution := resolveRouteSEO(context.Background(), nil, req)
+	route := resolution.Route
+	if resolution.State != resolutionAbsence || !route.Miss || !route.NoIndex {
 		t.Fatalf("unknown route = %#v, want missing and noindex", route)
 	}
 
@@ -130,7 +132,7 @@ func TestMissingRouteIs404AndNoIndex(t *testing.T) {
 
 func TestKnownPrivateRouteIsNoIndexWithout404(t *testing.T) {
 	req := httptest.NewRequest("GET", "https://example.com/admin/meta/seo", nil)
-	route := resolveRouteSEO(nil, req)
+	route := resolveRouteSEO(context.Background(), nil, req).Route
 	if route.Miss || !route.NoIndex {
 		t.Fatalf("private route = %#v, want noindex without miss", route)
 	}
@@ -139,7 +141,7 @@ func TestKnownPrivateRouteIsNoIndexWithout404(t *testing.T) {
 func TestAuthenticationRoutesAreNoIndexWithout404(t *testing.T) {
 	for _, path := range []string{"/login", "/register", "/forgot-password", "/reset-password"} {
 		req := httptest.NewRequest("GET", "https://example.com"+path, nil)
-		route := resolveRouteSEO(nil, req)
+		route := resolveRouteSEO(context.Background(), nil, req).Route
 		if route.Miss || !route.NoIndex {
 			t.Errorf("%s route = %#v, want noindex without miss", path, route)
 		}

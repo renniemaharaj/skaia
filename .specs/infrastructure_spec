@@ -25,6 +25,8 @@ lifecycle, env vars, uploads paths, maintenance/armed mode, or deployment docs.
   upload bind mount, env file, and optional armed sentinel directory.
 - Routing is host-based through generated nginx upstreams.
 - The backend image serves API and static React assets.
+- Root Docker build contexts exclude `backends/`; tenant env files, database
+  backups, and generated compose files must never be sent to a Docker daemon.
 
 ## Grengo Contracts
 
@@ -66,7 +68,9 @@ dashboard under backend `/api/grengo`.
 - Generated config says: do not edit manually; run `grengo nginx reload`.
 - Unknown hosts drop with 444.
 - Nginx answers `/healthz` locally in default and tenant server contexts; the
-  shared Compose healthcheck never requests a tenant backend route.
+  shared Compose healthcheck uses explicit IPv4 and never requests a tenant
+  backend route. The default server rejects unknown traffic in `location /` so
+  its exact `/healthz` location is not preempted by the fail-closed `444`.
 - Apex/explicit aliases route normally. Generated wildcard coverage is limited
   to provisioned `site<id>` hosts; arbitrary subdomains do not enter the SPA.
 - `/ws` and `/api/ws` proxy `Upgrade`/`Connection` with long timeouts.
@@ -90,6 +94,7 @@ Per-tenant env:
 | --- | --- |
 | `CLIENT_NAME`, `CLIENT_ID`, `PORT`, `DOMAINS` | tenant identity/routing; first valid domain is the canonical default |
 | `PUBLIC_BASE_URL`, `SITEMAP_BASE_URL` | matching absolute canonical origin; HTTPS outside localhost |
+| `INDEX_FILE_PATH` | hot-shippable SPA entry document; generated tenant env uses `/app/frontend/dist/index.html`, and migration repairs the legacy exact `/frontend/dist/index.html` default without changing custom paths |
 | `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `ADMIN_PASSWORD` | required runtime secrets |
 | `FEATURES_ENABLED` | comma-separated feature gates |
 | `PAYMENT_PROVIDER`, `STRIPE_SECRET_KEY` | store payment provider |
@@ -100,6 +105,7 @@ Per-tenant env:
 
 - No wildcard production CORS/domains.
 - Tenant data isolation is database + Redis prefix + upload directory + env file.
+- Root `.dockerignore` excludes the complete `backends/` tenant state tree.
 - Runtime nginx config is generated, not hand-maintained.
 - Unknown/local/alias health traffic cannot select a tenant by map fallback or
   warm tenant SSR metadata.
@@ -118,6 +124,7 @@ Per-tenant env:
 - `internal/app/public_url.go`
 - `compose.yml` `/healthz`
 - `backend/main.go` armed middleware and `/api/grengo` mount
+- `go test ./internal/app/...` root Docker-context and generated env contracts
 
 ## Trace
 

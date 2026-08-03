@@ -30,6 +30,17 @@ The same review also confirmed double-escaped social descriptions, ignored
 `SEO.Title` and `Branding.FaviconURL`, mismatched product invalidation keys,
 soft-404 behavior, and an unguarded outbound image metadata probe.
 
+A follow-up audit on 2026-08-02 traced a deployment regression introduced while
+making the SEO handler singleton-scoped. The handler captured a transient
+missing-`index.html` startup error, while the control plane intentionally copies
+the frontend into an already-running container. Commit `c4381994` restored retry
+after read failure, but the current correction still caches the first successful
+template forever, bypasses `INDEX_FILE_PATH`, returns `404` for an infrastructure
+failure, and removed the root Docker exclusion for secret-bearing `backends/`.
+The same audit found that route/config database errors remain indistinguishable
+from genuine absence and can therefore poison negative or incomplete SEO cache
+entries.
+
 ## Goal
 
 - Make canonical, Open Graph, Twitter, image, and favicon origins deterministic,
@@ -40,6 +51,11 @@ soft-404 behavior, and an unguarded outbound image metadata probe.
   complete mutation/config invalidation.
 - Correct escaping, configured title/favicon selection, missing-route behavior,
   and image inspection safety.
+- Distinguish genuine resource absence from transient dependency failure so only
+  authoritative results enter SEO cache.
+- Keep the frontend template retryable and hot-shipping coherent without
+  bypassing the configured template path or exposing tenant env files to Docker
+  build contexts.
 - Provide a safe production rollout and purge/verification runbook for every
   tenant.
 
@@ -110,7 +126,37 @@ soft-404 behavior, and an unguarded outbound image metadata probe.
      can be captured at upload time or cached separately;
    - bound response size, redirects, MIME, dimensions, and timeout with focused
      tests.
-7. Roll out with explicit incident cleanup:
+7. Remediate the singleton-handler and transient-failure regression before any
+   production rollout:
+   - restore `backends/` to the root `.dockerignore`; verify tenant `.env` files
+     cannot enter a root Docker build context, reverting the unrelated removal
+     made in `c4381994`;
+   - restore `INDEX_FILE_PATH` with the established development fallback;
+     missing/unreadable templates must never be cached, must be retried, and
+     must return uncached `503 Service Unavailable` with `Retry-After` and
+     `X-Robots-Tag: noindex`, not a resource `404`;
+   - preserve `grengo ship frontend` semantics: the handler must observe a newly
+     shipped `index.html` without backend restart. Prefer the simplest reliable
+     implementation (reading the small template for each SSR response is
+     acceptable); any optimization must prove refresh on file replacement and
+     must not cache read errors;
+   - introduce a typed SEO resolution boundary that returns semantic metadata,
+     authoritative absence, degraded optional enrichment, or dependency error.
+     Only `sql.ErrNoRows` and deterministic validation failures may become
+     cacheable misses. Database timeouts, cancellation, connection failures,
+     malformed persisted config, and other operational errors must never write a
+     404 or incomplete metadata entry;
+   - treat optional enrichment failures deliberately: serve safe base metadata
+     uncached when core identity is known, while core route/config failures
+     return uncached `503`. Redis read failure remains a cache miss/fallback;
+     Redis write failure is logged and never changes the response;
+   - move SQL/config resolution behind narrow package interfaces or equivalent
+     deterministic test seams. Avoid tests that require a live production
+     database or depend on timing;
+   - update cache/backend/infrastructure specs and the stale backend frontend
+     build/path documentation only after the implementation establishes the
+     final contract.
+8. Roll out with explicit incident cleanup:
    - inventory every tenant's primary origin, aliases, Cloudflare mode, and
      generated env before deployment;
    - deploy backend and regenerated nginx together;
@@ -119,10 +165,11 @@ soft-404 behavior, and an unguarded outbound image metadata probe.
    - verify apex, `www`, valid subdomains, invalid subdomains, forum/thread/page/
      product routes, missing routes, and signed/unsigned requests;
    - request recrawls only after raw origin HTML and public Cloudflare HTML pass.
-8. Update `.specs/caching_cdn_spec`, `.specs/infrastructure_spec`, and
+9. Update `.specs/caching_cdn_spec`, `.specs/infrastructure_spec`, and
    `.specs/backend_spec` with the implemented canonical-origin, host rejection,
-   cache invalidation, status, and safe image-probe contracts. Record production
-   verification in this todo's `.tip`.
+   cache invalidation, status, safe image-probe, template lifecycle, and
+   dependency-failure contracts. Record production verification in this todo's
+   `.tip`.
 
 ## Verification
 
@@ -142,6 +189,27 @@ soft-404 behavior, and an unguarded outbound image metadata probe.
   cache entry.
 - Confirm missing resources return the chosen `404`/`noindex` contract.
 - Confirm unsafe image URLs and unsafe redirect hops cause no outbound request.
+- Create handler-level regression tests that construct the handler before the
+  template exists, assert an uncached `503`, create the configured file, and
+  assert a subsequent `200`; then replace the file and prove the new marker is
+  served without reconstructing the handler.
+- Test `INDEX_FILE_PATH` and its fallback independently; test concurrent first
+  load/reload under the race detector.
+- With deterministic fake SEO/config dependencies, prove `sql.ErrNoRows` is the
+  only database outcome that creates a negative cache entry; injected timeout,
+  cancellation, connection, and malformed-config failures must produce no Redis
+  write and an uncached `503` or explicitly uncached degraded response.
+- Verify missing-template and dependency-error responses include `no-store`,
+  `Retry-After`, and `X-Robots-Tag: noindex`, while genuine missing resources
+  retain the documented `404`/noindex contract.
+- Exercise the real frontend lifecycle: start a backend without the dist file,
+  ship frontend, then ship a second marker build without restarting. Raw SSR
+  HTML must converge to both builds in order.
+- Assert root `.dockerignore` excludes `backends/` and inspect the Docker build
+  context so no tenant `.env` is sent or copied.
+- Run `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go
+  test -race ./internal/seo` and the complete backend/root test, vet, static
+  analysis, build, frontend build, and `git diff --check` gates before rollout.
 
 ## References
 
@@ -156,6 +224,7 @@ soft-404 behavior, and an unguarded outbound image metadata probe.
 - `backend/internal/seo/meta.go`
 - `backend/internal/seo/url.go`
 - `backend/internal/seo/image.go`
+- `backend/README.md`
 - `backend/internal/forum/cache.go`
 - `backend/internal/store/cache.go`
 - `backend/internal/page/service.go`
@@ -163,6 +232,8 @@ soft-404 behavior, and an unguarded outbound image metadata probe.
 - `internal/app/nginx.go`
 - `internal/app/new.go`
 - `internal/app/transfer.go`
+- `internal/app/build.go`
+- `.dockerignore`
 - `compose.yml`
 - `https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/flexible/`
 - `https://developers.cloudflare.com/fundamentals/reference/http-headers/`

@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-const cachedMetaVersion = 2
+const cachedMetaVersion = 3
 
 // CachedMeta contains semantic, origin-independent metadata. Absolute URLs and
 // escaped HTML are produced only while serving a specific request.

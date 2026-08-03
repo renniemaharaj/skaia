@@ -27,7 +27,7 @@ resolution, Bible data loading, SSR, or CDN-facing behavior.
 | `/uploads/*` | `public, max-age=2592000` (30 days) |
 | Vite assets | hashed filenames; immutable-style static caching |
 | WebSocket | not cacheable; upgrade proxied at `/ws` and `/api/ws` |
-| SSR HTML | no-store; semantic route metadata uses tenant-scoped `seo:meta:v2:` Redis keys and is rendered against the validated canonical tenant origin |
+| SSR HTML | no-store; semantic route metadata uses tenant-scoped `seo:meta:v3:` Redis keys and is rendered against the validated canonical tenant origin |
 | KJV frontend reads | API remains `no-store`; one catalog promise plus an eight-book in-memory LRU and in-flight coalescing |
 
 ## SSR/SEO Cache Integrity
@@ -35,6 +35,13 @@ resolution, Bible data loading, SSR, or CDN-facing behavior.
 - Cached SEO values are raw title, description, image reference, favicon,
   site-name, route state, and side-effect-free image MIME metadata. Rendered HTML
   and request-derived origins are never cached.
+- SEO resolution classifies authoritative success, genuine absence, optional
+  degradation, and core dependency failure. Only success and absence enter
+  Redis. Optional enrichment failure serves safe base metadata uncached; route
+  or site-config failure returns uncached `503` with `Retry-After` and noindex.
+- Redis reads are best-effort cache misses and Redis write failures do not alter
+  the response. Malformed persisted branding/SEO config is a core failure, not
+  an empty cacheable value.
 - `PUBLIC_BASE_URL` is the canonical and sitemap origin. Existing tenants may
   derive it from their first valid `DOMAINS` entry during migration; production
   origins use HTTPS.
@@ -46,6 +53,10 @@ resolution, Bible data loading, SSR, or CDN-facing behavior.
 - Missing recognized resources and unknown extensionless SPA paths return `404`
   plus HTML and `X-Robots-Tag` noindex. Authenticated/authentication routes remain
   renderable SPA shells but are noindex and absent from the sitemap.
+- The SPA template is read from `INDEX_FILE_PATH` for every SSR response, using
+  `frontend/dist/index.html` as the development fallback. Missing or unreadable
+  templates are retried and return uncached `503`; hot-shipped replacements are
+  visible without backend restart.
 - SSR never fetches a page-, forum-, product-, or profile-controlled image URL.
   Dimensions belong to upload-time metadata; SSR may infer MIME from a safe file
   extension only.
@@ -85,6 +96,7 @@ written to local storage.
 
 - `rg "Cache-Control|Pragma|no-store" backend internal main.go router.go -n`
 - `go test ./internal/seo ./internal/seocache ./internal/config ./internal/forum ./internal/store ./internal/page ./internal/user` from `backend/`
+- `go test -race ./internal/seo` from `backend/`
 - `rg "landing-slug|pages/index|landing_page_changed" backend frontend .specs -n`
 
 ## Trace

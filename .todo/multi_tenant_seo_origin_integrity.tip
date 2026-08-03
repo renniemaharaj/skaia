@@ -7,6 +7,7 @@
 - **Regression tests and canonical-origin contract** — ✅ Complete
 - **Cache and metadata remediation** — ✅ Complete
 - **Nginx, proxy, and image-probe hardening** — ✅ Complete
+- **Transient-failure and template lifecycle remediation** — ✅ Complete
 - **Multi-tenant rollout and recrawl verification** — 🟡 In progress
 
 ### Next Steps
@@ -21,13 +22,46 @@
   and root `go vet`; focused affected-package race detector; affected-package and
   root staticcheck excluding the repository's pre-existing `U1000` baseline;
   backend/root builds; generated-nginx fixture; and `git diff --check`.
+- [x] 2026-08-02 auditor/correctness review traced the permanent startup 404 to
+  singleton handler construction plus a pre-shipped frontend, and reviewed
+  commits `57f3dcb3` and `c4381994`. The manual retry is race-safe and repairs
+  cached read failure, but is not final because it caches successful template
+  bytes forever, bypasses `INDEX_FILE_PATH`, returns infrastructure failures as
+  `404`, leaves database/config error cache poisoning possible, and removed the
+  secret-bearing `backends/` Docker exclusion.
+- [x] Restore the root `backends/` Docker exclusion before any build or rollout.
+- [x] Implement the typed success/absence/degraded/error SEO resolution contract;
+  cache only authoritative metadata or genuine absence and return uncached
+  `503` for core dependency failures.
+- [x] Make template loading honor `INDEX_FILE_PATH`, retry failures, return
+  uncached `503`/noindex while unavailable, and observe hot-shipped replacements
+  without reconstructing or restarting the handler.
+- [x] Add handler-level, deterministic dependency-failure, cache-write, hot-ship,
+  Docker-context, and race regressions described in Step 9 of the plan.
+- [x] Update the affected specs and backend frontend-path documentation after the
+  implemented behavior is verified.
+- [x] 2026-08-02 regression-remediation verification passed: focused SEO/config/
+  forum/store and root app tests; complete backend suite; explicit complete root
+  package suite (the `./...` glob alone cannot traverse the root-owned runtime
+  `postgres_data/` volume); SEO race detector and staticcheck; backend/root vet
+  and builds; frontend production build; and `git diff --check`. The semantic
+  cache moved to `seo:meta:v3:` so previously poisoned v2 values are never read.
+- [x] 2026-08-02 local rollout follow-up reproduced the startup fallback through
+  the actual `home` tenant. Its legacy `INDEX_FILE_PATH=/frontend/dist/index.html`
+  survived default synchronization, and nginx's server-level `return 444`
+  preempted default-server health routing. Added an exact legacy-path migration,
+  corrected the nginx fallback template source, scoped unknown-host rejection to
+  `location /`, and made the shared probe explicitly IPv4. Recreated `home` with
+  its frontend, regenerated nginx, and verified both containers healthy plus a
+  raw nginx `200` application shell without the startup fallback.
 - [ ] On the production deployment host, inventory each tenant's primary domain,
   explicit aliases, `PUBLIC_BASE_URL`, `SITEMAP_BASE_URL`, and Cloudflare SSL mode.
   This checkout contains only the local `home` tenant, so that inventory cannot
   be completed here.
 - [ ] Deploy the backend and control-plane changes together, run `grengo migrate
   all` to persist canonical defaults, run `grengo nginx reload`, and recreate or
-  restart tenant backends. Handler startup purges only each tenant's legacy
+  restart tenant backends only after the regression-remediation phase is
+  complete. Handler startup purges only each tenant's legacy
   `<client>:ssr:meta:*` prefix.
 - [ ] Repeat the public raw-HTML matrix and verify no first-party SEO tag contains
   `localhost`, an unintended subdomain, or `http://`; verify invalid hosts drop,
