@@ -2,8 +2,11 @@ package page
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/skaia/backend/internal/s_registry"
 )
 
 func TestShadowProjectorRoundTripsProductionDefinitionShapes(t *testing.T) {
@@ -160,5 +163,85 @@ func TestShadowProjectorOmitsInertLegacyConfigFields(t *testing.T) {
 	}
 	if len(document.DefaultRepairs) != 3 {
 		t.Fatalf("omissions were not audited: %#v", document.DefaultRepairs)
+	}
+}
+
+func TestShadowProjectorNormalizesLegacyInteractiveEnvelope(t *testing.T) {
+	content := `[{
+		"id":1,"section_type":"form","config":{
+			"anonymous":false,"audience":"authenticated","help_text":"Legacy help",
+			"schema_version":1,"section_key":"legacy-key","title":"Legacy title",
+			"status":"open","submit_label":"Send","success_text":"Sent",
+			"result_visibility":"never","response_limit":0,
+			"fields":[{
+				"key":"choice","type":"radio","label":"Choose","required":true,
+				"legacy_id":"field-1","help_text":"Legacy field help",
+				"options":[{"key":"a","label":"A","legacy_id":"option-1"}]
+			}]
+		}
+	}]`
+	document, err := NormalizeLegacyPageContent(content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(document.Quarantine) != 0 || len(document.Sections) != 1 {
+		t.Fatalf("legacy interactive envelope was quarantined: %#v", document)
+	}
+	config := document.Sections[0].Config
+	for _, key := range []string{"anonymous", "audience", "help_text", "schema_version", "section_key", "title"} {
+		if _, exists := config[key]; exists {
+			t.Fatalf("unused interactive property %q reached normalized config: %#v", key, config)
+		}
+	}
+	fields := config["fields"].([]any)
+	field := fields[0].(map[string]any)
+	if _, exists := field["legacy_id"]; exists {
+		t.Fatalf("unused field property reached normalized config: %#v", field)
+	}
+	if _, exists := field["help_text"]; exists {
+		t.Fatalf("unused field help reached normalized config: %#v", field)
+	}
+	option := field["options"].([]any)[0].(map[string]any)
+	if _, exists := option["legacy_id"]; exists {
+		t.Fatalf("unused option property reached normalized config: %#v", option)
+	}
+	if len(document.DefaultRepairs) != 9 {
+		t.Fatalf("legacy omissions were not audited: %#v", document.DefaultRepairs)
+	}
+}
+
+func TestShadowProjectorAcceptsEveryCanonicalSectionDefault(t *testing.T) {
+	for index, sectionType := range s_registry.SectionTypes() {
+		definition, ok := s_registry.Get(sectionType)
+		if !ok {
+			t.Fatalf("missing registry definition for %q", sectionType)
+		}
+		content := fmt.Sprintf(`[{"id":%d,"section_type":%q,"config":%s}]`, index+1, sectionType, definition.DefaultConfig)
+		document, err := NormalizeLegacyPageContent(content)
+		if err != nil {
+			t.Fatalf("%s default failed normalization: %v", sectionType, err)
+		}
+		if len(document.Quarantine) != 0 || len(document.Sections) != 1 || len(document.Sections[0].QuarantinedConfig) != 0 {
+			t.Fatalf("%s default did not match its normalized schema: %#v", sectionType, document)
+		}
+		projected, err := ProjectNormalizedPageContent(document)
+		if err != nil {
+			t.Fatalf("%s default failed reverse projection: %v", sectionType, err)
+		}
+		roundTripped, err := NormalizeLegacyPageContent(projected)
+		if err != nil {
+			t.Fatalf("%s projected default failed normalization: %v", sectionType, err)
+		}
+		sourceHash, err := shadowDocumentHash(document)
+		if err != nil {
+			t.Fatal(err)
+		}
+		projectionHash, err := shadowDocumentHash(roundTripped)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if sourceHash != projectionHash {
+			t.Fatalf("%s default drifted across projection: source=%s projection=%s", sectionType, sourceHash, projectionHash)
+		}
 	}
 }

@@ -140,6 +140,15 @@ var knownItemFields = map[string]struct{}{
 	"link_url": {}, "config": {}, "revision": {}, "created_at": {}, "updated_at": {},
 }
 
+var knownInteractiveFieldProperties = map[string]struct{}{
+	"key": {}, "type": {}, "label": {}, "description": {}, "placeholder": {},
+	"required": {}, "options": {}, "min": {}, "max": {},
+}
+
+var knownInteractiveOptionProperties = map[string]struct{}{
+	"key": {}, "label": {},
+}
+
 func defaultShadowShell() (ShadowSectionShell, error) {
 	shadowContractOnce.Do(func() {
 		raw := s_registry.ContractSchemas()[s_registry.SharedSectionShellV1]
@@ -319,6 +328,9 @@ func normalizeLegacySection(raw map[string]any, index int) (ShadowSection, *Shad
 			}
 		}
 	}
+	if s_registry.IsInteractive(sectionType) {
+		shellDefaults = append(shellDefaults, normalizeLegacyInteractiveFields(specific, index)...)
+	}
 	// Contract validation operates on ordinary decoded JSON values. The source
 	// decoder uses json.Number to preserve legacy identities, so canonicalize the
 	// section-specific object before validating numeric config fields.
@@ -363,6 +375,12 @@ func normalizeLegacySection(raw map[string]any, index int) (ShadowSection, *Shad
 }
 
 func unusedLegacyConfigField(sectionType, field string) bool {
+	if s_registry.IsInteractive(sectionType) {
+		switch field {
+		case "anonymous", "audience", "help_text", "schema_version", "section_key", "title":
+			return true
+		}
+	}
 	switch field {
 	case "moderation":
 		return sectionType != "qa"
@@ -371,6 +389,48 @@ func unusedLegacyConfigField(sectionType, field string) bool {
 	default:
 		return false
 	}
+}
+
+func normalizeLegacyInteractiveFields(config map[string]any, sectionIndex int) []string {
+	fields, ok := config["fields"].([]any)
+	if !ok {
+		return nil
+	}
+	repairs := []string{}
+	for fieldIndex, value := range fields {
+		field, ok := value.(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, key := range sortedMapKeys(field) {
+			if _, known := knownInteractiveFieldProperties[key]; known {
+				continue
+			}
+			delete(field, key)
+			repairs = append(repairs,
+				fmt.Sprintf("section[%d].fields[%d]:%s:omitted", sectionIndex, fieldIndex, key))
+		}
+		options, ok := field["options"].([]any)
+		if !ok {
+			continue
+		}
+		for optionIndex, value := range options {
+			option, ok := value.(map[string]any)
+			if !ok {
+				continue
+			}
+			for _, key := range sortedMapKeys(option) {
+				if _, known := knownInteractiveOptionProperties[key]; known {
+					continue
+				}
+				delete(option, key)
+				repairs = append(repairs, fmt.Sprintf(
+					"section[%d].fields[%d].options[%d]:%s:omitted",
+					sectionIndex, fieldIndex, optionIndex, key))
+			}
+		}
+	}
+	return repairs
 }
 
 func normalizeShadowItem(raw map[string]any, index int) (ShadowItem, bool) {
