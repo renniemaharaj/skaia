@@ -100,3 +100,62 @@ func TestShadowProjectorQuarantinesUnsafeConfigWithoutEchoingItInTelemetry(t *te
 		t.Fatalf("quarantine telemetry echoed config values: %s", payload)
 	}
 }
+
+func TestShadowProjectorIgnoresLegacyTimestamps(t *testing.T) {
+	content := `[{
+		"id":1,"section_type":"feature_grid","created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-02T00:00:00Z",
+		"config":{},"items":[{"id":2,"created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-02T00:00:00Z","config":{}}]
+	}]`
+	document, err := NormalizeLegacyPageContent(content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(document.Quarantine) != 0 {
+		t.Fatalf("legacy timestamps were quarantined: %#v", document.Quarantine)
+	}
+	section := document.Sections[0]
+	if len(section.QuarantinedSection) != 0 || len(section.Items[0].QuarantinedItem) != 0 {
+		t.Fatalf("legacy timestamps reached quarantine: section=%#v item=%#v", section.QuarantinedSection, section.Items[0].QuarantinedItem)
+	}
+	projected, err := ProjectNormalizedPageContent(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(projected, "created_at") || strings.Contains(projected, "updated_at") {
+		t.Fatalf("legacy timestamps reached normalized projection: %s", projected)
+	}
+}
+
+func TestShadowProjectorOmitsInertLegacyConfigFields(t *testing.T) {
+	content := `[
+		{"id":1,"section_type":"form","config":{"moderation":true}},
+		{"id":2,"section_type":"feature_grid","config":{"links":[{"url":"https://example.invalid"}]}},
+		{"id":3,"section_type":"qa","config":{"moderation":false}},
+		{"id":4,"section_type":"social_links","config":{"links":[{"icon":"Globe","url":"https://example.invalid"}]}}
+	]`
+	document, err := NormalizeLegacyPageContent(content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(document.Quarantine) != 0 {
+		t.Fatalf("inert legacy config was quarantined: %#v", document.Quarantine)
+	}
+	if len(document.Sections[0].QuarantinedConfig) != 0 || len(document.Sections[1].QuarantinedConfig) != 0 {
+		t.Fatalf("inert legacy config reached quarantine: %#v", document.Sections)
+	}
+	if _, exists := document.Sections[0].Config["moderation"]; exists {
+		t.Fatal("form moderation reached normalized config")
+	}
+	if _, exists := document.Sections[1].Config["links"]; exists {
+		t.Fatal("feature-grid links reached normalized config")
+	}
+	if moderation, ok := document.Sections[2].Config["moderation"].(bool); !ok || moderation {
+		t.Fatalf("Q&A moderation was not preserved: %#v", document.Sections[2].Config)
+	}
+	if links, ok := document.Sections[3].Config["links"].([]any); !ok || len(links) != 1 {
+		t.Fatalf("social links were not preserved: %#v", document.Sections[3].Config)
+	}
+	if len(document.DefaultRepairs) != 2 {
+		t.Fatalf("omissions were not audited: %#v", document.DefaultRepairs)
+	}
+}

@@ -132,12 +132,12 @@ var shellAliases = map[string]string{
 
 var knownSectionFields = map[string]struct{}{
 	"id": {}, "display_order": {}, "section_type": {}, "heading": {}, "subheading": {}, "config": {}, "items": {},
-	"last_edited_by": {}, "revision": {},
+	"last_edited_by": {}, "revision": {}, "created_at": {}, "updated_at": {},
 }
 
 var knownItemFields = map[string]struct{}{
 	"id": {}, "section_id": {}, "display_order": {}, "icon": {}, "heading": {}, "subheading": {}, "image_url": {},
-	"link_url": {}, "config": {}, "revision": {},
+	"link_url": {}, "config": {}, "revision": {}, "created_at": {}, "updated_at": {},
 }
 
 func defaultShadowShell() (ShadowSectionShell, error) {
@@ -289,6 +289,10 @@ func normalizeLegacySection(raw map[string]any, index int) (ShadowSection, *Shad
 			specific[field] = value
 			continue
 		}
+		if unusedLegacyConfigField(sectionType, field) {
+			shellDefaults = append(shellDefaults, fmt.Sprintf("section[%d]:%s:omitted", index, field))
+			continue
+		}
 		if sectionType == "hero" && field == "video_url" {
 			if video, ok := value.(string); ok {
 				if videos, exists := specific["videos"].([]any); !exists || len(videos) == 0 {
@@ -341,6 +345,17 @@ func normalizeLegacySection(raw map[string]any, index int) (ShadowSection, *Shad
 		section.Items = append(section.Items, item)
 	}
 	return section, nil, aliases, shellDefaults
+}
+
+func unusedLegacyConfigField(sectionType, field string) bool {
+	switch field {
+	case "moderation":
+		return sectionType != "qa"
+	case "links":
+		return sectionType != "social_links" && sectionType != "profile_card"
+	default:
+		return false
+	}
 }
 
 func normalizeShadowItem(raw map[string]any, index int) (ShadowItem, bool) {
