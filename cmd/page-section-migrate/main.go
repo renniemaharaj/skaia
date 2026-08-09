@@ -113,10 +113,10 @@ func run() error {
 		if err := copyTool(c, "/tmp/page-interactive-response-backfill"); err != nil {
 			return err
 		}
-		if err := runBackfill(c, "/tmp/page-section-shadow-backfill", true); err != nil {
+		if err := runBackfill(c, "/tmp/page-section-shadow-backfill", true, postgresUser); err != nil {
 			return err
 		}
-		if err := runBackfill(c, "/tmp/page-interactive-response-backfill", false); err != nil {
+		if err := runBackfill(c, "/tmp/page-interactive-response-backfill", false, postgresUser); err != nil {
 			return err
 		}
 	}
@@ -236,7 +236,7 @@ func buildTools(root string) error {
 	return nil
 }
 
-func runBackfill(c client, remotePath string, shadow bool) error {
+func runBackfill(c client, remotePath string, shadow bool, postgresUser string) error {
 	cursor := int64(0)
 	for {
 		output, err := commandOutput("docker", "exec", c.container, remotePath,
@@ -251,6 +251,9 @@ func runBackfill(c client, remotePath string, shadow bool) error {
 		fmt.Printf("[%s] %s scanned=%d matched=%d quarantined=%d mismatched=%d done=%t\n",
 			c.name, filepath.Base(remotePath), result.Scanned, result.Matched, result.Quarantined, result.Mismatched, result.Done)
 		if result.Mismatched != 0 || (shadow && result.Quarantined != 0) {
+			if shadow && result.Quarantined != 0 {
+				printActiveQuarantine(c, postgresUser)
+			}
 			return fmt.Errorf("%s: %s reported quarantined or mismatched pages", c.name, filepath.Base(remotePath))
 		}
 		if result.Done {
@@ -261,6 +264,28 @@ func runBackfill(c client, remotePath string, shadow bool) error {
 		}
 		cursor = result.NextAfterID
 	}
+}
+
+func printActiveQuarantine(c client, postgresUser string) {
+	query := `SELECT p.id, p.slug, q.source_index,
+COALESCE(s.section->>'section_type',''), q.reason_code, q.safe_payload::text
+FROM page_section_quarantine q
+JOIN pages p ON p.id=q.page_id
+LEFT JOIN LATERAL jsonb_array_elements(p.content) WITH ORDINALITY AS s(section,ordinal)
+ ON s.ordinal=q.source_index+1
+WHERE q.resolved_at IS NULL
+ORDER BY p.id,q.source_index,q.id`
+	output, err := commandOutput("docker", "exec", "skaia-postgres", "psql", "-U", postgresUser,
+		"-d", c.database, "-At", "-F", "\t", "-c", query)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[%s] could not query active quarantine: %v\n", c.name, err)
+		return
+	}
+	if output == "" {
+		fmt.Printf("[%s] no unresolved quarantine records found\n", c.name)
+		return
+	}
+	fmt.Printf("[%s] unresolved quarantine (page_id, slug, source_index, section_type, reason, safe_payload):\n%s\n", c.name, output)
 }
 
 func runCutoverAudit(c client) (auditSummary, error) {
