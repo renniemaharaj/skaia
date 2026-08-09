@@ -304,6 +304,21 @@ func normalizeLegacySection(raw map[string]any, index int) (ShadowSection, *Shad
 		section.QuarantinedConfig[field] = value
 	}
 	section.AliasRepairs = aliases
+	if sectionType == "social_links" {
+		if links, ok := specific["links"].([]any); ok {
+			for linkIndex, value := range links {
+				link, ok := value.(map[string]any)
+				if !ok {
+					continue
+				}
+				if _, exists := link["name"]; exists {
+					delete(link, "name")
+					shellDefaults = append(shellDefaults,
+						fmt.Sprintf("section[%d].links[%d]:name:omitted", index, linkIndex))
+				}
+			}
+		}
+	}
 	// Contract validation operates on ordinary decoded JSON values. The source
 	// decoder uses json.Number to preserve legacy identities, so canonicalize the
 	// section-specific object before validating numeric config fields.

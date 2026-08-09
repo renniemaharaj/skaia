@@ -131,7 +131,7 @@ func TestShadowProjectorOmitsInertLegacyConfigFields(t *testing.T) {
 		{"id":1,"section_type":"form","config":{"moderation":true}},
 		{"id":2,"section_type":"feature_grid","config":{"links":[{"url":"https://example.invalid"}]}},
 		{"id":3,"section_type":"qa","config":{"moderation":false}},
-		{"id":4,"section_type":"social_links","config":{"links":[{"icon":"Globe","url":"https://example.invalid"}]}}
+		{"id":4,"section_type":"social_links","config":{"links":[{"icon":"Globe","url":"https://example.invalid","name":"Legacy label"}]}}
 	]`
 	document, err := NormalizeLegacyPageContent(content)
 	if err != nil {
@@ -155,7 +155,10 @@ func TestShadowProjectorOmitsInertLegacyConfigFields(t *testing.T) {
 	if links, ok := document.Sections[3].Config["links"].([]any); !ok || len(links) != 1 {
 		t.Fatalf("social links were not preserved: %#v", document.Sections[3].Config)
 	}
-	if len(document.DefaultRepairs) != 2 {
+	if _, exists := document.Sections[3].Config["links"].([]any)[0].(map[string]any)["name"]; exists {
+		t.Fatalf("legacy social-link name reached normalized config: %#v", document.Sections[3].Config)
+	}
+	if len(document.DefaultRepairs) != 3 {
 		t.Fatalf("omissions were not audited: %#v", document.DefaultRepairs)
 	}
 }

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { BlockRenderer } from "./BlockRenderer";
 import { configForNewSection } from "./interactiveTypes";
@@ -95,8 +95,10 @@ describe("BlockRenderer family parity", () => {
       await screen.findByText("No data source configured.", {}, { timeout: 3000 })
     ).toBeInTheDocument();
     expect(container.querySelector("section.derived-section-block")).toBeInTheDocument();
-    expect(apiRequestMock).toHaveBeenCalledWith("/config/datasources");
-    expect(apiRequestMock).toHaveBeenCalledWith("/config/components");
+    await waitFor(() => {
+      expect(apiRequestMock).toHaveBeenCalledWith("/config/datasources");
+      expect(apiRequestMock).toHaveBeenCalledWith("/config/components");
+    });
   });
 
   it("preserves the interactive family heading, participation tab, and action", async () => {
