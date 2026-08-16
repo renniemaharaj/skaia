@@ -1,7 +1,7 @@
 /** Types for the pages.content document and its renderer registry. */
 import { SECTION_TYPES, type SectionType } from "./sectionRegistry";
 export { DEFAULT_SECTION_SHELL, SECTION_TYPES } from "./sectionRegistry";
-export type { ColorSource, SectionConfig, SectionType, SharedSectionShell } from "./sectionRegistry";
+export type { ColorSource, SectionType, SharedSectionShell } from "./sectionRegistry";
 
 // Existing documents contain both identity/config encodings. Keep this
 // boundary deliberately permissive; individual renderers narrow what they use.

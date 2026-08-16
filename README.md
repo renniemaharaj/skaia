@@ -93,7 +93,7 @@ Access: `http://localhost` · Admin dashboard: `Ctrl+G` in browser · Management
 
 ```bash
 # Frontend hot reload
-cd backend/frontend && npm install && npm run dev
+cd frontend && npm install && npm run dev
 
 # Backend tests
 cd backend && go test ./...
@@ -102,7 +102,7 @@ cd backend && go test ./...
 go test . ./internal/...
 
 # Frontend tests
-cd backend/frontend && npm test
+cd frontend && npm test
 ```
 
 ## Collaborative Planning, Specs & Routines

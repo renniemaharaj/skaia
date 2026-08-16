@@ -126,6 +126,10 @@ update specs and .tip with durable facts
   All 172 frontend tests, lint, and production build pass; focused backend tests
   pass. The broad backend run reached all packages until the sandbox prohibited
   an existing `httptest` TCP listener in `internal/middleware`.
+- Follow-up dead-code cleanup removed empty command/schema/frontend/source
+  directories, unused registry exports, and stale README commands for the
+  long-retired `backend/frontend` tree; focused backend and frontend gates still
+  pass.
 
 ## Previous Run Remarks (2026-08-16)
 

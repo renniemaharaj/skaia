@@ -32,6 +32,9 @@
       integrations, interactive sections, and unknown fields.
 - [x] Reconciled durable specs and retired the superseded
       `typed_page_sections_redesign` plan pair after code/reference checks.
+- [x] Removed the empty command/schema/frontend/source directories left by the
+      consolidation, deleted unused registry exports, and corrected README
+      development commands that still targeted the dead `backend/frontend` path.
 
 ### Verification
 

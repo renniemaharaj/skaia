@@ -81,14 +81,6 @@ func List() []Definition {
 	return out
 }
 
-func SectionTypes() []string {
-	out := make([]string, len(definitions))
-	for i, definition := range definitions {
-		out[i] = definition.Type
-	}
-	return out
-}
-
 func Get(typ string) (Definition, bool) {
 	definition, ok := definitionsByType[CanonicalType(typ)]
 	return cloneDefinition(definition), ok

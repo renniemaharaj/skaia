@@ -5,7 +5,6 @@ export const SECTION_TYPES = [
 ] as const;
 
 export type SectionType = (typeof SECTION_TYPES)[number];
-export type SectionConfig<T extends SectionType = SectionType> = Record<string, unknown> & { __type?: T };
 
 export type ColorSource = { mode: "inherit" } | { mode: "literal"; value: string };
 export interface SharedSectionShell {
