@@ -74,6 +74,21 @@
   border-radius: inherit;
 }
 
+.up-card-art,
+.up-card-art-tint {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.up-card-art-tint {
+  background: linear-gradient(
+    color-mix(in srgb, var(--bg-color) 85%, transparent),
+    color-mix(in srgb, var(--bg-color) 95%, transparent)
+  );
+  pointer-events: none;
+}
+
 .up-suspended-banner {
   display: flex;
   align-items: center;

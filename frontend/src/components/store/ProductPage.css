@@ -84,7 +84,7 @@
   background: color-mix(in srgb, var(--bg-color) 78%, transparent);
   border-color: color-mix(in srgb, var(--border-color) 80%, transparent);
   border-radius: 6px;
-  box-shadow: 0 4px 14px rgb(0 0 0 / 28%);
+  box-shadow: var(--shadow);
   transform: translateY(-50%);
   backdrop-filter: blur(8px);
   gap: 0;

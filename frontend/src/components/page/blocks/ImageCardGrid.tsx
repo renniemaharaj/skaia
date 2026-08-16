@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
+import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
 import "./ImageCardGrid.css";
 
 export type CardWidth = "narrow" | "regular" | "wide" | "halfway" | "full";
@@ -20,8 +21,17 @@ export const ImageCardGrid = ({ items }: { items: ImageCardItem[] }) => (
       return (
         <ContentFlatCard key={index} className={`image-card-item image-card-item--${width}`}>
           <div className="image-card-image">
-            {item.image_url ? (
-              <img src={item.image_url} alt={item.heading ?? ""} loading="lazy" />
+            {item.image_url || !item.icon ? (
+              <MediaPlaceholder
+                alt={item.heading || "Card image"}
+                fit="cover"
+                href={item.image_url}
+                layout="fill"
+                mediaType="image"
+                preserveFrame
+                showCaption={false}
+                size={{ height: "100%", width: "100%" }}
+              />
             ) : item.icon ? (
               <div className="image-card-placeholder">
                 {typeof item.icon === "string" ? (
@@ -30,9 +40,7 @@ export const ImageCardGrid = ({ items }: { items: ImageCardItem[] }) => (
                   item.icon
                 )}
               </div>
-            ) : (
-              <div className="image-card-placeholder" />
-            )}
+            ) : null}
           </div>
           <div className="image-card-body">
             {item.icon && item.image_url && <span className="image-card-icon">{item.icon}</span>}

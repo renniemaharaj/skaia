@@ -403,16 +403,19 @@
   gap: 4px;
 }
 
-.vp-playlist-items img {
+.vp-playlist-thumb {
   width: 48px;
   height: 27px;
-  object-fit: cover;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
   border-radius: 2px;
   cursor: pointer;
   transition: transform 0.2s;
 }
 
-.vp-playlist-items img:hover {
+.vp-playlist-thumb:hover {
   transform: scale(1.2);
   z-index: 2;
   position: relative;

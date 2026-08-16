@@ -64,3 +64,10 @@
 .layout-main > * {
   flex: 1;
 }
+.layout-media-background {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  width: 100vw;
+  height: 100vh;
+}

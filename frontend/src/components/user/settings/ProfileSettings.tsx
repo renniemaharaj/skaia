@@ -4,6 +4,8 @@ import { useProfileEdit } from "../useProfileEdit";
 import "../UserProfile.css";
 import Button from "../../input/Button";
 import Select from "../../input/Select";
+import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
+import UserAvatar from "../UserAvatar";
 
 interface Props {
   user: ProfileUser;
@@ -124,10 +126,11 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                 </button>
               </div>
               {(avatarPreview || editAvatarUrl) && (
-                <img
+                <UserAvatar
                   src={avatarPreview || editAvatarUrl}
                   alt="Avatar preview"
                   className="up-img-preview up-img-preview-avatar"
+                  size={96}
                 />
               )}
             </div>
@@ -153,10 +156,16 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                 </button>
               </div>
               {(bannerPreview || editBannerUrl) && (
-                <img
-                  src={bannerPreview || editBannerUrl}
+                <MediaPlaceholder
+                  href={bannerPreview || editBannerUrl}
                   alt="Banner preview"
                   className="up-img-preview up-img-preview-banner"
+                  fit="cover"
+                  layout="thumbnail"
+                  mediaType="image"
+                  preserveFrame
+                  showCaption={false}
+                  size={{ height: 120, width: "100%" }}
                 />
               )}
             </div>
@@ -236,15 +245,15 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                 style={{ fontSize: "0.875rem" }}
               />
               {(backgroundImagePreview || editBackgroundImageUrl) && (
-                <img
-                  src={backgroundImagePreview || editBackgroundImageUrl}
+                <MediaPlaceholder
+                  href={backgroundImagePreview || editBackgroundImageUrl}
                   alt="Background preview"
-                  style={{
-                    maxWidth: "100%",
-                    maxHeight: "120px",
-                    objectFit: "cover",
-                    borderRadius: "8px",
-                  }}
+                  fit="cover"
+                  layout="thumbnail"
+                  mediaType="image"
+                  preserveFrame
+                  showCaption={false}
+                  size={{ height: 120, width: "100%" }}
                 />
               )}
             </div>
@@ -279,18 +288,20 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                 style={{ fontSize: "0.875rem" }}
               />
               {(backgroundVideoPreview || editBackgroundVideoUrl) && (
-                <video
-                  src={backgroundVideoPreview || editBackgroundVideoUrl}
-                  muted
-                  loop
+                <MediaPlaceholder
+                  alt="Background video preview"
                   autoPlay
+                  controls={false}
+                  fit="cover"
+                  href={backgroundVideoPreview || editBackgroundVideoUrl}
+                  layout="thumbnail"
+                  loop
+                  mediaType="video"
+                  muted
                   playsInline
-                  style={{
-                    maxWidth: "100%",
-                    maxHeight: "120px",
-                    objectFit: "cover",
-                    borderRadius: "8px",
-                  }}
+                  preserveFrame
+                  showCaption={false}
+                  size={{ height: 120, width: "100%" }}
                 />
               )}
             </div>
@@ -353,15 +364,15 @@ export default function ProfileSettings({ user, isOwnProfile, setUser }: Props) 
                 style={{ fontSize: "0.875rem" }}
               />
               {(profileCardArtPreview || editProfileCardArtUrl) && (
-                <img
-                  src={profileCardArtPreview || editProfileCardArtUrl}
+                <MediaPlaceholder
+                  href={profileCardArtPreview || editProfileCardArtUrl}
                   alt="Card art preview"
-                  style={{
-                    maxWidth: "100%",
-                    maxHeight: "120px",
-                    objectFit: "cover",
-                    borderRadius: "8px",
-                  }}
+                  fit="cover"
+                  layout="thumbnail"
+                  mediaType="image"
+                  preserveFrame
+                  showCaption={false}
+                  size={{ height: 120, width: "100%" }}
                 />
               )}
             </div>

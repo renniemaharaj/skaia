@@ -2,6 +2,7 @@ import { Camera, Copy, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { apiRequest } from "../../../../utils/api";
+import { MediaPlaceholder } from "../../../ui/MediaPlaceholder";
 
 interface StreamMeta {
   id: string;
@@ -155,7 +156,18 @@ export default function StreamMetaEditor({ streamId, stream }: StreamMetaEditorP
           playsInline
           className={thumbnail ? "vp-stream-meta__hidden-video" : undefined}
         />
-        {thumbnail ? <img src={thumbnail} alt="" /> : null}
+        {thumbnail ? (
+          <MediaPlaceholder
+            alt="Captured stream thumbnail"
+            fit="cover"
+            href={thumbnail}
+            layout="fill"
+            mediaType="image"
+            preserveFrame
+            showCaption={false}
+            size={{ height: "100%", width: "100%" }}
+          />
+        ) : null}
       </div>
 
       <div className="vp-stream-meta__actions">

@@ -1,0 +1,165 @@
+# Shared Media Placeholder Adoption
+
+## Context
+
+`frontend/src/components/ui/MediaPlaceholder.tsx` now provides URL-keyed empty,
+loading, ready, and error states for image, video, and audio assets. The traditional
+forum article feed is its first consumer. A 2026-08-16 source inventory found 63
+direct `<img>`, `<video>`, or `<audio>` elements across 31 production TSX files
+after excluding the primitive and tests. Rich-text renderers, configurable CSS
+backgrounds, YouTube thumbnails, live `MediaStream` playback, and canvas/export
+pipelines add indirect media surfaces that a raw-tag count does not cover.
+
+This work is related to `.todo/ui_primitive_consolidation`, but does not duplicate
+its input/control migration: media has asynchronous lifecycle, intrinsic sizing,
+caption, autoplay, and object-fit contracts that need a focused rollout.
+
+## Goal
+
+- Route every user- or content-server-backed image, video, and audio display
+  through `MediaPlaceholder`, a shared renderer built on it, or an explicitly
+  documented native-media exception.
+- Preserve each surface's dimensions, crop/contain behavior, controls, autoplay,
+  accessibility, navigation, editing, and lightbox interactions.
+- Give missing, slow, changed, and failed assets consistent themed feedback
+  without turning compact thumbnails or decorative backgrounds into 220px cards.
+- Prevent new unmanaged URL-backed media elements from entering the frontend.
+
+## Non-Goals
+
+- Changing upload/storage APIs, media metadata schemas, CDN behavior, or backend
+  authorization.
+- Wrapping bundled decorative art, SVG icons, generated canvas/WebGL output, or
+  download-only object URLs in a network-media placeholder.
+- Replacing `UserAvatar` initials/error recovery with a large content placeholder.
+- Replacing `srcObject` WebRTC playback with an `href`-based component.
+- Redesigning third-party editors or video players beyond the smallest node-view
+  or adapter needed for lifecycle parity.
+
+## Steps
+
+1. Harden the shared primitive before broad adoption.
+   - Keep status keyed to the current URL and cover stale load/error events.
+   - Add the smallest typed presentation API required by the inventory: caller
+     classes, block/thumbnail/fill/background layout, contain/cover fit, optional
+     captions, native audio/video controls and playback flags, lazy/eager image
+     loading, and ready/error callbacks.
+   - Let callers preserve a fixed/aspect-ratio frame after readiness when layout
+     stability requires it; do not make the default top margin or visible
+     figcaption unavoidable.
+   - Scope `.validated-media` rules under the primitive, use only `index.css`
+     tokens/shared shadows, and retain reduced-motion behavior.
+   - Add image, video, audio, URL-change, stale-event, empty, error, caption,
+     fixed-frame, and compact/fill tests.
+
+2. Migrate first-party content and page-builder media.
+   - `components/page/ComponentRenderer.tsx` primitive/compound image, icon URL,
+     card, media-card, and media-scraper result renderers.
+   - `components/page/card-parts/CardPartImage.tsx` and the existing empty state.
+   - `components/page/blocks/{EventHighlightsBlock,HeroBlock,ImageCardGrid,
+     ImageGalleryBlock,ProfileCardBlock}.tsx`, removing `/placeholder.webp`
+     fallbacks where the shared empty state is authoritative.
+   - Preserve hero cycling/autoplay/tint layers and page-builder picker/edit
+     controls; fixed crop regions must not reflow on ready/error transitions.
+   - Cover rendered HTML/Markdown media from `RichTextRenderer`, `ViewThread`,
+     `RichTextBlock`, and `CodeEditorBlock`. Prefer one sanitized read-only media
+     transformation. If TipTap requires a React node view, keep serialized HTML
+     stable and leave the editable document model unchanged.
+
+3. Migrate forum, upload, inbox, and preview surfaces.
+   - Retain and expand the current `ThreadArticleFeed.tsx` adoption.
+   - Migrate `components/user/UserUploads.tsx` grid/list thumbnails and
+     `components/ui/MediaPreviewLightbox.tsx`; `ThreadMediaViewer.tsx` inherits
+     the behavior through `UserUploads`.
+   - Migrate image/video/audio attachments in `components/inbox/InboxPage.tsx`.
+   - Migrate both thumbnail and portal preview paths in
+     `components/mediascraper/MediaViewer.tsx`.
+   - Keep file attachments on their file-specific fallback and do not classify
+     an arbitrary file as playable media.
+
+4. Migrate commerce media without changing navigation or purchase behavior.
+   - Cover `components/store/{InlineProduct,ProductPage,ProductMediaTable,
+     ImageLightbox,OrderStatusView}.tsx` and
+     `components/store/cart/CartItemsList.tsx`.
+   - Preserve card links, preview-button event suppression, carousel indices,
+     native playback intent, similar-product sizing, cart density, and product
+     initials/package fallbacks where no media URL exists.
+   - Verify a failed cover cannot block product navigation, cart removal,
+     checkout, media deletion, or lightbox dismissal.
+
+5. Migrate profile, security, branding, and remote-thumbnail surfaces.
+   - Cover TOTP QR images in `components/auth/SecuritySettings.tsx`.
+   - Cover profile/banner/background/card-art previews in
+     `components/user/settings/ProfileSettings.tsx`, profile banners in
+     `UserProfileCard.tsx` and `UserProfileOverlay.tsx`, and page profile blocks.
+   - Convert URL-backed profile-card art and `pages/Layout.tsx` image/video
+     backgrounds to a shared background/fill adapter or record a narrow exception
+     that still supplies an equivalent error-safe themed fallback.
+   - Use a compact variant for configurable header branding in
+     `components/page/layout/Header.tsx`; the decorative footer watermark may
+     fail silently but must not retain unmanaged load behavior.
+   - Migrate YouTube/search/queue/history thumbnails in
+     `components/page/layout/voice/MediaSection.tsx` and the captured still in
+     `StreamMetaEditor.tsx` without wrapping its live capture video.
+   - Replace the raw mention-list avatar with `UserAvatar`, whose compact initials
+     behavior is the documented avatar exception.
+
+6. Preserve and document intentional native-media exceptions.
+   - `components/user/UserAvatar.tsx`: compact semantic initials/icon fallback.
+   - `components/bible/BookTile.tsx` and bundled logos/art: local decorative
+     assets with build-time existence.
+   - `components/page/layout/voice/RemoteMedia.tsx`, hidden capture elements in
+     `StreamMetaEditor.tsx`, and WebRTC playback managers: `MediaStream.srcObject`
+     lifecycle rather than URL loading.
+   - Clipmaker/Twick canvases, recording/export elements, WebGL canvases, and
+     CSS data-URI controls/noise: generated/rendering infrastructure.
+   - `SiteHead.tsx` favicon/metadata links and Leaflet's imported marker/shadow
+     assets in store order maps: document metadata or third-party map chrome,
+     not in-page content media.
+   - YouTube's player iframe: third-party player lifecycle; only its URL-backed
+     thumbnails use the placeholder.
+   - TipTap editable media nodes may remain native only if a React node view
+     cannot preserve editor selection/serialization; record the reason and apply
+     shared status styling where possible.
+
+7. Add enforcement, documentation, and final quality gates.
+   - Add `npm run check:media-placeholders` (or an equivalent focused test) that
+     rejects new raw URL-backed `<img>`, `<video>`, `<audio>`, dynamic
+     `backgroundImage`, and generated rich-text media paths outside an explicit
+     file/symbol allowlist with reasons.
+   - Do not use a target of zero raw tags: the gate must encode the reviewed
+     avatar, local-art, live-stream, canvas, and third-party exceptions above.
+   - Update `.specs/frontend_spec` after rollout so the shared ownership,
+     exceptions, accessibility, and media-state invariants describe implemented
+     truth.
+   - Run an affected-scope auditor pass across accessibility, keyboard/lightbox
+     behavior, mobile layouts, light/dark themes, reduced motion, slow loads,
+     broken URLs, URL replacement, and cumulative layout shift.
+
+## Verification
+
+- `cd frontend && npm test -- --run src/components/ui/MediaPlaceholder.test.tsx`
+- Add focused tests for rich-text replacement, page-builder cards/heroes, upload
+  grids/lightboxes, inbox attachments, product cards/details, and profile/QR
+  previews.
+- `cd frontend && npm run check:media-placeholders`
+- `cd frontend && npm run lint`
+- `cd frontend && npx tsc -b`
+- `cd frontend && npm test -- --run`
+- `cd frontend && npm run build`
+- `git diff --check`
+- Manually throttle and fail representative image/video/audio requests at phone,
+  tablet, and desktop widths in light and dark themes; verify controls, focus,
+  crop/contain behavior, captions, and no blocked parent interaction.
+
+## References
+
+- `.specs/frontend_spec`
+- `.routines/worker`
+- `.routines/auditor`
+- `.todo/ui_primitive_consolidation`
+- `frontend/src/components/ui/MediaPlaceholder.tsx`
+- `frontend/src/components/ui/MediaPlaceholder.css`
+- `frontend/src/components/ui/RichTextRenderer.tsx`
+- `frontend/src/components/forum/ViewThread.tsx`
+- `frontend/src/pages/Layout.tsx`

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { createPortal } from "react-dom";
+import { MediaPlaceholder } from "../ui/MediaPlaceholder";
+import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 import { TableView } from "../ui/TableView/TableView";
 import "../ui/MediaPreviewLightbox.css";
 import "./MediaScraper.css";
@@ -64,11 +65,16 @@ export function MediaViewer({ job }: { job: MediaScrapeJob }) {
       cell: (item: any) => {
         if (item.isImage) {
           return (
-            <img
-              src={item.thumbnail}
+            <MediaPlaceholder
               alt="thumbnail"
               className="media-thumbnail"
-              style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "4px" }}
+              fit="cover"
+              href={item.thumbnail}
+              layout="thumbnail"
+              mediaType="image"
+              preserveFrame
+              showCaption={false}
+              size={{ height: 40, width: 40 }}
             />
           );
         }
@@ -132,43 +138,13 @@ export function MediaViewer({ job }: { job: MediaScrapeJob }) {
         />
       </div>
 
-      {selectedImage &&
-        typeof document !== "undefined" &&
-        createPortal(
-          <div
-            className="up-upload-lightbox"
-            onClick={() => setSelectedImage(null)}
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 9999,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              className="up-upload-lightbox-content"
-              onClick={e => e.stopPropagation()}
-              style={{
-                maxWidth: "90vw",
-                maxHeight: "90vh",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <img
-                src={selectedImage}
-                alt="Preview"
-                style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
-              />
-            </div>
-          </div>,
-          document.body
-        )}
+      {selectedImage && (
+        <MediaPreviewLightbox
+          items={[{ url: selectedImage, filename: "Scraped image", type: "image" }]}
+          index={0}
+          onClose={() => setSelectedImage(null)}
+        />
+      )}
     </div>
   );
 }

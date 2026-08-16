@@ -47,6 +47,11 @@
   object-position: center;
 }
 
+.profile-card-banner-media {
+  position: absolute;
+  inset: 0;
+}
+
 .profile-card-avatar-wrapper {
   position: absolute;
   bottom: -48px;

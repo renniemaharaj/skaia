@@ -89,9 +89,30 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Ran
 
-- 2026-08-03
+- 2026-08-16
 
 ## Last Run Remarks
+
+- Audited shared-media Phases 1 and 2 across stale URL events, empty/error/loading
+  accessibility, fixed geometry, reduced motion, theme tokens, hero cycling,
+  picker overlays, profile-avatar semantics, sanitization, and saved rich-text
+  stability. No Critical, High, or Medium issue remains in the implemented scope.
+- The exact-count media gate, 178 frontend tests, lint, TypeScript, production
+  build, and diff checks pass. Manual throttling and cross-viewport/theme checks
+  remain a Phase 6 completion gate after all consumer migrations land.
+- Audited Phase 3/4 failure states against preview close/cycle, file download,
+  product navigation, add-to-cart, quantity/removal, and media deletion controls.
+  The corrected modal restores focus and handles Escape/arrow keys; all 178 tests,
+  lint, TypeScript, build, enforcement, and diff gates pass.
+- Completed the final affected-scope media audit across accessibility, decorative
+  media, theme tokens, reduced motion, responsive fixed frames, URL replacement,
+  background URL safety, playback, modal focus/keyboard behavior, and failure-safe
+  parent actions. No Critical, High, or Medium finding remains. All 181 tests,
+  lint, TypeScript, production build, both policy gates, and diff checks pass;
+  real-browser throttling was unavailable and is covered by deterministic
+  lifecycle/error tests in this environment.
+
+## Previous Run Remarks (2026-08-03)
 
 - Audited repository bloat, tracked text, all Go modules, frontend dependencies,
   Husky behavior, todo contracts, generated contracts, and fingerprinted corpus

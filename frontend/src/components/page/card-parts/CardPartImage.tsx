@@ -1,3 +1,4 @@
+import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
 import type { ZoneAlign, ZoneSize } from "../types";
 import "./card-parts.css";
 
@@ -26,26 +27,22 @@ export const CardPartImage = ({
 }: CardPartImageProps) => {
   const height = fixedHeight ? `${fixedHeight}px` : SIZE_HEIGHT[size];
 
-  if (!src) {
-    return (
-      <div
-        className={`cdp-image cdp-image--${position} cdp-image--empty`}
-        style={{ minHeight: height, height: fixedHeight ? height : undefined }}
-      />
-    );
-  }
-
   return (
     <div
-      className={`cdp-image cdp-image--${position}`}
+      className={`cdp-image cdp-image--${position}${src ? "" : " cdp-image--empty"}`}
       style={{ minHeight: height, height: fixedHeight ? height : undefined }}
     >
-      <img
-        src={src}
+      <MediaPlaceholder
         alt={alt}
-        loading="lazy"
-        className="cdp-image__img"
-        style={{ objectPosition: align }}
+        fit="cover"
+        href={src}
+        layout={position === "background" ? "background" : "fill"}
+        mediaClassName="cdp-image__img"
+        mediaStyle={{ objectPosition: align }}
+        mediaType="image"
+        preserveFrame
+        showCaption={false}
+        size={{ height: "100%", width: "100%" }}
       />
     </div>
   );

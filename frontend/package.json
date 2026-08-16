@@ -9,6 +9,7 @@
     "contracts:generate": "go -C ../backend generate ./internal/s_registry",
     "contracts:check": "go -C ../backend run ./cmd/section-contract-gen -check -output ../frontend/src/components/page/sectionContracts.generated.ts -go-output internal/s_registry/section_configs_generated.go",
     "check:native-dialogs": "node scripts/check-native-dialogs.mjs",
+    "check:media-placeholders": "node scripts/check-media-placeholders.mjs",
     "lint": "biome lint .",
     "format": "biome format --write .",
     "preview": "vite preview",

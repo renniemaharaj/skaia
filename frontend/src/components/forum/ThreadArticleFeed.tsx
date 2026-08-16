@@ -104,16 +104,24 @@ const MediaPreview = ({ media }: { media: ThreadPreview["media"] }) => {
           {item.type === "image" ? (
             <MediaPlaceholder
               alt={item.name}
+              fit="cover"
               href={item.url}
+              layout="fill"
               mediaType="image"
+              showCaption={false}
               size={{ height: "100%", width: "100%" }}
             />
           ) : item.type === "video" ? (
             <MediaPlaceholder
               alt={item.name}
               controls={false}
+              fit="cover"
               href={item.url}
+              layout="fill"
               mediaType="video"
+              muted
+              playsInline
+              showCaption={false}
               size={{ height: "100%", width: "100%" }}
             />
           ) : (

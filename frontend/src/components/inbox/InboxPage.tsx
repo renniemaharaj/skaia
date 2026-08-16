@@ -4,7 +4,6 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   Ban,
   Check,
-  FileIcon,
   FileText,
   InboxIcon,
   Info,
@@ -45,6 +44,7 @@ import PersonPicker from "../ui/PersonPicker";
 import { customConfirm } from "../ui/Prompt";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
+import { MessageAttachment } from "./MessageAttachment";
 import "./InboxPage.css";
 import { parseInt } from "lodash";
 
@@ -1406,37 +1406,12 @@ function MessageBubble({
       <div className="inbox-msg-body">
         {!isMe && <span className="inbox-msg-author">{m.sender_name}</span>}
         {/* Attachment rendering */}
-        {m.attachment_url && m.message_type === "image" && (
-          <a href={m.attachment_url} target="_blank" rel="noopener noreferrer">
-            <img
-              src={m.attachment_url}
-              alt={m.attachment_name || "image"}
-              className="inbox-msg-image"
-            />
-          </a>
-        )}
-        {m.attachment_url && m.message_type === "video" && (
-          <video src={m.attachment_url} controls className="inbox-msg-video" />
-        )}
-        {m.attachment_url && m.message_type === "audio" && (
-          <audio src={m.attachment_url} controls className="inbox-msg-audio" />
-        )}
-        {m.attachment_url && m.message_type === "file" && (
-          <a
-            href={m.attachment_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inbox-msg-file"
-          >
-            <FileIcon size={16} />
-            <span>{m.attachment_name || "Download file"}</span>
-            {m.attachment_size ? (
-              <span className="inbox-msg-file-size">
-                {(m.attachment_size / 1024).toFixed(0)} KB
-              </span>
-            ) : null}
-          </a>
-        )}
+        <MessageAttachment
+          messageType={m.message_type}
+          name={m.attachment_name || undefined}
+          size={m.attachment_size}
+          url={m.attachment_url || undefined}
+        />
         {m.message_type === "page_card" &&
           (() => {
             try {

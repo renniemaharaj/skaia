@@ -80,9 +80,28 @@ docs disagree.
 
 ## Last Ran
 
-- 2026-08-03
+- 2026-08-16
 
 ## Last Run Remarks
+
+- Reconciled the shared-media plan with implementation truth. Corrected the
+  hardcoded placeholder shadow, stale URL-event race, fixed-frame/composability
+  gaps, and the mistaken treatment of semantic avatars as content media.
+- Confirmed read-only rich text now sanitizes and adapts media without persisting
+  transformed HTML, while editable TipTap serialization is unchanged. The
+  reviewed exact-count gate preserves intentional avatar, bundled-art, and
+  `MediaStream.srcObject` exceptions and exposes remaining phase debt.
+- Found and corrected the shared preview dialog swallowing Escape from focused
+  descendants. Upload, scraper, and commerce previews now share native modal,
+  focus-restoration, keyboard-cycle, and failure-safe control behavior; completed
+  Phase 3/4 files no longer appear in the migration allowlist.
+- Replaced request/config-controlled URL interpolation in generated background CSS
+  with a validated shared adapter, preserving cover and repeated-skin behavior
+  while removing the injection boundary. Phase 5 consumers now agree with the
+  durable media contract; only reviewed shared/avatar/bundled/MediaStream/Markdown
+  owners remain native or allowlisted.
+
+## Previous Run Remarks (2026-08-03)
 
 - Reconciled repository hygiene policy with implementation: all tracked
   maintainable text now passes the Go checker, generated/vendor comments retain

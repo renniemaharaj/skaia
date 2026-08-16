@@ -11,6 +11,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
+import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import RoleBadge from "./RoleBadge";
 import UserAvatar from "./UserAvatar";
 import type { ProfileUser, Role } from "./types";
@@ -73,24 +74,20 @@ const UserProfileCard = ({
   const topRole = rolesWithDetails[0];
   const glowColor = topRole?.glow_color;
 
-  const cardStyle: React.CSSProperties = {
-    ...(user.profile_card_art_url
-      ? {
-          backgroundImage: `linear-gradient(rgba(var(--bg-color-rgb), 0.85), rgba(var(--bg-color-rgb), 0.95)), url("${user.profile_card_art_url}")`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }
-      : {}),
-  };
-
   return (
     <>
       {/* Banner */}
       <div className="up-banner">
-        <img
-          src={displayBanner || "/banner_7783x7783.png"}
+        <MediaPlaceholder
+          href={displayBanner || "/banner_7783x7783.png"}
           alt="Profile banner"
           className="up-banner-img"
+          fit="cover"
+          layout="fill"
+          mediaType="image"
+          preserveFrame
+          showCaption={false}
+          size={{ height: "100%", width: "100%" }}
         />
         {canEdit && (
           <button className="up-banner-edit-btn" title="Edit profile" onClick={onEditOpen}>
@@ -104,8 +101,23 @@ const UserProfileCard = ({
       <ContentStandOutCard
         className="up-card"
         spotlightColor={glowColor || "var(--primary-color, rgba(255, 255, 255, 0.25))"}
-        style={cardStyle}
       >
+        {user.profile_card_art_url && (
+          <>
+            <MediaPlaceholder
+              alt="Profile card art"
+              className="up-card-art"
+              fit="cover"
+              href={user.profile_card_art_url}
+              layout="background"
+              mediaType="image"
+              preserveFrame
+              showCaption={false}
+              size={{ height: "100%", width: "100%" }}
+            />
+            <div className="up-card-art-tint" aria-hidden="true" />
+          </>
+        )}
         {user.is_suspended && (
           <div className="up-suspended-banner">
             <ShieldOff size={16} />

@@ -1,5 +1,3 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import {
   Calendar,
   History as HistoryIcon,
@@ -11,12 +9,15 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { apiRequest } from "../../../../utils/api";
 import { normalizeRoute } from "../../../../utils/route";
 import { sendWebSocketMessage } from "../../../../utils/wsProtobuf";
-import { apiRequest } from "../../../../utils/api";
-import UserProfileOverlay from "../../../user/UserProfileOverlay";
-import UserAvatar from "../../../user/UserAvatar";
 import Button from "../../../input/Button";
+import { MediaPlaceholder } from "../../../ui/MediaPlaceholder";
+import UserAvatar from "../../../user/UserAvatar";
+import UserProfileOverlay from "../../../user/UserProfileOverlay";
 import YouTubePlayer from "../YouTubePlayer";
 import type { YouTubePlayerRef } from "../YouTubePlayer";
 
@@ -453,7 +454,16 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
                 setSearchResults([]);
               }}
             >
-              <img src={res.thumbnail} alt="" />
+              <MediaPlaceholder
+                alt={`${res.title} thumbnail`}
+                fit="cover"
+                href={res.thumbnail}
+                layout="thumbnail"
+                mediaType="image"
+                preserveFrame
+                showCaption={false}
+                size={{ height: 22, width: 40 }}
+              />
               <span>{res.title}</span>
             </div>
           ))}
@@ -514,9 +524,15 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
               <div className="vp-queue-scroll">
                 {mediaState.queue.slice(1).map((item: any, index: number) => (
                   <div key={item.id} className="vp-queue-item">
-                    <img
-                      src={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`}
+                    <MediaPlaceholder
                       alt="Thumbnail"
+                      fit="cover"
+                      href={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`}
+                      layout="fill"
+                      mediaType="image"
+                      preserveFrame
+                      showCaption={false}
+                      size={{ height: "100%", width: "100%" }}
                     />
                     <div className="vp-queue-item-overlay">
                       {index === 0 &&
@@ -711,9 +727,10 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
                   </div>
                   <div className="vp-playlist-items">
                     {playlist.items.map((item: any) => (
-                      <img
+                      <button
                         key={item.id}
-                        src={`https://img.youtube.com/vi/${item.video_id}/default.jpg`}
+                        type="button"
+                        className="vp-playlist-thumb"
                         title={`${item.user_name} - ${new Date(item.created_at).toLocaleTimeString()}`}
                         onClick={() => {
                           if (socket) {
@@ -727,7 +744,18 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
                             });
                           }
                         }}
-                      />
+                      >
+                        <MediaPlaceholder
+                          alt={`${item.user_name} thumbnail`}
+                          fit="cover"
+                          href={`https://img.youtube.com/vi/${item.video_id}/default.jpg`}
+                          layout="thumbnail"
+                          mediaType="image"
+                          preserveFrame
+                          showCaption={false}
+                          size={{ height: 27, width: 48 }}
+                        />
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -737,9 +765,15 @@ export const MediaSection: React.FC<MediaSectionProps> = ({
             <div className="vp-queue-scroll" style={{ marginTop: "8px" }}>
               {mediaState.history.map((item: any) => (
                 <div key={item.id} className="vp-queue-item">
-                  <img
-                    src={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`}
+                  <MediaPlaceholder
                     alt="Thumbnail"
+                    fit="cover"
+                    href={`https://img.youtube.com/vi/${item.video_id}/mqdefault.jpg`}
+                    layout="fill"
+                    mediaType="image"
+                    preserveFrame
+                    showCaption={false}
+                    size={{ height: "100%", width: "100%" }}
                   />
                   <div className="vp-queue-item-info">
                     <span>

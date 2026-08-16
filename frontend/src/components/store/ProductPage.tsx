@@ -31,8 +31,9 @@ import { apiRequest } from "../../utils/api";
 import "./ProductPage.css";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
-import { MoneyAmount } from "../ui/MoneyAmount";
+import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
+import { MoneyAmount } from "../ui/MoneyAmount";
 import { ProductMediaTable } from "./ProductMediaTable";
 import { StorePageShell } from "./StorePageShell";
 import { getProductMediaItems } from "./storeMedia";
@@ -413,13 +414,19 @@ export const ProductPage = () => {
                   setPreviewMediaIndex(safeActiveMediaIndex);
                 }}
               >
-                {activeMediaIsVideo ? (
-                  <video src={activeMedia.url} preload="metadata" muted playsInline>
-                    <track kind="captions" />
-                  </video>
-                ) : (
-                  <img src={activeMedia.url} alt={activeMedia.filename || product.name} />
-                )}
+                <MediaPlaceholder
+                  alt={activeMedia.filename || product.name}
+                  controls={false}
+                  fit="cover"
+                  href={activeMedia.url}
+                  layout="fill"
+                  mediaType={activeMediaIsVideo ? "video" : "image"}
+                  muted
+                  playsInline
+                  preserveFrame
+                  showCaption={false}
+                  size={{ height: "100%", width: "100%" }}
+                />
               </button>
             ) : (
               <Package size={48} style={{ opacity: 0.25 }} />
@@ -604,12 +611,20 @@ export const ProductPage = () => {
                       className="similar-product-item"
                     >
                       <div className="similar-product-thumb">
-                        {similarCover && similarCoverIsVideo ? (
-                          <video src={similarCover.url} preload="metadata" muted playsInline>
-                            <track kind="captions" />
-                          </video>
-                        ) : similarCover ? (
-                          <img src={similarCover.url} alt={sp.name} />
+                        {similarCover ? (
+                          <MediaPlaceholder
+                            alt={sp.name}
+                            controls={false}
+                            fit="cover"
+                            href={similarCover.url}
+                            layout="thumbnail"
+                            mediaType={similarCoverIsVideo ? "video" : "image"}
+                            muted
+                            playsInline
+                            preserveFrame
+                            showCaption={false}
+                            size={{ height: 64, width: 64 }}
+                          />
                         ) : (
                           <Package size={18} />
                         )}

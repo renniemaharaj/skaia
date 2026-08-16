@@ -2,6 +2,7 @@ import { ShoppingBag, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { CartItem, Product } from "../../../atoms/store";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
+import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
 import { MoneyAmount } from "../../ui/MoneyAmount";
 
 const CART_FILLER_IDS = ["cart-filler-primary", "cart-filler-secondary", "cart-filler-tertiary"];
@@ -34,7 +35,17 @@ export function CartItemsList({
         return (
           <ContentFlatCard key={item.product_id} className="cart-item cart-checkout-item">
             {product?.image_url && (
-              <img src={product.image_url} alt={displayName} className="cart-item-image" />
+              <MediaPlaceholder
+                alt={displayName}
+                className="cart-item-image"
+                fit="cover"
+                href={product.image_url}
+                layout="thumbnail"
+                mediaType="image"
+                preserveFrame
+                showCaption={false}
+                size={{ height: 56, width: 56 }}
+              />
             )}
             <div className="cart-item-info">
               <h3>{displayName}</h3>

@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { apiRequest } from "../../utils/api";
+import UserAvatar from "../user/UserAvatar";
 import "./Mentions.css";
 
 export const MentionList = forwardRef((props: any, ref) => {
@@ -92,12 +93,14 @@ export const MentionList = forwardRef((props: any, ref) => {
             className={`mention-item ${index === selectedIndex ? "is-selected" : ""}`}
             onClick={() => selectItem(index)}
           >
-            {item.avatar ? (
-              <img src={item.avatar} alt={item.label} className="mention-item-avatar" />
-            ) : item.type === "user" ? (
-              <div className="mention-item-avatar-placeholder">
-                {item.label?.[0]?.toUpperCase()}
-              </div>
+            {item.type === "user" ? (
+              <UserAvatar
+                src={item.avatar || undefined}
+                alt={item.label}
+                className="mention-item-avatar"
+                initials={item.label?.[0]?.toUpperCase()}
+                size={24}
+              />
             ) : null}
             <span className="mention-item-label">{item.label}</span>
             {item.type && <span className="mention-item-type">{item.type}</span>}

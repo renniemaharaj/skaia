@@ -10,6 +10,7 @@ import {
   RectangleHorizontal,
   Trash2,
 } from "lucide-react";
+import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
 import {
   DeleteItemButton,
   EditableText,
@@ -376,7 +377,16 @@ export const ImageGalleryBlock = ({
                   </div>
                 </>
               )}
-              <img src={item.image_url || "/placeholder.webp"} alt={item.heading} />
+              <MediaPlaceholder
+                alt={item.heading || "Gallery image"}
+                fit="cover"
+                href={item.image_url || undefined}
+                layout="fill"
+                mediaType="image"
+                preserveFrame
+                showCaption={false}
+                size={{ height: "100%", width: "100%" }}
+              />
               {item.heading && (
                 <div className="gallery-wide-overlay">
                   {canEdit ? (
@@ -425,7 +435,16 @@ export const ImageGalleryBlock = ({
                   </div>
                 </>
               )}
-              <img src={item.image_url || "/placeholder.webp"} alt={item.heading} />
+              <MediaPlaceholder
+                alt={item.heading || "Gallery image"}
+                fit="cover"
+                href={item.image_url || undefined}
+                layout="fill"
+                mediaType="image"
+                preserveFrame
+                showCaption={false}
+                size={{ height: "100%", width: "100%" }}
+              />
               {item.heading && (
                 <div className="gallery-wide-overlay">
                   {canEdit ? (
@@ -474,7 +493,16 @@ export const ImageGalleryBlock = ({
                 </div>
               </>
             )}
-            <img src={item.image_url || "/placeholder.webp"} alt={item.heading} />
+            <MediaPlaceholder
+              alt={item.heading || "Gallery image"}
+              fit="cover"
+              href={item.image_url || undefined}
+              layout="fill"
+              mediaType="image"
+              preserveFrame
+              showCaption={false}
+              size={{ height: "100%", width: "100%" }}
+            />
             {(item.heading || canEdit) && (
               <div className="showcase-overlay">
                 {canEdit ? (

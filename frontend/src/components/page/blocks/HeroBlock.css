@@ -11,6 +11,12 @@
   background-position: center;
 }
 
+.hero-banner-media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
 .banner-image {
   position: absolute;
   top: 0;

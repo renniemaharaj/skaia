@@ -14,6 +14,7 @@ import { formatCents } from "../../utils/money";
 import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
+import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import { MoneyAmount } from "../ui/MoneyAmount";
 import UserAvatar from "../user/UserAvatar";
 import { StorePageShell } from "./StorePageShell";
@@ -128,7 +129,16 @@ const OrderSubmittedView: React.FC<Props> = ({
               <ContentFlatCard key={`${item.product_id}-${index}`} className="order-status-item">
                 <div className="order-status-item-media">
                   {product?.image_url ? (
-                    <img src={product.image_url} alt={displayName} />
+                    <MediaPlaceholder
+                      alt={displayName}
+                      fit="cover"
+                      href={product.image_url}
+                      layout="fill"
+                      mediaType="image"
+                      preserveFrame
+                      showCaption={false}
+                      size={{ height: "100%", width: "100%" }}
+                    />
                   ) : (
                     <span>{displayName.slice(0, 1).toUpperCase()}</span>
                   )}

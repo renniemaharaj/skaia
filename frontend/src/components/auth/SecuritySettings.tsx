@@ -21,6 +21,7 @@ import {
   totpEnable,
   totpSetup,
 } from "../../utils/api";
+import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import { customPrompt } from "../ui/Prompt";
 import "./SecuritySettings.css";
 import Button from "../input/Button";
@@ -229,7 +230,15 @@ export default function SecuritySettings({
                 verify.
               </p>
               <div className="sec-panel__qr">
-                <img src={qrUrl} alt="TOTP QR Code" width={200} height={200} />
+                <MediaPlaceholder
+                  alt="TOTP QR Code"
+                  href={qrUrl}
+                  layout="thumbnail"
+                  mediaType="image"
+                  preserveFrame
+                  showCaption={false}
+                  size={{ height: 200, width: 200 }}
+                />
               </div>
               <p style={{ fontSize: "0.75rem" }}>Or enter this secret manually:</p>
               <div className="sec-panel__secret">{adminSetupData.secret}</div>
@@ -539,7 +548,15 @@ export default function SecuritySettings({
             </p>
 
             <div className="sec-panel__qr">
-              <img src={qrUrl} alt="TOTP QR Code" width={200} height={200} />
+              <MediaPlaceholder
+                alt="TOTP QR Code"
+                href={qrUrl}
+                layout="thumbnail"
+                mediaType="image"
+                preserveFrame
+                showCaption={false}
+                size={{ height: 200, width: 200 }}
+              />
             </div>
 
             <p style={{ fontSize: "0.75rem" }}>Or enter this secret manually:</p>

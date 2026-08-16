@@ -2,11 +2,69 @@ import DOMPurify from "dompurify";
 import parse, { type DOMNode, Element } from "html-react-parser";
 import type React from "react";
 import UserLink from "../user/UserLink";
+import { MediaPlaceholder, type MediaSize, type MediaType } from "./MediaPlaceholder";
 
 interface RichTextRendererProps {
   html: string;
   className?: string;
   previewMode?: boolean;
+}
+
+function mediaSource(element: Element): string | undefined {
+  if (element.attribs.src) return element.attribs.src;
+  const source = element.children.find(
+    child => child instanceof Element && child.name === "source" && child.attribs.src
+  );
+  return source instanceof Element ? source.attribs.src : undefined;
+}
+
+function captionsSource(element: Element): string | undefined {
+  const track = element.children.find(
+    child =>
+      child instanceof Element &&
+      child.name === "track" &&
+      child.attribs.kind?.toLowerCase() === "captions" &&
+      child.attribs.src
+  );
+  return track instanceof Element ? track.attribs.src : undefined;
+}
+
+function mediaSize(element: Element): MediaSize | undefined {
+  const dimension = (value: string | undefined): number | string | undefined => {
+    if (!value) return undefined;
+    return /^\d+(?:\.\d+)?$/.test(value) ? Number(value) : value;
+  };
+  const width = dimension(element.attribs.width);
+  const height = dimension(element.attribs.height);
+  return width || height ? { width, height } : undefined;
+}
+
+function richTextMedia(element: Element, mediaType: MediaType) {
+  const href = mediaSource(element);
+  const alt = element.attribs.alt || element.attribs.title || `Embedded ${mediaType}`;
+  const size = mediaSize(element);
+  const preload = element.attribs.preload;
+
+  return (
+    <MediaPlaceholder
+      alt={alt}
+      autoPlay={"autoplay" in element.attribs}
+      captionsHref={captionsSource(element)}
+      className="rich-text-media-placeholder"
+      controls={mediaType !== "image" && "controls" in element.attribs}
+      href={href}
+      loop={"loop" in element.attribs}
+      mediaClassName={element.attribs.class}
+      mediaType={mediaType}
+      muted={"muted" in element.attribs}
+      playsInline={"playsinline" in element.attribs}
+      poster={element.attribs.poster}
+      preload={preload === "auto" || preload === "none" ? preload : "metadata"}
+      preserveFrame={Boolean(size)}
+      showCaption={false}
+      size={size}
+    />
+  );
 }
 
 export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
@@ -23,6 +81,14 @@ export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
         if (domNode.attribs?.id) {
           delete domNode.attribs.id;
         }
+      }
+
+      if (domNode instanceof Element && domNode.name === "img") {
+        return richTextMedia(domNode, "image");
+      }
+
+      if (domNode instanceof Element && (domNode.name === "video" || domNode.name === "audio")) {
+        return richTextMedia(domNode, domNode.name);
       }
 
       if (

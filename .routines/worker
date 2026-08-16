@@ -114,9 +114,20 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-08-03
+- 2026-08-16
 
 ## Last Run Remarks
+
+- Completed all phases of `shared_media_placeholder_adoption`: hardened the
+  shared image/video/audio state and layout contract, migrated first-party page
+  content, rich text, uploads/inbox/previews, and commerce without changing stored
+  HTML, editable TipTap documents, navigation, purchase actions, or live streams.
+- Added validated repeated/cover backgrounds, migrated profile/security/branding/
+  thumbnail surfaces, and reduced enforcement to reviewed native owners only.
+  Focused tests, all 181 frontend tests, lint, TypeScript, production build,
+  media/native-dialog enforcement, todo pairing, and diff checks pass.
+
+## Previous Run Remarks (2026-08-03)
 
 - Completed `forum_category_mobile_layout`: the category thread header no longer
   lets its non-shrinking search controls compress the category identity on real

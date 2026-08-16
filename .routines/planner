@@ -103,9 +103,19 @@ operational policies.
 
 ## Last Ran
 
-- 2026-08-03
+- 2026-08-16
 
 ## Last Run Remarks
+
+- Created `shared_media_placeholder_adoption` after inventorying 63 direct
+  image/video/audio elements across 31 production TSX files plus rich-text,
+  dynamic-background, live-stream, and canvas paths. The worker handoff hardens
+  the new shared primitive before phased page-content, upload/inbox, commerce,
+  profile/branding, security, and thumbnail migrations; it preserves explicit
+  avatar, bundled-art, MediaStream, canvas, metadata, map-chrome, and third-party
+  player exceptions behind an allowlisted regression gate.
+
+## Previous Run Remarks (2026-08-03)
 
 - Created and completed `forum_category_mobile_layout` after tracing the
   real-device category corruption to a non-shrinking toolbar sharing a flex row

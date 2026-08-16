@@ -25,6 +25,7 @@ import "./Layout.css";
 import { Toaster, toast } from "sonner";
 import { physicsSettingsAtom } from "../atoms/physics";
 import CursorOverlay from "../components/page/layout/CursorOverlay";
+import { MediaBackground } from "../components/ui/MediaBackground";
 import { PromptContainer } from "../components/ui/Prompt";
 import type { Role } from "../components/user/types";
 import { useThemeContext } from "../hooks/theme/useThemeContext";
@@ -543,44 +544,27 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         return (
           <>
             {effectiveBgImage && (
-              <style>{`
-                body {
-                  background-image: url("${effectiveBgImage}") !important;
-                  background-size: ${contextUser?.background_image_url ? "cover" : "auto"} !important;
-                  background-position: ${effectiveBgPos} !important;
-                  background-attachment: fixed !important;
-                  ${!contextUser?.background_image_url ? "background-repeat: repeat;" : ""}
-                }
-                .layout-main, .card, .panel {
-                   background-color: rgba(var(--bg-color-rgb), 0.85);
-                   backdrop-filter: blur(10px);
-                }
-                :root {
-                   background-image: url("${effectiveBgImage}");
-                   background-repeat: ${!contextUser?.background_image_url ? "repeat" : "no-repeat"};
-                   background-size: ${contextUser?.background_image_url ? "cover" : "auto"};
-                   background-attachment: fixed;
-                   background-position: ${effectiveBgPos};
-                }
-              `}</style>
+              <>
+                <MediaBackground
+                  alt="Page background"
+                  className="layout-media-background"
+                  imageHref={effectiveBgImage}
+                  imagePosition={effectiveBgPos}
+                  repeatImage={!contextUser?.background_image_url}
+                />
+                <style>{`
+                  .layout-main, .card, .panel {
+                    background-color: color-mix(in srgb, var(--bg-color) 85%, transparent);
+                    backdrop-filter: blur(10px);
+                  }
+                `}</style>
+              </>
             )}
             {effectiveBgVideo && (
-              <video
-                src={effectiveBgVideo}
-                autoPlay
-                loop
-                muted
-                playsInline
-                style={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  width: "100vw",
-                  height: "100vh",
-                  objectFit: "cover",
-                  zIndex: -2,
-                  pointerEvents: "none",
-                }}
+              <MediaBackground
+                alt="Page background video"
+                className="layout-media-background"
+                videoHref={effectiveBgVideo}
               />
             )}
             {(effectiveBgVideo || effectiveBgImage) && (

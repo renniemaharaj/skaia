@@ -20,6 +20,7 @@ import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import { showUploadManagerAtom, uploader } from "../../atoms/uploadAtom";
 import { apiRequest } from "../../utils/api";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 import { confirmDestructiveAction, customAlert } from "../ui/Prompt";
 import { TableView } from "../ui/TableView/TableView";
@@ -653,9 +654,29 @@ const UserUploads = ({
                     />
                   </div>
                   {isImage(u) ? (
-                    <img src={u.url} alt={u.filename} loading="lazy" />
+                    <MediaPlaceholder
+                      alt={u.filename}
+                      fit="cover"
+                      href={u.url}
+                      layout="fill"
+                      mediaType="image"
+                      preserveFrame
+                      showCaption={false}
+                      size={{ aspectRatio: "1 / 1", height: "100%", width: "100%" }}
+                    />
                   ) : isVideo(u) ? (
-                    <video src={u.url} muted preload="metadata" />
+                    <MediaPlaceholder
+                      alt={u.filename}
+                      controls={false}
+                      fit="cover"
+                      href={u.url}
+                      layout="fill"
+                      mediaType="video"
+                      muted
+                      preserveFrame
+                      showCaption={false}
+                      size={{ aspectRatio: "1 / 1", height: "100%", width: "100%" }}
+                    />
                   ) : (
                     <FileIcon size={32} color="var(--text-tertiary)" />
                   )}
@@ -778,14 +799,15 @@ const UserUploads = ({
                         flexShrink: 0,
                       }}
                     >
-                      <img
-                        src={u.url}
+                      <MediaPlaceholder
                         alt={u.filename}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
+                        fit="cover"
+                        href={u.url}
+                        layout="thumbnail"
+                        mediaType="image"
+                        preserveFrame
+                        showCaption={false}
+                        size={{ height: 32, width: 32 }}
                       />
                     </div>
                   ) : isVideo(u) ? (
@@ -796,16 +818,20 @@ const UserUploads = ({
                         borderRadius: "4px",
                         overflow: "hidden",
                         flexShrink: 0,
-                        backgroundColor: "black",
+                        backgroundColor: "var(--overlay-dark-heavy)",
                       }}
                     >
-                      <video
-                        src={u.url}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
+                      <MediaPlaceholder
+                        alt={u.filename}
+                        controls={false}
+                        fit="cover"
+                        href={u.url}
+                        layout="thumbnail"
+                        mediaType="video"
+                        muted
+                        preserveFrame
+                        showCaption={false}
+                        size={{ height: 32, width: 32 }}
                       />
                     </div>
                   ) : (

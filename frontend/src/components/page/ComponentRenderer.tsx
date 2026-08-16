@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { apiRequest } from "../../utils/api";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { type MediaScrapeJob, MediaViewer } from "../mediascraper/MediaViewer";
+import { MediaPlaceholder } from "../ui/MediaPlaceholder";
+import UserAvatar from "../user/UserAvatar";
 /**
  * ComponentRenderer - renders a single registered component using bound row data.
  *
@@ -120,19 +122,25 @@ function PrimitiveImage({
 }) {
   const src = str(data.media);
   const alt = str(data.alt) || "image";
-  const img = src ? (
-    <img className="cr-image__img" src={src} alt={alt} style={styles.image} />
-  ) : (
-    <div className="cr-image__placeholder">No image</div>
+  const image = (
+    <MediaPlaceholder
+      alt={alt}
+      href={src || undefined}
+      mediaClassName="cr-image__img"
+      mediaStyle={styles.image}
+      mediaType="image"
+      showCaption={false}
+      size={{ height: 120, width: "100%" }}
+    />
   );
   return (
     <div className="cr-image" style={styles.root}>
       {data.href ? (
         <a href={str(data.href)} target="_blank" rel="noopener noreferrer">
-          {img}
+          {image}
         </a>
       ) : (
-        img
+        image
       )}
     </div>
   );
@@ -158,7 +166,15 @@ function PrimitiveIcon({ data, styles }: { data: Resolved; styles: StyleMap }) {
   return (
     <span className="cr-icon" style={styles.root} aria-label={str(data.aria_label)}>
       {isUrl ? (
-        <img className="cr-icon__img" src={icon} alt="" />
+        <MediaPlaceholder
+          alt={str(data.aria_label) || "Icon"}
+          href={icon}
+          layout="inline"
+          mediaClassName="cr-icon__img"
+          mediaType="image"
+          showCaption={false}
+          size={{ height: 28, width: 28 }}
+        />
       ) : (
         <span className="cr-icon__glyph">{icon}</span>
       )}
@@ -184,7 +200,16 @@ function CompoundCard({
     >
       {!!data.media && (
         <div className="cr-card__image" style={styles.image}>
-          <img src={str(data.media)} alt={str(data.title)} />
+          <MediaPlaceholder
+            alt={str(data.title) || "Card image"}
+            fit="cover"
+            href={str(data.media)}
+            layout="fill"
+            mediaClassName="cr-card__image-media"
+            mediaType="image"
+            showCaption={false}
+            size={{ height: 160, width: "100%" }}
+          />
         </div>
       )}
       <div className="cr-card__body" style={styles.body}>
@@ -244,11 +269,16 @@ function CompoundMediaCard({
       onClick={() => onEvent?.("onClick", data)}
     >
       <div className="cr-media-card__media" style={styles.media}>
-        {src ? (
-          <img src={src} alt={str(data.title)} />
-        ) : (
-          <div className="cr-media-card__placeholder">No media</div>
-        )}
+        <MediaPlaceholder
+          alt={str(data.title) || "Media"}
+          fit="cover"
+          href={src || undefined}
+          layout="fill"
+          mediaClassName="cr-media-card__media-object"
+          mediaType="image"
+          showCaption={false}
+          size={{ height: src ? 200 : 120, width: "100%" }}
+        />
       </div>
       {!!data.title && (
         <div className="cr-media-card__caption" style={styles.caption}>
@@ -372,7 +402,12 @@ function CompoundProfile({
     <div className="cr-profile" style={styles.root}>
       {!!data.media && (
         <div className="cr-profile__avatar" style={styles.avatar}>
-          <img src={str(data.media)} alt={str(data.title)} />
+          <UserAvatar
+            alt={str(data.title) || "Profile image"}
+            className="cr-profile__avatar-media"
+            size={48}
+            src={str(data.media)}
+          />
         </div>
       )}
       <div className="cr-profile__info">

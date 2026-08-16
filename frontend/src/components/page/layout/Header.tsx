@@ -28,6 +28,7 @@ import { brandingAtom, featuresAtom } from "../../../atoms/config";
 import { useGuestSandboxMode } from "../../../hooks/useGuestSandboxMode";
 import { apiRequest } from "../../../utils/api";
 import NotificationBell from "../../notifications/NotificationBell";
+import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
 import UserLink from "../../user/UserLink";
 import { EditableText, ImagePickerButton } from "../EditControls";
 import "./Header.css";
@@ -165,7 +166,17 @@ export const Header: React.FC<HeaderProps> = ({
   ) : (
     <>
       <div className="logo-img-wrapper">
-        <img src={logoUrl} alt={headerTitle} className="logo-img" />
+        <MediaPlaceholder
+          alt={headerTitle}
+          className="logo-img"
+          fit="contain"
+          href={logoUrl}
+          layout="thumbnail"
+          mediaType="image"
+          preserveFrame
+          showCaption={false}
+          size={{ height: 40, width: 40 }}
+        />
         {canEdit && (
           <div
             className="logo-edit-controls"

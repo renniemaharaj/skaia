@@ -1,7 +1,16 @@
-import { type CSSProperties, type ReactElement, useState } from "react";
+import {
+  type CSSProperties,
+  type ImgHTMLAttributes,
+  type ReactElement,
+  type Ref,
+  useRef,
+  useState,
+} from "react";
 import "./MediaPlaceholder.css";
 
 export type MediaType = "audio" | "image" | "video";
+export type MediaLayout = "background" | "block" | "fill" | "inline" | "thumbnail";
+export type MediaFit = "contain" | "cover";
 
 export interface MediaSize {
   aspectRatio?: string;
@@ -11,12 +20,33 @@ export interface MediaSize {
 
 export interface MediaPlaceholderProps {
   alt: string;
+  autoPlay?: boolean;
   captionsHref?: string;
-  href?: string;
-  mediaType: MediaType;
-  size?: MediaSize;
+  className?: string;
   /** Show native controls for audio and video. Defaults to true. */
   controls?: boolean;
+  decorative?: boolean;
+  fit?: MediaFit;
+  href?: string;
+  imageLoading?: ImgHTMLAttributes<HTMLImageElement>["loading"];
+  layout?: MediaLayout;
+  loop?: boolean;
+  mediaClassName?: string;
+  mediaStyle?: CSSProperties;
+  mediaType: MediaType;
+  muted?: boolean;
+  onEnded?: () => void;
+  onError?: () => void;
+  onReady?: () => void;
+  playsInline?: boolean;
+  poster?: string;
+  preload?: "auto" | "metadata" | "none";
+  /** Keep the configured frame after the asset loads. Defaults to true for non-block layouts. */
+  preserveFrame?: boolean;
+  showCaption?: boolean;
+  size?: MediaSize;
+  style?: CSSProperties;
+  videoRef?: Ref<HTMLVideoElement>;
 }
 
 type MediaStatus = "empty" | "error" | "loading" | "ready";
@@ -32,37 +62,93 @@ function initialStatus(href: string | undefined): MediaStatus {
 
 export function MediaPlaceholder({
   alt,
+  autoPlay = false,
   captionsHref,
-  href,
-  mediaType,
-  size,
+  className = "",
   controls = true,
+  decorative = false,
+  fit = "contain",
+  href,
+  imageLoading = "lazy",
+  layout = "block",
+  loop = false,
+  mediaClassName = "",
+  mediaStyle,
+  mediaType,
+  muted = false,
+  onEnded,
+  onError,
+  onReady,
+  playsInline = false,
+  poster,
+  preload = "metadata",
+  preserveFrame = layout !== "block",
+  showCaption = layout === "block",
+  size,
+  style,
+  videoRef,
 }: MediaPlaceholderProps) {
   const [mediaState, setMediaState] = useState<MediaState>(() => ({
     href,
     status: initialStatus(href),
   }));
+  const currentHrefRef = useRef(href);
+  currentHrefRef.current = href;
+
   const status = mediaState.href === href ? mediaState.status : initialStatus(href);
-  const setStatus = (nextStatus: MediaStatus): void => {
-    setMediaState({ href, status: nextStatus });
+  const setStatus = (eventHref: string, nextStatus: MediaStatus): void => {
+    if (currentHrefRef.current !== eventHref) return;
+    setMediaState({ href: eventHref, status: nextStatus });
+    if (nextStatus === "ready") onReady?.();
+    if (nextStatus === "error") onError?.();
   };
 
-  const style: CSSProperties = {
-    aspectRatio: status === "ready" ? undefined : size?.aspectRatio,
-    height: status === "ready" ? undefined : size?.height,
+  const frameStyle: CSSProperties = {
+    aspectRatio: status === "ready" && !preserveFrame ? undefined : size?.aspectRatio,
+    height: status === "ready" && !preserveFrame ? undefined : size?.height,
     maxWidth: "100%",
     width: size?.width,
+    ...style,
   };
   const media = href
-    ? renderMedia(href, alt, captionsHref, mediaType, status, setStatus, controls)
+    ? renderMedia({
+        alt,
+        autoPlay,
+        captionsHref,
+        controls,
+        href,
+        imageLoading,
+        loop,
+        mediaClassName,
+        mediaStyle,
+        mediaType,
+        muted,
+        onEnded,
+        playsInline,
+        poster,
+        preload,
+        setStatus,
+        status,
+        videoRef,
+      })
     : null;
+  const classes = [
+    "media-placeholder",
+    `media-placeholder--${layout}`,
+    `media-placeholder--fit-${fit}`,
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <figure
+      aria-hidden={decorative || undefined}
       aria-busy={status === "loading"}
-      className="media-placeholder"
+      className={classes}
       data-media-status={status}
-      style={style}
+      data-preserve-frame={preserveFrame}
+      style={frameStyle}
     >
       {media}
       {status === "loading" && (
@@ -87,34 +173,77 @@ export function MediaPlaceholder({
           <small>The content server asset is unavailable.</small>
         </div>
       )}
-      {status === "ready" && <figcaption>{alt}</figcaption>}
+      {status === "ready" && showCaption && <figcaption>{alt}</figcaption>}
     </figure>
   );
 }
 
-function renderMedia(
-  href: string,
-  alt: string,
-  captionsHref: string | undefined,
-  mediaType: MediaType,
-  status: MediaStatus,
-  setStatus: (status: MediaStatus) => void,
-  controls: boolean
-): ReactElement {
-  const className = status === "ready" ? "validated-media ready" : "validated-media";
-  const failed = (): void => setStatus("error");
-  const loaded = (): void => setStatus("ready");
+interface RenderMediaOptions {
+  alt: string;
+  autoPlay: boolean;
+  captionsHref: string | undefined;
+  controls: boolean;
+  href: string;
+  imageLoading: ImgHTMLAttributes<HTMLImageElement>["loading"];
+  loop: boolean;
+  mediaClassName: string;
+  mediaStyle: CSSProperties | undefined;
+  mediaType: MediaType;
+  muted: boolean;
+  onEnded: (() => void) | undefined;
+  playsInline: boolean;
+  poster: string | undefined;
+  preload: "auto" | "metadata" | "none";
+  setStatus: (eventHref: string, status: MediaStatus) => void;
+  status: MediaStatus;
+  videoRef: Ref<HTMLVideoElement> | undefined;
+}
+
+function renderMedia({
+  alt,
+  autoPlay,
+  captionsHref,
+  controls,
+  href,
+  imageLoading,
+  loop,
+  mediaClassName,
+  mediaStyle,
+  mediaType,
+  muted,
+  onEnded,
+  playsInline,
+  poster,
+  preload,
+  setStatus,
+  status,
+  videoRef,
+}: RenderMediaOptions): ReactElement {
+  const className = ["validated-media", status === "ready" ? "ready" : "", mediaClassName]
+    .filter(Boolean)
+    .join(" ");
+  const failed = (): void => setStatus(href, "error");
+  const loaded = (): void => setStatus(href, "ready");
 
   if (mediaType === "video") {
     return (
       <video
+        key={href}
+        ref={videoRef}
         aria-label={alt}
+        autoPlay={autoPlay}
         className={className}
         controls={controls}
+        loop={loop}
+        muted={muted}
+        onEnded={onEnded}
         onError={failed}
         onLoadedMetadata={loaded}
-        preload="metadata"
+        playsInline={playsInline}
+        poster={poster}
+        preload={preload}
         src={href}
+        style={mediaStyle}
       >
         {captionsHref && <track kind="captions" src={captionsHref} />}
       </video>
@@ -124,13 +253,18 @@ function renderMedia(
   if (mediaType === "audio") {
     return (
       <audio
+        key={href}
         aria-label={alt}
+        autoPlay={autoPlay}
         className={className}
         controls={controls}
+        loop={loop}
+        muted={muted}
         onError={failed}
         onLoadedMetadata={loaded}
-        preload="metadata"
+        preload={preload}
         src={href}
+        style={mediaStyle}
       >
         {captionsHref && <track kind="captions" src={captionsHref} />}
       </audio>
@@ -139,12 +273,14 @@ function renderMedia(
 
   return (
     <img
+      key={href}
       alt={alt}
       className={className}
-      loading="lazy"
+      loading={imageLoading}
       onError={failed}
       onLoad={loaded}
       src={href}
+      style={mediaStyle}
     />
   );
 }

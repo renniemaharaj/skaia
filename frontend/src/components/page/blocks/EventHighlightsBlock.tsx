@@ -1,4 +1,5 @@
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
+import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
 import type { PageItem, PageSection } from "../types";
 import "./EventHighlightsBlock.css";
 import { AddItemButton, DeleteItemButton, EditableText, ImagePickerButton } from "../EditControls";
@@ -60,7 +61,16 @@ export const EventHighlightsBlock = ({
                   <DeleteItemButton onClick={() => onItemDelete(item.id)} />
                 </>
               )}
-              <img src={item.image_url || "/placeholder.webp"} alt={item.heading} />
+              <MediaPlaceholder
+                alt={item.heading || "Event highlight image"}
+                fit="cover"
+                href={item.image_url || undefined}
+                layout="fill"
+                mediaType="image"
+                preserveFrame
+                showCaption={false}
+                size={{ height: "100%", width: "100%" }}
+              />
             </div>
             <div className="event-highlight-body">
               {canEdit ? (

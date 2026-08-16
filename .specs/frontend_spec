@@ -18,6 +18,7 @@ navigation/narration, WebSocket consumers, or page-builder UX.
 - API utilities: `frontend/src/utils/api.ts`
 - WebSocket singleton: `frontend/src/hooks/useWebSocketSync.ts`
 - Design tokens/utilities: `frontend/src/index.css`, `frontend/src/utilities.css`
+- Shared URL-backed media state: `frontend/src/components/ui/MediaPlaceholder.tsx`
 - Domain pages/components: `src/pages/*`, `src/components/*`, `src/styles/*`
 - Bible UI/data: `src/pages/kjv/*`, `src/components/bible/*`,
   `src/atoms/bible.ts`
@@ -36,6 +37,23 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   for `subscribe`/`unsubscribe`; it must remain a singleton per browser context.
 - Route pages live under `src/pages`; reusable domain UI lives under
   `src/components`; shared CSS tokens live only in `src/index.css`.
+- `MediaPlaceholder` owns URL-keyed empty, loading, ready, and error presentation
+  for image, video, and audio content. Its typed layouts preserve compact,
+  fixed-frame, fill, and background geometry while exposing native playback,
+  caption, fit, decorative accessibility, and lifecycle behavior.
+  `MediaBackground` adds validated cover-video/image and repeated-image behavior
+  without interpolating asset URLs into generated style text. Read-only authored
+  HTML is sanitized by `RichTextRenderer` and adapts media tags without changing
+  saved HTML.
+- `npm run check:media-placeholders` rejects unreviewed raw media and dynamic
+  image backgrounds. The exact-count allowlist distinguishes migration debt from
+  intentional shared primitive, `UserAvatar`, bundled-art, `MediaStream.srcObject`,
+  and read-only Markdown-adapter ownership. The completed rollout verification is
+  recorded in `.todo/shared_media_placeholder_adoption.tip`.
+- `MediaPreviewLightbox` owns URL-backed preview portals across uploads, scraped
+  media, and commerce. It uses a native modal lifecycle, restores prior focus,
+  supports Escape and arrow-key navigation, and keeps controls independent of
+  media load success.
 - Page-section types, config aliases, versions, defaults, and capabilities in
   `sectionContracts.generated.ts` are generated from backend canonical schemas;
   update them with `npm run contracts:generate`, never by hand.
@@ -282,6 +300,7 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 
 ## Trace
 
+- `.todo/shared_media_placeholder_adoption`
 - `.specs/realtime_wss_spec`
 - `.specs/route_resolution_spec`
 - `.specs/custom_pages_multiplayer_spec`

@@ -3,6 +3,7 @@ import type { PageSection } from "../types";
 import "./HeroBlock.css";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import BlurText from "../../ui/BlurText/BlurText";
+import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
 import {
   ColorPickerButton,
   EditableText,
@@ -85,7 +86,7 @@ export const HeroBlock = ({ section, canEdit, onUpdate }: Props) => {
     }
   }, [videos.length]);
 
-  // Reload the <video> element whenever the current source changes
+  // Reload the video element whenever the current source changes
   useEffect(() => {
     if (variant === 2 && currentVideo && videoRef.current) {
       videoRef.current.load();
@@ -116,20 +117,39 @@ export const HeroBlock = ({ section, canEdit, onUpdate }: Props) => {
   return (
     <section className={`hero-banner hero-v${variant}`}>
       {/* Background */}
-      {isVideo && currentVideo ? (
-        <video
-          ref={videoRef}
-          className="banner-video"
+      {isVideo ? (
+        <MediaPlaceholder
+          alt={`${section.heading || "Hero"} background video`}
           autoPlay
-          muted
+          className="hero-banner-media"
+          controls={false}
+          fit="cover"
+          href={currentVideo || undefined}
+          layout="background"
           loop={videos.length === 1}
-          playsInline
+          mediaClassName="banner-video"
+          mediaType="video"
+          muted
           onEnded={handleVideoEnded}
-        >
-          <source src={currentVideo} />
-        </video>
+          playsInline
+          preserveFrame
+          showCaption={false}
+          size={{ height: "100%", width: "100%" }}
+          videoRef={videoRef}
+        />
       ) : (
-        <img src={bgImage} alt={section.heading} className="banner-image" />
+        <MediaPlaceholder
+          alt={`${section.heading || "Hero"} background image`}
+          className="hero-banner-media"
+          fit="cover"
+          href={bgImage || undefined}
+          layout="background"
+          mediaClassName="banner-image"
+          mediaType="image"
+          preserveFrame
+          showCaption={false}
+          size={{ height: "100%", width: "100%" }}
+        />
       )}
 
       {/* Video cycling controls (non-edit visitors too) */}

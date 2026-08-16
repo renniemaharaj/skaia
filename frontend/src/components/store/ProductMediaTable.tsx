@@ -2,6 +2,7 @@ import { Check, Copy, Film, ImageIcon, Plus, Trash2, Upload } from "lucide-react
 import { useRef, useState } from "react";
 import type { ProductMedia } from "../../atoms/store";
 import { uploader } from "../../atoms/uploadAtom";
+import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 import { TableView } from "../ui/TableView/TableView";
 import "./ProductMediaTable.css";
@@ -144,13 +145,18 @@ export function ProductMediaTable({ media, onChange, editable = false }: Product
             cell: item => (
               <div className="product-media-table__file">
                 <div className="product-media-table__thumb">
-                  {isVideo(item) ? (
-                    <video src={item.url} preload="metadata">
-                      <track kind="captions" />
-                    </video>
-                  ) : (
-                    <img src={item.url} alt={item.filename} loading="lazy" />
-                  )}
+                  <MediaPlaceholder
+                    alt={item.filename}
+                    controls={false}
+                    fit="cover"
+                    href={item.url}
+                    layout="thumbnail"
+                    mediaType={isVideo(item) ? "video" : "image"}
+                    muted
+                    preserveFrame
+                    showCaption={false}
+                    size={{ height: 32, width: 32 }}
+                  />
                 </div>
                 <span title={item.filename}>{item.filename}</span>
               </div>

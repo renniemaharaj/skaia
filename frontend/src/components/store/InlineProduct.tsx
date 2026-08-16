@@ -2,6 +2,7 @@ import { Clock, Edit2, Package, ShoppingBag, Trash2, TrendingUp, User } from "lu
 import { Link } from "react-router-dom";
 import type { Product } from "../../atoms/store";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import { MoneyAmount } from "../ui/MoneyAmount";
 import StarRating from "../ui/StarRating";
 import { useProductRatings } from "./ratings";
@@ -79,13 +80,19 @@ export const InlineProduct = ({
                 onImagePreview?.(product, 0);
               }}
             >
-              {coverIsVideo ? (
-                <video src={cover.url} preload="metadata" muted playsInline>
-                  <track kind="captions" />
-                </video>
-              ) : (
-                <img src={cover.url} alt={product.name} />
-              )}
+              <MediaPlaceholder
+                alt={product.name}
+                controls={false}
+                fit="cover"
+                href={cover.url}
+                layout="fill"
+                mediaType={coverIsVideo ? "video" : "image"}
+                muted
+                playsInline
+                preserveFrame
+                showCaption={false}
+                size={{ height: "100%", width: "100%" }}
+              />
             </button>
             {stats}
           </div>

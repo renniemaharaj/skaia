@@ -1,6 +1,8 @@
 import { Check, ExternalLink, Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
+import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
+import UserAvatar from "../../user/UserAvatar";
 import type { PageItem, PageSection } from "../types";
 import "./ProfileCardBlock.css";
 import { EditableText, ImagePickerButton } from "../EditControls";
@@ -124,7 +126,17 @@ export const ProfileCardBlock = ({ section, canEdit, onUpdate }: Props) => {
         <ContentFlatCard className="profile-card">
           {/* Banner */}
           <div className="profile-card-banner">
-            <img src={bannerUrl} alt="Banner" />
+            <MediaPlaceholder
+              alt={`${profileName} profile banner`}
+              className="profile-card-banner-media"
+              fit="cover"
+              href={bannerUrl || undefined}
+              layout="fill"
+              mediaType="image"
+              preserveFrame
+              showCaption={false}
+              size={{ height: "100%", width: "100%" }}
+            />
             {canEdit && (
               <ImagePickerButton
                 onUploaded={url => updateConfig({ banner_url: url })}
@@ -133,7 +145,12 @@ export const ProfileCardBlock = ({ section, canEdit, onUpdate }: Props) => {
             )}
             {/* Avatar overlapping bottom of banner */}
             <div className="profile-card-avatar-wrapper">
-              <img src={avatarUrl} alt="Profile" className="profile-card-avatar" />
+              <UserAvatar
+                src={avatarUrl || undefined}
+                alt={`${profileName} profile`}
+                className="profile-card-avatar"
+                size={120}
+              />
               {canEdit && (
                 <ImagePickerButton
                   onUploaded={url => updateConfig({ avatar_url: url })}

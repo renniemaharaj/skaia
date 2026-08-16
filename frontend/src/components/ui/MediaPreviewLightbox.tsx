@@ -1,5 +1,7 @@
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { MediaPlaceholder } from "./MediaPlaceholder";
 import "./MediaPreviewLightbox.css";
 
 export interface PreviewMediaItem {
@@ -12,7 +14,7 @@ export interface PreviewMediaItem {
 interface MediaPreviewLightboxProps {
   items: PreviewMediaItem[];
   index: number;
-  onIndexChange: (index: number) => void;
+  onIndexChange?: (index: number) => void;
   onClose: () => void;
 }
 
@@ -25,37 +27,75 @@ export function MediaPreviewLightbox({
   onIndexChange,
   onClose,
 }: MediaPreviewLightboxProps) {
-  if (!items[index] || typeof document === "undefined") return null;
-
   const item = items[index];
-  const canCycle = items.length > 1;
-  const previous = () => onIndexChange((index - 1 + items.length) % items.length);
-  const next = () => onIndexChange((index + 1) % items.length);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const hasItem = Boolean(item);
+
+  useEffect(() => {
+    if (!hasItem || typeof document === "undefined") return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    closeButtonRef.current?.focus();
+
+    return () => {
+      if (typeof dialog.close === "function" && dialog.open) dialog.close();
+      else dialog.removeAttribute("open");
+      previousFocus?.focus();
+    };
+  }, [hasItem]);
+
+  if (!item || typeof document === "undefined") return null;
+
+  const canCycle = items.length > 1 && Boolean(onIndexChange);
+  const previous = () => onIndexChange?.((index - 1 + items.length) % items.length);
+  const next = () => onIndexChange?.((index + 1) % items.length);
 
   return createPortal(
     <dialog
-      open
+      ref={dialogRef}
       className="up-upload-lightbox media-preview-lightbox"
       onClick={onClose}
+      onCancel={event => {
+        event.preventDefault();
+        onClose();
+      }}
       onKeyDown={event => {
-        if (event.key === "Escape") onClose();
+        if (event.key === "Escape") {
+          event.preventDefault();
+          onClose();
+        } else if (event.key === "ArrowLeft" && canCycle) {
+          event.preventDefault();
+          previous();
+        } else if (event.key === "ArrowRight" && canCycle) {
+          event.preventDefault();
+          next();
+        }
       }}
       aria-modal="true"
       tabIndex={-1}
     >
-      <div
-        className="up-upload-lightbox-content"
-        onClick={e => e.stopPropagation()}
-        onKeyDown={e => e.stopPropagation()}
-      >
+      <div className="up-upload-lightbox-content" onClick={e => e.stopPropagation()}>
         <div className="media-preview-frame">
-          {isVideo(item) ? (
-            <video src={item.url} controls autoPlay className="media-preview-object">
-              <track kind="captions" />
-            </video>
-          ) : (
-            <img src={item.url} alt={item.filename} className="media-preview-object" />
-          )}
+          <MediaPlaceholder
+            alt={item.filename}
+            autoPlay={isVideo(item)}
+            className="media-preview-object"
+            controls
+            fit="contain"
+            href={item.url}
+            layout="fill"
+            mediaType={isVideo(item) ? "video" : "image"}
+            playsInline
+            preserveFrame
+            showCaption={false}
+            size={{ height: "100%", width: "100%" }}
+          />
           {canCycle && (
             <>
               <button
@@ -85,7 +125,14 @@ export function MediaPreviewLightbox({
             <span className="up-upload-lightbox-count">
               {index + 1}/{items.length}
             </span>
-            <button type="button" className="action-btn view-btn" title="Close" onClick={onClose}>
+            <button
+              ref={closeButtonRef}
+              type="button"
+              className="action-btn view-btn"
+              title="Close"
+              aria-label="Close media preview"
+              onClick={onClose}
+            >
               <X size={14} />
             </button>
           </div>

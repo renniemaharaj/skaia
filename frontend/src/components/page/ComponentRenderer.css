@@ -158,7 +158,7 @@
   box-shadow: none;
   transform: none;
 }
-.cr-card__image img {
+.cr-card__image-media {
   display: block;
   width: 100%;
   height: 160px;
@@ -252,7 +252,7 @@
   box-shadow: none;
   transform: none;
 }
-.cr-media-card__media img {
+.cr-media-card__media-object {
   display: block;
   width: 100%;
   height: 200px;
@@ -294,7 +294,7 @@
 .cr-profile:hover {
   box-shadow: var(--shadow-hover);
 }
-.cr-profile__avatar img {
+.cr-profile__avatar-media {
   width: 48px;
   height: 48px;
   border-radius: 50%;

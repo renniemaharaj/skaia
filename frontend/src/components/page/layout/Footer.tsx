@@ -9,6 +9,7 @@ import { apiRequest } from "../../../utils/api";
 import { EditableText, VariantCycler } from "../EditControls";
 import type { FooterConfig, FooterLink, FooterSocialLink } from "../types";
 import "./Footer.css";
+import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
 import SocialLinks from "./SocialLinks";
 
 const FOOTER_VARIANTS = 2;
@@ -256,7 +257,16 @@ export const Footer: React.FC = () => {
       {variant === 2 && (
         <>
           {/* Background watermark logo */}
-          <img src={logoUrl} alt="" className="footer-v2-watermark" aria-hidden="true" />
+          <MediaPlaceholder
+            alt=""
+            className="footer-v2-watermark"
+            decorative
+            href={logoUrl}
+            layout="background"
+            mediaType="image"
+            preserveFrame
+            showCaption={false}
+          />
 
           <div className="footer-content footer-v2-grid">
             {/* Brand column */}

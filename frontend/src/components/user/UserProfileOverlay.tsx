@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../../utils/api";
 import { loadUserProfile, subscribeUserProfile } from "../../utils/userRequests";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
+import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import RoleBadge from "./RoleBadge";
 import UserAvatar from "./UserAvatar";
 import type { ProfileUser, Role } from "./types";
@@ -199,7 +200,17 @@ const UserProfileOverlay: React.FC<UserProfileOverlayProps> = ({
               spotlightColor={themeColor || "var(--primary-color, rgba(255, 255, 255, 0.25))"}
             >
               <div className="upo-banner">
-                <img src={bannerUrl} alt="Banner" className="upo-banner-img" />
+                <MediaPlaceholder
+                  alt={`${displayName} banner`}
+                  className="upo-banner-img"
+                  fit="cover"
+                  href={bannerUrl}
+                  layout="fill"
+                  mediaType="image"
+                  preserveFrame
+                  showCaption={false}
+                  size={{ height: "100%", width: "100%" }}
+                />
               </div>
 
               <div className="upo-content">

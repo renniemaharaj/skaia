@@ -1,5 +1,4 @@
-import { createPortal } from "react-dom";
-import "../ui/MediaPreviewLightbox.css";
+import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 
 interface ImageLightboxProps {
   imageUrl: string | null;
@@ -7,26 +6,13 @@ interface ImageLightboxProps {
 }
 
 export function ImageLightbox({ imageUrl, onClose }: ImageLightboxProps) {
-  if (!imageUrl || typeof document === "undefined") {
-    return null;
-  }
+  if (!imageUrl) return null;
 
-  return createPortal(
-    <button
-      type="button"
-      className="up-upload-lightbox"
-      aria-label="Close image preview"
-      onClick={onClose}
-      onKeyDown={event => {
-        if (event.key === "Escape") {
-          onClose();
-        }
-      }}
-    >
-      <span className="up-upload-lightbox-content">
-        <img src={imageUrl} alt="Preview" />
-      </span>
-    </button>,
-    document.body
+  return (
+    <MediaPreviewLightbox
+      items={[{ url: imageUrl, filename: "Preview", type: "image" }]}
+      index={0}
+      onClose={onClose}
+    />
   );
 }
