@@ -84,6 +84,25 @@ docs disagree.
 
 ## Last Run Remarks
 
+- Reconciled the typed-page completion claim with runtime and local-tenant truth.
+  The browser still reads/saves `pages.content`; all normalized flags are absent
+  and default off, but page creates/updates unconditionally maintain shadow rows.
+  The `home` tenant also contains object/string configs, numeric/string IDs, the
+  `features` alias, and all five interactive types, demonstrating that the strict
+  normalized contract is not the actual page contract.
+- Classified the professional correction as selective consolidation rather than
+  a wholesale revert: retain registry/component metadata, JSON interactive
+  safeguards, content-free realtime, renderer dispatch, and useful shared UI;
+  remove the parallel normalized storage/API/generator/orchestration system only
+  after a normal backup and lightweight checks for enabled flags, normalized-only
+  responses, or palette tokens.
+- Operator confirmation establishes that production never ran the normalized
+  migration/backfill/cutover commands. This removes content migration from the
+  correction path; only unexpected normalized response rows or palette tokens
+  need a tenant-specific stop condition before schema cleanup.
+
+## Previous Run Remarks (2026-08-16)
+
 - Reconciled the shared-media plan with implementation truth. Corrected the
   hardcoded placeholder shadow, stale URL-event race, fixed-frame/composability
   gaps, and the mistaken treatment of semantic avatars as content media.

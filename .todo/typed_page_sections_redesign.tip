@@ -2,6 +2,15 @@
 
 ## typed_page_sections_redesign
 
+### Supersession Notice - 2026-08-16
+
+- This file records the completed historical implementation, not the current
+  architectural direction. Do not enable its cutover flags or run its migration
+  commands. `.todo/custom_page_document_model_consolidation` now owns the
+  evidence-backed return to `pages.content` as the sole custom-page authority,
+  selective retention of useful registry/UI/security work, and retirement of
+  unused normalized machinery.
+
 ### Current Progress
 
 - **Phase 1: Existing behavior inventory and contract fixtures** - ✅ Complete

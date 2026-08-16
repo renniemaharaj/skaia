@@ -1,5 +1,11 @@
 # Typed Custom Page Sections Redesign
 
+> Historical plan: the implementation was completed, but its normalized storage
+> direction is now superseded by
+> `.todo/custom_page_document_model_consolidation`. Do not enable the cutover or
+> run its migration commands; retain this file only as evidence until the
+> consolidation verifies and retires it.
+
 ## Context
 
 Custom pages currently serialize an array of sections into `pages.content`, and

@@ -107,6 +107,22 @@ operational policies.
 
 ## Last Run Remarks
 
+- Created `custom_page_document_model_consolidation` after reconciling the
+  completed typed-page plan with code and the local `home` tenant. All 7 active
+  pages remain JSON arrays containing heterogeneous configs/IDs, aliases, and
+  interactive sections; normalized flags are absent/default-off, while ordinary
+  saves still perform shadow work. The handoff preserves the JSON page contract,
+  useful registries, interactive security, realtime behavior, and shared UI,
+  while retiring typed APIs, generated universal schemas, cutover/backfill
+  commands, unconditional projection, and redundant tables behind a normal
+  backup plus lightweight flag/response/token guard.
+- Tightened the handoff after operator confirmation that none of the production
+  backfill/cutover commands were ever run and every production page remains on
+  `pages.content`. The worker now performs only a lightweight flag/response/token
+  guard and normal backup rather than constructing another migration program.
+
+## Previous Run Remarks (2026-08-16)
+
 - Created `shared_media_placeholder_adoption` after inventorying 63 direct
   image/video/audio elements across 31 production TSX files plus rich-text,
   dynamic-background, live-stream, and canvas paths. The worker handoff hardens

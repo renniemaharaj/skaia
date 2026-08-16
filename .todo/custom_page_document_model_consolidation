@@ -1,0 +1,242 @@
+# Custom Page Document Model Consolidation
+
+## Context
+
+The completed `typed_page_sections_redesign` built a second normalized custom-page
+storage and API system, but deployed custom pages still read and write the proven
+ordered JSON array in `pages.content`. The normalized feature flags are absent
+from the local deployment and therefore default off. Despite that, every ordinary
+page create/update transaction also projects the document into shadow tables.
+The operator confirmed on 2026-08-16 that none of the backend migration/backfill/
+cutover commands were run in production, so production never changed authority
+away from the legacy custom-page document.
+
+The 2026-08-16 planner/correctness inventory found:
+
+- `home` has 7 active pages and every `pages.content` value is a JSON array.
+- Its 23 sections contain 20 JSON-string configs and 3 object configs, plus 20
+  numeric IDs and 3 string IDs.
+- Live content includes the `features` alias and every interactive type (`form`,
+  `qa`, `survey`, `poll`, and `vote`). These shapes do not all satisfy the
+  normalized schema or the current strict save-time envelope.
+- The default-off normalized subsystem nevertheless has 9 active shadow section
+  rows, 4 shadow-run rows, 65 recorded compatibility writes, 4 auto-created page
+  themes, no palette tokens, no normalized response rows, and one unresolved
+  quarantine record. Only 3 active normalized section rows belong to pages whose
+  shadow status is matched.
+- The typed implementation contributes roughly 6,700 lines in its direct
+  migration/storage/schema/generator/API artifacts before counting integration
+  branches in the main page service, handler, builder, models, migrations, specs,
+  tests, and the 545-line root `cmd/page-section-migrate` orchestrator.
+
+This is not a request to restore the pre-redesign UI wholesale. The backend
+section/component registries, JSON-backed interactive privacy and validation,
+content-free realtime refresh, renderer registry, shared section frame, and
+useful appearance controls must survive when they can operate directly on the
+document model.
+
+## Goal
+
+- Make `pages.content` the sole custom-page definition and interactive-response
+  authority again, with one browser save path and no background shadow writes.
+- Remove the never-activated normalized cutover, backfill, typed mutation,
+  generated contract, page-theme/palette, and orchestration machinery after a
+  small defensive data check.
+- Keep a small, explicit registry of supported section types, renderer ownership,
+  defaults/capabilities that are actually used, integration validation, and
+  interactive validation.
+- Make the real document envelope honest about numeric-or-string legacy IDs,
+  string-or-object configs, the `features` alias, interactive runtime fields, and
+  unknown fields that must round-trip.
+- Preserve existing pages byte-for-byte or semantically without requiring a
+  content migration merely to keep editing them.
+
+## Non-Goals
+
+- Reverting commit `63668caa` wholesale; it also contains useful security,
+  realtime, registry, renderer, and UI work.
+- Replacing the page builder, `BlockRenderer`, or the JSON document with another
+  persistence experiment.
+- Removing the datasource/component registry or the legacy global
+  `page_sections`/`page_items` configuration domain.
+- Weakening interactive response authorization, privacy filtering, idempotency,
+  record-preserving page saves, bounds, audit events, or clipboard/duplicate
+  sanitization.
+- Removing shared section presentation controls solely because they were
+  introduced during the typed work.
+- Retiring unrelated orphaned `page_interaction_*` tables without their own
+  deployed-data proof.
+
+## Keep / Simplify / Remove Boundary
+
+| Decision | Scope |
+| --- | --- |
+| Keep | `pages.content` JSONB, `PUT /pages/{id}`, page CRUD/duplicate/ownership, record-preserving interactive mutations, content-free WebSocket invalidation/refetch, SEO/cache invalidation |
+| Keep and simplify | `backend/internal/s_registry` section/component metadata, integration and interactive validators; the frontend lazy renderer registry, section defaults/add menu, unsupported fallback, `SectionFrame`, toolbar/action portals, literal appearance controls |
+| Replace | Generated normalized `PageSection<T>` types and the bidirectional normalization adapter with a small document-envelope type plus safe config decode/update helpers that accept string or object input |
+| Remove | Typed section/theme endpoints and DTOs, frontend `typedSectionApi` branch, normalized read/write service options and repository interfaces, shadow/cutover/projector code, normalized interactive repository/backfill, schema generator/contracts, page migration commands and feature flags |
+| Remove after data proof | `page_themes`, `page_theme_tokens`, `page_section_instances`, `page_section_color_references`, `page_section_instance_items`, `page_section_presets`, `page_section_responses`, `page_section_response_migrations`, `page_section_quarantine`, and `page_section_shadow_runs` |
+| Preserve | `page_sections`, `page_items`, `custom_sections`, datasource/component registry data, and JSON-backed interactive records |
+
+`SectionFrame` and its controls are retained only as document-native UI. Palette
+token support is migration-only in the reviewed tenant (zero tokens). Before it
+is removed, every deployed tenant must be checked; any real token reference must
+be resolved to its current literal color in the owning section config or block
+that tenant's cleanup. No palette reference may silently become an inherited
+color.
+
+## Steps
+
+1. **Freeze the actual document contract and run a lightweight production guard**
+   - Record the operator-confirmed production fact that the normalized backfill,
+     interactive-response migration, cutover audit, and root migration
+     orchestrator were never run and that all pages still use `pages.content`.
+   - Confirm the normalized flags remain off and run one metadata-only query per
+     tenant for normalized response rows and palette tokens. Either being nonzero
+     pauses only that tenant's cleanup; do not build a generalized migration
+     program for empty shadow/telemetry state.
+   - Take the normal pre-deployment database backup and a compact content
+     manifest containing page ID, `content` hash, section count, and update time.
+   - Add anonymized fixtures for the reviewed string/object config, numeric/string
+     ID, `features`, empty page, custom/datasource, and interactive shapes.
+   - If a normalized flag is unexpectedly enabled, disable it and verify one
+     authorized page read and interactive write against `pages.content` before
+     cleanup. Treat normalized-only responses or palette tokens as the only data
+     exceptions needing a focused recovery decision.
+
+2. **Make the JSON envelope authoritative and compatible**
+   - Define one honest document boundary in Go and TypeScript: ordered section
+     arrays; numeric-or-string section/item IDs; config as encoded string or JSON
+     object on input; extra fields preserved; interactive runtime fields allowed
+     only through their authorized paths.
+   - Keep new builder-created IDs positive numeric values, but allow existing
+     nonempty string IDs to render and round-trip. Interactive response routes
+     may continue to require numeric IDs until separately redesigned.
+   - Canonicalize `features` to the registered `feature_grid` renderer for
+     validation/rendering without rewriting untouched stored content. New
+     sections use canonical names.
+   - Replace the normalized adapter with small config helpers that decode either
+     input form, update owned keys without deleting unknown keys, and serialize
+     only the section being edited. Do not split shell/config/runtime into a
+     second persistence shape.
+   - Add no-loss read/edit/save/duplicate/copy fixtures before deleting any
+     compatibility code. Existing pages must no longer be stranded by the strict
+     positive-integer/canonical-type save validator.
+
+3. **Collapse backend runtime to one page path**
+   - Remove normalized options and state from `main.go` and the page service:
+     `PAGE_TYPED_SECTION_MUTATIONS`, `PAGE_NORMALIZED_INTERACTIVE_RESPONSES`,
+     `PAGE_NORMALIZED_SECTION_READS`, and cutover thresholds.
+   - Remove typed section/theme routes, handlers, service methods, DTO fields,
+     revision gates, repositories, and tests. `GET/POST/PUT/DELETE
+     /pages/{id}/sections*` and `PUT /pages/{id}/theme` must disappear; ordinary
+     page CRUD remains unchanged.
+   - Stop `Create` and `UpdatePreservingInteractive` from calling shadow sync or
+     updating shadow telemetry. Page writes must touch only the authoritative
+     page document and the existing domain effects.
+   - Route all interactive reads/mutations through the existing locked-document
+     implementation in `interactive.go`; remove the normalized response branch,
+     repository, and readiness logic while preserving service policy and
+     metadata-only audit/realtime behavior.
+   - Remove `cmd/page-section-migrate`, all three backend page-section/response
+     migration commands, and their operational references.
+
+4. **Retain a useful registry without pretending configs are uniform**
+   - Keep `List`, `Get`, `IsSupported`, canonical aliases, labels/groups,
+     component bind points, integration-reference checks, and interactive config
+     validation in `backend/internal/s_registry`.
+   - Decouple registry definitions from normalized JSON Schemas, generated Go
+     DTOs, and `GET /config/section-contracts`. Remove `section-contract-gen`,
+     generated artifacts, the JSON-schema-only dependency, frontend contract
+     scripts/format exception, and pre-commit contract-generation gate.
+   - Retain only defaults/capabilities consumed by the JSON builder. Section-
+     specific validation remains deliberately local: interactive and integration
+     sections receive strong server validation; heterogeneous visual configs
+     round-trip safely instead of being forced into a false universal schema.
+   - Keep a lightweight drift test ensuring backend registered types, frontend
+     add-menu metadata, and renderer keys agree, including the legacy alias.
+     Avoid rebuilding a code-generation subsystem to test a 19-key registry.
+   - Simplify the frontend renderer definition to the actual legacy `PageSection`
+     contract while retaining lazy loading, exhaustive canonical renderer keys,
+     per-type new-section defaults, and clipboard sanitizers.
+
+5. **Preserve useful shared UI directly on page config**
+   - Keep `SectionFrame`, single-toolbar ownership, action portals, layout,
+     spacing, animation, collapse, content scaling, literal colors, and their
+     focused accessibility/placement tests where they remain useful.
+   - Rename migration-oriented helpers/comments and make shared controls read and
+     patch the actual section config without constructing a normalized section.
+   - Remove page-theme DTOs/API/tables and palette-mode UI after the tenant token
+     preflight. Keep literal/inherit color behavior and unknown config keys.
+   - Verify every block family, especially interactive, datasource, custom,
+     rich-text, hero, gallery, and CTA, retains its real DOM behavior and config
+     fields after the adapter/generator is removed.
+
+6. **Retire normalized database state safely**
+   - Add the next forward migration to drop only the typed-redesign tables after
+     the lightweight guard and normal backup. Remove them from `001_schema.sql`, the
+     soft-delete guard/trash inventories, test schema assertions, and fresh
+     provisioning.
+   - Remove migrations `030`-`033` from the replayed migration set once the
+     forward cleanup migration covers already-deployed databases. Make migration
+     `034` tolerate the normalized tables being absent so fresh installs do not
+     recreate or reference them.
+   - Do not drop `page_sections`, `page_items`, `custom_sections`, or unrelated
+     orphan tables in this change.
+   - Apply the cleanup first to an isolated database. Verify the content manifest,
+     authorized page projections, interactive behavior, and schema before the
+     normal tenant rollout. Do not invent a page-content migration: none is
+     required for the authoritative JSON documents.
+
+7. **Reconcile tests, specs, todos, and operational policy**
+   - Rewrite the custom-page compatibility, interactive, multiplayer, backend,
+     frontend, migration, route, realtime, caching, and security specs around one
+     JSON authority. Remove claims that normalized cutover is complete or pending.
+   - Reconcile `ui_component_refactor_plan` and
+     `soft_delete_and_destructive_prompts` so future work does not rebuild or
+     deploy the retired tables/contracts.
+   - Preserve the useful historical findings from
+     `typed_page_sections_redesign`, then retire that completed plan pair after
+     this consolidation is verified.
+   - Update `.routines/worker`, `.routines/correctness`, and `.routines/planner`
+     remarks and commands that still treat normalized page sections as current.
+
+## Verification
+
+- Before/after content manifests match; the cleanup does not rewrite page
+  documents or require content backfill.
+- Existing object/string configs, numeric/string IDs, `features`, empty pages,
+  custom/datasource sections, and all five interactive types render and survive
+  an edit/save/reload cycle.
+- Interactive guest/participant/editor/owner/admin tests preserve response
+  limits, validation, idempotency, record privacy, moderation, concurrent
+  builder-save/submit serialization, clipboard/duplicate clearing, and
+  content-free realtime invalidation.
+- Backend: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp
+  JWT_SECRET=test-secret go test ./...`; run focused race tests for page and
+  interactive concurrent writes.
+- Frontend: focused page/renderer/frame/interactive tests, full tests, lint,
+  TypeScript, and production build.
+- Run the complete migration chain twice on a clean database and once on an
+  isolated clone containing normalized shadow rows. Confirm the final schema has
+  the document tables but none of the retired typed-redesign tables.
+- `rg` confirms removed flags, endpoints, commands, typed adapters, generated
+  contracts, schemas, normalized tables, and stale spec/todo claims are absent
+  except for the forward cleanup migration and concise historical trace.
+- `git diff --check`, todo pairing/status checks, and linked-file checks pass.
+
+## References
+
+- `.todo/typed_page_sections_redesign`
+- `.todo/interactive_sections_audit_remediation`
+- `.todo/ui_component_refactor_plan`
+- `.todo/soft_delete_and_destructive_prompts`
+- `.specs/custom_page_section_compatibility_spec`
+- `.specs/custom_page_interactive_sections_spec`
+- `.specs/custom_pages_multiplayer_spec`
+- `.routines/worker`
+- `.routines/correctness`
+- `backend/internal/page/`
+- `backend/internal/s_registry/`
+- `backend/internal/migrations/`
+- `frontend/src/components/page/`

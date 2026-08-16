@@ -2,6 +2,11 @@
 
 ## Context
 
+The normalized custom-page tables remain part of the current schema but are now
+scheduled for evidence-gated retirement by
+`.todo/custom_page_document_model_consolidation`. Keep their existing lifecycle
+safety until that plan removes them; do not treat them as the future page model.
+
 Skaia currently hard-deletes records across forum, pages, store, inbox,
 notifications, configuration, provisioning, auth/session, and relationship
 repositories. Several parent deletes rely on PostgreSQL cascades; store

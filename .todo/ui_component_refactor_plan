@@ -26,11 +26,12 @@
 
 ### Plan Boundary
 
-Section-instance typing, the shared section shell, normalized page-owned section
-storage, config versioning, and storage cutover are owned by
-`.todo/typed_page_sections_redesign`. This plan continues to own component
-registry, bind-point, renderer composition, and dynamic-route work. The two plans
-must share registry contracts rather than introduce parallel section models.
+The typed storage/cutover implementation is historical and is being selectively
+retired by `.todo/custom_page_document_model_consolidation`. This plan continues
+to own component registry, bind-point, renderer composition, and dynamic-route
+work against authoritative `pages.content`. It may reuse the slim section and
+renderer registries plus shared document UI, but must not add another persistence
+shape, generated universal config schema, or typed mutation API.
 
 Create a Skaia-aligned schema-driven UI system where the backend owns canonical page content, section/block definitions, component definitions, bind-point contracts, and integration primitives, while the frontend renders and edits those sections through an existing builder surface.
 

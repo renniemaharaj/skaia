@@ -53,6 +53,10 @@
   local-storage leakage rather than a trash/prompt regression.
 
 ### Deployment Handoff
+- [ ] Coordinate tenant deployment with
+      `.todo/custom_page_document_model_consolidation`. Do not grant new runtime
+      significance to normalized custom-page tables slated for verified
+      retirement; retain their current safeguards only until cleanup lands.
 - [ ] Apply the tenant migration to each deployed tenant and the control-plane
   migration to `grengo`, capturing preflight counts and restore drills per
   environment. No production deployment was authorized in this workspace.

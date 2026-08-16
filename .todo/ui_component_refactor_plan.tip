@@ -39,8 +39,10 @@
 - [ ] Continue Phase 5: add component group rendering/editing to remaining section types.
 - [ ] Add focused tests for component-rendered section behavior when the frontend test harness is normalized.
 - [ ] Verify refactored UI components as part of `.todo/live_testing`.
-- [ ] Reuse the typed section registry and shared shell contracts from
-      `.todo/typed_page_sections_redesign`; do not add a separate config model.
+- [ ] Coordinate with `.todo/custom_page_document_model_consolidation`: reuse the
+      slim JSON-native section/component registries and shared document UI; do
+      not depend on normalized storage, generated section contracts, or typed
+      mutation APIs slated for retirement.
 
 ### Verification Note (2026-07-17)
 
