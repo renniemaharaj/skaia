@@ -13,6 +13,7 @@ import "../ui/FeatureCard.css";
 import "./NewThread.css";
 import "../ui/FormGroup.css";
 
+import { LayoutGrid, List, Newspaper } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
 import { useThreadsFeed } from "../../hooks/useThreadsFeed";
@@ -20,6 +21,9 @@ import { relativeTimeAgo } from "../../utils/serverTime";
 import CategoryThreadsFeed from "./CategoryThreadsFeed";
 import { ForumActionCard } from "./ForumActionCard";
 import { ForumCategoryCard } from "./ForumCategoryCard";
+import { ThreadArticleFeed } from "./ThreadArticleFeed";
+
+type ForumViewMode = "grid" | "list" | "articles";
 
 interface ForumCategoryApiResponse {
   id: string;
@@ -36,7 +40,7 @@ interface ForumCategoryApiResponse {
 
 export const Forum: React.FC = () => {
   const [forumsLoading, setForumsLoading] = useState(true);
-  const [viewMode, setViewMode] = useLayoutPosition<"grid" | "list">("forum", "grid");
+  const [viewMode, setViewMode] = useLayoutPosition<ForumViewMode>("forum", "grid");
   const [isCompactForum, setIsCompactForum] = useState(
     () => typeof window !== "undefined" && window.matchMedia?.("(max-width: 880px)").matches
   );
@@ -44,7 +48,7 @@ export const Forum: React.FC = () => {
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const effectiveViewMode = isCompactForum ? "grid" : viewMode;
 
-  const toggleView = (mode: "grid" | "list") => {
+  const toggleView = (mode: ForumViewMode) => {
     setViewMode(mode);
   };
 
@@ -295,8 +299,59 @@ export const Forum: React.FC = () => {
               }))
             : forums
         }
-        viewMode={effectiveViewMode}
-        onViewModeChange={isCompactForum ? undefined : toggleView}
+        viewMode={effectiveViewMode === "list" ? "list" : "grid"}
+        headerActions={
+          !isCompactForum ? (
+            <div className="directory-layout__view-toggle" role="group" aria-label="Forum layout">
+              <button
+                type="button"
+                className={`directory-view-btn ${effectiveViewMode === "grid" ? "active" : ""}`}
+                onClick={() => toggleView("grid")}
+                aria-label="Category grid view"
+                aria-pressed={effectiveViewMode === "grid"}
+                title="Category grid"
+              >
+                <LayoutGrid size={16} />
+              </button>
+              <button
+                type="button"
+                className={`directory-view-btn ${effectiveViewMode === "list" ? "active" : ""}`}
+                onClick={() => toggleView("list")}
+                aria-label="Compact thread list view"
+                aria-pressed={effectiveViewMode === "list"}
+                title="Compact thread list"
+              >
+                <List size={16} />
+              </button>
+              <button
+                type="button"
+                className={`directory-view-btn ${effectiveViewMode === "articles" ? "active" : ""}`}
+                onClick={() => toggleView("articles")}
+                aria-label="Traditional article view"
+                aria-pressed={effectiveViewMode === "articles"}
+                title="Traditional article view"
+              >
+                <Newspaper size={16} />
+              </button>
+            </div>
+          ) : undefined
+        }
+        customGridContent={
+          effectiveViewMode === "articles" ? (
+            <div className="forum-article-layout">
+              <ThreadArticleFeed
+                threads={listThreads}
+                categories={forums}
+                isLoading={threadsLoading}
+                loading={threadsFetchingOlder}
+                feedRef={feedRef}
+                sentinelRef={sentinelRef}
+                handleScroll={handleScroll}
+                emptyMessage="No articles found."
+              />
+            </div>
+          ) : undefined
+        }
         customListContent={
           <CategoryThreadsFeed
             threads={listThreads}
