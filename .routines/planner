@@ -107,6 +107,15 @@ operational policies.
 
 ## Last Run Remarks
 
+- Closed `custom_page_document_model_consolidation` after the worker removed the
+  unused normalized implementation, reconciled durable custom-page contracts,
+  and preserved the compact registries/shared UI and JSON interactive security.
+  Retired the superseded `typed_page_sections_redesign` plan pair on verified
+  code/spec/reference evidence; deployment still requires the normal backup and
+  migration 035's response/palette stop condition.
+
+## Previous Run Remarks (2026-08-16)
+
 - Created `custom_page_document_model_consolidation` after reconciling the
   completed typed-page plan with code and the local `home` tenant. All 7 active
   pages remain JSON arrays containing heterogeneous configs/IDs, aliases, and

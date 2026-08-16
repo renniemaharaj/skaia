@@ -1,13 +1,10 @@
 import { lazy, type ComponentType } from "react";
 import { sectionForClipboard } from "./interactiveTypes";
 import {
-  SECTION_CAPABILITIES,
-  SECTION_CONFIG_VERSIONS,
-  SECTION_DEFAULT_CONFIGS,
   SECTION_TYPES,
+  type PageDocumentID,
   type PageItem,
   type PageSection,
-  type SectionConfig,
   type SectionType,
 } from "./types";
 
@@ -63,10 +60,10 @@ export type SectionBlockComponent = ComponentType<{
   section: PageSection;
   canEdit: boolean;
   onUpdate: (section: PageSection) => void;
-  onDelete: (id: number) => void;
-  onItemCreate: (sectionId: number, item: Omit<PageItem, "id">) => void;
+  onDelete: (id: PageDocumentID) => void;
+  onItemCreate: (sectionId: PageDocumentID, item: Omit<PageItem, "id">) => void;
   onItemUpdate: (item: PageItem) => void;
-  onItemDelete: (id: number) => void;
+  onItemDelete: (id: PageDocumentID) => void;
 }>;
 
 const components = {
@@ -91,24 +88,16 @@ const components = {
   vote: InteractiveSectionBlock,
 } satisfies Record<SectionType, SectionBlockComponent>;
 
-export interface SectionRendererDefinition<T extends SectionType> {
+export interface SectionRendererDefinition {
   component: SectionBlockComponent;
-  configVersion: (typeof SECTION_CONFIG_VERSIONS)[T];
-  defaultConfig: SectionConfig<T>;
-  capabilities: (typeof SECTION_CAPABILITIES)[T];
   sanitizeForClipboard: (section: PageSection) => PageSection;
 }
 
-export type SectionRendererRegistry = {
-  [T in SectionType]: SectionRendererDefinition<T>;
-};
+export type SectionRendererRegistry = Record<SectionType, SectionRendererDefinition>;
 
 function definition<T extends SectionType>(type: T) {
   return {
     component: components[type],
-    configVersion: SECTION_CONFIG_VERSIONS[type],
-    defaultConfig: SECTION_DEFAULT_CONFIGS[type],
-    capabilities: SECTION_CAPABILITIES[type],
     sanitizeForClipboard: sectionForClipboard,
   };
 }

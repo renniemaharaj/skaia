@@ -1,145 +1,24 @@
-# Custom Page Interactive Sections Spec
+# Custom Page Interactive Sections
 
-## Scope
+`form`, `qa`, `survey`, `poll`, and `vote` are ordinary sections in the
+authoritative `pages.content` array. Their definitions and records remain in
+their config object; no second response store exists.
 
-Formik-driven forms, Q&A, surveys, polls, and voting embedded in the existing
-custom-page block builder.
+Authenticated participation uses
+`POST /pages/{id}/sections/{sectionId}/responses`. Moderation uses the matching
+PATCH/DELETE record routes and the page security policy. The repository locks
+the page row, validates the stored definition, applies limits/idempotency, and
+rewrites the document atomically.
 
-## Governing architecture
+Ordinary builder saves also lock the page and preserve the current interactive
+records, preventing a stale editor snapshot from erasing responses. Duplicate
+pages clear records and result summaries.
 
-- Interactive types are ordinary `PageSection` values: `form`, `qa`, `survey`,
-  `poll`, and `vote`.
-- Definitions and settings use the typed section source when its per-page gate is
-  ready. `pages.content` remains the compatibility/read projection.
-- `PAGE_NORMALIZED_INTERACTIVE_RESPONSES=1|true` selects normalized response
-  authority only for pages with both matched definition parity and a matched
-  `page_section_response_migrations` run. Other pages retain document authority.
-- `BlockRenderer` remains the dispatch host and every interactive block renders
-  through the same `SectionFrame`, shared toolbar, layout, margin/padding,
-  animation, copy/cut, move, and delete behavior as other blocks.
-- The existing page registry validates interactive types and config bounds.
-  No migration is required.
+Viewer payloads are caller-specific: managers see management data, participants
+see only their permitted state, and public viewers receive sanitized records
+and visibility-controlled summaries. WebSocket updates carry invalidations,
+not response content.
 
-## Persistence and concurrency
-
-- Participant writes address an existing page ID and numeric section ID. On a
-  migrated page they lock the page and normalized section, mutate
-  `page_section_responses`, then rebuild that section's rollback projection in
-  `pages.content` in the same transaction. Non-migrated pages retain the legacy
-  locked-document mutation.
-- Normal builder saves lock the same page row and preserve the current interactive
-  records while applying definition and presentation changes. A stale autosave
-  must not erase a response submitted concurrently.
-- Copying an interactive section and duplicating a page copy the design with an
-  empty records array. Record data must be removed before clipboard serialization
-  and rechecked on paste; user submissions must never be cloned.
-- A section holds at most 50 fields and 1,000 records. Each submission is bounded,
-  validated on the server, and may include an idempotency key.
-- Section IDs are unique positive integers. The server rejects client-supplied
-  records on page create/update and owns every record mutation.
-- Idempotency keys are scoped to the authenticated participant and section. A retry
-  may return only that participant's existing authorized record.
-- Normalized storage retains only a SHA-256 idempotency hash and a stable
-  respondent identity key. Neither raw keys nor hashes are exposed through REST,
-  page reads, result projections, logs, audit metadata, or WebSockets.
-- The participant client retains one idempotency key for an unchanged logical
-  submission until it receives success; changing answers starts a new key.
-- Polls and votes allow one record per authenticated user. Other types use their
-  configured response limit (`0` means unlimited).
-
-## Privacy and authorization
-
-- Page visibility is checked before participation.
-- Participation currently requires an authenticated user. This provides a stable
-  identity for response limits without inventing a guest identity store.
-- Admins, page owners, and editors may read, moderate, and delete all records.
-- Moderation and deletion call the centralized `security.PagePolicy` from the page
-  service. Missing policy dependencies and permission lookup failures deny access.
-- Privileged record mutations emit metadata-only page audit events containing the
-  page, section, record ID, action, actor, and request metadata, never answer data.
-- Other viewers receive only their own records. Published/answered Q&A records are
-  additionally visible as the public Q&A feed.
-- Public result payloads contain aggregates for choice, boolean, rating, scale,
-  and NPS fields only. Free-text values are never placed into result summaries.
-- Result visibility is `never`, `after_participation`, or `always`. Raw records
-  are removed server-side from page content before it is returned; CSS is never
-  used as an authorization boundary.
-- Page WebSocket and cache-invalidation payloads never contain raw records,
-  respondent metadata, user IDs, answers, or idempotency keys.
-- Interactive mutations broadcast `{id, partial: true, interactive: true}` and
-  clients refetch their authorized REST projection.
-
-## Section behavior
-
-| Type | Participant view | Manager view |
-| --- | --- | --- |
-| Form | Configured fields, validation, success state | Response table and expanded disabled values |
-| Q&A | Ask question; see own pending and published/answered questions | Moderation table, answer, publish/archive, pin, delete |
-| Survey | Multi-field response with one-response default | Response table and structured result summaries |
-| Poll | One-choice participation and policy-gated results | Response table, totals, counts, percentages |
-| Vote | Review notice, confirmed single ballot, immutable participant choice | Response table and policy-gated tally |
-
-## UI contract
-
-- All user-entered forms use Formik, including design and moderation forms.
-- Controls use existing `Button`, glass `Select`/`FormikSelect`, `TableView`,
-  design tokens, and the ultra-dense page-builder spacing model.
-- Manager tabs are Preview, Responses/Moderation, Results, and Design.
-- New interactive blocks persist their type defaults when inserted; rendered defaults
-  may not exist only in client memory.
-- Response rows expose a compact expand control. Expanded content renders the
-  complete submitted field set as read-only values.
-- Native checkbox/radio controls have explicit dimensions and never inherit the
-  global full-width text-input styling.
-- Poll/vote results always pair bars with text counts and percentages.
-
-## Existing-page API extension
-
-- `POST /api/pages/{pageId}/sections/{sectionId}/responses`
-- `PATCH /api/pages/{pageId}/sections/{sectionId}/responses/{recordId}`
-- `DELETE /api/pages/{pageId}/sections/{sectionId}/responses/{recordId}`
-
-These routes retain their response contract across storage modes. Migrated pages
-use normalized response authority; the document is a rollback projection.
-Definition-type checks are repeated against the locked normalized row so a
-concurrent type change cannot turn Q&A moderation into another section mutation.
-
-## Migration and rollback
-
-- `page-interactive-response-backfill --after-id N --limit 1..500` processes
-  pages in ID order and is safe to resume or rerun.
-- A matched run verifies response count plus canonical response key, respondent,
-  answers, status, moderator answer, pinned state, timestamps, and idempotency
-  hash parity. Operational output contains counts and mismatch codes only.
-- The command replaces raw rollback-document idempotency keys with one-way
-  hashes. Answers remain in the rollback projection through the Phase 7 release
-  window but are always authorization-filtered before REST serialization.
-- A normalized page read loads interactive records from
-  `page_section_responses`, never from the rollback document. The cutover audit
-  verifies response parity before recording a successful rollback drill.
-
-## Deletion lifecycle
-
-- Normalized responses use `deleted_at`/`deleted_by`; compatibility projection,
-  moderation, parity reads, and counts include only active responses whose
-  section and page are active. Stale projection rows are tombstoned, not erased.
-- Trash restore rechecks page/section policy and active ancestors, then rebuilds
-  the compatibility response projection transactionally.
-
-## Verify
-
-- Backend: registry validation, transactional record preservation, sanitization,
-  duplicate clearing, response limits, moderation authorization, and deletion.
-- Frontend: defaults, validation, copied-record clearing, Formik rendering,
-  manager tables, results, dense responsive styling, lint, tests, and build.
-- Commands: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`;
-  from `frontend/`, `npm run lint`, focused `vitest`, and `npm run build`.
-
-## Trace
-
-- `.todo/interactive_sections_audit_remediation.tip`
-- `backend/internal/page/interactive.go`
-- `backend/internal/page/interactive_normalized.go`
-- `backend/internal/page/interactive_repository.go`
-- `backend/internal/s_registry/interactive.go`
-- `frontend/src/components/page/blocks/InteractiveSectionBlock.tsx`
+Interactive definitions enforce bounded fields/options, supported field types,
+status, result visibility, response limits, answer types, URLs, dates, times,
+numeric bounds, record capacity, and Q&A moderation states.

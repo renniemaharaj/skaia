@@ -3,8 +3,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import { createPortal } from "react-dom";
 import Select from "../input/Select";
 import { ColorPickerButton } from "./EditControls";
-import { isSafeSectionColor } from "./sectionTheme";
-import type { PageTheme, SharedSectionShell } from "./types";
+import type { SharedSectionShell } from "./types";
 
 type ColorSource = SharedSectionShell["background_color"];
 type ColorField = "background_color" | "text_color" | "h1_color" | "h2_color" | "h3_color";
@@ -12,7 +11,6 @@ type PopoverPlacement = "top" | "bottom";
 
 interface SectionShellControlsProps {
   shell: SharedSectionShell;
-  theme: PageTheme;
   onChange: (shell: SharedSectionShell) => void;
 }
 
@@ -64,26 +62,19 @@ export function getAnchoredPanelPosition(
   return { top, left, maxHeight, placement };
 }
 
-function rawColor(source: ColorSource, theme: PageTheme): string | undefined {
-  if (source.mode === "literal") return source.value;
-  if (source.mode === "palette") {
-    return theme.tokens.find(token => token.key === source.token)?.value;
-  }
-  return undefined;
-}
+function rawColor(source: ColorSource): string | undefined { return source.mode === "literal" ? source.value : undefined; }
+function isSafeSectionColor(value: string): boolean { return /^#[0-9a-f]{3,8}$/i.test(value); }
 
 function ColorSourceControl({
   label,
   value,
-  theme,
   onChange,
 }: {
   label: string;
   value: ColorSource;
-  theme: PageTheme;
   onChange: (value: ColorSource) => void;
 }) {
-  const resolvedColor = rawColor(value, theme);
+  const resolvedColor = rawColor(value);
 
   return (
     <div className="section-shell-color-row">
@@ -95,7 +86,6 @@ function ColorSourceControl({
         options={[
           { value: "inherit", label: "Inherit" },
           { value: "literal", label: "Custom" },
-          ...(theme.tokens.length > 0 ? [{ value: "palette", label: "Palette" }] : []),
         ]}
         onChange={event => {
           const mode = event.target.value;
@@ -105,8 +95,6 @@ function ColorSourceControl({
               mode,
               value: initialColor && isSafeSectionColor(initialColor) ? initialColor : "#000000",
             });
-          } else if (mode === "palette" && theme.tokens[0]) {
-            onChange({ mode, token: theme.tokens[0].key });
           } else {
             onChange({ mode: "inherit" });
           }
@@ -120,22 +108,6 @@ function ColorSourceControl({
             title={`Pick ${label.toLowerCase()} color`}
           />
           <output title={value.value}>{value.value}</output>
-        </div>
-      )}
-      {value.mode === "palette" && (
-        <div className="section-shell-color-value">
-          <span
-            className="section-shell-palette-swatch"
-            style={{ backgroundColor: resolvedColor }}
-            aria-hidden="true"
-          />
-          <Select
-            aria-label={`${label} palette token`}
-            size="sm"
-            value={value.token}
-            options={theme.tokens.map(token => ({ value: token.key, label: token.label }))}
-            onChange={event => onChange({ mode: "palette", token: event.target.value })}
-          />
         </div>
       )}
       {value.mode === "inherit" && <span className="section-shell-inherit-hint">From page</span>}
@@ -156,16 +128,16 @@ function hexLuminance(value: string): number | undefined {
   return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
 }
 
-function hasLowContrast(shell: SharedSectionShell, theme: PageTheme): boolean {
-  const background = hexLuminance(rawColor(shell.background_color, theme) ?? "");
-  const text = hexLuminance(rawColor(shell.text_color, theme) ?? "");
+function hasLowContrast(shell: SharedSectionShell): boolean {
+  const background = hexLuminance(rawColor(shell.background_color) ?? "");
+  const text = hexLuminance(rawColor(shell.text_color) ?? "");
   if (background === undefined || text === undefined) return false;
   const lighter = Math.max(background, text);
   const darker = Math.min(background, text);
   return (lighter + 0.05) / (darker + 0.05) < 4.5;
 }
 
-export function SectionShellControls({ shell, theme, onChange }: SectionShellControlsProps) {
+export function SectionShellControls({ shell, onChange }: SectionShellControlsProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
@@ -311,11 +283,10 @@ export function SectionShellControls({ shell, theme, onChange }: SectionShellCon
                 key={field.key}
                 label={field.label}
                 value={shell[field.key]}
-                theme={theme}
                 onChange={value => update(field.key, value)}
               />
             ))}
-            {hasLowContrast(shell, theme) && (
+            {hasLowContrast(shell) && (
               <p className="section-shell-contrast-warning" role="status">
                 Background and text contrast is below 4.5:1.
               </p>

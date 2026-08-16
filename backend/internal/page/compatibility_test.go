@@ -172,15 +172,14 @@ func TestProductionShapeFixtureCoversObservedCompatibilityEdges(t *testing.T) {
 	}
 }
 
-func TestCurrentSaveValidationBoundaryForCompatibilityFixtures(t *testing.T) {
+func TestCurrentSaveValidationAcceptsCompatibilityFixtures(t *testing.T) {
 	fixture, _ := loadProductionShapeFixture(t)
 	seeded, err := json.Marshal(fixturePage(t, fixture, "seeded_object_config_and_string_ids"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s_registry.ValidateContent(string(seeded), nil); err == nil ||
-		(!strings.Contains(err.Error(), "positive numeric id") && !strings.Contains(err.Error(), "cannot unmarshal string")) {
-		t.Fatalf("legacy seeded input must stay outside the current save contract until adapted, got %v", err)
+	if err := s_registry.ValidateContent(string(seeded), nil); err != nil {
+		t.Fatalf("string-ID/object-config fixture should pass the document save contract: %v", err)
 	}
 
 	encoded, err := json.Marshal(fixturePage(t, fixture, "encoded_configs_and_legacy_aliases"))

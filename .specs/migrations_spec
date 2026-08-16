@@ -64,11 +64,8 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 | `027_vendor_order_statuses.sql` | Per-vendor order item status/note timestamps and `store-seller` to `Vendor` role consolidation |
 | `028_mfa_challenge_context.sql` | Machine-readable MFA challenge reason and sensitive-action label |
 | `029_client_backend_provisioning.sql` | Client backend provisioning records |
-| `030_page_section_shadow_storage.sql` | Normalized custom-page shadow storage, quarantine, and parity runs |
-| `031_page_theme_ordering_concurrency.sql` | Deferrable page-theme display ordering for transactional palette swaps |
-| `032_page_interactive_response_migration.sql` | Complete normalized response fields, stable respondent identity, and page parity state |
-| `033_page_section_cutover_controls.sql` | Sustained parity, rollback-drill, and legacy-write retirement telemetry |
-| `034_soft_delete_lifecycle.sql` | Entity tombstones, reversible relationships, secret/session lifecycle, audit events, active palette ordering, and the runtime hard-delete guard |
+| `034_soft_delete_lifecycle.sql` | Entity tombstones, reversible relationships, secret/session lifecycle, audit events, and the runtime hard-delete guard |
+| `035_retire_normalized_page_sections.sql` | Guarded retirement of the unused normalized custom-page experiment |
 
 Control-plane migration `002_soft_delete_lifecycle.sql` adds retained
 site/cluster deletion state, inactive API-key permissions, scrubbed passcodes,
@@ -86,24 +83,9 @@ and matching hard-delete protection in `grengo`.
 - `001_schema.sql` contains the current inbox-participant and provisioning
   baseline before `002_seed.sql`; migrations 018 and 029 remain guarded bridges
   for older deployments.
-- Normalized custom-page tables use `page_section_instances` and
-  `page_section_instance_items`; the dormant global `page_sections`/`page_items`
-  names are not repurposed.
-- Migration 030 creates storage only. Existing page rows are projected through
-  the bounded `page-section-shadow-backfill` command so schema SQL never parses
-  heterogeneous or sensitive page content.
-- Migration 031 changes only the page-scoped theme-token order uniqueness timing;
-  migration 034 replaces that constraint with active-row uniqueness and a
-  bounded 64-slot staging range used only inside palette transactions.
-- Migration 032 preserves Q&A moderation fields and respondent identity after a
-  user-row deletion, scopes idempotency uniqueness to the stable respondent key,
-  and adds content-free page response-migration readiness. Sensitive document
-  parsing remains in the bounded resumable Go backfill, not schema SQL.
-- Migration 033 stores only cutover counts, timestamps, statuses, and mismatch
-  codes. Removing `pages.content` writes is not part of schema migration: the
-  operational preflight must first prove every page ready, a complete quiet
-  release window, empty dormant legacy tables, and an explicit external-job
-  dependency review.
+- Migration 035 fails closed when normalized response rows or palette tokens
+  exist, then drops disposable shadow, telemetry, theme, section, and response
+  tables. `pages.content` remains the sole custom-page authority.
 - Migration 034 is additive/idempotent and runs after guarded historical cleanup.
   Its delete triggers deliberately install last so migration-only `DELETE`
   statements remain classified separately from forbidden runtime SQL.

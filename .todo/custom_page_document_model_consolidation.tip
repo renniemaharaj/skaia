@@ -5,51 +5,51 @@
 ### Current Progress
 
 - **Phase 1: Repository and local-tenant truth audit** - ✅ Complete
-- **Phase 2: Lightweight production guard and document fixtures** - ⬜ Not started
-- **Phase 3: Single backend and frontend document path** - ⬜ Not started
-- **Phase 4: Registry and shared-UI simplification** - ⬜ Not started
-- **Phase 5: Normalized schema and command retirement** - ⬜ Not started
-- **Phase 6: Regression, spec, and lifecycle closure** - ⬜ Not started
+- **Phase 2: Lightweight production guard and document fixtures** - ✅ Complete
+- **Phase 3: Single backend and frontend document path** - ✅ Complete
+- **Phase 4: Registry and shared-UI simplification** - ✅ Complete
+- **Phase 5: Normalized schema and command retirement** - ✅ Complete
+- **Phase 6: Regression, spec, and lifecycle closure** - ✅ Complete
 
-### Audit Basis - 2026-08-16
+### Completed - 2026-08-16
 
-- The normalized feature flags are absent from root and `home` configuration, so
-  typed mutations, normalized responses, and normalized reads default off.
-- The operator confirmed that none of the backend page-section migration,
-  backfill, or cutover commands were run in production; production pages never
-  moved away from the legacy `pages.content` document.
-- `home` has 7 active JSON-array pages and 23 sections: 20 encoded-string configs,
-  3 object configs, 20 numeric IDs, and 3 string IDs.
-- Live types include `features` plus `form`, `qa`, `survey`, `poll`, and `vote`.
-- The default-off shadow path still accumulated 9 active instances, 4 run rows,
-  65 compatibility writes, 4 empty themes, and 1 unresolved quarantine record.
-  It has no palette tokens, normalized responses, response migration runs, or
-  normalized presets; only 3 active instances belong to matched pages.
-- Direct migration/storage/schema/generator/API artifacts total roughly 6,700
-  lines, excluding their service, handler, builder, model, spec, and test branches.
-- `pages.content` remains the actual browser read/save envelope. Ordinary page
-  creates and updates nevertheless call shadow synchronization unconditionally.
+- [x] Kept `pages.content` as the sole page and interactive-record authority;
+      removed normalized reads, typed writes/routes, shadow synchronization,
+      cutover flags, DTO fields, and page palettes.
+- [x] Removed root/backend migration, backfill, cutover, and contract-generator
+      commands plus their storage, projection, repository, API, generated-schema,
+      frontend-client, and test branches.
+- [x] Added migration 035. It blocks retirement if normalized response rows or
+      palette tokens exist, then removes disposable normalized tables.
+- [x] Preserved locked JSON interactive mutations, participant privacy,
+      idempotency, ordinary-save response merging, integration/component
+      validation, content-free realtime, and duplication sanitization.
+- [x] Retained compact backend/frontend registries, all 19 renderers, the shared
+      `SectionFrame`, appearance controls, accessibility behavior, and the
+      unknown-section fallback.
+- [x] Made the save validator match observed documents: string/numeric IDs,
+      encoded/object config, page-scoped type-preserving identity, the `features` alias,
+      integrations, interactive sections, and unknown fields.
+- [x] Reconciled durable specs and retired the superseded
+      `typed_page_sections_redesign` plan pair after code/reference checks.
 
-### Next Steps
+### Verification
 
-- [ ] Use `.routines/worker` to confirm flags remain off, check only for unexpected
-      normalized response rows or palette tokens, and capture the normal backup
-      plus a compact content-hash manifest.
-- [ ] Add no-loss fixtures for string/object config, numeric/string identity,
-      `features`, interactive records, integration sections, and unknown fields.
-- [ ] Remove the typed/normalized runtime branches and unconditional shadow writes
-      while keeping `PUT /pages/{id}` and locked JSON interactive mutations.
-- [ ] Simplify backend/frontend registries and shared UI around the real document
-      envelope; retain useful renderer, validation, security, and accessibility work.
-- [ ] Remove migration commands, generated contracts, flags, and normalized tables
-      only after deployment data proves they are non-authoritative.
-- [ ] Run full backend/frontend/migration verification, update specs/routines, and
-      retire the superseded typed-page plan pair.
+- [x] `go test ./internal/page ./internal/s_registry ./internal/config`
+- [x] Backend `go test ./internal/... ./cmd/...` passed all reached packages;
+      only the existing sandbox prohibition on `httptest` TCP listeners stopped
+      `internal/middleware` (`socket: operation not permitted`).
+- [x] Frontend full suite: 45 files, 172 tests passed.
+- [x] Frontend lint passed across 552 files.
+- [x] Frontend production TypeScript/Vite build passed.
+- [x] Reference scan found no runtime flags, typed clients/routes, generated
+      contract paths, or normalized storage calls outside retirement history.
 
-### Safety Gate
+### Deployment Gate
 
-- [ ] Do not drop normalized tables in a tenant with an unexpectedly enabled
-      normalized flag, normalized-only responses, or nonzero palette tokens.
-      Empty shadow and cutover telemetry are disposable implementation residue.
+- [ ] Take the normal tenant backup and a `pages.content` hash manifest before
+      applying migration 035.
+- [ ] Confirm normalized response and palette-token counts are still zero. The
+      migration independently fails closed if either count is nonzero.
 
 <--/------->

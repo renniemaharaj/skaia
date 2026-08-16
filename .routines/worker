@@ -118,6 +118,17 @@ update specs and .tip with durable facts
 
 ## Last Run Remarks
 
+- Completed `custom_page_document_model_consolidation`: restored one
+  `pages.content` read/save/interactive authority, retained document validation,
+  registries, renderers, shared UI, privacy, and locked response handling, and
+  removed the unused typed/shadow/palette/generator/command implementation.
+- Added a fail-closed normalized response/palette guard before schema retirement.
+  All 172 frontend tests, lint, and production build pass; focused backend tests
+  pass. The broad backend run reached all packages until the sandbox prohibited
+  an existing `httptest` TCP listener in `internal/middleware`.
+
+## Previous Run Remarks (2026-08-16)
+
 - Completed all phases of `shared_media_placeholder_adoption`: hardened the
   shared image/video/audio state and layout contract, migrated first-party page
   content, rich text, uploads/inbox/previews, and commerce without changing stored

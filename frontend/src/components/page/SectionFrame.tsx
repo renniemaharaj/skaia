@@ -5,14 +5,12 @@ import { toast } from "sonner";
 import { SectionMoveContext, SectionToolbar } from "./EditControls";
 import { SectionShellControls } from "./SectionShellControls";
 import { adaptLegacySectionShell, projectSharedShellToLegacyConfig } from "./sectionAdapter";
-import { pageThemeVariables, resolveSectionColor } from "./sectionTheme";
 import { SECTION_RENDERER_REGISTRY } from "./sectionRendererRegistry";
 import {
-  EMPTY_PAGE_THEME,
   SECTION_TYPE_LABELS,
   canonicalSectionType,
   type PageSection,
-  type PageTheme,
+  type PageDocumentID,
   type SharedSectionShell,
 } from "./types";
 
@@ -21,11 +19,10 @@ interface SectionFrameProps {
   isFirst: boolean;
   isLast: boolean;
   canEdit: boolean;
-  onMove: (sectionId: number, direction: "up" | "down") => void;
+  onMove: (sectionId: PageDocumentID, direction: "up" | "down") => void;
   onUpdate: (section: PageSection) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: PageDocumentID) => void;
   pageKey?: string;
-  theme?: PageTheme;
   fallback?: ReactNode;
   children: ReactNode;
 }
@@ -46,7 +43,6 @@ export function SectionFrame({
   onUpdate,
   onDelete,
   pageKey = "page",
-  theme = EMPTY_PAGE_THEME,
   fallback,
   children,
 }: SectionFrameProps) {
@@ -96,12 +92,11 @@ export function SectionFrame({
     ...(shell.padding_right ? { paddingRight: `${shell.padding_right}px` } : {}),
     ...(shell.padding_bottom ? { paddingBottom: `${shell.padding_bottom}px` } : {}),
     ...(shell.padding_left ? { paddingLeft: `${shell.padding_left}px` } : {}),
-    ...pageThemeVariables(theme),
-    backgroundColor: resolveSectionColor(shell.background_color, theme),
-    color: resolveSectionColor(shell.text_color, theme),
-    "--skaia-section-h1-color": resolveSectionColor(shell.h1_color, theme),
-    "--skaia-section-h2-color": resolveSectionColor(shell.h2_color, theme),
-    "--skaia-section-h3-color": resolveSectionColor(shell.h3_color, theme),
+    backgroundColor: shell.background_color.mode === "literal" ? shell.background_color.value : undefined,
+    color: shell.text_color.mode === "literal" ? shell.text_color.value : undefined,
+    "--skaia-section-h1-color": shell.h1_color.mode === "literal" ? shell.h1_color.value : undefined,
+    "--skaia-section-h2-color": shell.h2_color.mode === "literal" ? shell.h2_color.value : undefined,
+    "--skaia-section-h3-color": shell.h3_color.mode === "literal" ? shell.h3_color.value : undefined,
     "--skaia-section-content-scale": shell.content_scale,
   };
 
@@ -204,7 +199,7 @@ export function SectionFrame({
             }
             extra={
               <>
-                <SectionShellControls shell={shell} theme={theme} onChange={updateShell} />
+                <SectionShellControls shell={shell} onChange={updateShell} />
                 <span className="section-frame-extra-actions" ref={setToolbarExtraTarget} />
               </>
             }

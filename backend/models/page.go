@@ -25,30 +25,13 @@ type Page struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 
 	// Enriched fields (not stored directly in pages table)
-	Owner                 *PageUser   `json:"owner,omitempty"`
-	Editors               []*PageUser `json:"editors,omitempty"`
-	Likes                 int         `json:"likes"`
-	IsLiked               bool        `json:"is_liked,omitempty"`
-	CommentCount          int         `json:"comment_count"`
-	CanEdit               bool        `json:"can_edit,omitempty"`
-	CanDelete             bool        `json:"can_delete,omitempty"`
-	Theme                 *PageTheme  `json:"theme,omitempty"`
-	TypedSectionMutations bool        `json:"typed_section_mutations"`
-}
-
-// PageTheme is the safe, page-owned palette exposed to section renderers.
-type PageTheme struct {
-	Version  int              `json:"version"`
-	Revision int64            `json:"revision"`
-	Tokens   []PageThemeToken `json:"tokens"`
-}
-
-type PageThemeToken struct {
-	Key          string `json:"key"`
-	Label        string `json:"label"`
-	Value        string `json:"value"`
-	DisplayOrder int    `json:"display_order"`
-	Revision     int64  `json:"revision"`
+	Owner        *PageUser   `json:"owner,omitempty"`
+	Editors      []*PageUser `json:"editors,omitempty"`
+	Likes        int         `json:"likes"`
+	IsLiked      bool        `json:"is_liked,omitempty"`
+	CommentCount int         `json:"comment_count"`
+	CanEdit      bool        `json:"can_edit,omitempty"`
+	CanDelete    bool        `json:"can_delete,omitempty"`
 }
 
 // PageSection is an ordered block on a custom page (not just the landing page).

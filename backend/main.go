@@ -1042,12 +1042,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		pageRepo := ipage.NewRepository(db)
 		pagePolicy := isecurity.NewPagePolicy(pageRepo, userSvc)
-		typedSectionMutations := strings.EqualFold(os.Getenv("PAGE_TYPED_SECTION_MUTATIONS"), "true") || os.Getenv("PAGE_TYPED_SECTION_MUTATIONS") == "1"
-		normalizedInteractiveResponses := strings.EqualFold(os.Getenv("PAGE_NORMALIZED_INTERACTIVE_RESPONSES"), "true") || os.Getenv("PAGE_NORMALIZED_INTERACTIVE_RESPONSES") == "1"
-		normalizedSectionReads := strings.EqualFold(os.Getenv("PAGE_NORMALIZED_SECTION_READS"), "true") || os.Getenv("PAGE_NORMALIZED_SECTION_READS") == "1"
-		cutoverMatchedRuns := envInt("PAGE_SECTION_CUTOVER_MATCHED_RUNS", ipage.DefaultCutoverMatchedRuns)
-		cutoverMatchWindow := envDuration("PAGE_SECTION_CUTOVER_MATCH_WINDOW", ipage.DefaultCutoverMatchWindow)
-		pageSvc := ipage.NewService(pageRepo, inboxSvc, ipage.WithIntegrationResolvers(dsSvc, csSvc), ipage.WithRedisClient(rdb), ipage.WithInteractivePolicy(pagePolicy), ipage.WithPageMutationPolicy(pagePolicy), ipage.WithTypedSectionMutations(typedSectionMutations), ipage.WithNormalizedInteractiveResponses(normalizedInteractiveResponses), ipage.WithNormalizedSectionReads(normalizedSectionReads, cutoverMatchedRuns, cutoverMatchWindow))
+		pageSvc := ipage.NewService(pageRepo, inboxSvc, ipage.WithIntegrationResolvers(dsSvc, csSvc), ipage.WithRedisClient(rdb), ipage.WithInteractivePolicy(pagePolicy))
 		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, commentSlowMode)
 
 		// Events log admin API.

@@ -1,6 +1,8 @@
 package page
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/skaia/backend/internal/s_registry"
+	"github.com/skaia/backend/models"
 )
 
 var (
@@ -313,6 +316,14 @@ func numberSetting(cfg map[string]interface{}, key string, fallback int) int {
 	return fallback
 }
 
+func interactiveIdempotencyHash(value string) string {
+	if value == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(value))
+	return hex.EncodeToString(sum[:])
+}
+
 // SubmitInteractive appends a response to an existing PageSection config.
 func (s *Service) SubmitInteractive(pageID, targetSectionID, userID int64, respondentName, idempotencyKey string, answers map[string]interface{}) (*InteractiveRecord, error) {
 	if userID <= 0 {
@@ -321,19 +332,8 @@ func (s *Service) SubmitInteractive(pageID, targetSectionID, userID int64, respo
 	if len(idempotencyKey) > 200 {
 		return nil, fmt.Errorf("idempotency key is too long")
 	}
-	page, err := s.repo.GetByID(pageID)
-	if err != nil {
-		return nil, err
-	}
-	useNormalized, err := s.normalizedInteractiveForPage(pageID)
-	if err != nil {
-		return nil, err
-	}
-	if useNormalized {
-		return s.submitNormalizedInteractive(page, targetSectionID, userID, respondentName, idempotencyKey, answers)
-	}
 	var created *InteractiveRecord
-	err = s.repo.MutateContent(pageID, func(content string) (string, error) {
+	err := s.repo.MutateContent(pageID, func(content string) (string, error) {
 		sections, err := decodePageSections(content)
 		if err != nil {
 			return "", err
@@ -413,14 +413,7 @@ func (s *Service) DeleteInteractiveRecord(pageID, targetSectionID int64, recordI
 	if err := s.requireInteractiveManager(pageID, actorID); err != nil {
 		return err
 	}
-	useNormalized, err := s.normalizedInteractiveForPage(pageID)
-	if err != nil {
-		return err
-	}
-	if useNormalized {
-		return s.deleteNormalizedInteractiveRecord(pageID, targetSectionID, recordID)
-	}
-	err = s.repo.MutateContent(pageID, func(content string) (string, error) {
+	err := s.repo.MutateContent(pageID, func(content string) (string, error) {
 		sections, err := decodePageSections(content)
 		if err != nil {
 			return "", err
@@ -463,14 +456,7 @@ func (s *Service) PatchInteractiveRecord(pageID, targetSectionID int64, recordID
 	if err := s.requireInteractiveManager(pageID, actorID); err != nil {
 		return err
 	}
-	useNormalized, err := s.normalizedInteractiveForPage(pageID)
-	if err != nil {
-		return err
-	}
-	if useNormalized {
-		return s.patchNormalizedInteractiveRecord(pageID, targetSectionID, recordID, patch)
-	}
-	err = s.repo.MutateContent(pageID, func(content string) (string, error) {
+	err := s.repo.MutateContent(pageID, func(content string) (string, error) {
 		sections, err := decodePageSections(content)
 		if err != nil {
 			return "", err
@@ -695,11 +681,14 @@ func (s *Service) InteractiveConfig(pageID, targetSectionID, userID int64, canMa
 	if err != nil {
 		return "", err
 	}
-	content, err := s.sanitizedInteractiveContent(pageID, p.Content, userID, canManage)
-	if err != nil {
-		return "", err
-	}
+	content := SanitizeInteractiveContent(p.Content, userID, canManage)
 	return extractInteractiveConfig(content, targetSectionID)
+}
+
+func (s *Service) SanitizeInteractivePage(page *models.Page, userID int64, canManage bool) {
+	if page != nil {
+		page.Content = SanitizeInteractiveContent(page.Content, userID, canManage)
+	}
 }
 
 func (s *Service) invalidateSEOByID(pageID int64) {

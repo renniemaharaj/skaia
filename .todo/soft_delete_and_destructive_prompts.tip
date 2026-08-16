@@ -31,8 +31,9 @@
   and content-free `trash:update` websocket invalidation.
 - [x] Replaced browser-native destructive dialogs with the queued, accessible
   Skaia Prompt contract and added a static native-dialog gate.
-- [x] Updated backend, frontend, migration, realtime, routing, security,
-  infrastructure, and normalized-page specifications.
+- [x] Updated backend, frontend, migration, realtime, routing, security, and
+      infrastructure specifications. The later custom-page consolidation
+      retired normalized page trash resources with their unused tables.
 
 ### Verification Evidence
 - [x] Tenant migrations 001-034 applied to clean PostgreSQL databases; focused

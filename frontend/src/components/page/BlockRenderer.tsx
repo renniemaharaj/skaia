@@ -1,4 +1,4 @@
-import type { PageItem, PageSection, PageTheme, SectionType } from "./types";
+import type { PageDocumentID, PageItem, PageSection, SectionType } from "./types";
 import { SECTION_TYPE_GROUPS, SECTION_TYPE_LABELS, canonicalSectionType } from "./types";
 import {
   clearInteractiveRecords,
@@ -16,14 +16,13 @@ interface BlockRendererProps {
   sections: PageSection[];
   canEdit: boolean;
   onUpdateSection: (s: PageSection) => void;
-  onDeleteSection: (id: number) => void;
+  onDeleteSection: (id: PageDocumentID) => void;
   onCreateSection: (s: Omit<PageSection, "id">) => void;
-  onCreateItem: (sectionId: number, item: Omit<PageItem, "id">) => void;
+  onCreateItem: (sectionId: PageDocumentID, item: Omit<PageItem, "id">) => void;
   onUpdateItem: (item: PageItem) => void;
-  onDeleteItem: (id: number) => void;
-  onMoveSection: (sourceSectionId: number, targetSectionId: number) => void;
+  onDeleteItem: (id: PageDocumentID) => void;
+  onMoveSection: (sourceSectionId: PageDocumentID, targetSectionId: PageDocumentID) => void;
   pageKey?: string;
-  theme?: PageTheme;
 }
 
 export const BLOCK_RENDERER_TYPES = SECTION_RENDERER_TYPES;
@@ -40,14 +39,13 @@ interface SectionBlockProps {
   canEdit: boolean;
   isFirst: boolean;
   isLast: boolean;
-  onMove: (sectionId: number, direction: "up" | "down") => void;
+  onMove: (sectionId: PageDocumentID, direction: "up" | "down") => void;
   onUpdate: (s: PageSection) => void;
-  onDelete: (id: number) => void;
-  onItemCreate: (sectionId: number, item: Omit<PageItem, "id">) => void;
+  onDelete: (id: PageDocumentID) => void;
+  onItemCreate: (sectionId: PageDocumentID, item: Omit<PageItem, "id">) => void;
   onItemUpdate: (item: PageItem) => void;
-  onItemDelete: (id: number) => void;
+  onItemDelete: (id: PageDocumentID) => void;
   pageKey?: string;
-  theme?: PageTheme;
 }
 
 /** Minimal skeleton shown while a heavy block chunk is fetching. */
@@ -70,7 +68,6 @@ const SectionBlock = memo(function SectionBlock({
   onItemUpdate,
   onItemDelete,
   pageKey,
-  theme,
 }: SectionBlockProps) {
   const canonicalType = canonicalSectionType(section.section_type);
   const Block = canonicalType ? SECTION_RENDERER_REGISTRY[canonicalType].component : null;
@@ -85,7 +82,6 @@ const SectionBlock = memo(function SectionBlock({
         onUpdate={onUpdate}
         onDelete={onDelete}
         pageKey={pageKey}
-        theme={theme}
       >
         <section
           className="pb-section-unsupported"
@@ -113,7 +109,6 @@ const SectionBlock = memo(function SectionBlock({
       onUpdate={onUpdate}
       onDelete={onDelete}
       pageKey={pageKey}
-      theme={theme}
       fallback={<SectionBlockSkeleton />}
     >
       <Block
@@ -140,7 +135,6 @@ export const BlockRenderer = memo(function BlockRenderer({
   onDeleteItem,
   onMoveSection,
   pageKey,
-  theme,
 }: BlockRendererProps) {
   const [activeAddIndex, setActiveAddIndex] = useState<number | null>(null);
 
@@ -211,7 +205,7 @@ export const BlockRenderer = memo(function BlockRenderer({
   const onMoveSectionRef = useRef(onMoveSection);
   onMoveSectionRef.current = onMoveSection;
 
-  const handleMove = useCallback((sectionId: number, direction: "up" | "down") => {
+  const handleMove = useCallback((sectionId: PageDocumentID, direction: "up" | "down") => {
     const secs = sectionsRef.current;
     const idx = secs.findIndex(s => s.id === sectionId);
     const neighborIdx = direction === "up" ? idx - 1 : idx + 1;
@@ -373,7 +367,6 @@ export const BlockRenderer = memo(function BlockRenderer({
               onItemUpdate={onUpdateItem}
               onItemDelete={onDeleteItem}
               pageKey={pageKey}
-              theme={theme}
             />
             {canEdit && renderAddSectionTrigger(i + 1)}
           </React.Fragment>

@@ -85,18 +85,12 @@ func (r *sqlRepository) List() ([]*models.Page, error) {
 
 // writes
 func (r *sqlRepository) Create(p *models.Page) error {
-	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
-		if err := exec.QueryRow(
-			`INSERT INTO pages (slug, title, description, content, owner_id, visibility)
+	return r.db.QueryRow(
+		`INSERT INTO pages (slug, title, description, content, owner_id, visibility)
 			 VALUES ($1, $2, $3, $4::jsonb, $5, $6)
 			 RETURNING id, created_at, updated_at`,
-			p.Slug, p.Title, p.Description, p.Content, p.OwnerID, p.Visibility,
-		).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt); err != nil {
-			return err
-		}
-		_, err := syncPageSectionShadow(exec, p)
-		return err
-	})
+		p.Slug, p.Title, p.Description, p.Content, p.OwnerID, p.Visibility,
+	).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
 }
 
 // UpdatePreservingInteractive serializes an ordinary page-builder save with
@@ -126,21 +120,11 @@ func (r *sqlRepository) UpdatePreservingInteractive(p *models.Page) error {
 		).Scan(&p.UpdatedAt); err != nil {
 			return err
 		}
-		_, err = syncPageSectionShadow(exec, p)
-		if err != nil {
-			return err
-		}
-		_, err = exec.Exec(
-			`UPDATE page_section_shadow_runs
-			 SET legacy_write_count=legacy_write_count+1, last_legacy_write_at=CURRENT_TIMESTAMP
-			 WHERE page_id=$1`, p.ID,
-		)
-		return err
+		return nil
 	})
 }
 
-// MutateContent locks and rewrites pages.content for pages that have not passed
-// the normalized interactive-response migration gate.
+// MutateContent locks and rewrites the authoritative pages.content document.
 func (r *sqlRepository) MutateContent(pageID int64, mutate func(string) (string, error)) error {
 	return database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
 		var current string
@@ -162,13 +146,7 @@ func (r *sqlRepository) MutateContent(pageID int64, mutate func(string) (string,
 		); err != nil {
 			return err
 		}
-		_, err = exec.Exec(
-			`UPDATE page_section_shadow_runs
-			 SET last_source_updated = (SELECT updated_at FROM pages WHERE id = $1)
-			 WHERE page_id = $1`,
-			pageID,
-		)
-		return err
+		return nil
 	})
 }
 

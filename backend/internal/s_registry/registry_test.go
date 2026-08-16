@@ -1,7 +1,6 @@
 package s_registry
 
 import (
-	"bytes"
 	"database/sql"
 	"encoding/json"
 	"strings"
@@ -33,8 +32,8 @@ func TestRegistryDefinitionsIncludeIntegrationTypes(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected %s definition", typ)
 		}
-		if len(def.ConfigSchema) == 0 || string(def.ConfigSchema) == "{}" {
-			t.Fatalf("expected %s to expose a config schema", typ)
+		if len(def.DefaultConfig) == 0 {
+			t.Fatalf("expected %s to expose a builder default", typ)
 		}
 	}
 }
@@ -70,40 +69,32 @@ func TestRegistryContainsExactlyTheNineteenPageSectionTypes(t *testing.T) {
 	}
 }
 
-func TestRegistryDefinitionsExposeVersionDefaultsCapabilitiesAndItemContracts(t *testing.T) {
-	itemTypes := map[string]bool{
-		"card_group": true, "stat_cards": true, "image_gallery": true,
-		"feature_grid": true, "event_highlights": true,
-	}
-	itemContract := ContractSchemas()[PageItemV1]
+func TestRegistryDefinitionsExposeDocumentDefaults(t *testing.T) {
 	for _, definition := range List() {
-		if definition.ConfigVersion != 1 {
-			t.Errorf("%s has config version %d", definition.Type, definition.ConfigVersion)
-		}
 		var defaultConfig map[string]interface{}
 		if err := json.Unmarshal(definition.DefaultConfig, &defaultConfig); err != nil {
 			t.Errorf("%s has invalid default config: %v", definition.Type, err)
-		}
-		if len(definition.Capabilities) == 0 || definition.Capabilities[0] != "shared_shell" {
-			t.Errorf("%s is missing shared-shell capability", definition.Type)
-		}
-		if definition.SupportedMigrations == nil {
-			t.Errorf("%s must expose an empty migration list rather than null", definition.Type)
-		}
-		if itemTypes[definition.Type] != bytes.Equal(definition.ItemSchema, itemContract) {
-			t.Errorf("%s item contract presence does not match item capability", definition.Type)
 		}
 	}
 }
 
 func TestRegistryDefinitionsAreReturnedAsIndependentCopies(t *testing.T) {
 	first, _ := Get("hero")
-	first.Capabilities[0] = "mutated"
-	first.ConfigSchema[0] = 'x'
+	first.DefaultConfig[0] = 'x'
 
 	second, _ := Get("hero")
-	if second.Capabilities[0] != "shared_shell" || second.ConfigSchema[0] != '{' {
+	if second.DefaultConfig[0] != '{' {
 		t.Fatal("registry definition mutation leaked into canonical metadata")
+	}
+}
+
+func TestValidateContentAcceptsProductionCompatibilityShapes(t *testing.T) {
+	content := `[
+		{"id":1,"section_type":"features","config":"{\"unknown\":true}"},
+		{"id":"integration-alpha","section_type":"custom_section","config":{"unknown":{"nested":1}}}
+	]`
+	if err := ValidateContent(content, nil); err != nil {
+		t.Fatalf("compatibility document was rejected: %v", err)
 	}
 }
 

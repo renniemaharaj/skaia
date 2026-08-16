@@ -1,8 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SectionShellControls, getAnchoredPanelPosition } from "./SectionShellControls";
-import { DEFAULT_SECTION_SHELL } from "./sectionContracts.generated";
-import { EMPTY_PAGE_THEME, type SharedSectionShell } from "./types";
+import { DEFAULT_SECTION_SHELL, type SharedSectionShell } from "./types";
 
 function rect({
   top,
@@ -59,7 +58,6 @@ describe("SectionShellControls", () => {
     render(
       <SectionShellControls
         shell={DEFAULT_SECTION_SHELL}
-        theme={EMPTY_PAGE_THEME}
         onChange={vi.fn()}
       />
     );
@@ -85,7 +83,7 @@ describe("SectionShellControls", () => {
       ...DEFAULT_SECTION_SHELL,
       background_color: { mode: "literal", value: "#123456" },
     };
-    render(<SectionShellControls shell={shell} theme={EMPTY_PAGE_THEME} onChange={onChange} />);
+    render(<SectionShellControls shell={shell} onChange={onChange} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
     const picker = screen.getByLabelText("Pick background color value");
@@ -103,7 +101,6 @@ describe("SectionShellControls", () => {
     render(
       <SectionShellControls
         shell={DEFAULT_SECTION_SHELL}
-        theme={EMPTY_PAGE_THEME}
         onChange={onChange}
       />
     );

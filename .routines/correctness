@@ -84,6 +84,17 @@ docs disagree.
 
 ## Last Run Remarks
 
+- Reconciled implementation with the proven custom-page authority. Runtime code
+  now has no typed/shadow/palette branches or flags; `pages.content` owns page
+  definitions and interactive records, and validation explicitly accepts the
+  observed heterogeneous identity/config shapes without dropping unknown data.
+- Confirmed the remaining renderer and component registries are descriptive
+  allowlists rather than universal storage schemas. Migration 035 fails closed
+  on the only two facts that would contradict safe retirement: normalized
+  responses or page palette tokens.
+
+## Previous Run Remarks (2026-08-16)
+
 - Reconciled the typed-page completion claim with runtime and local-tenant truth.
   The browser still reads/saves `pages.content`; all normalized flags are absent
   and default off, but page creates/updates unconditionally maintain shadow rows.

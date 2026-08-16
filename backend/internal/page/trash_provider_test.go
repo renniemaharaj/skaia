@@ -2,12 +2,22 @@ package page
 
 import (
 	"context"
+	"database/sql"
 	"strconv"
 	"testing"
 
 	"github.com/skaia/backend/internal/testutil"
 	"github.com/skaia/backend/internal/trash"
 )
+
+func seededActorID(t *testing.T, db *sql.DB) int64 {
+	t.Helper()
+	var id int64
+	if err := db.QueryRow(`SELECT id FROM users WHERE deleted_at IS NULL ORDER BY id LIMIT 1`).Scan(&id); err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
 
 func TestPageAllocationTrashProviderUsesManagerOnlyQueries(t *testing.T) {
 	db := testutil.OpenTestDB(t)

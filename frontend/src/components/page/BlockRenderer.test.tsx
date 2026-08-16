@@ -3,9 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 import { BLOCK_RENDERER_TYPES, BlockRenderer } from "./BlockRenderer";
 import { SECTION_RENDERER_REGISTRY } from "./sectionRendererRegistry";
 import {
-  SECTION_CAPABILITIES,
-  SECTION_CONFIG_VERSIONS,
-  SECTION_DEFAULT_CONFIGS,
   SECTION_TYPES,
   type PageSection,
 } from "./types";
@@ -34,11 +31,8 @@ describe("BlockRenderer registry contract", () => {
   it("dispatches every canonical section type exactly once", () => {
     expect(BLOCK_RENDERER_TYPES).toEqual([...SECTION_TYPES].sort());
     for (const type of SECTION_TYPES) {
-      expect(SECTION_RENDERER_REGISTRY[type]).toMatchObject({
-        configVersion: SECTION_CONFIG_VERSIONS[type],
-        defaultConfig: SECTION_DEFAULT_CONFIGS[type],
-        capabilities: SECTION_CAPABILITIES[type],
-      });
+      expect(SECTION_RENDERER_REGISTRY[type].component).toBeDefined();
+      expect(SECTION_RENDERER_REGISTRY[type].sanitizeForClipboard).toBeTypeOf("function");
     }
   });
 

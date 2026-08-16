@@ -11,9 +11,6 @@ import {
 import {
   DEFAULT_CARD_TEMPLATE,
   LEGACY_SECTION_TYPE_ALIASES,
-  SECTION_CAPABILITIES,
-  SECTION_CONFIG_VERSIONS,
-  SECTION_DEFAULT_CONFIGS,
   SECTION_TYPES,
   SECTION_TYPE_GROUPS,
   SECTION_TYPE_LABELS,
@@ -30,12 +27,7 @@ describe("legacy page section compatibility", () => {
     expect(new Set(grouped)).toEqual(new Set(SECTION_TYPES));
     for (const type of SECTION_TYPES) {
       expect(SECTION_TYPE_LABELS[type]).toBeTruthy();
-      expect(SECTION_CONFIG_VERSIONS[type]).toBe(1);
-      expect(SECTION_CAPABILITIES[type]).toContain("shared_shell");
-      expect(SECTION_DEFAULT_CONFIGS[type]).toBeDefined();
     }
-    expect(Object.keys(SECTION_DEFAULT_CONFIGS)).toEqual([...SECTION_TYPES]);
-    expect(JSON.stringify(SECTION_DEFAULT_CONFIGS)).not.toContain('"records"');
   });
 
   it("maps only the known legacy section alias to a canonical type", () => {

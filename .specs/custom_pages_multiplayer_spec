@@ -20,7 +20,7 @@ section registry validation, or page WebSocket handling.
 | `frontend/src/components/page/SaveStatusBar.tsx` | held incoming-change status |
 | `frontend/src/components/page/PageBuilderContext.tsx` | `editingCount`, `enterEdit`, `leaveEdit` |
 | `backend/internal/s_registry` | canonical section/component registry |
-| `frontend/src/components/page/typedSectionApi.ts` | normalized mutation adapter and revision state |
+| `frontend/src/components/page/sectionRegistry.ts` | renderer type dispatch |
 
 ## Reconciliation Contract
 
@@ -32,10 +32,9 @@ section registry validation, or page WebSocket handling.
   PostgreSQL JSONB key-order normalization.
 - Compare sections with `items` normalized to `[]` so local `undefined` and DB
   empty arrays do not appear different.
-- On typed-ready pages, the backend response refreshes the stable server-ID and
-  revision map. Debounced writes diff against the last authoritative document,
-  so unchanged sections are not resubmitted and different-section writes retain
-  independent expected revisions.
+- The HTTP save response is authoritative for the sender. Debounced saves send
+  the complete locally ordered document; the backend preserves locked
+  interactive records before committing it.
 
 ## Incoming Edit Guard
 
@@ -71,8 +70,7 @@ Breaking any link can make every section rerender on every save/push.
 - Positive `custom_section.config.custom_section_id` must resolve to a saved
   custom section.
 - Empty integration refs are allowed for drafts.
-- `PAGE_TYPED_SECTION_MUTATIONS` is necessary but not sufficient: a page exposes
-  typed writes only when its shadow parity status is `matched`.
+- Page saves use the single `pages.content` document path.
 
 ## Invariants
 
@@ -83,9 +81,8 @@ Breaking any link can make every section rerender on every save/push.
   local values when applying page data.
 - Cancel queued save timers and clear pending sections before page or landing swaps.
 - Section sync bails out while unsaved local sections or active editors exist.
-- Structural typed mutations flush earlier debounced section edits first.
-- Same-section `409` conflicts trigger an explanatory error and authoritative
-  refetch; reconnect replay also forces a refetch of page revisions.
+- Structural mutations use immediate whole-document saves; reconnect replay
+  forces an authoritative refetch.
 
 ## Verify
 

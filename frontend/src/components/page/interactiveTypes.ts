@@ -1,4 +1,4 @@
-import type { PageSection, SectionType } from "./types";
+import type { PageSection, PageSectionConfig, SectionType } from "./types";
 
 export type InteractiveSectionType = Extract<
   SectionType,
@@ -189,12 +189,12 @@ export function interactiveResponseLimitReached(
 }
 
 export function parseInteractiveConfig(
-  raw: string,
+  raw: PageSectionConfig,
   type: InteractiveSectionType
 ): InteractiveConfig {
   let parsed: Partial<InteractiveConfig> = {};
   try {
-    parsed = raw ? JSON.parse(raw) : {};
+    parsed = typeof raw === "string" ? (raw ? JSON.parse(raw) : {}) : raw;
   } catch {
     parsed = {};
   }
@@ -207,9 +207,9 @@ export function parseInteractiveConfig(
   };
 }
 
-export function clearInteractiveRecords(raw: string): string {
+export function clearInteractiveRecords(raw: PageSectionConfig): string {
   try {
-    const parsed = JSON.parse(raw || "{}");
+    const parsed = typeof raw === "string" ? JSON.parse(raw || "{}") : raw;
     return JSON.stringify({ ...parsed, records: [], result_summary: undefined });
   } catch {
     return JSON.stringify({ records: [] });

@@ -2,10 +2,9 @@
 
 ## Context
 
-The normalized custom-page tables remain part of the current schema but are now
-scheduled for evidence-gated retirement by
-`.todo/custom_page_document_model_consolidation`. Keep their existing lifecycle
-safety until that plan removes them; do not treat them as the future page model.
+The later `custom_page_document_model_consolidation` retired the unused
+normalized custom-page tables and their trash providers. The lifecycle ledger
+below records the implementation-time inventory rather than current page truth.
 
 Skaia currently hard-deletes records across forum, pages, store, inbox,
 notifications, configuration, provisioning, auth/session, and relationship
@@ -124,7 +123,7 @@ but new runtime code must pass a strict allowlist check.
    - Compare `001_schema.sql`, incremental migrations, `home`, other tenants,
      test databases, and `internal/app/migrations`.
    - Confirm the orphaned interactive tables have no code/job clients and link
-     their eventual retirement to `typed_page_sections_redesign`; do not block
+    their eventual retirement to `custom_page_document_model_consolidation`; do not block
      active-table soft delete on production retirement evidence.
    - Identify API methods using HTTP `DELETE` for reversible semantics such as
      unlike, unblock, unsuspend, logout, cart removal, or permission toggles so
@@ -293,7 +292,7 @@ but new runtime code must pass a strict allowlist check.
 - `.specs/route_resolution_spec`
 - `.specs/custom_page_section_compatibility_spec`
 - `.specs/custom_page_interactive_sections_spec`
-- `.todo/typed_page_sections_redesign`
+- `.todo/custom_page_document_model_consolidation`
 - `backend/internal/migrations/001_schema.sql`
 - `backend/internal/{forum,store,inbox,page,user,notification,config,datasource,customsection,provisioning}`
 - `internal/app/migrations/001_grengo_management.sql`

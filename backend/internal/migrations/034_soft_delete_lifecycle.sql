@@ -14,9 +14,7 @@ BEGIN
         'store_reference_codes', 'inbox_conversations', 'inbox_messages',
         'notifications', 'pages', 'page_comments', 'data_sources',
         'custom_sections', 'user_page_allocations', 'page_sections',
-        'page_items', 'page_themes', 'page_theme_tokens',
-        'page_section_instances', 'page_section_instance_items',
-        'page_section_presets', 'page_section_responses', 'app_blueprints',
+        'page_items', 'app_blueprints',
         'provisioned_instances', 'media_history'
     ]
     LOOP
@@ -55,7 +53,7 @@ BEGIN
         'superuser_demotion_votes', 'cart_items', 'thread_likes',
         'thread_comment_likes', 'thread_editors',
         'inbox_conversation_participants', 'user_blocks', 'page_editors',
-        'page_likes', 'page_comment_likes', 'page_section_color_references'
+        'page_likes', 'page_comment_likes'
     ]
     LOOP
         EXECUTE format(
@@ -124,23 +122,10 @@ ALTER TABLE auth_backup_codes
     ADD COLUMN IF NOT EXISTS cleared_at TIMESTAMPTZ;
 ALTER TABLE mfa_challenge_required
     ADD COLUMN IF NOT EXISTS cleared_at TIMESTAMPTZ;
-ALTER TABLE page_section_quarantine
-    ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMPTZ;
-
 CREATE INDEX IF NOT EXISTS idx_sessions_active
     ON sessions(user_id, expires_at) WHERE revoked_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_user_sessions_active
     ON user_sessions(user_id, expires_at) WHERE revoked_at IS NULL;
-
-ALTER TABLE page_theme_tokens
-    DROP CONSTRAINT IF EXISTS page_theme_tokens_page_id_display_order_key;
-ALTER TABLE page_theme_tokens
-    DROP CONSTRAINT IF EXISTS page_theme_tokens_display_order_check;
-ALTER TABLE page_theme_tokens
-    ADD CONSTRAINT page_theme_tokens_display_order_check
-    CHECK (display_order BETWEEN 0 AND 127);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_page_theme_tokens_active_display_order
-    ON page_theme_tokens(page_id,display_order) WHERE deleted_at IS NULL;
 
 -- Application roles may never physically remove lifecycle or evidence rows.
 -- Operators must be granted the dedicated NOLOGIN role explicitly.
@@ -172,15 +157,13 @@ BEGIN
         'store_categories','products','orders','subscription_plans','subscriptions','user_cards',
         'product_reviews','store_reference_codes','inbox_conversations','inbox_messages','notifications',
         'pages','page_comments','data_sources','custom_sections','user_page_allocations','page_sections',
-        'page_items','page_themes','page_theme_tokens','page_section_instances','page_section_instance_items',
-        'page_section_presets','page_section_responses','app_blueprints','provisioned_instances','media_history',
+        'page_items','app_blueprints','provisioned_instances','media_history',
         'role_permissions','user_roles','user_permissions','superuser_demotion_votes','cart_items',
         'thread_likes','thread_comment_likes','thread_editors','inbox_conversation_participants','user_blocks',
-        'page_editors','page_likes','page_comment_likes','page_section_color_references',
+        'page_editors','page_likes','page_comment_likes',
         'user_sessions','sessions','email_verification_tokens','password_reset_tokens','auth_backup_codes',
         'auth_credentials','auth_totp_secrets','mfa_challenge_required','payments','order_items',
         'user_wallet_transactions','store_reference_code_payouts','events','resource_views',
-        'page_section_quarantine','page_section_response_migrations','page_section_shadow_runs',
         'resource_lifecycle_events'
     ]
     LOOP

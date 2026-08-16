@@ -54,34 +54,17 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   media, and commerce. It uses a native modal lifecycle, restores prior focus,
   supports Escape and arrow-key navigation, and keeps controls independent of
   media load success.
-- Page-section types, config aliases, versions, defaults, and capabilities in
-  `sectionContracts.generated.ts` are generated from backend canonical schemas;
-  update them with `npm run contracts:generate`, never by hand.
-- New normalized page-section boundaries use `PageSection<T>` with generated
-  shell and per-type config. Existing document renderers use `LegacyPageSection`
-  until migrated; `sectionAdapter.ts` is the compatibility owner for object/string
-  configs, legacy aliases/keys, runtime separation, quarantine, and reverse
-  projection. Backend schema validation remains authoritative.
+- `sectionRegistry.ts` is the compact renderer-type allowlist. Page section IDs
+  and configs retain their observed numeric/string and string/object encodings;
+  individual renderers narrow the config fields they consume.
 - Every registered or unsupported page section renders through one
   `SectionFrame`. The frame owns shared presentation, collapse, and the single
   toolbar; renderers may portal type-specific actions into it but must not create
   block-local shared shell controls. Renderers retain semantic heading placement
   and inline content editing where their DOM contracts differ.
-- Page palettes expose only declared safe values through namespaced
-  `--skaia-page-color-*` variables. Section colors use generated
-  inherit/literal/palette sources; content scale applies to an overflow-safe
-  inner wrapper, never the toolbar or outer section box.
-- `PageBuilderDoc.theme` may carry the generated optional page theme during the
-  legacy document compatibility window.
-- `PageBuilderDoc.typed_section_mutations` is a backend-owned, per-page cutover
-  signal. When true, `PageBuilder` adapts legacy renderer values through
-  `typedSectionApi.ts`, batches updates by stable legacy key, sends expected
-  server revisions, and uses typed create/delete/reorder operations. A `409`
-  discards no server state: the builder explains the conflict and refetches.
-- Normalized read cutover is backend-owned and preserves the existing
-  `Page.Content` response envelope, so renderers and `usePageData` do not branch
-  on storage mode. Reconnect/refetch behavior therefore remains identical when
-  `PAGE_NORMALIZED_SECTION_READS` changes authority.
+- Section colors are inherited or literal; content scale applies to the shared
+  inner wrapper. `PageBuilder` always saves the complete authoritative document
+  with the page update endpoint.
 - Datasource-backed reusable designs use the `SectionPreset` type and
   `/config/section-presets`; `CustomSection` remains a deprecated type alias and
   the backend retains the old route during the compatibility window.
@@ -251,13 +234,11 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 | `src/hooks/useWebSocketSync.ts` | WS singleton, message-to-atom reducer |
 | `src/hooks/usePageData.ts` | page load/live-update behavior |
 | `src/pages/page/PageBuilder.tsx` | page editor, section merge/save pipeline |
-| `src/components/page/sectionContracts.generated.ts` | generated typed section registry |
-| `src/components/page/sectionAdapter.ts` | legacy document to normalized section compatibility boundary |
+| `src/components/page/sectionRegistry.ts` | compact renderer type and shared-shell contract |
+| `src/components/page/sectionAdapter.ts` | document-native shared-shell config reader/patcher |
 | `src/components/page/SectionFrame.tsx` | shared presentation, collapse, suspense, and single-toolbar owner |
 | `src/components/page/SectionShellControls.tsx` | shared shell appearance editor using shared selects and a nested-menu-safe body portal |
-| `src/components/page/sectionRendererRegistry.tsx` | exhaustive typed renderer metadata and clipboard dispatch |
-| `src/components/page/sectionTheme.ts` | safe page-palette variable and section-color resolution |
-| `src/components/page/typedSectionApi.ts` | typed section payload adaptation, stable-ID/revision API client |
+| `src/components/page/sectionRendererRegistry.tsx` | exhaustive renderer and clipboard dispatch |
 | `src/pages/kjv/index.tsx` | catalog/book loading and URL-authoritative reader orchestration |
 | `src/components/bible/BibleBrowser.tsx` | shared directory grid/table book discovery and picker |
 | `src/components/bible/BibleReader.tsx` | route-scoped reader, fullscreen shell, favorites, and controls |

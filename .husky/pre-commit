@@ -22,7 +22,6 @@ done
 
 (
   cd frontend
-  npm run contracts:check
   npm run check:native-dialogs
   npm run lint
   npm test -- --run

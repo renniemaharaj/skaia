@@ -12,8 +12,8 @@
 - **Phase 4: Add component registry and bind-point contracts** - ⬜ Not started
 - **Phase 5: Open derived/custom sections to registered primitive components** - ⬜ Not started
 - **Phase 6: Convert routes to dynamic page rendering** - ⬜ Not started
-- **Phase 7: Add versioning and migration** - ✅ Complete in
-  `.todo/typed_page_sections_redesign`
+- **Phase 7: Harden document compatibility** - ✅ Complete in
+  `.todo/custom_page_document_model_consolidation`
 
 ### Next Steps
 
@@ -21,8 +21,8 @@
 - [ ] Define bind-point metadata, supported data types, validation, and row replication semantics
 - [ ] Extend derived/custom sections so builders can choose registered components and bind datasource columns to component bind points
 - [ ] Begin dynamic route rendering and registry-driven blocks after component binding is modeled
-- [x] Plan and implement section versioning/migration and guarded storage cutover
-      in `.todo/typed_page_sections_redesign`
+- [x] Retain the useful registry/shared UI while consolidating on the proven
+      document model in `.todo/custom_page_document_model_consolidation`
 
 ### Plan Boundary
 
@@ -156,7 +156,7 @@ Component registry metadata endpoints should be additive and may initially be se
 
 1. Page Content Hydration
    - Fetch page JSON from `/pages/{slug}` or landing slug lookup.
-   - Parse `Content` into typed sections and render with `BlockRenderer`.
+   - Parse `Content` into document sections and render with `BlockRenderer`.
 
 2. Section Mapping
    - Map `section_type` to block component using the current `BLOCK_MAP`.
