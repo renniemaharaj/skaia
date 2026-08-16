@@ -46,6 +46,15 @@
   background: var(--bg-secondary);
 }
 
+.media-placeholder[role="button"] {
+  cursor: zoom-in;
+}
+
+.media-placeholder[role="button"]:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 3px;
+}
+
 .media-placeholder[data-media-status="ready"][data-preserve-frame="true"] {
   display: grid;
   min-height: var(--media-placeholder-min-height);

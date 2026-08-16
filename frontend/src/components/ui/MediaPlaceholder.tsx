@@ -35,6 +35,8 @@ export interface MediaPlaceholderProps {
   mediaStyle?: CSSProperties;
   mediaType: MediaType;
   muted?: boolean;
+  /** Make the rendered media frame keyboard- and pointer-activatable. */
+  onActivate?: () => void;
   onEnded?: () => void;
   onError?: () => void;
   onReady?: () => void;
@@ -76,6 +78,7 @@ export function MediaPlaceholder({
   mediaStyle,
   mediaType,
   muted = false,
+  onActivate,
   onEnded,
   onError,
   onReady,
@@ -145,10 +148,32 @@ export function MediaPlaceholder({
     <figure
       aria-hidden={decorative || undefined}
       aria-busy={status === "loading"}
+      aria-label={onActivate ? `Preview ${alt}` : undefined}
       className={classes}
       data-media-status={status}
       data-preserve-frame={preserveFrame}
+      onClick={
+        onActivate
+          ? event => {
+              event.preventDefault();
+              event.stopPropagation();
+              onActivate();
+            }
+          : undefined
+      }
+      onKeyDown={
+        onActivate
+          ? event => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              event.preventDefault();
+              event.stopPropagation();
+              onActivate();
+            }
+          : undefined
+      }
+      role={onActivate ? "button" : undefined}
       style={frameStyle}
+      tabIndex={onActivate ? 0 : undefined}
     >
       {media}
       {status === "loading" && (

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { RichTextRenderer } from "./RichTextRenderer";
 
@@ -43,5 +43,23 @@ describe("RichTextRenderer media", () => {
 
     expect(screen.getByText("Placeholder for asset here")).toBeInTheDocument();
     expect(screen.getByText("Interview excerpt")).toBeInTheDocument();
+  });
+
+  it("preserves Tiptap image alignment and opens images in the shared lightbox", () => {
+    render(
+      <RichTextRenderer html='<div class="image" style="text-align: center"><img src="/flower.jpg" alt="Flower" width="240" align="center"></div>' />
+    );
+
+    const previewTrigger = screen.getByRole("button", { name: "Preview Flower" });
+    expect(previewTrigger).toHaveStyle({ marginLeft: "auto", marginRight: "auto" });
+
+    fireEvent.click(previewTrigger);
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("img", { name: "Flower" })).toHaveAttribute(
+      "src",
+      "/flower.jpg"
+    );
+    expect(within(dialog).getByText("Flower")).toBeInTheDocument();
   });
 });

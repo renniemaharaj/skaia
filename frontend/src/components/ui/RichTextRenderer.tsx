@@ -1,8 +1,9 @@
 import DOMPurify from "dompurify";
 import parse, { type DOMNode, Element } from "html-react-parser";
-import type React from "react";
+import React, { useState } from "react";
 import UserLink from "../user/UserLink";
 import { MediaPlaceholder, type MediaSize, type MediaType } from "./MediaPlaceholder";
+import { MediaPreviewLightbox, type PreviewMediaItem } from "./MediaPreviewLightbox";
 
 interface RichTextRendererProps {
   html: string;
@@ -39,7 +40,21 @@ function mediaSize(element: Element): MediaSize | undefined {
   return width || height ? { width, height } : undefined;
 }
 
-function richTextMedia(element: Element, mediaType: MediaType) {
+function mediaAlignment(element: Element): React.CSSProperties | undefined {
+  const styleAlignment = element.attribs.style?.match(/(?:^|;)\s*text-align\s*:\s*(left|center|right)/i)?.[1];
+  const alignment = (element.attribs.align || styleAlignment)?.toLowerCase();
+
+  if (alignment === "center") return { marginLeft: "auto", marginRight: "auto" };
+  if (alignment === "right") return { marginLeft: "auto", marginRight: 0 };
+  if (alignment === "left") return { marginLeft: 0, marginRight: "auto" };
+  return undefined;
+}
+
+function richTextMedia(
+  element: Element,
+  mediaType: MediaType,
+  onActivate?: () => void
+) {
   const href = mediaSource(element);
   const alt = element.attribs.alt || element.attribs.title || `Embedded ${mediaType}`;
   const size = mediaSize(element);
@@ -57,12 +72,14 @@ function richTextMedia(element: Element, mediaType: MediaType) {
       mediaClassName={element.attribs.class}
       mediaType={mediaType}
       muted={"muted" in element.attribs}
+      onActivate={onActivate}
       playsInline={"playsinline" in element.attribs}
       poster={element.attribs.poster}
       preload={preload === "auto" || preload === "none" ? preload : "metadata"}
       preserveFrame={Boolean(size)}
       showCaption={false}
       size={size}
+      style={mediaType === "image" ? mediaAlignment(element) : undefined}
     />
   );
 }
@@ -72,8 +89,10 @@ export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
   className = "",
   previewMode = false,
 }) => {
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   // Sanitize HTML
   const sanitized = DOMPurify.sanitize(html);
+  const previewItems: PreviewMediaItem[] = [];
 
   const options = {
     replace: (domNode: DOMNode) => {
@@ -84,7 +103,11 @@ export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
       }
 
       if (domNode instanceof Element && domNode.name === "img") {
-        return richTextMedia(domNode, "image");
+        const url = mediaSource(domNode);
+        const alt = domNode.attribs.alt || domNode.attribs.title || "Embedded image";
+        const index = previewItems.length;
+        if (url) previewItems.push({ url, filename: alt, type: "image" });
+        return richTextMedia(domNode, "image", url ? () => setPreviewIndex(index) : undefined);
       }
 
       if (domNode instanceof Element && (domNode.name === "video" || domNode.name === "audio")) {
@@ -131,5 +154,17 @@ export const RichTextRenderer: React.FC<RichTextRendererProps> = ({
     },
   };
 
-  return <div className={`rich-text-renderer ${className}`}>{parse(sanitized, options)}</div>;
+  return (
+    <>
+      <div className={`rich-text-renderer ${className}`}>{parse(sanitized, options)}</div>
+      {previewIndex !== null && previewItems[previewIndex] && (
+        <MediaPreviewLightbox
+          items={previewItems}
+          index={previewIndex}
+          onIndexChange={setPreviewIndex}
+          onClose={() => setPreviewIndex(null)}
+        />
+      )}
+    </>
+  );
 };
