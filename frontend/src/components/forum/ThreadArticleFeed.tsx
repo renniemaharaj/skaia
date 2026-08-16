@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 import type { ForumCategory } from "../../atoms/forum";
 import type { FeedThread } from "../../hooks/useThreadsFeed";
 import { relativeTimeAgo } from "../../utils/serverTime";
+import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import UserAvatar from "../user/UserAvatar";
 import UserLink from "../user/UserLink";
 import UserProfileOverlay from "../user/UserProfileOverlay";
@@ -101,9 +102,20 @@ const MediaPreview = ({ media }: { media: ThreadPreview["media"] }) => {
       {visible.map((item, index) => (
         <div className="thread-article-media-item" key={item.url} title={item.name}>
           {item.type === "image" ? (
-            <img src={item.url} alt="" loading="lazy" />
+            <MediaPlaceholder
+              alt={item.name}
+              href={item.url}
+              mediaType="image"
+              size={{ height: "100%", width: "100%" }}
+            />
           ) : item.type === "video" ? (
-            <video src={item.url} muted preload="metadata" aria-label={item.name} />
+            <MediaPlaceholder
+              alt={item.name}
+              controls={false}
+              href={item.url}
+              mediaType="video"
+              size={{ height: "100%", width: "100%" }}
+            />
           ) : (
             <div className="thread-article-file">
               <FileText size={24} />
