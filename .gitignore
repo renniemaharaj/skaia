@@ -32,6 +32,9 @@ nginx/default.conf
 exports/
 .pcode
 
+# Prevent Root Clutter
+/integrate
+
 # Prevent Agents Clutter
 .codex
 .github

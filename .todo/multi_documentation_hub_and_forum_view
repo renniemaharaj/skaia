@@ -1,0 +1,288 @@
+# Multi-Documentation Hub and Forum Documentation View
+
+## Context
+
+`integrate/` is a standalone Vite documentation reference with a fixed,
+compile-time page registry, grouped sidebar, responsive documentation shell,
+search dialog, article renderer, on-page headings, and previous/next
+navigation. Its HrtmPay/Frappe content, branding, Markdown import pipeline,
+React router shell, remote fonts, and hardcoded theme tokens do not belong in
+Skaia.
+
+Skaia already has a full HTML TipTap editor in
+`frontend/src/components/forum/Editor.tsx`, sanitized read-only rendering in
+`frontend/src/components/ui/RichTextRenderer.tsx`, and forum grid, list, and
+traditional article-feed modes. It does not have tenant-owned documentation
+models, APIs, navigation state, or routes. The integration therefore needs one
+shared documentation presentation shell with two deliberately separate data
+adapters:
+
+- `/doc` reads and writes new documentation-domain records through its own
+  handler, service, and repositories.
+- `/forum/docs` projects existing forum categories and threads into the same
+  presentation shell. Editing there updates the authoritative forum thread;
+  it never copies forum content into documentation tables.
+
+## Goal
+
+- Add a public multi-documentation hub where a tenant can host any number of
+  independently named documentation sets.
+- Use canonical public routes:
+  - `/doc` - documentation catalog and creation entrypoint for authorized users.
+  - `/doc/:documentationSlug` - one documentation overview or its first
+    visible guide.
+  - `/doc/:documentationSlug/:articleSlug` - one guide/article.
+- Let an authorized owner create, rename, reorder, update, and retire sidebar
+  sections and guides from the documentation shell using Skaia's full TipTap
+  HTML editor and sanitized renderer.
+- Add `/forum/docs`, `/forum/docs/:categoryId`, and
+  `/forum/docs/:categoryId/:threadId` as the forum documentation layout, with
+  forum categories as sidebar sections and threads as articles.
+- Adapt the useful `integrate/` UX to Skaia's global layout, branding, theme,
+  permissions, lifecycle, realtime, security, and responsive contracts.
+
+## Non-Goals
+
+- Do not import the HrtmPay/Frappe articles, source links, brand assets, remote
+  fonts, browser-storage registry, or build/runtime dependencies from
+  `integrate/`.
+- Do not store documentation content in `pages`, forum tables, Markdown files,
+  or site-config JSON.
+- Do not mirror forum categories or threads into documentation records or make
+  the documentation service mutate forum records.
+- Do not replace the existing forum grid, list, article feed, thread details,
+  comments, likes, or canonical `/view-thread/:threadId` routes.
+- Do not add collaborative cursors, approval workflows, article version
+  history, localization/i18n infrastructure, arbitrary custom CSS, or a second
+  rich-text editor implementation in this delivery.
+- Do not impose a fixed documentation-count limit. Existing request-size,
+  rate-limit, storage, and authorization controls still apply.
+
+## Contracts
+
+### Documentation ownership and persistence
+
+- Add migration `036_documentation_hub.sql` with lifecycle-aware tables:
+  - `documentations`: tenant-local unique active slug, title, description,
+    owner, visibility, timestamps, and `deleted_at`/`deleted_by`.
+  - `documentation_sections`: documentation parent, title, stable display
+    order, timestamps, and lifecycle columns.
+  - `documentation_articles`: documentation and optional section parent,
+    unique active `(documentation_id, slug)`, title, summary, TipTap HTML
+    content, display order, author/last editor, optimistic revision or
+    `updated_at` token, timestamps, and lifecycle columns.
+- Use foreign keys and partial active indexes. A retired parent hides its
+  descendants without runtime hard deletion; register all three resource types
+  with the existing lifecycle audit, hard-delete guard, and Trash restore
+  policy. Reordering must be transactional and collision-safe.
+- The creator owns a documentation. Owners may manage their own documentation;
+  `docs.manage` may manage any documentation and `docs.create` controls new
+  documentation creation. Seed permissions idempotently for admin/superuser.
+  Public/unlisted reads never confer write access. Private documentation reads
+  require the same owner/manage authorization as writes.
+- Normalize and validate slugs server-side, reserve route-control names such as
+  `mine`, require non-empty bounded titles/content, and return `409` for active
+  slug or stale-revision conflicts. Slug changes return the authoritative new
+  route so clients replace history rather than leaving stale URLs.
+
+### Documentation backend domain and API
+
+- Add `backend/internal/documentation` with the normal
+  `handler => service => repository` boundary, domain interfaces, focused
+  repository/service/handler tests, cache invalidation, event records, and
+  WebSocket dispatch. Documentation and forum repositories remain separate.
+- Mount `/api/docs` in `backend/main.go`. Register literal management routes
+  before slug routes. The API includes:
+  - public visible-document listing, one documentation navigation manifest,
+    one article read, and bounded search within one documentation;
+  - authenticated owned-document listing and documentation create/update/
+    retire operations;
+  - section create/update/retire and one transactional navigation reorder;
+  - article create/update/retire using numeric IDs for mutations even though
+    public reads use slugs.
+- Manifests return documentation metadata plus ordered section/article summary
+  records, not every article body. Article reads return one body and adjacent
+  navigation metadata. Search derives bounded sanitized plain-text excerpts
+  and never interpolates raw HTML or unescaped SQL patterns.
+- API responses remain `no-store`; Redis entries are best-effort,
+  tenant-prefixed, and invalidated after successful writes. The mutation
+  response is authoritative for its sender.
+- Add a `documentation:update` WebSocket message plus documentation/article
+  resource subscriptions. Push compact create/update/delete/reorder
+  invalidations and refetch matching manifests/articles; do not broadcast full
+  HTML bodies. Preserve a locally dirty editor and surface a conflict instead
+  of silently overwriting it.
+
+### Shared documentation shell
+
+- Build a route-scoped Skaia shell inspired by `integrate/`, not a file copy:
+  responsive sidebar groups, documentation switcher/back-to-catalog affordance,
+  breadcrumbs, search, title/summary metadata, copy-link action, generated
+  on-this-page headings, previous/next guide navigation, empty/loading/error
+  states, and mobile drawer/scrim focus behavior.
+- Keep Skaia's global `Layout`, header, footer, branding, `SiteHead`, and theme
+  authority. The documentation shell must account for existing chrome and must
+  not mount another `BrowserRouter`, global reset, remote font, or competing
+  root theme variables.
+- Use shared primitives, Lucide icons, CSS tokens, light/dark mode, reduced
+  motion, semantic landmarks, keyboard navigation, visible focus, and the
+  current phone-width TipTap contract. No native dialogs or hardcoded CSS
+  colors.
+- Extract a reusable editor boundary from the forum editor only as needed so
+  forum and documentation use one extension registry, HTML output contract,
+  import behavior, lazy loading, toolbar, and media/upload rules. Read mode uses
+  `RichTextRenderer`; never use `rehypeRaw` or a second unsanitized renderer.
+- Inline edit mode is permission-gated and has explicit Edit, Save, Cancel,
+  saving, validation, stale-conflict, and unsaved-navigation states. Save sends
+  the last observed revision. Cancel restores the server snapshot. Creation and
+  reorder controls must remain usable by keyboard and touch.
+- Generate heading anchors from the sanitized rendered document with stable
+  duplicate-heading suffixes, preserve authored safe IDs when valid, and keep
+  hash navigation/copy links correct after edits.
+
+### Documentation data adapter and routes
+
+- Add a focused Jotai/API layer for documentation manifests, selected article,
+  search results, edit drafts, loading/error state, and realtime invalidation.
+  Persist only explicitly recoverable drafts or view preferences, scoped by
+  documentation/article ID and user; do not persist whole public manifests or
+  server content as authority.
+- Add lazy public routes for `/doc`, `/doc/:documentationSlug`, and
+  `/doc/:documentationSlug/:articleSlug`. Management controls appear inline
+  only after current-user permissions are known; the backend remains the
+  authority.
+- `/doc` always supports multiple documentation sets. One existing set must not
+  silently change the route contract. A documentation with no articles renders
+  an owner creation state and a public empty state; a missing/private resource
+  does not leak existence.
+- Add `docs` to Skaia's feature registry/CLI defaults and navigation visibility
+  rules. A disabled feature removes shared-navigation entrypoints and resolves
+  public doc routes consistently with other disabled modules.
+
+### Forum documentation adapter
+
+- Add a forum-owned lightweight documentation manifest/search projection that
+  returns ordered category metadata and thread summaries without loading all
+  thread bodies or issuing a request per category. It lives under
+  `/api/forum`, uses forum repositories/services, existing public-read rules,
+  active-row filters, cache behavior, and optional-user permission enrichment.
+- Map category `display_order` and pin state into sidebar ordering; map threads
+  to guide links using stable numeric IDs. Fetch the selected thread and its
+  comments/actions through existing forum APIs and atoms. Locked categories or
+  threads are readable but retain their existing mutation restrictions.
+- `/forum/docs` is an additional route-linked view reachable from the forum
+  view controls. It does not replace the current `articles` feed. Deep links
+  select the category/thread, hard refresh correctly, and canonicalize a moved
+  thread to its current category without duplicating content.
+- The shell's forum Edit action opens inline TipTap for users whose authoritative
+  thread data says `can_edit`; Save calls the existing
+  `PUT /api/forum/threads/{id}` mutation with title, content, and category.
+  Existing `forum:update`, notifications, analytics, mentions, last-editor
+  metadata, cache invalidation, comments, likes, locks, and resource
+  subscriptions remain authoritative.
+- Forum search results and sidebar links stay in `/forum/docs/...`; ordinary
+  forum/thread links elsewhere retain their current routes. The adapter must
+  not import documentation atoms, call `/api/docs`, or create documentation
+  rows.
+
+### Public discovery and security
+
+- Extend tenant sitemap/SSR metadata resolution for public documentation and
+  forum-documentation deep links without caching request-origin data. Retired,
+  private, or missing documents/articles are absent/noindex; backend/config
+  degradation follows the existing `503` and cacheability contract.
+- Sanitize all rendered TipTap HTML through `RichTextRenderer`; retain its
+  validated media placeholders, mention handling, link safety, and preview
+  behavior. Validate write payload sizes and URL/visibility values server-side.
+- Add documentation mutations to events/audit coverage, CSRF-equivalent bearer
+  auth assumptions, rate limits, lifecycle/Trash behavior, and tenant cache/SEO
+  invalidation. Do not rely on hidden buttons, route obscurity, or guest sandbox
+  mode for authorization.
+
+## Steps
+
+1. Confirm the route/model/API contract against current forum, lifecycle,
+   permissions, feature, SEO, caching, and WebSocket code; add migration 036,
+   documentation models/interfaces/repositories, and migration tests.
+2. Implement the documentation service/handler, ownership and visibility
+   policy, manifests/articles/search, transactional navigation reorder,
+   lifecycle restore behavior, cache/event/WS dispatch, mount, and backend tests.
+3. Refactor the existing forum editor into a shared lazy editor boundary without
+   changing its serialized HTML/extensions; build the tokenized responsive
+   documentation shell, safe heading index, navigation, search dialog, and
+   accessibility tests from the `integrate/` behavior inventory.
+4. Implement documentation atoms/API adapters, catalog and nested routes,
+   inline create/edit/reorder/retire flows, conflict/dirty-draft protection,
+   realtime refetch, feature gating, and frontend integration tests.
+5. Add the forum-owned manifest/search projection and `/forum/docs/...` adapter;
+   wire view selection, deep links, existing thread edit/update/comment/action
+   behavior, moved-thread canonicalization, and regression tests proving no
+   documentation-table writes occur.
+6. Add sitemap/SSR/cache invalidation and navigation entrypoints; run backend,
+   frontend, responsive, accessibility, security, lifecycle, and multi-tenant
+   verification. Update affected specs and this tip only after implementation
+   establishes the final contracts.
+
+## Verification
+
+- Migration/repository tests cover idempotence, active slug uniqueness, same
+  article slug in different documentation sets, unbounded set creation without
+  a product cap, ordering, parent retirement visibility, restore conflicts,
+  ownership, private-resource non-disclosure, and stale revisions.
+- Backend: `go test ./...` from `backend/`, including handler/service/repository,
+  auth, search bounds, cache invalidation, WebSocket payload, forum projection,
+  lifecycle, sitemap, and SSR tests.
+- Frontend: focused Vitest suites plus `npm test -- --run`, `npm run lint`,
+  `npm run check:native-dialogs`, and `npm run build` from `frontend/`.
+- Manual documentation flow: create `example` and `example2`, add/reorder
+  sections and guides, duplicate an article slug across the two sets, edit rich
+  HTML/media, cancel/save/conflict, copy/hash links, search, previous/next,
+  visibility changes, retire/restore, back/forward, and hard refresh at every
+  `/doc` route.
+- Manual forum flow: open `/forum/docs`, switch categories, search, deep-link a
+  thread, edit inline, move it to another category, use comments/likes/locks,
+  observe a second-client realtime refresh, and confirm the canonical forum
+  view reflects the same updated thread.
+- Responsive/accessibility: desktop/tablet/phone, long titles, empty and large
+  sidebars, drawer focus trap/return, Escape, keyboard reorder, reduced motion,
+  light/dark mode, screen-reader landmarks, and no content hidden behind Skaia's
+  global header/footer.
+- Separation gate: tests or repository spies prove `/api/docs` uses only
+  documentation repositories and `/forum/docs` mutations use only forum
+  services. `rg` must find no imported HrtmPay/Frappe corpus, second
+  `BrowserRouter`, `rehypeRaw`, remote font import, or duplicate rich-text
+  extension registry in the new Skaia paths.
+- CSS drift:
+  `rg "#[0-9a-fA-F]{3,8}|rgba\\(|rgb\\(|var\\([^)]*," frontend/src --glob '*.css'`.
+- Planner closeout verifies all new routes/messages/tables/features are reflected
+  in `.specs/backend_spec`, `.specs/frontend_spec`,
+  `.specs/route_resolution_spec`, `.specs/realtime_wss_spec`,
+  `.specs/caching_cdn_spec`, `.specs/security_architecture_spec`,
+  `.specs/migrations_spec`, and `.specs/README.md`.
+
+## References
+
+- `.routines/worker`
+- `.routines/planner`
+- `.specs/backend_spec`
+- `.specs/frontend_spec`
+- `.specs/route_resolution_spec`
+- `.specs/realtime_wss_spec`
+- `.specs/caching_cdn_spec`
+- `.specs/security_architecture_spec`
+- `.specs/migrations_spec`
+- `.todo/soft_delete_and_destructive_prompts`
+- `integrate/README.md`
+- `integrate/src/components/layout/Sidebar.tsx`
+- `integrate/src/components/documentation/DocumentPage.tsx`
+- `integrate/src/components/search/SearchDialog.tsx`
+- `frontend/src/pages/routes.tsx`
+- `frontend/src/components/forum/Forum.tsx`
+- `frontend/src/components/forum/Editor.tsx`
+- `frontend/src/components/forum/EditThread.tsx`
+- `frontend/src/components/forum/ViewThread.tsx`
+- `frontend/src/components/ui/RichTextRenderer.tsx`
+- `frontend/src/atoms/forum.ts`
+- `backend/internal/forum/`
+- `backend/internal/migrations/034_soft_delete_lifecycle.sql`
+- `backend/main.go`

@@ -1,0 +1,38 @@
+<--/------->
+
+## multi_documentation_hub_and_forum_view
+
+### Current Progress
+- **Reference and architecture discovery** - ✅ Complete
+- **Documentation schema and backend domain** - ⬜ Not started
+- **Shared documentation shell and editor boundary** - ⬜ Not started
+- **Multi-documentation routes and management** - ⬜ Not started
+- **Forum documentation adapter** - ⬜ Not started
+- **Discovery, verification, and specs** - ⬜ Not started
+
+The 2026-08-17 planner pass inspected the standalone `integrate/` documentation
+shell, Skaia route/layout/feature contracts, forum models and APIs, the existing
+TipTap editor and sanitized renderer, forum view modes, migration/lifecycle
+policy, WebSocket conventions, and current specs. No overlapping documentation
+todo or existing documentation backend domain was found.
+
+The handoff treats `integrate/` as a UX reference only. `/doc` owns new
+documentation records through a dedicated backend domain; `/forum/docs` is a
+separate presentation adapter over authoritative forum categories and threads.
+
+### Next Steps
+- [ ] Use `.routines/worker` to validate the proposed route/schema contract and
+  implement `036_documentation_hub.sql` plus documentation repository tests.
+- [ ] Implement and verify the documentation handler/service/repositories,
+  ownership, visibility, lifecycle, search, ordering, cache, events, and
+  content-free realtime invalidation.
+- [ ] Extract the shared TipTap boundary and build the Skaia-tokenized responsive
+  documentation shell without importing the reference corpus or app shell.
+- [ ] Implement `/doc` multi-set catalog, nested guide routes, inline management,
+  dirty/conflict protection, search, navigation, and realtime refetch.
+- [ ] Implement `/forum/docs/...` through forum-owned read projections and
+  existing forum mutations, then prove storage and route separation.
+- [ ] Complete backend/frontend/manual gates and update every affected compact
+  spec before marking phases complete.
+
+<--/------->
