@@ -86,8 +86,18 @@ const ClipMakerPage = lazy(() =>
 );
 const TrashPage = lazy(() => import("./trash/TrashPage.tsx"));
 const KJVPage = lazy(() => import("./kjv/index.tsx"));
+const DocumentationCatalogPage = lazy(() => import("./documentation/DocumentationCatalogPage.tsx"));
+const DocumentationViewPage = lazy(() => import("./documentation/DocumentationViewPage.tsx"));
+const ForumDocumentationPage = lazy(() => import("./documentation/ForumDocumentationPage.tsx"));
+const NewDocumentationPage = lazy(() => import("./documentation/NewDocumentationPage.tsx"));
+const DocumentationSettingsPage = lazy(() => import("./documentation/DocumentationSettingsPage.tsx"));
+const DocumentationGuideEditorPage = lazy(() => import("./documentation/DocumentationGuideEditorPage.tsx"));
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
+  { path: "doc/new", element: <NewDocumentationPage />, conditional: "docs" },
+  { path: "doc/manage/:documentationSlug/settings", element: <DocumentationSettingsPage />, conditional: "docs" },
+  { path: "doc/manage/:documentationSlug/guides/new", element: <DocumentationGuideEditorPage />, conditional: "docs" },
+  { path: "doc/manage/:documentationSlug/guides/:articleSlug", element: <DocumentationGuideEditorPage />, conditional: "docs" },
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
   {
     path: "forum/new-category",
@@ -137,6 +147,9 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
 
 /** Routes accessible to both guests and authenticated users. */
 export const guestRoutes: (CustomRoute | IndexRoute)[] = [
+  { path: "forum/docs", element: <ForumDocumentationPage />, conditional: "forum" },
+  { path: "forum/docs/:categoryId", element: <ForumDocumentationPage />, conditional: "forum" },
+  { path: "forum/docs/:categoryId/:threadId", element: <ForumDocumentationPage />, conditional: "forum" },
   { path: "store", element: <StorePage />, conditional: "store" },
   { path: "store/product/:id", element: <ProductPage />, conditional: "store" },
   { path: "forum", element: <ForumPage />, conditional: "forum" },
@@ -156,6 +169,9 @@ export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { index: true, element: <Index />, conditional: "landing" },
   { path: "kjv", element: <KJVPage /> },
   { path: "kjv/:book/:chapter/:verse/:readerState", element: <KJVPage /> },
+  { path: "doc", element: <DocumentationCatalogPage />, conditional: "docs" },
+  { path: "doc/:documentationSlug", element: <DocumentationViewPage />, conditional: "docs" },
+  { path: "doc/:documentationSlug/:articleSlug", element: <DocumentationViewPage />, conditional: "docs" },
   { path: "pages", element: <CustomPages /> },
   { path: "page/:slug", element: <PageBuilder /> },
   { path: "privacy", element: <PageBuilder slug="privacy" /> },

@@ -32,6 +32,7 @@ type ThreadRepository interface {
 	GetThreadLikers(threadID int64, limit, offset int) ([]*models.User, error)
 	GetThreadViewers(threadID int64, limit, offset int) ([]*models.User, error)
 	GetThreadContributorsUsers(threadID int64, limit, offset int) ([]*models.User, error)
+	DocumentationArticles(query string, limit int) ([]models.ForumDocumentationArticle, error)
 }
 
 // CommentRepository is the storage contract for thread comments.

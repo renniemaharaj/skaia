@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -32,6 +33,7 @@ import (
 	"github.com/skaia/backend/internal/ctx"
 	ics "github.com/skaia/backend/internal/customsection"
 	ids "github.com/skaia/backend/internal/datasource"
+	idocumentation "github.com/skaia/backend/internal/documentation"
 	iemail "github.com/skaia/backend/internal/email"
 	ievents "github.com/skaia/backend/internal/events"
 	iforum "github.com/skaia/backend/internal/forum"
@@ -80,6 +82,8 @@ var sitemapPaths = []string{
 	"/",
 	"/store",
 	"/forum",
+	"/forum/docs",
+	"/doc",
 	"/kjv",
 	"/users",
 	"/pages",
@@ -112,12 +116,16 @@ func publicRequestScheme(r *http.Request) string {
 }
 
 func buildSitemapXML(baseURL string) string {
+	return buildSitemapXMLWithPaths(baseURL, sitemapPaths)
+}
+
+func buildSitemapXMLWithPaths(baseURL string, paths []string) string {
 	urlset := "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
 
-	for _, path := range sitemapPaths {
+	for _, path := range paths {
 		loc := baseURL + path
 		urlset += "  <url>\n"
-		urlset += "    <loc>" + loc + "</loc>\n"
+		urlset += "    <loc>" + html.EscapeString(loc) + "</loc>\n"
 		urlset += "    <changefreq>daily</changefreq>\n"
 		urlset += "    <priority>0.7</priority>\n"
 		urlset += "  </url>\n"
@@ -125,6 +133,34 @@ func buildSitemapXML(baseURL string) string {
 
 	urlset += "</urlset>\n"
 	return urlset
+}
+
+func documentationSitemapPaths(db *sql.DB) []string {
+	if db == nil {
+		return nil
+	}
+	rows, err := db.Query(`SELECT '/doc/' || d.slug, ''
+		FROM documentations d
+		WHERE d.visibility = 'public' AND d.deleted_at IS NULL
+		UNION ALL
+		SELECT '/doc/' || d.slug, '/' || a.slug
+		FROM documentation_articles a
+		JOIN documentations d ON d.id = a.documentation_id
+		WHERE d.visibility = 'public' AND d.deleted_at IS NULL AND a.deleted_at IS NULL
+		ORDER BY 1, 2`)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	paths := make([]string, 0)
+	for rows.Next() {
+		var documentationPath, articlePath string
+		if rows.Scan(&documentationPath, &articlePath) == nil {
+			paths = append(paths, documentationPath+articlePath)
+		}
+	}
+	return paths
 }
 
 func writeSitemapResponse(w http.ResponseWriter, r *http.Request) {
@@ -140,7 +176,8 @@ func writeSitemapResponse(w http.ResponseWriter, r *http.Request) {
 		baseURL = "http://localhost:8080"
 	}
 
-	sitemap := buildSitemapXML(baseURL)
+	paths := append(append([]string(nil), sitemapPaths...), documentationSitemapPaths(database.DB)...)
+	sitemap := buildSitemapXMLWithPaths(baseURL, paths)
 	w.Header().Set("Content-Type", "application/xml")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(sitemap))
@@ -360,6 +397,8 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	forumCommentRepo := iforum.NewCommentRepository(db)
 	forumCache := iforum.NewThreadCacheWithClient(rdb)
 	forumSvc := iforum.NewService(forumCatRepo, forumThreadRepo, forumCommentRepo, forumCache)
+	documentationRepo := idocumentation.NewRepository(db)
+	documentationSvc := idocumentation.NewService(documentationRepo, userSvc, rdb)
 
 	emailSender := iemail.NewSenderFromEnv()
 
@@ -1005,8 +1044,13 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		authhandler.NewHandler(authHandler).Mount(api, imw.JWTAuthMiddleware)
 		iuser.NewHandler(userSvc, hub, dispatcher, inboxSender, emailSender).Mount(api, imw.JWTAuthMiddleware)
 		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, commentSlowMode)
+		idocumentation.NewHandler(documentationSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware)
 		istore.NewHandler(storeSvc, hub, notifSvc, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware)
 		trashProviders := iforum.NewTrashProviders(db)
+		trashProviders = append(
+			trashProviders,
+			idocumentation.NewTrashProviders(db)...,
+		)
 		trashProviders = append(
 			trashProviders,
 			inotif.NewTrashProvider(db),
@@ -1091,6 +1135,8 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 				}
 				return ws.ErrSubscriptionDenied
 			},
+			CanViewDocumentation:        documentationSvc.CanViewDocumentation,
+			CanViewDocumentationArticle: documentationSvc.CanViewArticle,
 			CanJoinConversation: func(resourceID, userID int64) error {
 				if _, err := inboxSvc.GetConversation(resourceID, userID); err == nil {
 					return nil

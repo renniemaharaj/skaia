@@ -60,6 +60,10 @@ is not an architectural invariant and must not be treated as one.
 - Section-preset create/update/delete calls a required service-level
   `home.manage` policy. JWT route grouping and handler checks are not the
   authorization boundary, and permission-store failures deny mutation.
+- Documentation creation requires service-level `docs.create`; every set,
+  section, article, navigation, delete, and restore mutation requires owner or
+  service-level `docs.manage`. Private reads and WebSocket subscriptions reuse
+  the same fail-closed visibility/ownership policy.
 - WebSocket ingress uses an explicit client-originated message allowlist.
   Unknown or server-only event types are rejected rather than broadcast.
 - Every WebSocket resource subscription is authorized from the validated

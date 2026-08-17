@@ -10,18 +10,18 @@ func cmdUpdateClient(name string) {
 	if !clientExists(name) {
 		die("Client '%s' not found", name)
 	}
-	const oneHint = "Comma-separated list: landing, store, forum, cart, users, inbox, presence"
+	const oneHint = "Comma-separated list: landing, store, forum, docs, cart, users, inbox, presence"
 	current := envVal(clientEnvFile(name), "FEATURES_ENABLED")
 	if current == "" {
-		current = "landing,store,forum,cart,users,inbox,presence"
+		current = "landing,store,forum,docs,cart,users,inbox,presence"
 	}
 	fmt.Println()
 	fmt.Printf("Updating features for client %s\n", name)
 	fmt.Printf("%s\n", oneHint)
 	values := prompt("Enabled features", current, false)
-	values = normalizeFeatures(values, []string{"landing", "store", "forum", "cart", "users", "inbox", "presence"})
+	values = normalizeFeatures(values, []string{"landing", "store", "forum", "docs", "cart", "users", "inbox", "presence"})
 	if values == "" {
-		values = "landing,store,forum,cart,users,inbox,presence"
+		values = "landing,store,forum,docs,cart,users,inbox,presence"
 	}
 	if err := setEnvVal(clientEnvFile(name), "FEATURES_ENABLED", values); err != nil {
 		die("Failed to update .env for %s: %v", name, err)
@@ -34,14 +34,14 @@ func cmdUpdateAll() {
 	if err != nil {
 		die("Unable to read backends dir: %v", err)
 	}
-	const oneHint = "Comma-separated list: landing, store, forum, cart, users, inbox, presence"
+	const oneHint = "Comma-separated list: landing, store, forum, docs, cart, users, inbox, presence"
 	fmt.Println()
 	fmt.Printf("Updating features for all clients\n")
 	fmt.Printf("%s\n", oneHint)
-	values := prompt("Enabled features", "landing,store,forum,cart,users,inbox,presence", false)
-	values = normalizeFeatures(values, []string{"landing", "store", "forum", "cart", "users", "inbox", "presence"})
+	values := prompt("Enabled features", "landing,store,forum,docs,cart,users,inbox,presence", false)
+	values = normalizeFeatures(values, []string{"landing", "store", "forum", "docs", "cart", "users", "inbox", "presence"})
 	if values == "" {
-		values = "landing,store,forum,cart,users,inbox,presence"
+		values = "landing,store,forum,docs,cart,users,inbox,presence"
 	}
 
 	updated := 0

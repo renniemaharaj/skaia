@@ -93,6 +93,22 @@ func (c *ThreadCache) Invalidate(id int64) {
 	}
 }
 
+func (c *ThreadCache) InvalidateDocumentation(categoryID, threadID int64) {
+	if c == nil || c.rdb == nil {
+		return
+	}
+	ctx := context.Background()
+	for _, route := range []string{
+		"/forum/docs",
+		"/forum/docs/" + strconv.FormatInt(categoryID, 10),
+		"/forum/docs/" + strconv.FormatInt(categoryID, 10) + "/" + strconv.FormatInt(threadID, 10),
+	} {
+		if err := seocache.InvalidateRoute(ctx, c.rdb, route); err != nil {
+			log.Printf("forum.ThreadCache.InvalidateDocumentation(%q): %v", route, err)
+		}
+	}
+}
+
 // Flush removes all forum thread cache entries.
 func (c *ThreadCache) Flush() {
 	ctx := context.Background()

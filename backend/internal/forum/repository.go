@@ -364,6 +364,37 @@ func (r *sqlThreadRepository) GetByUser(userID int64, limit, offset int) ([]*mod
 	return threads, rows.Err()
 }
 
+func (r *sqlThreadRepository) DocumentationArticles(query string, limit int) ([]models.ForumDocumentationArticle, error) {
+	if limit <= 0 || limit > 5000 {
+		limit = 2000
+	}
+	rows, err := r.db.Query(
+		`SELECT ft.id,ft.category_id,ft.title,
+		        LEFT(REGEXP_REPLACE(ft.content,'<[^>]*>',' ','g'),240),
+		        ft.is_pinned,ft.is_locked,ft.reply_count,ft.updated_at
+		 FROM forum_threads ft
+		 JOIN forum_categories fc ON fc.id=ft.category_id AND fc.deleted_at IS NULL
+		 WHERE ft.deleted_at IS NULL
+		   AND ($1='' OR ft.title ILIKE '%'||$1||'%' OR ft.content ILIKE '%'||$1||'%' OR fc.name ILIKE '%'||$1||'%')
+		 ORDER BY fc.is_pinned DESC,fc.display_order,fc.id,ft.is_pinned DESC,ft.updated_at DESC,ft.id
+		 LIMIT $2`, query, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	articles := make([]models.ForumDocumentationArticle, 0)
+	for rows.Next() {
+		var article models.ForumDocumentationArticle
+		if err := rows.Scan(&article.ID, &article.CategoryID, &article.Title, &article.Summary,
+			&article.IsPinned, &article.IsLocked, &article.ReplyCount, &article.UpdatedAt); err != nil {
+			return nil, err
+		}
+		articles = append(articles, article)
+	}
+	return articles, rows.Err()
+}
+
 func (r *sqlThreadRepository) Create(thread *models.ForumThread) (*models.ForumThread, error) {
 	err := r.db.QueryRow(
 		`INSERT INTO forum_threads (category_id, user_id, title, content, is_pinned, is_locked, is_shared, original_thread_id)

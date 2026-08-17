@@ -1,0 +1,137 @@
+# Documentation Hub Spec
+
+## Scope
+
+Multi-documentation publishing, guide editing, navigation, discovery, and the
+forum-owned documentation presentation adapter.
+
+## Load when
+
+Changing `/doc`, `/forum/docs`, documentation records/routes/editor/search,
+forum documentation projection, documentation SEO/cache/realtime, or migration
+036.
+
+## Owns
+
+- Backend: `backend/internal/documentation/*`, `backend/models/documentation.go`
+- API mount: `/api/docs`; forum projection: `GET /api/forum/documentation`
+- Tables: `documentations`, `documentation_sections`, `documentation_articles`
+- Frontend: `frontend/src/pages/documentation/*`,
+  `frontend/src/components/documentation/*`, `frontend/src/atoms/documentation.ts`
+- Shared rich text: `frontend/src/components/ui/RichTextEditor.tsx`,
+  `frontend/src/components/ui/RichTextRenderer.tsx`
+- Public routes: `/doc`, `/doc/:documentationSlug`,
+  `/doc/:documentationSlug/:articleSlug`, `/forum/docs`,
+  `/forum/docs/:categoryId`, `/forum/docs/:categoryId/:threadId`
+- Authenticated management routes: `/doc/new`,
+  `/doc/manage/:documentationSlug/settings`,
+  `/doc/manage/:documentationSlug/guides/new`, and
+  `/doc/manage/:documentationSlug/guides/:articleSlug`
+
+## Domain Contracts
+
+- One tenant may own any number of documentation sets. Each active set and each
+  active article within a set has a case-insensitive unique slug.
+- A set has an owner, title, description, visibility (`public`, `unlisted`, or
+  `private`), ordered sections/articles, and an optimistic revision.
+- Articles store sanitized-renderer-compatible TipTap HTML, summary, optional
+  section, display order, and an optimistic revision. Section deletion moves
+  its active articles to the ungrouped overview; it does not delete them.
+- Public sets are cataloged and indexed. Unlisted sets resolve by link but are
+  absent from catalog/search/sitemap. Private reads require owner or
+  `docs.manage`. `docs.create` creates sets; owner or `docs.manage` mutates.
+- All list/search payloads are bounded. Search returns article identity/title,
+  summary/snippet, and section label without sending every article body.
+- Deletes are retained lifecycle transitions exposed through Trash providers;
+  active reads, slug uniqueness, navigation, search, and SEO exclude tombstones.
+- Update revision mismatch returns `409`; the client preserves its draft and
+  requires an authoritative refetch before another save.
+
+## API Shape
+
+| Method/path | Contract |
+| --- | --- |
+| `GET/POST /api/docs` | public set catalog / create set |
+| `GET /api/docs/mine` | owned sets, or every active set for `docs.manage` |
+| `GET/PUT/DELETE /api/docs/{slug}` | manifest / metadata update / retained delete |
+| `GET /api/docs/{slug}/articles/{articleSlug}` | article with previous/next navigation |
+| `GET /api/docs/{slug}/search?q=` | bounded visible article search |
+| `POST /api/docs/id/{id}/sections` | create ordered section |
+| `PUT/DELETE /api/docs/sections/{id}` | rename / retained section delete |
+| `POST /api/docs/id/{id}/articles` | create guide |
+| `PUT/DELETE /api/docs/articles/{id}` | revisioned update / retained delete |
+| `PUT /api/docs/id/{id}/navigation` | owner-checked section/article ordering |
+| `GET /api/forum/documentation?q=` | categories plus bounded thread summaries; no thread bodies |
+
+## Frontend Contracts
+
+- `integrate/` is a UX reference only. The implementation uses Skaia routing,
+  tokens, permissions, API utilities, Prompt, WebSocket, and existing content;
+  it does not import the reference corpus, router, fonts, or app shell.
+- `DocumentationShell` owns responsive sidebar/search/navigation, mobile scrim,
+  top bar, on-page heading outline, and previous/next links. Drawer controls are
+  focusable, labeled, Escape-dismissible, and token styled.
+- `/doc` reuses the shared `DirectoryLayout`, `FilterBar`, persisted grid/list
+  view control, and `TableView`; documentation does not maintain a parallel
+  catalog shell. The new-collection action belongs inside the shared filter bar.
+- Sidebar search is a single width-constrained searchbox with an icon overlay
+  and ellipsized placeholder/content; accessibility copy must not become visible
+  layout content. Creation, collection settings/section management, and guide
+  editing are dedicated authenticated routes rather than inline reader forms.
+  Forms use bounded panels, explicit visible field labels, useful examples, and
+  one-column phone layouts; reading routes remain read-only surfaces.
+- The guide create/edit route reuses the same routed-form surface as New Thread
+  and New Product: one bordered `.modal` with a `.compact-form-card` body, an X
+  cancel action and form-associated check submit action in the header, and no
+  duplicate primary save control below the editor.
+- The forum editor and documentation editor are the same `RichTextEditor`
+  boundary. Read-only HTML always passes through `RichTextRenderer`.
+- In-app link navigation while editing uses Skaia's Prompt through the
+  declarative-`BrowserRouter` compatible dirty-navigation guard; data-router-only
+  `useBlocker` and native unload/confirm/prompt/alert dialogs are forbidden.
+  Realtime events do not overwrite an active draft.
+- `/forum/docs` is only a view adapter. It reads forum categories/thread
+  summaries, fetches the selected authoritative thread, reuses forum comments,
+  and sends edits to the existing `/edit-thread/:threadId` route. It never
+  copies forum rows to documentation tables or owns a second forum editor.
+- Category/thread deep links use numeric authoritative IDs so rename/move does
+  not orphan a guide; canonical navigation follows the current category.
+
+## Realtime, Cache, and SEO
+
+- `documentation:update` is a content-free invalidation. Public catalog changes
+  may broadcast only `catalog_invalidated`; set/article identity goes only to
+  authorized `documentation:{id}` or `documentation_article:{id}` subscribers.
+- Subscription callbacks are service-backed and fail closed for private data.
+  Reconnect and relevant trash restore events trigger authoritative REST refetch.
+- Documentation mutations invalidate exact SSR paths and the documentation SEO
+  namespace. Forum thread mutations invalidate both normal and forum-doc paths.
+- SSR resolves public/unlisted set and guide metadata. The sitemap includes
+  `/doc`, `/forum/docs`, and dynamic active public set/guide paths only.
+- Documentation management routes resolve the SPA shell with `noindex` before
+  public documentation slug lookup; direct navigation must not become a cached
+  documentation-not-found response.
+
+## Invariants
+
+- Documentation and forum storage never converge or shadow one another.
+- Ownership/permissions are enforced in services, not trusted from route guards.
+- WebSocket payloads never contain guide bodies, private titles, slugs, or
+  summaries for clients that have not passed resource authorization.
+- Rich text extension and sanitization registries remain shared; do not create a
+  documentation-only serialization dialect.
+
+## Verify
+
+- `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...` from `backend/`
+- `npm run lint && npm test -- --run && npm run check:native-dialogs && npm run build` from `frontend/`
+- `rg "documentations|documentation_sections|documentation_articles" backend/internal/migrations`
+- `rg "documentation:update|/forum/docs|/doc/" backend frontend/src`
+
+## Trace
+
+- `.todo/multi_documentation_hub_and_forum_view`
+- `.specs/backend_spec`, `.specs/frontend_spec`, `.specs/realtime_wss_spec`
+- `.specs/route_resolution_spec`, `.specs/caching_cdn_spec`
+- `.specs/security_architecture_spec`, `.specs/migrations_spec`
+- `.routines/worker`, `.routines/planner`

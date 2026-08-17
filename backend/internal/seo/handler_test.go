@@ -199,6 +199,22 @@ type stubQueryer struct{ row rowScanner }
 
 func (s stubQueryer) QueryRowContext(context.Context, string, ...any) rowScanner { return s.row }
 
+func TestDocumentationArticleRouteSEO(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/doc/platform/getting-started", nil)
+	result := resolveRouteSEO(context.Background(), stubQueryer{row: stubRow(func(dest ...any) error {
+		*dest[0].(*string) = "Getting started"
+		*dest[1].(*string) = "Install and configure the platform."
+		*dest[2].(*string) = `<p>Guide body</p><img src="https://cdn.example/guide.png">`
+		return nil
+	})}, req)
+	if result.State != resolutionSuccess || result.Route.Title != "Getting started" {
+		t.Fatalf("documentation SEO resolution = %#v", result)
+	}
+	if result.Route.Desc != "Install and configure the platform." || result.Route.Image != "https://cdn.example/guide.png" {
+		t.Fatalf("documentation SEO metadata = %#v", result.Route)
+	}
+}
+
 func TestRouteDatabaseErrorsNeverBecomeCacheableAbsence(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/page/example", nil)
 

@@ -478,6 +478,64 @@ ALTER TABLE pages DROP COLUMN IF EXISTS is_index;
 ALTER TABLE pages ADD COLUMN IF NOT EXISTS owner_id BIGINT REFERENCES users(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_pages_owner ON pages(owner_id);
 
+-- Multi-documentation hub. Article bodies are TipTap HTML and remain separate
+-- from custom pages and forum threads.
+CREATE TABLE IF NOT EXISTS documentations (
+    id          BIGSERIAL PRIMARY KEY,
+    slug        VARCHAR(120) NOT NULL,
+    title       VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    visibility  VARCHAR(20) NOT NULL DEFAULT 'public'
+                CHECK (visibility IN ('public', 'unlisted', 'private')),
+    owner_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    revision    BIGINT NOT NULL DEFAULT 1,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at  TIMESTAMPTZ,
+    deleted_by  BIGINT REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS documentations_active_slug_unique
+    ON documentations (LOWER(slug)) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_documentations_owner
+    ON documentations(owner_id) WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS documentation_sections (
+    id               BIGSERIAL PRIMARY KEY,
+    documentation_id BIGINT NOT NULL REFERENCES documentations(id) ON DELETE RESTRICT,
+    title            VARCHAR(255) NOT NULL,
+    display_order    INT NOT NULL DEFAULT 0,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at       TIMESTAMPTZ,
+    deleted_by       BIGINT REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_documentation_sections_navigation
+    ON documentation_sections(documentation_id, display_order, id)
+    WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS documentation_articles (
+    id               BIGSERIAL PRIMARY KEY,
+    documentation_id BIGINT NOT NULL REFERENCES documentations(id) ON DELETE RESTRICT,
+    section_id       BIGINT REFERENCES documentation_sections(id) ON DELETE RESTRICT,
+    slug             VARCHAR(120) NOT NULL,
+    title            VARCHAR(255) NOT NULL,
+    summary          TEXT NOT NULL DEFAULT '',
+    content          TEXT NOT NULL DEFAULT '',
+    display_order    INT NOT NULL DEFAULT 0,
+    author_id        BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    last_edited_by   BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    revision         BIGINT NOT NULL DEFAULT 1,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at       TIMESTAMPTZ,
+    deleted_by       BIGINT REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS documentation_articles_active_slug_unique
+    ON documentation_articles(documentation_id, LOWER(slug)) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_documentation_articles_navigation
+    ON documentation_articles(documentation_id, section_id, display_order, id)
+    WHERE deleted_at IS NULL;
+
 -- Editors junction table: grants edit access to users on specific pages.
 CREATE TABLE IF NOT EXISTS page_editors (
     id         BIGSERIAL PRIMARY KEY,
@@ -702,7 +760,8 @@ BEGIN
         'forum_categories', 'forum_threads', 'thread_comments',
         'store_categories', 'products', 'orders', 'subscription_plans',
         'subscriptions', 'user_cards', 'inbox_conversations', 'inbox_messages',
-        'notifications', 'pages', 'page_comments', 'data_sources',
+        'notifications', 'pages', 'page_comments', 'documentations',
+        'documentation_sections', 'documentation_articles', 'data_sources',
         'custom_sections', 'user_page_allocations', 'page_sections',
         'page_items', 'app_blueprints',
         'provisioned_instances', 'media_history'

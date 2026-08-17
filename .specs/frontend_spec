@@ -22,6 +22,8 @@ navigation/narration, WebSocket consumers, or page-builder UX.
 - Domain pages/components: `src/pages/*`, `src/components/*`, `src/styles/*`
 - Bible UI/data: `src/pages/kjv/*`, `src/components/bible/*`,
   `src/atoms/bible.ts`
+- Documentation UI/data: `src/pages/documentation/*`,
+  `src/components/documentation/*`, `src/atoms/documentation.ts`
 
 ## Architecture Contracts
 
@@ -45,6 +47,9 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   without interpolating asset URLs into generated style text. Read-only authored
   HTML is sanitized by `RichTextRenderer` and adapts media tags without changing
   saved HTML.
+- Forum and documentation authoring share `components/ui/RichTextEditor`; their
+  persisted HTML is rendered by the same sanitized `RichTextRenderer`. The
+  responsive documentation shell is a Skaia component, not a second app shell.
 - `npm run check:media-placeholders` rejects unreviewed raw media and dynamic
   image backgrounds. The exact-count allowlist distinguishes migration debt from
   intentional shared primitive, `UserAvatar`, bundled-art, `MediaStream.srcObject`,
@@ -104,6 +109,7 @@ navigation/narration, WebSocket consumers, or page-builder UX.
 | Config/page | `atoms/config.ts`, page local state | config/page WS + page hooks |
 | Presence/chat/media | `atoms/presence.ts`, `chat.ts`, `voice.ts`, `media.ts` | WS only |
 | Bible | `atoms/bible.ts` | URL-authoritative selection + bounded validated local preferences |
+| Documentation | `atoms/documentation.ts`, route-local state | REST reads/mutations + content-free `documentation:update` refetch |
 
 ## Bible Viewer and Narration
 

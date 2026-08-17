@@ -17,7 +17,7 @@ import (
 )
 
 // feature spec: list keys of modules that can be toggled via env
-var defaultFeatureSet = []string{"landing", "store", "forum", "cart", "users", "inbox", "presence"}
+var defaultFeatureSet = []string{"landing", "store", "forum", "docs", "cart", "users", "inbox", "presence"}
 
 func getFeaturesStatus() map[string]bool {
 	raw := os.Getenv("FEATURES_ENABLED")

@@ -66,6 +66,7 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 | `029_client_backend_provisioning.sql` | Client backend provisioning records |
 | `034_soft_delete_lifecycle.sql` | Entity tombstones, reversible relationships, secret/session lifecycle, audit events, and the runtime hard-delete guard |
 | `035_retire_normalized_page_sections.sql` | Guarded retirement of the unused normalized custom-page experiment |
+| `036_documentation_hub.sql` | Multi-documentation sets, ordered sections/guides, permissions, lifecycle, and active-slug indexes |
 
 Control-plane migration `002_soft_delete_lifecycle.sql` adds retained
 site/cluster deletion state, inactive API-key permissions, scrubbed passcodes,
@@ -86,6 +87,9 @@ and matching hard-delete protection in `grengo`.
 - Migration 035 fails closed when normalized response rows or palette tokens
   exist, then drops disposable shadow, telemetry, theme, section, and response
   tables. `pages.content` remains the sole custom-page authority.
+- Migration 036 is the idempotent existing-tenant bridge for `documentations`,
+  `documentation_sections`, and `documentation_articles`; fresh installs receive
+  the same schema and `docs.create`/`docs.manage` grants from 001/002.
 - Migration 034 is additive/idempotent and runs after guarded historical cleanup.
   Its delete triggers deliberately install last so migration-only `DELETE`
   statements remain classified separately from forbidden runtime SQL.

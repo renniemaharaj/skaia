@@ -20,6 +20,7 @@ Full rules live in `.specs/PROTOCOL.md`. Short form:
 | Backend routes, models, services, auth, store | `backend_spec`, `auth_user_separation_spec`, `security_architecture_spec`, `migrations_spec` |
 | Security, privileges, step-up, sessions, audit, rate limiting | `security_architecture_spec`, `auth_user_separation_spec`, `backend_spec`, `infrastructure_spec` |
 | Frontend UI, state, routes, cart/store pages | `frontend_spec`, `realtime_wss_spec`, `route_resolution_spec` |
+| Documentation hub, guide editor, forum documentation view | `documentation_spec`, `frontend_spec`, `backend_spec`, `realtime_wss_spec`, `route_resolution_spec`, `security_architecture_spec`, `migrations_spec` |
 | Bible/KJV browser, deep links, narration, corpus API | `frontend_spec`, `backend_spec`, `route_resolution_spec`, `caching_cdn_spec` |
 | WebSocket, presence, voice, media, push delivery | `realtime_wss_spec`, `voice_chat_architecture.md` |
 | Clipmaker, frame streaming, ffmpeg export | `clipmaker_export_spec` |
@@ -32,6 +33,7 @@ Full rules live in `.specs/PROTOCOL.md`. Short form:
 - `PROTOCOL.md` - compact documentation protocol and maintenance rules.
 - `backend_spec` - Go backend contracts, routes, store domain, security.
 - `frontend_spec` - React/Jotai/CSS contracts and UI rules.
+- `documentation_spec` - multi-doc publishing and forum documentation presentation contracts.
 - `realtime_wss_spec` - WebSocket message registry and delivery invariants.
 - `route_resolution_spec` - landing page, custom-page, and KJV deep-link resolution.
 - `custom_pages_multiplayer_spec` - page-builder multiplayer reconciliation.

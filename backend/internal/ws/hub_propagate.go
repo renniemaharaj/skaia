@@ -120,6 +120,19 @@ func (h *Hub) BroadcastPage(action string, data interface{}) {
 	h.Broadcast(&Message{Type: PageUpdate, Payload: payload})
 }
 
+func (h *Hub) BroadcastDocumentation(action string, data interface{}) {
+	payload, _ := json.Marshal(map[string]interface{}{"action": action, "data": data})
+	h.Broadcast(&Message{Type: DocumentationUpdate, Payload: payload})
+}
+
+func (h *Hub) PropagateDocumentation(documentationID int64, data interface{}, action string) {
+	h.propagate("documentation", documentationID, DocumentationUpdate, action, data)
+}
+
+func (h *Hub) PropagateDocumentationArticle(articleID int64, data interface{}, action string) {
+	h.propagate("documentation_article", articleID, DocumentationUpdate, action, data)
+}
+
 // BroadcastTrash emits only a resource type and opaque ID after a restore
 // transaction commits. Consumers refetch through their ordinary authorized
 // APIs; no tombstoned content enters realtime payloads.

@@ -2,8 +2,8 @@
 
 ## Scope
 
-Frontend/backend resolution for `/`, custom pages, public KJV deep links,
-landing-page swaps, and CDN-safe page fetching.
+Frontend/backend resolution for `/`, custom pages, documentation/forum-doc deep
+links, public KJV deep links, landing-page swaps, and CDN-safe page fetching.
 
 ## Load when
 
@@ -19,6 +19,8 @@ page config, CDN/cache behavior, or page WebSocket events.
   `frontend/src/components/bible/location.ts`
 - Bible backend: `backend/internal/bible/handler.go`
 - Config key: `site_config.landing_page_slug`
+- Documentation routes: `frontend/src/pages/documentation/*`,
+  `backend/internal/documentation/*`, `backend/internal/forum/handler.go`
 
 ## Cold Load `/`
 
@@ -48,6 +50,18 @@ Backend dispatch after success:
 Clients in index mode refetch through the slug resolution path after the
 content-free landing invalidation. `landing_page_updated` is a fallback signal
 for UI badges and missed page pushes.
+
+## Documentation Deep Links
+
+- `/doc` catalogs active public documentation sets; `/doc/{set}` opens its
+  first ordered guide and `/doc/{set}/{guide}` is the canonical guide URL.
+- `/forum/docs/{categoryId}/{threadId}` presents the authoritative forum thread;
+  moved threads canonicalize to their current category ID.
+- Documentation-set slugs are tenant-local human identifiers. Forum-doc links
+  use numeric category/thread IDs because forum names are mutable.
+- Recognized public/unlisted documentation routes receive database-backed SSR
+  metadata. Unknown/deleted/private resources resolve as absence unless the
+  authenticated API later authorizes the SPA user.
 
 ## Public KJV Deep Links
 

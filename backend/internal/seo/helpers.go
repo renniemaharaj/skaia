@@ -29,6 +29,7 @@ var (
 	kjvRouteRx           = regexp.MustCompile(`^/kjv/[^/]+/\d+/\d+/(?:open|closed)$`)
 	privateRoutePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`^/edit-thread/\d+$`),
+		regexp.MustCompile(`^/doc/manage/[^/]+/(?:settings|guides/(?:new|[^/]+))$`),
 		regexp.MustCompile(`^/wallet/[^/]+$`),
 		regexp.MustCompile(`^/store/orders/\d+$`),
 		regexp.MustCompile(`^/admin/(?:meta(?:/.*)?|roles)$`),
@@ -192,6 +193,19 @@ func (r errorRow) Scan(...any) error { return r.err }
 
 func resolveRouteSEO(ctx context.Context, db rowQueryer, r *http.Request) seoResolution {
 	path := r.URL.Path
+	if routeNoIndex(path) {
+		return seoResolution{Route: routeSEO{NoIndex: true}, State: resolutionSuccess}
+	}
+
+	if match := documentationArticleRx.FindStringSubmatch(path); match != nil {
+		return resolveDocumentationArticleSEO(ctx, db, match[1], match[2])
+	}
+	if match := documentationRx.FindStringSubmatch(path); match != nil {
+		return resolveDocumentationSEO(ctx, db, match[1])
+	}
+	if match := forumDocumentationThreadRx.FindStringSubmatch(path); match != nil {
+		return resolveThreadSEO(ctx, db, r, match[2])
+	}
 
 	if match := threadRx.FindStringSubmatch(path); match != nil {
 		return resolveThreadSEO(ctx, db, r, match[1])
@@ -225,13 +239,48 @@ func resolveRouteSEO(ctx context.Context, db rowQueryer, r *http.Request) seoRes
 		return resolveUserSEO(ctx, db, match[1], "directory")
 	}
 
-	if routeNoIndex(path) {
-		return seoResolution{Route: routeSEO{NoIndex: true}, State: resolutionSuccess}
-	}
 	if routeIsPublicShell(path) {
 		return seoResolution{State: resolutionSuccess}
 	}
 	return absentRoute(routeSEO{Miss: true, NoIndex: true})
+}
+
+func resolveDocumentationSEO(ctx context.Context, db rowQueryer, slug string) seoResolution {
+	if len(slug) > 120 {
+		return absentRoute(routeSEO{Miss: true})
+	}
+	var title, description string
+	err := db.QueryRowContext(ctx, `SELECT title,description FROM documentations
+		WHERE LOWER(slug)=LOWER($1) AND visibility IN ('public','unlisted') AND deleted_at IS NULL`, slug).Scan(&title, &description)
+	if errors.Is(err, sql.ErrNoRows) {
+		return absentRoute(routeSEO{Miss: true})
+	}
+	if err != nil {
+		return dependencyFailure(err)
+	}
+	return seoResolution{Route: routeSEO{Title: title, Desc: snip(stripHTML(description), 160)}, State: resolutionSuccess}
+}
+
+func resolveDocumentationArticleSEO(ctx context.Context, db rowQueryer, docSlug, articleSlug string) seoResolution {
+	if len(docSlug) > 120 || len(articleSlug) > 120 {
+		return absentRoute(routeSEO{Miss: true})
+	}
+	var title, summary, content string
+	err := db.QueryRowContext(ctx, `SELECT a.title,a.summary,a.content FROM documentation_articles a
+		JOIN documentations d ON d.id=a.documentation_id AND d.deleted_at IS NULL
+		WHERE LOWER(d.slug)=LOWER($1) AND LOWER(a.slug)=LOWER($2)
+		AND d.visibility IN ('public','unlisted') AND a.deleted_at IS NULL`, docSlug, articleSlug).Scan(&title, &summary, &content)
+	if errors.Is(err, sql.ErrNoRows) {
+		return absentRoute(routeSEO{Miss: true})
+	}
+	if err != nil {
+		return dependencyFailure(err)
+	}
+	return seoResolution{Route: routeSEO{
+		Title: title,
+		Desc:  snip(firstNonEmpty(stripHTML(summary), stripHTML(content)), 160),
+		Image: firstImageFromHTML(content),
+	}, State: resolutionSuccess}
 }
 
 func resolveThreadSEO(ctx context.Context, db rowQueryer, r *http.Request, idStr string) seoResolution {
@@ -241,7 +290,9 @@ func resolveThreadSEO(ctx context.Context, db rowQueryer, r *http.Request, idStr
 
 	var title, content string
 	err := db.QueryRowContext(ctx,
-		"SELECT title, content FROM forum_threads WHERE id = $1",
+		`SELECT ft.title, ft.content FROM forum_threads ft
+		 JOIN forum_categories fc ON fc.id=ft.category_id AND fc.deleted_at IS NULL
+		 WHERE ft.id=$1 AND ft.deleted_at IS NULL`,
 		idStr,
 	).Scan(&title, &content)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -505,7 +556,10 @@ func buildMeta(branding models.Branding, seo models.SEO, route routeSEO) CachedM
 
 func routeIsPublicShell(path string) bool {
 	switch path {
-	case "/", "/store", "/forum", "/kjv", "/pages", "/visualizer":
+	case "/", "/store", "/forum", "/forum/docs", "/doc", "/kjv", "/pages", "/visualizer":
+		return true
+	}
+	if forumDocumentationCategoryRx.MatchString(path) {
 		return true
 	}
 	if categoryRouteRx.MatchString(path) {
@@ -516,7 +570,7 @@ func routeIsPublicShell(path string) bool {
 
 func routeNoIndex(path string) bool {
 	switch path {
-	case "/new-thread", "/forum/new-category", "/store/new-product",
+	case "/new-thread", "/forum/new-category", "/store/new-product", "/doc/new",
 		"/store/new-category", "/cart", "/store/orders", "/inbox", "/deployments",
 		"/datasources", "/activity", "/trash", "/flow", "/stream", "/clipmaker",
 		"/login", "/register", "/verify-email", "/forgot-password", "/reset-password":

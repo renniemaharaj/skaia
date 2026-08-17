@@ -8,11 +8,13 @@ var ErrSubscriptionDenied = errors.New("websocket subscription denied")
 // client-created subscriptions. Callbacks are service-backed policy adapters;
 // a missing callback or lookup failure denies access.
 type SubscriptionPolicy struct {
-	CanViewPage         func(pageID, userID int64) error
-	CanJoinConversation func(conversationID, userID int64) error
-	CanViewOrder        func(orderID, userID int64) error
-	CanViewProvisioning func(instanceID, userID int64) error
-	HasPermission       func(userID int64, permission string) (bool, error)
+	CanViewPage                 func(pageID, userID int64) error
+	CanViewDocumentation        func(documentationID, userID int64) error
+	CanViewDocumentationArticle func(articleID, userID int64) error
+	CanJoinConversation         func(conversationID, userID int64) error
+	CanViewOrder                func(orderID, userID int64) error
+	CanViewProvisioning         func(instanceID, userID int64) error
+	HasPermission               func(userID int64, permission string) (bool, error)
 }
 
 func (p SubscriptionPolicy) Authorize(client *Client, resourceType string, resourceID int64) error {
@@ -26,6 +28,14 @@ func (p SubscriptionPolicy) Authorize(client *Client, resourceType string, resou
 		}
 	case "page":
 		if resourceID > 0 && p.CanViewPage != nil && p.CanViewPage(resourceID, client.UserID) == nil {
+			return nil
+		}
+	case "documentation":
+		if resourceID > 0 && p.CanViewDocumentation != nil && p.CanViewDocumentation(resourceID, client.UserID) == nil {
+			return nil
+		}
+	case "documentation_article":
+		if resourceID > 0 && p.CanViewDocumentationArticle != nil && p.CanViewDocumentationArticle(resourceID, client.UserID) == nil {
 			return nil
 		}
 	case "user", "inbox":

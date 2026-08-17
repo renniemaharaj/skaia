@@ -41,6 +41,7 @@ func NewHandler(svc *Service, hub *ws.Hub, notifSvc NotifSender, authz utils.Aut
 // Mount registers all forum routes on r.
 func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, commentLimiter func(http.Handler) http.Handler) {
 	r.Route("/forum", func(r chi.Router) {
+		r.Get("/documentation", h.documentationManifest)
 		// Category routes
 		r.Get("/categories", h.listCategories)
 		r.With(jwt).Post("/categories", h.createCategory)
@@ -74,6 +75,21 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, comme
 		r.With(jwt, commentLimiter).Post("/comments/{commentId}/like", h.likeComment)
 		r.With(jwt, commentLimiter).Delete("/comments/{commentId}/like", h.unlikeComment)
 	})
+}
+
+func (h *Handler) documentationManifest(w http.ResponseWriter, r *http.Request) {
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	if len(query) > 120 {
+		utils.WriteError(w, http.StatusBadRequest, "search query is too long")
+		return
+	}
+	manifest, err := h.svc.DocumentationManifest(query)
+	if err != nil {
+		log.Printf("forum.documentationManifest: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "failed to load forum documentation")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, manifest)
 }
 
 // parseID parses a chi URL parameter as int64.

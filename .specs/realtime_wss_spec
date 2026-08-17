@@ -71,6 +71,7 @@ limit/error WS messages.
 | `user:update` | `{ action, data }` | current user, token, profile events |
 | `config:update` | `{ action, data }` | config atoms + page/config events |
 | `page:update` | `{ action, data }` | page custom events |
+| `documentation:update` | content-free action/invalidation | documentation route refetch; never merge guide bodies |
 | `inbox:update` | `{ action, data }` | inbox messages/conversations |
 | `inbox:message` | message summary | unread/sidebar ping |
 | `notification` | `AppNotification` | prepend + toast/sound |
@@ -104,11 +105,15 @@ limit/error WS messages.
 | `store_category:{id}` | reserved/category detail |
 | `order:{id}` | authorized buyer/manager compatibility; normal order delivery is direct |
 | `page:{id}` | content-free custom-page invalidations and authoritative revisions |
+| `documentation:{id}` | authorized set manifest invalidation |
+| `documentation_article:{id}` | authorized selected-guide invalidation |
 
 Subscription authorization is mandatory and fail-closed:
 
 - Public positive-ID keys: forum category/thread and store product/category.
 - Page keys require public/unlisted visibility or editor policy.
+- Documentation/article keys require visible-set or editor policy through
+  service-backed callbacks; missing callbacks and lookup failures deny.
 - User/inbox keys require an authenticated connection whose user ID equals the
   resource ID; credential-bearing user updates use direct-user delivery only.
 - Conversation membership, order buyer/manager access, and provisioning
@@ -140,6 +145,7 @@ Subscription authorization is mandatory and fail-closed:
 | `user:update` | `user_updated`, `permissions_changed`, upload/profile/MFA variants in payload |
 | `config:update` | `branding_updated`, `seo_updated`, `footer_updated`, `features_updated`, `landing_page_updated` |
 | `page:update` | `page_created`, `page_updated`, `page_deleted`, `landing_page_changed`, `landing_updated`; restore consumers perform an authoritative content-free refetch |
+| `documentation:update` | `catalog_invalidated` globally without resource identity; scoped create/update/delete/navigation invalidations on authorized resource keys |
 | `notification:update` | `notification_read`, `notification_deleted`, `notification_all_read`, `notification_all_deleted` |
 
 ## Atom Convergence

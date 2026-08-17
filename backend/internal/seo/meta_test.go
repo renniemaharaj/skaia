@@ -138,6 +138,21 @@ func TestKnownPrivateRouteIsNoIndexWithout404(t *testing.T) {
 	}
 }
 
+func TestDocumentationManagementRoutesAreNoIndexWithoutLookup(t *testing.T) {
+	for _, path := range []string{
+		"/doc/new",
+		"/doc/manage/platform/settings",
+		"/doc/manage/platform/guides/new",
+		"/doc/manage/platform/guides/install",
+	} {
+		req := httptest.NewRequest("GET", "https://example.com"+path, nil)
+		resolution := resolveRouteSEO(context.Background(), nil, req)
+		if resolution.State != resolutionSuccess || resolution.Route.Miss || !resolution.Route.NoIndex {
+			t.Errorf("%s route = %#v, want successful noindex shell", path, resolution)
+		}
+	}
+}
+
 func TestAuthenticationRoutesAreNoIndexWithout404(t *testing.T) {
 	for _, path := range []string{"/login", "/register", "/forgot-password", "/reset-password"} {
 		req := httptest.NewRequest("GET", "https://example.com"+path, nil)

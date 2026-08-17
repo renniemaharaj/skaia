@@ -114,9 +114,46 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-08-16
+- 2026-08-17
 
 ## Last Run Remarks
+
+- Completed `multi_documentation_hub_and_forum_view`: added an independent
+  lifecycle-aware multi-documentation backend and `/doc` authoring experience,
+  a shared TipTap/sanitized-renderer boundary, and a `/forum/docs` presentation
+  adapter that keeps forum records authoritative.
+- Added fail-closed visibility/ownership and WebSocket subscription policy,
+  content-free invalidation, revision conflicts, responsive accessible
+  navigation, public SEO/sitemap discovery, forum projection tests, and compact
+  durable documentation contracts. The complete backend suite, all 175 frontend
+  tests, lint, native-dialog enforcement, production build, scoped root Go
+  suite, separation/CSS/reference checks, todo pairing, and diff checks pass.
+- Corrected the localhost rollout after live verification found two integration
+  gaps: the frontend feature normalizer omitted `docs`, and `useBlocker` cannot
+  run under Skaia's declarative `BrowserRouter`. The home tenant now declares
+  `docs`; the replacement Prompt-backed link guard has focused coverage, and
+  live documentation page/API probes return HTTP 200.
+- Reworked the documentation UI after real-browser screenshots exposed an
+  overflowing search label and unbounded generic forms. Catalog, sidebar
+  management, settings, and both guide editors now use deliberate responsive
+  hierarchy, visible labels/placeholders, route previews, compact actions, and
+  token-only styling; the verified frontend was shipped to `home-backend`.
+- Normalized the documentation module around Skaia's shared directory contract:
+  `/doc` now uses FilterBar search, persisted grid/list modes, and TableView,
+  while creation, settings/section management, and guide authoring live on
+  dedicated routes. Forum documentation edits reuse the existing thread editor;
+  text policy, focused Go tests, all 176 frontend tests, lint, native-dialog
+  enforcement, TypeScript, and the production build pass. Management deep links
+  are noindex SPA routes resolved before public doc slugs, and the rebuilt local
+  tenant returns HTTP 200 for catalog, creation, settings, guide creation, and
+  forum-documentation routes.
+- Aligned documentation guide creation/editing with the shared New Thread/New
+  Product routed-form surface. The bounded modal now owns header X/check actions,
+  form-associated submission, loading/disabled feedback, shared field help, and
+  a non-duplicated action hierarchy; all 49 frontend files and 177 tests, lint,
+  native-dialog enforcement, and production build pass.
+
+## Previous Run Remarks (2026-08-16)
 
 - Completed `custom_page_document_model_consolidation`: restored one
   `pages.content` read/save/interactive authority, retained document validation,

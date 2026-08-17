@@ -38,6 +38,7 @@ const (
 	RecoveryRequestAccepted MessageType = "recovery_request:accepted" // server => requester: account recovery approved
 	ConfigUpdate            MessageType = "config:update"             // server => all: branding/seo/footer/landing changed
 	PageUpdate              MessageType = "page:update"               // server => all: CMS page created/updated/deleted
+	DocumentationUpdate     MessageType = "documentation:update"      // server => clients: documentation manifest/article invalidation
 	TrashUpdate             MessageType = "trash:update"              // server => all: content-free restore invalidation
 	Cursor                  MessageType = "cursor:update"             // client => server => same-route clients: cursor position
 	EventsUpdate            MessageType = "events:update"             // server => admin clients: new audit event

@@ -14,7 +14,7 @@ auth, store, cache, WebSocket emission, uploads, SSR, or grengo proxy behavior.
 
 - Entry/router: `backend/main.go`
 - Models: `backend/models/*.go`
-- Domains: `backend/internal/{auth,user,forum,store,inbox,notification,config,page,datasource,customsection,events,upload,ws,ssr,grengo,bible}`
+- Domains: `backend/internal/{auth,user,forum,documentation,store,inbox,notification,config,page,datasource,customsection,events,upload,ws,ssr,grengo,bible}`
 - DB/Redis: `backend/database/db.go`
 - Migrations: `backend/internal/migrations/*.sql`
 
@@ -78,6 +78,7 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 | `/api/session` | `internal/session` | session/security helpers |
 | `/api/users` | `internal/user` | mix of protected profile, admin, role, permission routes |
 | `/api/forum` | `internal/forum` | forum categories, threads, comments, likes |
+| `/api/docs` | `internal/documentation` | visibility-aware documentation reads and owner/`docs.manage` writes |
 | `/api/store` | `internal/store` | catalog, cart, checkout, orders, wallet, reviews, subscriptions |
 | `/api/inbox` | `internal/inbox` | conversations, group participants, messages, blocks |
 | `/api/notifications` | `internal/notification` | list/read/delete/unread count |

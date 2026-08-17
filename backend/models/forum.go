@@ -66,3 +66,19 @@ type ThreadComment struct {
 	CanDelete       bool      `json:"can_delete,omitempty"`
 	CanLikeComments bool      `json:"can_like_comments,omitempty"`
 }
+
+type ForumDocumentationArticle struct {
+	ID         int64     `json:"id"`
+	CategoryID int64     `json:"category_id"`
+	Title      string    `json:"title"`
+	Summary    string    `json:"summary"`
+	IsPinned   bool      `json:"is_pinned"`
+	IsLocked   bool      `json:"is_locked"`
+	ReplyCount int       `json:"reply_count"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+type ForumDocumentationManifest struct {
+	Categories []*ForumCategory            `json:"categories"`
+	Articles   []ForumDocumentationArticle `json:"articles"`
+}

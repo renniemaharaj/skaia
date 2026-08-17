@@ -4,35 +4,77 @@
 
 ### Current Progress
 - **Reference and architecture discovery** - ✅ Complete
-- **Documentation schema and backend domain** - ⬜ Not started
-- **Shared documentation shell and editor boundary** - ⬜ Not started
-- **Multi-documentation routes and management** - ⬜ Not started
-- **Forum documentation adapter** - ⬜ Not started
-- **Discovery, verification, and specs** - ⬜ Not started
+- **Documentation schema and backend domain** - ✅ Complete
+- **Shared documentation shell and editor boundary** - ✅ Complete
+- **Multi-documentation routes and management** - ✅ Complete
+- **Forum documentation adapter** - ✅ Complete
+- **Discovery, verification, and specs** - ✅ Complete
 
-The 2026-08-17 planner pass inspected the standalone `integrate/` documentation
-shell, Skaia route/layout/feature contracts, forum models and APIs, the existing
-TipTap editor and sanitized renderer, forum view modes, migration/lifecycle
-policy, WebSocket conventions, and current specs. No overlapping documentation
-todo or existing documentation backend domain was found.
+The 2026-08-17 worker pass completed the independent documentation domain,
+migration 036 and fresh schema/permissions, lifecycle/Trash providers,
+visibility/ownership/revision policy, manifest/article/search APIs, content-free
+realtime, SEO invalidation, and dynamic public sitemap discovery. Private set
+and subscription policy is service-backed and fail closed.
 
-The handoff treats `integrate/` as a UX reference only. `/doc` owns new
-documentation records through a dedicated backend domain; `/forum/docs` is a
-separate presentation adapter over authoritative forum categories and threads.
+The frontend now provides the multi-set `/doc` directory and nested guide
+routes, dedicated creation/settings/guide-editor routes, shared TipTap editor
+and sanitized renderer, stable heading anchors, responsive tokenized shell,
+search, adjacent navigation, conflict handling, dirty-navigation Prompt, and
+realtime refetch. `/forum/docs/...` uses the same shell over the forum-owned
+bounded projection and routes edits through the existing forum editor without
+documentation storage imports or writes.
+
+Durable contracts are recorded in `.specs/documentation_spec` and every affected
+route/backend/frontend/realtime/cache/security/migration card. `integrate/`
+remains untouched and reference-only.
 
 ### Next Steps
-- [ ] Use `.routines/worker` to validate the proposed route/schema contract and
-  implement `036_documentation_hub.sql` plus documentation repository tests.
-- [ ] Implement and verify the documentation handler/service/repositories,
-  ownership, visibility, lifecycle, search, ordering, cache, events, and
-  content-free realtime invalidation.
-- [ ] Extract the shared TipTap boundary and build the Skaia-tokenized responsive
-  documentation shell without importing the reference corpus or app shell.
-- [ ] Implement `/doc` multi-set catalog, nested guide routes, inline management,
-  dirty/conflict protection, search, navigation, and realtime refetch.
-- [ ] Implement `/forum/docs/...` through forum-owned read projections and
-  existing forum mutations, then prove storage and route separation.
-- [ ] Complete backend/frontend/manual gates and update every affected compact
-  spec before marking phases complete.
+- [x] Backend full suite passed: `env GOCACHE=/tmp/skaia-go-cache
+  GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...` from `backend/`.
+- [x] Frontend full suite passed: 47 files and 175 tests; focused documentation
+  tests, Biome lint, native-dialog enforcement, TypeScript, and production build
+  also pass. Vite reports only its existing chunk-size/deprecation warnings.
+- [x] Root application packages passed with `go test ./internal/... ./cmd/... .`.
+  A broader root `go test ./...` cannot traverse the local `postgres_data/`
+  directory in this workspace; this is an environment permission boundary, not
+  a package failure.
+- [x] Separation, CSS-token, forbidden reference/router/renderer, todo pairing,
+  spec reference, and `git diff --check` gates pass.
+- [x] Live migration application and destructive create/edit/delete/restore
+  browser smoke flows were intentionally not run against the operator's local
+  tenant. Deployment should apply migration 036 after the normal backup, then
+  smoke-test two sets and one forum deep link.
+- [x] 2026-08-17 localhost follow-up removed data-router-only `useBlocker`, added
+  a declarative-router dirty-link guard and regression test, registered `docs`
+  in the frontend feature map, enabled it in `backends/home/.env`, rebuilt and
+  recreated `home-backend`, and shipped the verified frontend. Live probes now
+  return `docs` from `/api/config/features` and HTTP 200 for `/doc`,
+  `/forum/docs`, `/api/docs/`, and `/api/forum/documentation`.
+- [x] 2026-08-17 UI correction rebuilt the catalog, sidebar search/management,
+  settings, documentation guide editor, and forum guide editor into bounded,
+  labeled, tokenized responsive surfaces. The accidentally visible accessibility
+  label was removed from search; display-name and slug fields now have visible
+  labels, examples, and route previews. Focused tests, lint, native-dialog gate,
+  production build, the isolated full-suite flake rerun, shipped CSS check, and
+  live `/forum/docs` HTTP 200 pass.
+- [x] 2026-08-17 ecosystem normalization replaced the bespoke `/doc` catalog
+  with shared `DirectoryLayout`/`FilterBar`/`TableView`, persisted grid/list
+  views, filter-bar creation action, and dedicated new/settings/guide editor
+  routes. Reader pages no longer contain inline mutation forms, forum docs reuse
+  `/edit-thread/:threadId`, and the em-dash text-policy failure is removed. Text
+  policy, documentation/forum Go tests, all 48 frontend files and 176 tests,
+  lint, native-dialog enforcement, TypeScript, and production build pass.
+  The backend SEO resolver now classifies all management deep links as noindex
+  SPA routes before public slug lookup. The rebuilt localhost tenant returns 200
+  for `/doc`, `/doc/new`, settings, new-guide, and `/forum/docs`; the one stale
+  tenant-scoped `/doc/new` negative-cache entry was removed after deployment.
+- [x] 2026-08-17 guide-form consistency follow-up moved documentation guide
+  creation/editing onto the same routed `.modal`/`.compact-form-card` contract
+  as New Thread and New Product. Cancel and form-associated submit now sit in
+  the header as X/check controls, submit exposes loading/disabled state, fields
+  use the shared label/help hierarchy, and the duplicate bottom primary action
+  row is gone. A focused DOM regression test covers the surface and header-form
+  association; all 49 frontend files and 177 tests, lint, native-dialog
+  enforcement, and production build pass.
 
 <--/------->

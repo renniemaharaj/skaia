@@ -80,26 +80,48 @@ func (s *Service) SearchThreads(query string, limit, offset int) ([]*models.Foru
 	return s.threads.Search(query, limit, offset)
 }
 
+func (s *Service) DocumentationManifest(query string) (*models.ForumDocumentationManifest, error) {
+	categories, err := s.categories.List()
+	if err != nil {
+		return nil, err
+	}
+	articles, err := s.threads.DocumentationArticles(query, 2000)
+	if err != nil {
+		return nil, err
+	}
+	return &models.ForumDocumentationManifest{Categories: categories, Articles: articles}, nil
+}
+
 func (s *Service) CreateThread(thread *models.ForumThread) (*models.ForumThread, error) {
 	created, err := s.threads.Create(thread)
 	if err == nil && created != nil && s.cache != nil {
 		s.cache.Invalidate(created.ID)
+		s.cache.InvalidateDocumentation(created.CategoryID, created.ID)
 	}
 	return created, err
 }
 
 func (s *Service) UpdateThread(thread *models.ForumThread) (*models.ForumThread, error) {
+	current, _ := s.threads.GetByID(thread.ID)
 	t, err := s.threads.Update(thread)
-	if err == nil {
+	if err == nil && s.cache != nil {
 		s.cache.Invalidate(t.ID)
+		s.cache.InvalidateDocumentation(t.CategoryID, t.ID)
+		if current != nil && current.CategoryID != t.CategoryID {
+			s.cache.InvalidateDocumentation(current.CategoryID, t.ID)
+		}
 	}
 	return t, err
 }
 
 func (s *Service) DeleteThread(id, actorID int64) error {
+	current, _ := s.threads.GetByID(id)
 	err := s.threads.Delete(id, actorID)
-	if err == nil {
+	if err == nil && s.cache != nil {
 		s.cache.Invalidate(id)
+		if current != nil {
+			s.cache.InvalidateDocumentation(current.CategoryID, id)
+		}
 	}
 	return err
 }

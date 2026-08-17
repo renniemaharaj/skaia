@@ -176,6 +176,7 @@ export const useWebSocketSync = () => {
 
             case "forum:update":
               handleForumUpdate(ws, payload, subscriptionsRef, currentUserIdRef);
+              window.dispatchEvent(new CustomEvent("forum:updated", { detail: payload }));
               return;
 
             case "global:chat":
@@ -204,6 +205,13 @@ export const useWebSocketSync = () => {
 
             case "trash:update":
               window.dispatchEvent(new CustomEvent("trash:updated", { detail: payload }));
+              if (String(payload?.resource ?? "").startsWith("documentation")) {
+                window.dispatchEvent(new CustomEvent("documentation:updated", { detail: payload }));
+              }
+              return;
+
+            case "documentation:update":
+              window.dispatchEvent(new CustomEvent("documentation:updated", { detail: payload }));
               return;
 
             case "recovery_request:accepted":

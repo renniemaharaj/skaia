@@ -13,7 +13,7 @@ import "../ui/FeatureCard.css";
 import "./NewThread.css";
 import "../ui/FormGroup.css";
 
-import { LayoutGrid, List, Newspaper } from "lucide-react";
+import { BookOpen, LayoutGrid, List, Newspaper } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
 import { useThreadsFeed } from "../../hooks/useThreadsFeed";
@@ -332,6 +332,15 @@ export const Forum: React.FC = () => {
                 title="Traditional article view"
               >
                 <Newspaper size={16} />
+              </button>
+              <button
+                type="button"
+                className="directory-view-btn"
+                onClick={() => navigate("/forum/docs")}
+                aria-label="Documentation view"
+                title="Documentation view"
+              >
+                <BookOpen size={16} />
               </button>
             </div>
           ) : undefined

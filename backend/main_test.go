@@ -43,6 +43,13 @@ func TestBuildSitemapXML(t *testing.T) {
 	}
 }
 
+func TestBuildSitemapXMLIncludesDynamicPathsAndEscapesLocations(t *testing.T) {
+	xml := buildSitemapXMLWithPaths("https://example.com?a=1&b=2", []string{"/doc/product/start"})
+	if !strings.Contains(xml, "<loc>https://example.com?a=1&amp;b=2/doc/product/start</loc>") {
+		t.Fatalf("expected escaped dynamic documentation URL, got %s", xml)
+	}
+}
+
 func TestGetSitemapBaseURL(t *testing.T) {
 	t.Setenv("SITEMAP_BASE_URL", "https://sitemap.example.org")
 	t.Setenv("DOMAINS", "example.com www.example.com")
