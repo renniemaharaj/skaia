@@ -1,9 +1,10 @@
-import { Plus, X } from "lucide-react";
+import { Check, Loader, X } from "lucide-react";
 import { type FormEvent, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Documentation } from "../../atoms/documentation";
 import { apiRequest } from "../../utils/api";
+import "../../components/forum/NewThread.css";
 import "../../components/documentation/DocumentationShell.css";
 
 export default function NewDocumentationPage() {
@@ -31,18 +32,89 @@ export default function NewDocumentationPage() {
   };
 
   return (
-    <main className="documentation-form-page">
-      <header className="documentation-form-page__header">
-        <div><p className="documentation-eyebrow">Documentation</p><h1>Create documentation</h1><p>Start a separate collection of guides for this site.</p></div>
-        <Link className="action-btn" to="/doc" title="Cancel"><X size={20} /></Link>
+    <main className="modal">
+      <header className="modal-header">
+        <div className="modal-title-wrapper">
+          <h2>Create Documentation</h2>
+          <p style={{ color: "var(--text-secondary)", marginBottom: 0 }}>
+            Start a separate collection of guides for this site.
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          <button
+            type="button"
+            className="action-btn btn-close"
+            onClick={() => navigate("/doc")}
+            disabled={saving}
+            title="Cancel"
+          >
+            <X size={20} />
+          </button>
+          <button
+            type="submit"
+            form="new-documentation-form"
+            className="action-btn btn-submit"
+            disabled={saving || !title.trim() || !slug.trim()}
+            title="Create"
+          >
+            {saving ? <Loader size={20} className="spin" /> : <Check size={20} />}
+          </button>
+        </div>
       </header>
-      <form className="documentation-panel documentation-route-form" onSubmit={create}>
-        <label className="documentation-field"><span>Display name</span><input autoFocus required maxLength={255} value={title} onChange={event => setTitle(event.target.value)} placeholder="Platform documentation" /></label>
-        <label className="documentation-field"><span>URL slug</span><input required maxLength={120} value={slug} onChange={event => setSlug(event.target.value)} placeholder="platform" /><small>Published at /doc/{slug || "platform"}</small></label>
-        <label className="documentation-field documentation-field--wide"><span>Description <small>Optional</small></span><textarea maxLength={2000} value={description} onChange={event => setDescription(event.target.value)} placeholder="What will readers learn here?" /></label>
-        <div className="documentation-form-actions documentation-field--wide">
-          <button className="btn btn-primary" type="submit" disabled={saving}><Plus size={16} />{saving ? "Creating..." : "Create documentation"}</button>
-          <Link className="btn btn-ghost" to="/doc">Cancel</Link>
+
+      <form
+        id="new-documentation-form"
+        className="modal-form compact-form-card"
+        onSubmit={create}
+      >
+        <div className="form-group">
+          <label className="form-label" htmlFor="documentation-title">
+            Display name *
+          </label>
+          <input
+            id="documentation-title"
+            className="form-input"
+            autoFocus
+            required
+            maxLength={255}
+            value={title}
+            onChange={event => setTitle(event.target.value)}
+            placeholder="Platform documentation"
+            disabled={saving}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label" htmlFor="documentation-slug">
+            URL slug *
+          </label>
+          <p className="form-help">Published at /doc/{slug || "platform"}</p>
+          <input
+            id="documentation-slug"
+            className="form-input"
+            required
+            maxLength={120}
+            value={slug}
+            onChange={event => setSlug(event.target.value)}
+            placeholder="platform"
+            disabled={saving}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label" htmlFor="documentation-description">
+            Description
+          </label>
+          <textarea
+            id="documentation-description"
+            className="form-input"
+            rows={4}
+            maxLength={2000}
+            value={description}
+            onChange={event => setDescription(event.target.value)}
+            placeholder="What will readers learn here?"
+            disabled={saving}
+          />
         </div>
       </form>
     </main>
