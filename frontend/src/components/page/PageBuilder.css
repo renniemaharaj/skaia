@@ -129,6 +129,17 @@
   padding: 0 1.25rem 0.5rem;
 }
 
+.page-admin-bar--manage {
+  position: fixed;
+  inset: var(--skaia-header-height, 73px) 0 0;
+  z-index: 900;
+  align-items: flex-start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1rem 1.25rem 3rem;
+  background: var(--bg-color);
+}
+
 .page-admin-bar--panel .page-ownership {
   flex-direction: row;
   gap: 1.5rem;

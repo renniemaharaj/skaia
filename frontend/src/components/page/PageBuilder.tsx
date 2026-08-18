@@ -17,7 +17,7 @@ import { confirmDestructiveAction, customConfirm } from "../ui/Prompt";
 import { BlockRenderer } from "./BlockRenderer";
 import { PageBuilderContext, type SaveStatus } from "./PageBuilderContext";
 import PageComments from "./PageComments";
-import PageOwnershipPanel from "./PageOwnershipPanel";
+import PageManagePanel from "./PageManagePanel";
 import { PageSkeleton } from "./PageSkeleton";
 import { SaveStatusBar } from "./SaveStatusBar";
 import type { PageDocumentID, PageItem, PageSection, SectionEditor } from "./types";
@@ -97,6 +97,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     isAdmin,
     isOwner,
     updatePage,
+    updatePageSEO,
     createPage,
     deletePage,
     pendingIncoming,
@@ -117,17 +118,16 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const [guestSandboxEnabled, setGuestSandboxEnabled] = useGuestSandboxMode();
   const [sections, setSections] = useState<PageSection[]>([]);
   const [sectionsSourced, setSectionsSourced] = useState(false);
-  const [showOwnership, setShowOwnership] = useState(false);
+  const [showManage, setShowManage] = useState(false);
   const guestSandboxMode = isEditable || guestSandboxEnabled;
   const canEdit = guestSandboxMode;
   const canDelete = !!page?.can_delete || (page?.id != null && (isAdmin || isOwner));
   const canChangeVisibility = page?.id != null && (isAdmin || isOwner);
   // Toolbar visible to admins and owners only - editors can edit inline but don't see the bar
   const showToolbar = isAdmin || isOwner || (!slug && !isEditable);
-  const showOwnershipBtn = showToolbar && page?.id && slug;
+  const showManageBtn = showToolbar && !!page?.id;
   const canShowSandboxToggle = !isEditable;
-  const sandboxToggleIsStandalone =
-    canShowSandboxToggle && !showOwnershipBtn && !(isAdmin && !slug);
+  const sandboxToggleIsStandalone = canShowSandboxToggle && !showManageBtn && !(isAdmin && !slug);
 
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const currentUser = useAtomValue(currentUserAtom);
@@ -320,6 +320,9 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
         slug: slug || "landing",
         title: slug || "Landing",
         description: "",
+        seo_title: "",
+        seo_description: "",
+        seo_image: "",
         content: JSON.stringify(content),
         view_count: 0,
         likes: 0,
@@ -724,7 +727,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   return (
     <PageBuilderContext.Provider value={contextValue}>
       <div className="pb-container">
-        {showToolbar && (
+        {showToolbar && !showManage && (
           <div className="page-admin-bar page-admin-bar--menu">
             <div className="page-admin-more-wrap" ref={moreRef}>
               <Button
@@ -825,20 +828,20 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                     </Button>
                   )}
 
-                  {showOwnershipBtn && (
+                  {showManageBtn && (
                     <Button
                       unstyled
                       type="button"
                       className="page-admin-more-item"
                       onClick={() => {
-                        setShowOwnership(v => !v);
+                        setShowManage(v => !v);
                         setMoreOpen(false);
                       }}
                     >
-                      Manage page ownership
+                      Manage page
                     </Button>
                   )}
-                  {showOwnershipBtn && page?.id && (
+                  {showManageBtn && page?.id && (
                     <Button
                       unstyled
                       type="button"
@@ -914,13 +917,20 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
           </div>
         )}
 
-        {showOwnership && showOwnershipBtn && (
-          <div className="page-admin-bar page-admin-bar--panel">
-            <PageOwnershipPanel
-              pageId={page.id}
+        {showManage && showManageBtn && page && (
+          <div className="page-admin-bar page-admin-bar--panel page-admin-bar--manage">
+            <PageManagePanel
+              page={page}
               owner={page.owner ?? null}
               editors={page.editors ?? []}
-              onUpdate={() => refresh(slug)}
+              onSaveSEO={async seo => {
+                const current = pageRef.current;
+                if (!current) return;
+                const saved = await updatePageSEO(current.id, seo);
+                pageRef.current = saved;
+              }}
+              onOwnershipUpdate={() => refresh(slug)}
+              onClose={() => setShowManage(false)}
             />
           </div>
         )}

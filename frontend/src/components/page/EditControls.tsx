@@ -917,6 +917,7 @@ export const ImagePickerButton = ({
   return (
     <>
       <button
+        type="button"
         className={`pb-action-btn ${className}`}
         onClick={e => {
           e.stopPropagation();

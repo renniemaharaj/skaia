@@ -8,6 +8,7 @@ type Repository interface {
 	GetByID(id int64) (*models.Page, error)
 	Create(p *models.Page) error
 	UpdatePreservingInteractive(p *models.Page) error
+	UpdateSEO(pageID int64, title, description, image string) error
 	MutateContent(pageID int64, mutate func(string) (string, error)) error
 	Delete(id, actorID int64) error
 	DeleteAll(actorID int64) error

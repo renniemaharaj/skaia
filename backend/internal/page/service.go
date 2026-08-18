@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/skaia/backend/internal/s_registry"
@@ -15,6 +16,7 @@ import (
 )
 
 var ErrInvalidContent = errors.New("invalid page content")
+var ErrInvalidSEO = errors.New("invalid page SEO")
 
 type DataSourceGetter interface {
 	GetByID(id int64) (*models.DataSource, error)
@@ -122,7 +124,10 @@ func (s *Service) invalidateSEO(slug string) {
 	if s.rdb == nil {
 		return
 	}
-	routes := []string{"/page/" + slug}
+	// Any custom page may currently be selected as the landing page. Evicting
+	// the root alongside its direct route keeps homepage metadata fresh without
+	// adding a second configuration lookup to every page mutation.
+	routes := []string{"/page/" + slug, "/"}
 	if slug == "privacy" || slug == "tos" {
 		routes = append(routes, "/"+slug)
 	}
@@ -141,6 +146,9 @@ func (s *Service) Create(p *models.Page) error {
 		p.Visibility = "public"
 	}
 	p.Content = ClearInteractiveRecords(p.Content)
+	if err := normalizePageSEO(p); err != nil {
+		return err
+	}
 	if err := s.validateContent(p.Content); err != nil {
 		return err
 	}
@@ -156,6 +164,9 @@ func (s *Service) Update(p *models.Page) error {
 		p.Content = "[]"
 	}
 	p.Content = ClearInteractiveRecords(p.Content)
+	if err := normalizePageSEO(p); err != nil {
+		return err
+	}
 	current, err := s.repo.GetByID(p.ID)
 	if err != nil {
 		return err
@@ -171,6 +182,24 @@ func (s *Service) Update(p *models.Page) error {
 		s.invalidateSEO(p.Slug)
 	}
 	return err
+}
+
+func (s *Service) UpdateSEO(pageID int64, title, description, image string) (*models.Page, error) {
+	p, err := s.repo.GetByID(pageID)
+	if err != nil {
+		return nil, err
+	}
+	p.SEOTitle = title
+	p.SEODesc = description
+	p.SEOImage = image
+	if err := normalizePageSEO(p); err != nil {
+		return nil, err
+	}
+	if err := s.repo.UpdateSEO(pageID, p.SEOTitle, p.SEODesc, p.SEOImage); err != nil {
+		return nil, err
+	}
+	s.invalidateSEO(p.Slug)
+	return s.repo.GetByID(pageID)
 }
 
 func (s *Service) validateContent(content string) error {
@@ -194,6 +223,9 @@ func (s *Service) Duplicate(fromID int64, newSlug, newTitle string) (*models.Pag
 		Slug:        newSlug,
 		Title:       title,
 		Description: src.Description,
+		SEOTitle:    src.SEOTitle,
+		SEODesc:     src.SEODesc,
+		SEOImage:    src.SEOImage,
 		Content:     ClearInteractiveRecords(src.Content),
 		Visibility:  "private",
 	}
@@ -205,6 +237,26 @@ func (s *Service) Duplicate(fromID int64, newSlug, newTitle string) (*models.Pag
 	}
 	s.invalidateSEO(dup.Slug)
 	return dup, nil
+}
+
+func normalizePageSEO(p *models.Page) error {
+	p.SEOTitle = strings.TrimSpace(p.SEOTitle)
+	p.SEODesc = strings.TrimSpace(p.SEODesc)
+	p.SEOImage = strings.TrimSpace(p.SEOImage)
+	if len([]rune(p.SEOTitle)) > 255 {
+		return fmt.Errorf("%w: title must be 255 characters or fewer", ErrInvalidSEO)
+	}
+	if len([]rune(p.SEODesc)) > 500 {
+		return fmt.Errorf("%w: description must be 500 characters or fewer", ErrInvalidSEO)
+	}
+	if len(p.SEOImage) > 2048 {
+		return fmt.Errorf("%w: image URL is too long", ErrInvalidSEO)
+	}
+	if p.SEOImage != "" && !strings.HasPrefix(p.SEOImage, "/") &&
+		!strings.HasPrefix(p.SEOImage, "https://") && !strings.HasPrefix(p.SEOImage, "http://") {
+		return fmt.Errorf("%w: image must use an uploaded, HTTP, or HTTPS URL", ErrInvalidSEO)
+	}
+	return nil
 }
 
 func (s *Service) Delete(id, actorID int64) error {

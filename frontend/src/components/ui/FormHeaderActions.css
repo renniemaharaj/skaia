@@ -1,0 +1,6 @@
+.form-header-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: .75rem;
+}

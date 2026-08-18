@@ -1,6 +1,5 @@
 import { useAtom } from "jotai";
-import { CheckIcon, X } from "lucide-react";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 const Editor = lazy(() => import("./Editor"));
 import ForumCategory from "./ForumCategory";
@@ -10,6 +9,7 @@ import "./NewThread.css";
 import { currentThreadAtom, draftEditThreadAtom } from "../../atoms/forum";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
+import FormHeaderActions from "../ui/FormHeaderActions";
 
 interface ThreadData {
   id: string;
@@ -175,24 +175,13 @@ const EditThread = () => {
           <h2>Edit Thread</h2>
           <p style={{ color: "var(--text-secondary)", marginBottom: 0 }}>Update your discussion</p>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          {/* Close */}
-          <button
-            className="action-btn btn-close"
-            onClick={() => navigate(`/view-thread/${threadId}`)}
-            title="Close"
-          >
-            <X size={20} />
-          </button>
-          <button
-            className="action-btn btn-submit"
-            onClick={handleUpdateThread}
-            disabled={submitting}
-            title="Submit"
-          >
-            <CheckIcon size={20} />
-          </button>
-        </div>
+        <FormHeaderActions
+          onCancel={() => navigate(`/view-thread/${threadId}`)}
+          onConfirm={handleUpdateThread}
+          saving={submitting}
+          cancelLabel="Close"
+          confirmLabel="Submit"
+        />
       </div>
 
       <div className="modal-form compact-form-card">

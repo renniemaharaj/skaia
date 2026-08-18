@@ -57,7 +57,7 @@ func (s *Service) UpsertConfig(key, valueJSON string) error {
 	if err := s.repo.UpsertConfig(key, valueJSON); err != nil {
 		return err
 	}
-	if (key == "branding" || key == "seo") && s.invalidateSEO != nil {
+	if seoRelevantConfig(key) && s.invalidateSEO != nil {
 		s.invalidateSEO()
 	}
 	return nil
@@ -67,10 +67,14 @@ func (s *Service) DeleteConfig(key string) error {
 	if err := s.repo.DeleteConfig(key); err != nil {
 		return err
 	}
-	if (key == "branding" || key == "seo") && s.invalidateSEO != nil {
+	if seoRelevantConfig(key) && s.invalidateSEO != nil {
 		s.invalidateSEO()
 	}
 	return nil
+}
+
+func seoRelevantConfig(key string) bool {
+	return key == "branding" || key == "seo" || key == "landing_page_slug"
 }
 
 func (s *Service) DeleteAllSections() error {

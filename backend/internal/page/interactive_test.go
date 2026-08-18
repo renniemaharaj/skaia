@@ -187,6 +187,18 @@ func (r *memoryInteractiveRepository) UpdatePreservingInteractive(page *models.P
 	return nil
 }
 
+func (r *memoryInteractiveRepository) UpdateSEO(pageID int64, title, description, image string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.page.ID != pageID {
+		return errors.New("not found")
+	}
+	r.page.SEOTitle = title
+	r.page.SEODesc = description
+	r.page.SEOImage = image
+	return nil
+}
+
 func TestSubmitInteractiveScopesIdempotencyToParticipant(t *testing.T) {
 	repo := &memoryInteractiveRepository{page: models.Page{ID: 1, Content: interactiveContent(`{
 		"status":"open","result_visibility":"after_participation","response_limit":1,

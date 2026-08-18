@@ -1,14 +1,14 @@
 import { useAtom } from "jotai";
-import { lazy, Suspense, useState } from "react";
+import { Suspense, lazy, useState } from "react";
 const Editor = lazy(() => import("./Editor"));
 import ForumCategory from "./ForumCategory";
 import "./NewThread.css";
-import { CheckIcon, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { draftNewThreadAtom } from "../../atoms/forum";
 import "./IconButton.css";
 
 import { apiRequest } from "../../utils/api";
+import FormHeaderActions from "../ui/FormHeaderActions";
 
 interface CreateThreadResponse {
   id: string;
@@ -97,26 +97,13 @@ const NewThread = () => {
             Start a discussion with the community
           </p>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          {/* Close */}
-          <button
-            type="button"
-            className="action-btn btn-close"
-            onClick={() => navigate("/forum")}
-            title="Close"
-          >
-            <X size={20} />
-          </button>
-          <button
-            type="submit"
-            form="new-thread-form"
-            className="action-btn btn-submit"
-            disabled={loading}
-            title="Submit"
-          >
-            <CheckIcon size={20} />
-          </button>
-        </div>
+        <FormHeaderActions
+          formId="new-thread-form"
+          onCancel={() => navigate("/forum")}
+          saving={loading}
+          cancelLabel="Close"
+          confirmLabel="Submit"
+        />
       </div>
 
       <form

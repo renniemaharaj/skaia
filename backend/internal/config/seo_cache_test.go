@@ -27,6 +27,9 @@ func TestSEOConfigWritesInvalidateSemanticCache(t *testing.T) {
 	if err := svc.UpsertConfig("seo", `{}`); err != nil {
 		t.Fatal(err)
 	}
+	if err := svc.UpsertConfig("landing_page_slug", `"home"`); err != nil {
+		t.Fatal(err)
+	}
 	if err := svc.UpsertConfig("footer", `{}`); err != nil {
 		t.Fatal(err)
 	}
@@ -34,7 +37,7 @@ func TestSEOConfigWritesInvalidateSemanticCache(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if invalidations != 3 {
-		t.Fatalf("invalidations = %d, want 3", invalidations)
+	if invalidations != 4 {
+		t.Fatalf("invalidations = %d, want 4", invalidations)
 	}
 }

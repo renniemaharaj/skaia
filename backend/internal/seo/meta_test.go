@@ -180,6 +180,21 @@ func TestImageMetadataDoesNotFetchRemoteContent(t *testing.T) {
 	}
 }
 
+func TestPageMetadataFallsBackToOfficialSiteSEO(t *testing.T) {
+	meta := buildMeta(
+		models.Branding{SiteName: "Example", Tagline: "Site tagline", LogoURL: "/logo.png"},
+		models.SEO{Title: "Global title", Description: "Global description", OGImage: "/global.png"},
+		routeSEO{Title: "Custom Page"},
+	)
+
+	if meta.Title != "Custom Page – Example" || meta.Description != "Global description" {
+		t.Fatalf("page fallback text metadata = %#v", meta)
+	}
+	if meta.Image != "/global.png" {
+		t.Fatalf("page did not inherit official image: %q", meta.Image)
+	}
+}
+
 func TestLiveStreamMetadataIsNeverCached(t *testing.T) {
 	for _, route := range []routeSEO{
 		{Live: true},

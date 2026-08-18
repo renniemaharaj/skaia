@@ -1,8 +1,8 @@
-import { Check, Loader, X } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Documentation } from "../../atoms/documentation";
+import FormHeaderActions from "../../components/ui/FormHeaderActions";
 import { apiRequest } from "../../utils/api";
 import "../../components/forum/NewThread.css";
 import "../../components/documentation/DocumentationShell.css";
@@ -40,33 +40,16 @@ export default function NewDocumentationPage() {
             Start a separate collection of guides for this site.
           </p>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          <button
-            type="button"
-            className="action-btn btn-close"
-            onClick={() => navigate("/doc")}
-            disabled={saving}
-            title="Cancel"
-          >
-            <X size={20} />
-          </button>
-          <button
-            type="submit"
-            form="new-documentation-form"
-            className="action-btn btn-submit"
-            disabled={saving || !title.trim() || !slug.trim()}
-            title="Create"
-          >
-            {saving ? <Loader size={20} className="spin" /> : <Check size={20} />}
-          </button>
-        </div>
+        <FormHeaderActions
+          formId="new-documentation-form"
+          onCancel={() => navigate("/doc")}
+          confirmDisabled={!title.trim() || !slug.trim()}
+          saving={saving}
+          confirmLabel="Create"
+        />
       </header>
 
-      <form
-        id="new-documentation-form"
-        className="modal-form compact-form-card"
-        onSubmit={create}
-      >
+      <form id="new-documentation-form" className="modal-form compact-form-card" onSubmit={create}>
         <div className="form-group">
           <label className="form-label" htmlFor="documentation-title">
             Display name *

@@ -19,6 +19,9 @@ export interface PageBuilderDoc {
   slug: string;
   title: string;
   description: string;
+  seo_title: string;
+  seo_description: string;
+  seo_image: string;
   content: string; // JSON string of page sections
   owner_id?: number | null;
   owner?: PageUser | null;
@@ -50,6 +53,10 @@ interface UsePageDataReturn {
     page: Omit<PageBuilderDoc, "id" | "created_at" | "updated_at">
   ) => Promise<PageBuilderDoc>;
   updatePage: (page: Omit<PageBuilderDoc, "created_at" | "updated_at">) => Promise<PageBuilderDoc>;
+  updatePageSEO: (
+    pageId: number,
+    seo: Pick<PageBuilderDoc, "seo_title" | "seo_description" | "seo_image">
+  ) => Promise<PageBuilderDoc>;
   deletePage: (id: number) => Promise<void>;
   duplicatePage: (id: number, newSlug: string, newTitle?: string) => Promise<PageBuilderDoc>;
 }
@@ -203,6 +210,21 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     return updated;
   }, []);
 
+  const updatePageSEO = useCallback(
+    async (
+      pageId: number,
+      seo: Pick<PageBuilderDoc, "seo_title" | "seo_description" | "seo_image">
+    ) => {
+      const updated = await apiRequest<PageBuilderDoc>(`/pages/${pageId}/seo`, {
+        method: "PUT",
+        body: JSON.stringify(seo),
+      });
+      if (updated) setPage(updated);
+      return updated;
+    },
+    []
+  );
+
   const deletePage = useCallback(async (id: number) => {
     await apiRequest(`/pages/${id}`, {
       method: "DELETE",
@@ -312,6 +334,7 @@ export function usePageData(suppressLiveRefresh = false): UsePageDataReturn {
     refresh,
     createPage,
     updatePage,
+    updatePageSEO,
     deletePage,
     duplicatePage,
   };

@@ -215,6 +215,114 @@ func TestDocumentationArticleRouteSEO(t *testing.T) {
 	}
 }
 
+func TestCustomPageRouteSEODerivesMetadataFromOrderedSections(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/page/community-story", nil)
+	content := `[
+		{"display_order":2,"section_type":"image_gallery","heading":"Gallery","subheading":"","config":{},"items":[
+			{"display_order":2,"heading":"Second","subheading":"","image_url":"/uploads/second.webp"},
+			{"display_order":1,"heading":"First","subheading":"","image_url":"/uploads/first.webp"}
+		]},
+		{"display_order":1,"section_type":"hero","heading":"A Community Story","subheading":"How this community grew together.","config":"{\"background_image\":\"/uploads/hero.jpg\"}"}
+	]`
+	result := resolveRouteSEO(context.Background(), stubQueryer{row: stubRow(func(dest ...any) error {
+		*dest[0].(*string) = ""
+		*dest[1].(*string) = ""
+		*dest[5].(*string) = content
+		return nil
+	})}, req)
+
+	if result.State != resolutionSuccess {
+		t.Fatalf("custom page SEO resolution = %#v", result)
+	}
+	if result.Route.Title != "A Community Story" || result.Route.Desc != "How this community grew together." {
+		t.Fatalf("custom page text metadata = %#v", result.Route)
+	}
+	if result.Route.Image != "/uploads/hero.jpg" {
+		t.Fatalf("custom page image metadata = %#v", result.Route)
+	}
+}
+
+func TestCustomPageExplicitSEOOverridesContentFieldByField(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/page/launch", nil)
+	result := resolveRouteSEO(context.Background(), stubQueryer{row: stubRow(func(dest ...any) error {
+		*dest[0].(*string) = "Page title"
+		*dest[1].(*string) = "Page description"
+		*dest[2].(*string) = "Explicit search title"
+		*dest[3].(*string) = "Explicit search description"
+		*dest[4].(*string) = "/uploads/social.webp"
+		*dest[5].(*string) = `[{"section_type":"hero","config":{"background_image":"/uploads/hero.webp"}}]`
+		return nil
+	})}, req)
+
+	if result.State != resolutionSuccess {
+		t.Fatalf("explicit page SEO resolution = %#v", result)
+	}
+	if result.Route.Title != "Explicit search title" || result.Route.Desc != "Explicit search description" || result.Route.Image != "/uploads/social.webp" {
+		t.Fatalf("explicit page SEO metadata = %#v", result.Route)
+	}
+}
+
+func TestCustomPageRouteSEOUsesRichTextAndMediaSectionFallbacks(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/page/community-guide", nil)
+	content := `[
+		{"display_order":1,"section_type":"rich_text","heading":"Guide","subheading":"","config":{"content":"<p>Practical &amp; welcoming advice for every new member.</p>"}},
+		{"display_order":2,"section_type":"image_gallery","heading":"Photos","subheading":"","config":{},"items":[
+			{"display_order":1,"image_url":"https://cdn.example/guide.png"}
+		]}
+	]`
+	result := resolveRouteSEO(context.Background(), stubQueryer{row: stubRow(func(dest ...any) error {
+		*dest[0].(*string) = "Community Guide"
+		*dest[1].(*string) = ""
+		*dest[5].(*string) = content
+		return nil
+	})}, req)
+
+	if result.Route.Title != "Community Guide" || result.Route.Desc != "Practical & welcoming advice for every new member." {
+		t.Fatalf("rich-text page metadata = %#v", result.Route)
+	}
+	if result.Route.Image != "https://cdn.example/guide.png" {
+		t.Fatalf("gallery fallback image = %q", result.Route.Image)
+	}
+}
+
+func TestCustomPageRichTextUsesForumStyleEmbeddedImage(t *testing.T) {
+	meta, err := extractPageContentSEO(`[{"display_order":1,"section_type":"rich_text","config":{"content":"<p>Story</p><img src=\"/uploads/story.webp\">"}}]`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if meta.Desc != "Story" || meta.Image != "/uploads/story.webp" {
+		t.Fatalf("embedded rich-text metadata = %#v", meta)
+	}
+}
+
+func TestLandingCustomPageUsesContentDerivedSEO(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	result := resolveRouteSEO(context.Background(), stubQueryer{row: stubRow(func(dest ...any) error {
+		*dest[0].(*string) = "home"
+		*dest[1].(*string) = "Welcome Home"
+		*dest[2].(*string) = "A content-specific landing page."
+		*dest[6].(*string) = `[{"display_order":1,"section_type":"hero","config":{"background_image":"/uploads/home.webp"}}]`
+		return nil
+	})}, req)
+
+	if result.State != resolutionSuccess {
+		t.Fatalf("landing page SEO resolution = %#v", result)
+	}
+	if result.Route.Title != "Welcome Home" || result.Route.Desc != "A content-specific landing page." || result.Route.Image != "/uploads/home.webp" {
+		t.Fatalf("landing page metadata = %#v", result.Route)
+	}
+}
+
+func TestMissingLandingCustomPageRetainsGlobalHomeSEO(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	result := resolveRouteSEO(context.Background(), stubQueryer{row: stubRow(func(...any) error {
+		return sql.ErrNoRows
+	})}, req)
+	if result.State != resolutionSuccess || result.Route.Miss {
+		t.Fatalf("missing landing page resolution = %#v", result)
+	}
+}
+
 func TestRouteDatabaseErrorsNeverBecomeCacheableAbsence(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/page/example", nil)
 
@@ -233,7 +341,7 @@ func TestRouteDatabaseErrorsNeverBecomeCacheableAbsence(t *testing.T) {
 	malformed := resolveRouteSEO(context.Background(), stubQueryer{row: stubRow(func(dest ...any) error {
 		*dest[0].(*string) = "Example"
 		*dest[1].(*string) = "Description"
-		*dest[2].(*string) = "{"
+		*dest[5].(*string) = "{"
 		return nil
 	})}, req)
 	if malformed.State != resolutionDegraded || malformed.Route.Miss || malformed.Err == nil {

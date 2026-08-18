@@ -54,6 +54,7 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, comme
 			r.Post("/claim", h.claimPage)
 			r.Get("/my-allocation", h.getMyAllocation)
 			r.Put("/{id}", h.updatePage)
+			r.Put("/{id}/seo", h.updatePageSEO)
 			r.Delete("/{id}", h.deletePage)
 			r.Post("/{id}/duplicate", h.duplicatePage)
 			r.Post("/{id}/sections/{sectionId}/responses", h.submitInteractiveResponse)
@@ -300,7 +301,7 @@ func (h *Handler) createPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.svc.Create(&p); err != nil {
-		if errors.Is(err, ErrInvalidContent) {
+		if errors.Is(err, ErrInvalidContent) || errors.Is(err, ErrInvalidSEO) {
 			utils.WriteError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -385,7 +386,8 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 	// Verify the page exists before checking permissions or applying updates.
 	// This prevents 500s when the frontend holds a stale page ID (e.g. after
 	// a factory reset recreated the landing page with a new ID).
-	if _, err := h.svc.GetByID(id); err != nil {
+	current, err := h.svc.GetByID(id)
+	if err != nil {
 		utils.WriteError(w, http.StatusNotFound, "page not found")
 		return
 	}
@@ -399,8 +401,13 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p.ID = id
+	// SEO has a dedicated settings endpoint. Preserve it during ordinary page
+	// and live-editor saves so older clients cannot accidentally erase it.
+	p.SEOTitle = current.SEOTitle
+	p.SEODesc = current.SEODesc
+	p.SEOImage = current.SEOImage
 	if err := h.svc.Update(&p); err != nil {
-		if errors.Is(err, ErrInvalidContent) {
+		if errors.Is(err, ErrInvalidContent) || errors.Is(err, ErrInvalidSEO) {
 			utils.WriteError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -438,6 +445,48 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 			},
 		})
 	}
+}
+
+func (h *Handler) updatePageSEO(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	p, err := h.svc.GetByID(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, "page not found")
+		return
+	}
+	uid, ok := utils.UserIDFromCtx(r)
+	isOwner := ok && p.OwnerID != nil && *p.OwnerID == uid
+	if !h.isAdmin(r) && !isOwner {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	var body struct {
+		Title       string `json:"seo_title"`
+		Description string `json:"seo_description"`
+		Image       string `json:"seo_image"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
+		return
+	}
+	updated, err := h.svc.UpdateSEO(id, body.Title, body.Description, body.Image)
+	if err != nil {
+		if errors.Is(err, ErrInvalidSEO) {
+			utils.WriteError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		log.Printf("page.updatePageSEO: %v", err)
+		utils.WriteError(w, http.StatusInternalServerError, "update failed")
+		return
+	}
+	h.svc.EnrichPage(updated)
+	h.sanitizeInteractivePage(r, updated)
+	utils.WriteJSON(w, http.StatusOK, updated)
+	h.hub.BroadcastPageExceptUser(uid, "page_updated", pageUpdatePatch(updated))
 }
 
 func (h *Handler) interactiveTarget(w http.ResponseWriter, r *http.Request) (int64, int64, int64, bool) {
@@ -594,14 +643,17 @@ func pageUpdatePatch(p *models.Page) map[string]interface{} {
 		return nil
 	}
 	return map[string]interface{}{
-		"id":          p.ID,
-		"slug":        p.Slug,
-		"title":       p.Title,
-		"description": p.Description,
-		"visibility":  p.Visibility,
-		"owner_id":    p.OwnerID,
-		"updated_at":  p.UpdatedAt,
-		"partial":     true,
+		"id":              p.ID,
+		"slug":            p.Slug,
+		"title":           p.Title,
+		"description":     p.Description,
+		"seo_title":       p.SEOTitle,
+		"seo_description": p.SEODesc,
+		"seo_image":       p.SEOImage,
+		"visibility":      p.Visibility,
+		"owner_id":        p.OwnerID,
+		"updated_at":      p.UpdatedAt,
+		"partial":         true,
 	}
 }
 

@@ -19,12 +19,12 @@ func (r *sqlRepository) GetBySlug(slug string) (*models.Page, error) {
 	p := &models.Page{}
 	var ownerID sql.NullInt64
 	err := r.db.QueryRow(
-		`SELECT id, slug, title, description, content::text,
+		`SELECT id, slug, title, description, seo_title, seo_description, seo_image, content::text,
 		        owner_id,
 		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=pages.id), 0),
 		        visibility, created_at, updated_at
 		 FROM pages WHERE slug = $1 AND deleted_at IS NULL`, slug,
-	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description,
+	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.SEOTitle, &p.SEODesc, &p.SEOImage,
 		&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
@@ -39,12 +39,12 @@ func (r *sqlRepository) GetByID(id int64) (*models.Page, error) {
 	p := &models.Page{}
 	var ownerID sql.NullInt64
 	err := r.db.QueryRow(
-		`SELECT id, slug, title, description, content::text,
+		`SELECT id, slug, title, description, seo_title, seo_description, seo_image, content::text,
 		        owner_id,
 		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=pages.id), 0),
 		        visibility, created_at, updated_at
 		 FROM pages WHERE id = $1 AND deleted_at IS NULL`, id,
-	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description,
+	).Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.SEOTitle, &p.SEODesc, &p.SEOImage,
 		&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (r *sqlRepository) GetByID(id int64) (*models.Page, error) {
 
 func (r *sqlRepository) List() ([]*models.Page, error) {
 	rows, err := r.db.Query(
-		`SELECT id, slug, title, description, content::text,
+		`SELECT id, slug, title, description, seo_title, seo_description, seo_image, content::text,
 		        owner_id,
 		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=pages.id), 0),
 		        visibility, created_at, updated_at
@@ -71,7 +71,7 @@ func (r *sqlRepository) List() ([]*models.Page, error) {
 	for rows.Next() {
 		p := &models.Page{}
 		var ownerID sql.NullInt64
-		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Description,
+		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.SEOTitle, &p.SEODesc, &p.SEOImage,
 			&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
@@ -86,10 +86,10 @@ func (r *sqlRepository) List() ([]*models.Page, error) {
 // writes
 func (r *sqlRepository) Create(p *models.Page) error {
 	return r.db.QueryRow(
-		`INSERT INTO pages (slug, title, description, content, owner_id, visibility)
-			 VALUES ($1, $2, $3, $4::jsonb, $5, $6)
+		`INSERT INTO pages (slug, title, description, seo_title, seo_description, seo_image, content, owner_id, visibility)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9)
 			 RETURNING id, created_at, updated_at`,
-		p.Slug, p.Title, p.Description, p.Content, p.OwnerID, p.Visibility,
+		p.Slug, p.Title, p.Description, p.SEOTitle, p.SEODesc, p.SEOImage, p.Content, p.OwnerID, p.Visibility,
 	).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
 }
 
@@ -112,16 +112,26 @@ func (r *sqlRepository) UpdatePreservingInteractive(p *models.Page) error {
 		p.Content = merged
 		if err := exec.QueryRow(
 			`UPDATE pages
-			 SET slug = $2, title = $3, description = $4,
-			     content = $5::jsonb, visibility = $6, updated_at = CURRENT_TIMESTAMP
+				 SET slug = $2, title = $3, description = $4,
+				     seo_title = $5, seo_description = $6, seo_image = $7,
+				     content = $8::jsonb, visibility = $9, updated_at = CURRENT_TIMESTAMP
 			 WHERE id = $1 AND deleted_at IS NULL
 			 RETURNING updated_at`,
-			p.ID, p.Slug, p.Title, p.Description, p.Content, p.Visibility,
+			p.ID, p.Slug, p.Title, p.Description, p.SEOTitle, p.SEODesc, p.SEOImage, p.Content, p.Visibility,
 		).Scan(&p.UpdatedAt); err != nil {
 			return err
 		}
 		return nil
 	})
+}
+
+func (r *sqlRepository) UpdateSEO(pageID int64, title, description, image string) error {
+	_, err := r.db.Exec(
+		`UPDATE pages SET seo_title=$2,seo_description=$3,seo_image=$4,updated_at=CURRENT_TIMESTAMP
+		 WHERE id=$1 AND deleted_at IS NULL`,
+		pageID, title, description, image,
+	)
+	return err
 }
 
 // MutateContent locks and rewrites the authoritative pages.content document.
@@ -317,7 +327,7 @@ func (r *sqlRepository) IsEditor(pageID, userID int64) (bool, error) {
 
 func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 	rows, err := r.db.Query(
-		`SELECT p.id, p.slug, p.title, p.description, p.content::text,
+		`SELECT p.id, p.slug, p.title, p.description, p.seo_title, p.seo_description, p.seo_image, p.content::text,
 		        p.owner_id,
 		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=p.id), 0),
 		        p.visibility, p.created_at, p.updated_at,
@@ -339,7 +349,7 @@ func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
 		var ownerID sql.NullInt64
 		var oID sql.NullInt64
 		var oUsername, oDisplayName, oAvatar, bgVid, bgImg, bgPos sql.NullString
-		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Description,
+		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.SEOTitle, &p.SEODesc, &p.SEOImage,
 			&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt,
 			&oID, &oUsername, &oDisplayName, &oAvatar, &bgVid, &bgImg, &bgPos,
 			&p.Likes, &p.CommentCount); err != nil {

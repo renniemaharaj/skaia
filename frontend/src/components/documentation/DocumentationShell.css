@@ -590,12 +590,6 @@
   color: var(--text-secondary);
 }
 
-.documentation-guide-modal__header-actions {
-  display: flex;
-  flex: none;
-  gap: 0.75rem;
-}
-
 .documentation-guide-editor.compact-form-card {
   padding-inline: 0.75rem;
   padding-bottom: 1rem;

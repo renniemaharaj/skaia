@@ -9,6 +9,7 @@ import (
 	"html"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -226,6 +227,9 @@ func resolveRouteSEO(ctx context.Context, db rowQueryer, r *http.Request) seoRes
 	if match := staticPageRx.FindStringSubmatch(path); match != nil {
 		return resolvePageSEO(ctx, db, match[1])
 	}
+	if path == "/" {
+		return resolveLandingPageSEO(ctx, db)
+	}
 
 	if usersRx.MatchString(path) {
 		return resolveUsersSEO(ctx, db)
@@ -356,27 +360,49 @@ func resolvePageSEO(ctx context.Context, db rowQueryer, slug string) seoResoluti
 		return absentRoute(routeSEO{Miss: true})
 	}
 
-	var title, desc, content string
+	var title, desc, seoTitle, seoDesc, seoImage, content string
 	err := db.QueryRowContext(ctx,
-		"SELECT title, description, content::text FROM pages WHERE slug = $1 AND visibility IN ('public', 'unlisted')",
+		"SELECT title,description,seo_title,seo_description,seo_image,content::text FROM pages WHERE slug = $1 AND visibility IN ('public', 'unlisted') AND deleted_at IS NULL",
 		slug,
-	).Scan(&title, &desc, &content)
+	).Scan(&title, &desc, &seoTitle, &seoDesc, &seoImage, &content)
 	if errors.Is(err, sql.ErrNoRows) {
 		return absentRoute(routeSEO{Miss: true})
 	}
 	if err != nil {
 		return dependencyFailure(err)
 	}
+	return resolvePageSEOContent(title, desc, seoTitle, seoDesc, seoImage, content)
+}
 
-	image, imageErr := firstImageFromJSONResult(content)
+func resolveLandingPageSEO(ctx context.Context, db rowQueryer) seoResolution {
+	var slug, title, desc, seoTitle, seoDesc, seoImage, content string
+	err := db.QueryRowContext(ctx, `SELECT p.slug,p.title,p.description,p.seo_title,p.seo_description,p.seo_image,p.content::text
+		FROM site_config sc JOIN pages p ON p.slug=(sc.value #>> '{}')
+		WHERE sc.key='landing_page_slug' AND sc.deleted_at IS NULL
+		AND p.visibility IN ('public','unlisted') AND p.deleted_at IS NULL`).Scan(&slug, &title, &desc, &seoTitle, &seoDesc, &seoImage, &content)
+	if errors.Is(err, sql.ErrNoRows) {
+		// Sites without a configured public landing page retain their ordinary
+		// global home metadata rather than turning the application shell into a 404.
+		return seoResolution{State: resolutionSuccess}
+	}
+	if err != nil {
+		return dependencyFailure(err)
+	}
+	return resolvePageSEOContent(title, desc, seoTitle, seoDesc, seoImage, content)
+}
+
+func resolvePageSEOContent(title, desc, seoTitle, seoDesc, seoImage, content string) seoResolution {
+	contentMeta, contentErr := extractPageContentSEO(content)
+	pageTitle := firstNonEmpty(stripHTML(seoTitle), stripHTML(title), contentMeta.Title)
+	pageDesc := firstNonEmpty(stripHTML(seoDesc), stripHTML(desc), contentMeta.Desc)
 	result := seoResolution{Route: routeSEO{
-		Title: title,
-		Desc:  snip(stripHTML(desc), 160),
-		Image: image,
+		Title: pageTitle,
+		Desc:  snip(pageDesc, 160),
+		Image: firstNonEmpty(seoImage, contentMeta.Image),
 	}, State: resolutionSuccess}
-	if imageErr != nil {
+	if contentErr != nil {
 		result.State = resolutionDegraded
-		result.Err = fmt.Errorf("decode page content: %w", imageErr)
+		result.Err = fmt.Errorf("decode page content: %w", contentErr)
 	}
 	return result
 }
@@ -651,13 +677,198 @@ func firstImageFromValue(value any) string {
 				return img
 			}
 		}
-		for _, item := range v {
-			if img := firstImageFromValue(item); img != "" {
+		keys := make([]string, 0, len(v))
+		for key := range v {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			if img := firstImageFromValue(v[key]); img != "" {
 				return img
 			}
 		}
 	}
 
+	return ""
+}
+
+type pageContentSEO struct {
+	Title string
+	Desc  string
+	Image string
+}
+
+type pageSEOSection struct {
+	DisplayOrder int             `json:"display_order"`
+	SectionType  string          `json:"section_type"`
+	Heading      string          `json:"heading"`
+	Subheading   string          `json:"subheading"`
+	Config       json.RawMessage `json:"config"`
+	Items        []pageSEOItem   `json:"items"`
+	position     int
+}
+
+type pageSEOItem struct {
+	DisplayOrder int    `json:"display_order"`
+	Heading      string `json:"heading"`
+	Subheading   string `json:"subheading"`
+	ImageURL     string `json:"image_url"`
+}
+
+// extractPageContentSEO understands the page-builder document instead of
+// treating it as arbitrary JSON. This keeps text selection relevant and makes
+// social-image priority stable as the document grows new presentation fields.
+func extractPageContentSEO(raw string) (pageContentSEO, error) {
+	var meta pageContentSEO
+	if strings.TrimSpace(raw) == "" {
+		return meta, nil
+	}
+
+	var sections []pageSEOSection
+	if err := json.Unmarshal([]byte(raw), &sections); err != nil {
+		return meta, err
+	}
+	for i := range sections {
+		sections[i].position = i
+		sort.SliceStable(sections[i].Items, func(a, b int) bool {
+			return sections[i].Items[a].DisplayOrder < sections[i].Items[b].DisplayOrder
+		})
+	}
+	sort.SliceStable(sections, func(i, j int) bool {
+		if sections[i].DisplayOrder == sections[j].DisplayOrder {
+			return sections[i].position < sections[j].position
+		}
+		return sections[i].DisplayOrder < sections[j].DisplayOrder
+	})
+
+	configs := make([]any, len(sections))
+	for i, section := range sections {
+		config, err := decodePageSectionConfig(section.Config)
+		if err != nil {
+			return meta, fmt.Errorf("section %d config: %w", i, err)
+		}
+		configs[i] = config
+	}
+
+	for i, section := range sections {
+		if meta.Title == "" {
+			meta.Title = stripHTML(section.Heading)
+		}
+		if meta.Desc == "" {
+			meta.Desc = firstNonEmpty(stripHTML(section.Subheading), pageSectionConfigDescription(section.SectionType, configs[i]))
+		}
+		if meta.Desc == "" {
+			for _, item := range section.Items {
+				if meta.Desc = firstNonEmpty(stripHTML(item.Subheading), stripHTML(item.Heading)); meta.Desc != "" {
+					break
+				}
+			}
+		}
+	}
+
+	// A hero background is composed as the page's lead visual and is the best
+	// social preview. Galleries and other explicitly media-led blocks follow.
+	meta.Image = firstSectionConfigImage(sections, configs, "hero", "background_image")
+	if meta.Image == "" {
+		meta.Image = firstSectionItemImage(sections, "image_gallery")
+	}
+	if meta.Image == "" {
+		meta.Image = firstSectionItemImage(sections, "event_highlights")
+	}
+	if meta.Image == "" {
+		meta.Image = firstRichTextMediaImage(sections, configs)
+	}
+	if meta.Image == "" {
+		meta.Image = firstSectionConfigImage(sections, configs, "profile_card", "banner_url", "avatar_url")
+	}
+	if meta.Image == "" {
+		meta.Image = firstSectionItemImage(sections, "")
+	}
+
+	meta.Desc = snip(meta.Desc, 160)
+	return meta, nil
+}
+
+func decodePageSectionConfig(raw json.RawMessage) (any, error) {
+	if len(raw) == 0 || string(raw) == "null" {
+		return map[string]any{}, nil
+	}
+	var value any
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return nil, err
+	}
+	if encoded, ok := value.(string); ok {
+		if strings.TrimSpace(encoded) == "" {
+			return map[string]any{}, nil
+		}
+		if err := json.Unmarshal([]byte(encoded), &value); err != nil {
+			return nil, err
+		}
+	}
+	return value, nil
+}
+
+func pageSectionConfigDescription(sectionType string, config any) string {
+	values, _ := config.(map[string]any)
+	if values == nil {
+		return ""
+	}
+	keys := []string{"description"}
+	if sectionType == "rich_text" {
+		keys = []string{"content", "description"}
+	} else if sectionType == "profile_card" {
+		keys = []string{"description", "profile_subtitle"}
+	}
+	for _, key := range keys {
+		if value, ok := values[key].(string); ok {
+			if text := stripHTML(value); text != "" {
+				return text
+			}
+		}
+	}
+	return ""
+}
+
+func firstSectionConfigImage(sections []pageSEOSection, configs []any, sectionType string, keys ...string) string {
+	for i, section := range sections {
+		if section.SectionType != sectionType {
+			continue
+		}
+		values, _ := configs[i].(map[string]any)
+		for _, key := range keys {
+			if img := imageString(values[key]); img != "" {
+				return img
+			}
+		}
+	}
+	return ""
+}
+
+func firstRichTextMediaImage(sections []pageSEOSection, configs []any) string {
+	for i, section := range sections {
+		if section.SectionType != "rich_text" {
+			continue
+		}
+		values, _ := configs[i].(map[string]any)
+		content, _ := values["content"].(string)
+		if img := firstNonEmpty(firstImageFromHTML(content), firstYouTubeThumbnailFromText(content)); img != "" {
+			return img
+		}
+	}
+	return ""
+}
+
+func firstSectionItemImage(sections []pageSEOSection, sectionType string) string {
+	for _, section := range sections {
+		if sectionType != "" && section.SectionType != sectionType {
+			continue
+		}
+		for _, item := range section.Items {
+			if img := imageString(item.ImageURL); img != "" {
+				return img
+			}
+		}
+	}
 	return ""
 }
 
