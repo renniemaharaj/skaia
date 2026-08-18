@@ -38,3 +38,6 @@ exports/
 # Prevent Agents Clutter
 .codex
 .github
+
+# Deferred implementation archives (kept outside build and migration discovery)
+/.deferred/
