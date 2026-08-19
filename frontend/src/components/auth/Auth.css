@@ -37,8 +37,8 @@
 }
 
 .decoration-circle-1 {
-  width: 300px;
-  height: 300px;
+  width: 200px;
+  height: 200px;
   background-color: var(--skaia-green-primary);
   top: -100px;
   right: -100px;
@@ -50,14 +50,6 @@
   background-color: var(--primary-color);
   bottom: -50px;
   left: -50px;
-}
-
-.decoration-circle-3 {
-  width: 150px;
-  height: 150px;
-  background-color: var(--skaia-green-primary);
-  top: 50%;
-  left: 10%;
 }
 
 .auth-card {
@@ -169,7 +161,11 @@
 
 .auth-button {
   padding: 12px 24px;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--skaia-green-primary) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--skaia-green-primary) 100%
+  );
   color: white;
   border: none;
   border-radius: 8px;
@@ -185,7 +181,8 @@
 
 .auth-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--primary-color) 30%, transparent);
+  box-shadow: 0 8px 20px
+    color-mix(in srgb, var(--primary-color) 30%, transparent);
 }
 
 .auth-button:disabled {
@@ -288,7 +285,8 @@
   justify-content: space-between;
   margin-top: 12px;
   padding: 10px 12px;
-  border: 1px solid color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
+  border: 1px solid
+    color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
   border-radius: 8px;
   background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary));
   color: var(--text-primary);
@@ -334,12 +332,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--border-color) 70%, var(--text-secondary));
+  border: 1px solid
+    color-mix(in srgb, var(--border-color) 70%, var(--text-secondary));
   border-radius: 8px;
   background: var(--bg-secondary);
   color: var(--text-primary);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .recovery-action-btn:hover:not(:disabled) {
@@ -361,7 +363,11 @@
 
 .recovery-action-btn--accept {
   color: var(--success-color);
-  border-color: color-mix(in srgb, var(--success-color) 38%, var(--border-color));
+  border-color: color-mix(
+    in srgb,
+    var(--success-color) 38%,
+    var(--border-color)
+  );
   background: color-mix(in srgb, var(--success-color) 14%, var(--bg-secondary));
 }
 
