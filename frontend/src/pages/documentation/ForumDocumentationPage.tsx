@@ -128,7 +128,7 @@ export default function ForumDocumentationPage() {
       headerActions={
         <>
           <button className="action-btn" type="button" title="Copy link" onClick={() => void navigator.clipboard.writeText(window.location.href).then(() => toast.success("Link copied"))}><Copy size={15} /></button>
-          {thread?.can_edit && <Link className="action-btn" title="Edit forum guide" to={`/edit-thread/${thread.id}`}><Edit3 size={15} /></Link>}
+          {thread?.can_edit && <Link className="action-btn" title="Edit forum guide" to={`/form/forum/thread/${thread.id}/edit`}><Edit3 size={15} /></Link>}
           {thread && <Link className="action-btn" title="Open full discussion" to={`/view-thread/${thread.id}`}><MessageSquare size={15} /></Link>}
         </>
       }

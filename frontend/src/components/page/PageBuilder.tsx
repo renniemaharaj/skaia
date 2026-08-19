@@ -17,7 +17,6 @@ import { confirmDestructiveAction, customConfirm } from "../ui/Prompt";
 import { BlockRenderer } from "./BlockRenderer";
 import { PageBuilderContext, type SaveStatus } from "./PageBuilderContext";
 import PageComments from "./PageComments";
-import PageManagePanel from "./PageManagePanel";
 import { PageSkeleton } from "./PageSkeleton";
 import { SaveStatusBar } from "./SaveStatusBar";
 import type { PageDocumentID, PageItem, PageSection, SectionEditor } from "./types";
@@ -97,7 +96,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
     isAdmin,
     isOwner,
     updatePage,
-    updatePageSEO,
     createPage,
     deletePage,
     pendingIncoming,
@@ -118,7 +116,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const [guestSandboxEnabled, setGuestSandboxEnabled] = useGuestSandboxMode();
   const [sections, setSections] = useState<PageSection[]>([]);
   const [sectionsSourced, setSectionsSourced] = useState(false);
-  const [showManage, setShowManage] = useState(false);
   const guestSandboxMode = isEditable || guestSandboxEnabled;
   const canEdit = guestSandboxMode;
   const canDelete = !!page?.can_delete || (page?.id != null && (isAdmin || isOwner));
@@ -727,7 +724,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   return (
     <PageBuilderContext.Provider value={contextValue}>
       <div className="pb-container">
-        {showToolbar && !showManage && (
+        {showToolbar && (
           <div className="page-admin-bar page-admin-bar--menu">
             <div className="page-admin-more-wrap" ref={moreRef}>
               <Button
@@ -834,8 +831,8 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                       type="button"
                       className="page-admin-more-item"
                       onClick={() => {
-                        setShowManage(v => !v);
                         setMoreOpen(false);
+                        if (page?.slug) navigate(`/form/page/${page.slug}/manage`);
                       }}
                     >
                       Manage page
@@ -857,7 +854,7 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
                   {isAdmin && !slug && (
                     <>
                       <Link
-                        to="/admin/meta"
+                        to="/form/site/seo"
                         className="page-admin-more-item"
                         onClick={() => setMoreOpen(false)}
                       >
@@ -917,23 +914,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
           </div>
         )}
 
-        {showManage && showManageBtn && page && (
-          <div className="page-admin-bar page-admin-bar--panel page-admin-bar--manage">
-            <PageManagePanel
-              page={page}
-              owner={page.owner ?? null}
-              editors={page.editors ?? []}
-              onSaveSEO={async seo => {
-                const current = pageRef.current;
-                if (!current) return;
-                const saved = await updatePageSEO(current.id, seo);
-                pageRef.current = saved;
-              }}
-              onOwnershipUpdate={() => refresh(slug)}
-              onClose={() => setShowManage(false)}
-            />
-          </div>
-        )}
         {/* Engagement stats bar */}
         {page?.id && (
           <div className="page-engagement-bar">

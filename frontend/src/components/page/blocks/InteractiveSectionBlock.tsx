@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { currentUserAtom, isAuthenticatedAtom } from "../../../atoms/auth";
 import { apiRequest } from "../../../utils/api";
-import FormikSelect from "../../formik/FormikSelect";
+import { FormSelect } from "../../form";
 import Button from "../../input/Button";
 import { customConfirm } from "../../ui/Prompt";
 import StarRating from "../../ui/StarRating";
@@ -105,7 +105,7 @@ function FieldControl({
     return (
       <div className="interactive-field interactive-field--compact">
         <span>{label}</span>
-        <FormikSelect
+        <FormSelect
           name={field.key}
           size="sm"
           disabled={disabled}
@@ -208,7 +208,7 @@ function QAAnswerForm({
       {({ isSubmitting }) => (
         <Form className="interactive-moderation-form">
           <Field as="textarea" name="answer" rows={2} placeholder="Write an answer" />
-          <FormikSelect
+          <FormSelect
             name="status"
             size="sm"
             options={[
@@ -324,7 +324,7 @@ function DesignView({
       {({ values }) => (
         <Form className="interactive-designer">
           <div className="interactive-designer-settings">
-            <FormikSelect
+            <FormSelect
               name="status"
               size="sm"
               options={[
@@ -332,7 +332,7 @@ function DesignView({
                 { value: "closed", label: "Closed" },
               ]}
             />
-            <FormikSelect
+            <FormSelect
               name="result_visibility"
               size="sm"
               options={[
@@ -368,7 +368,7 @@ function DesignView({
                       <span>Placeholder</span>
                       <Field name={`fields.${index}.placeholder`} placeholder="Optional" />
                     </label>
-                    <FormikSelect
+                    <FormSelect
                       name={`fields.${index}.type`}
                       size="sm"
                       options={INTERACTIVE_FIELD_TYPES}

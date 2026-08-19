@@ -111,7 +111,7 @@ export function CategoryThreadsPreview({
                     className="action-btn edit-btn"
                     onClick={e => {
                       e.stopPropagation();
-                      navigate(`/edit-thread/${thread.id}`);
+                      navigate(`/form/forum/thread/${thread.id}/edit`);
                     }}
                     title="Edit"
                   >

@@ -1,15 +1,15 @@
+import type { FormikHelpers } from "formik";
 import { useAtom } from "jotai";
 import { Suspense, lazy, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 const Editor = lazy(() => import("./Editor"));
 import ForumCategory from "./ForumCategory";
 import "./IconButton.css";
-import "./NewThread.css";
 
 import { currentThreadAtom, draftEditThreadAtom } from "../../atoms/forum";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
-import FormHeaderActions from "../ui/FormHeaderActions";
+import { FormField, ManagedForm } from "../form";
 
 interface ThreadData {
   id: string;
@@ -26,6 +26,12 @@ interface ThreadData {
   is_shared: boolean;
   original_thread_id?: string;
   user_name?: string;
+}
+
+interface ThreadValues {
+  title: string;
+  content: string;
+  categoryId: string;
 }
 
 const EditThread = () => {
@@ -65,7 +71,6 @@ const EditThread = () => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -113,21 +118,8 @@ const EditThread = () => {
     }
   }, [currentThread]);
 
-  const handleUpdateThread = async () => {
-    setError(null);
-
-    if (!editTitle.trim()) {
-      setError("Thread title is required");
-      return;
-    }
-
-    if (!editContent.trim()) {
-      setError("Thread content is required");
-      return;
-    }
-
-    setSubmitting(true);
-
+  const handleUpdateThread = async (values: ThreadValues, helpers: FormikHelpers<ThreadValues>) => {
+    helpers.setStatus(undefined);
     try {
       const response = await apiRequest<ThreadData>(`/forum/threads/${threadId}`, {
         method: "PUT",
@@ -135,9 +127,9 @@ const EditThread = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title: editTitle,
-          content: editContent,
-          category_id: String(selectedCategory),
+          title: values.title.trim(),
+          content: values.content,
+          category_id: values.categoryId,
         }),
       });
 
@@ -152,15 +144,13 @@ const EditThread = () => {
       // Navigate back to the thread view
       navigate(`/view-thread/${threadId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update thread");
-    } finally {
-      setSubmitting(false);
+      helpers.setStatus(err instanceof Error ? err.message : "Failed to update thread");
     }
   };
 
   if (loading) {
     return (
-      <div className="modal">
+      <div className="managed-form modal">
         <div className="modal-header">
           <h2>Loading...</h2>
         </div>
@@ -169,65 +159,74 @@ const EditThread = () => {
   }
 
   return (
-    <div className="modal" onClick={e => e.stopPropagation()}>
-      <div className="modal-header">
-        <div className="modal-title-wrapper">
-          <h2>Edit Thread</h2>
-          <p style={{ color: "var(--text-secondary)", marginBottom: 0 }}>Update your discussion</p>
-        </div>
-        <FormHeaderActions
-          onCancel={() => navigate(`/view-thread/${threadId}`)}
-          onConfirm={handleUpdateThread}
-          saving={submitting}
-          cancelLabel="Close"
-          confirmLabel="Submit"
-        />
-      </div>
-
-      <div className="modal-form compact-form-card">
-        {error && (
-          <div
-            style={{
-              color: "#ef4444",
-              padding: "12px",
-              backgroundColor: "rgba(239, 68, 68, 0.1)",
-              borderRadius: "4px",
-              fontSize: "14px",
-              marginBottom: "16px",
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        <div className="form-group">
-          <label htmlFor="edit-title">Thread Title *</label>
-          <input
-            id="edit-title"
-            type="text"
+    <ManagedForm<ThreadValues>
+      id="edit-thread-form"
+      title="Edit Thread"
+      eyebrow="Forum"
+      description="Update your discussion"
+      initialValues={{ title: editTitle, content: editContent, categoryId: selectedCategory }}
+      enableReinitialize
+      cancelTo={`/view-thread/${threadId}`}
+      submitLabel="Save thread"
+      submitDisabled={formik => !formik.values.title.trim() || !formik.values.content.trim()}
+      validate={values => ({
+        ...(!values.title.trim() ? { title: "Thread title is required" } : {}),
+        ...(!values.content.trim() ? { content: "Thread content is required" } : {}),
+      })}
+      onSubmit={handleUpdateThread}
+    >
+      {formik => (
+        <>
+          {error && (
+            <div className="managed-form__error" role="alert">
+              {error}
+            </div>
+          )}
+          <FormField
+            name="title"
+            label="Thread title"
+            help="Use a clear title that summarizes the discussion."
             placeholder="Update title..."
-            value={editTitle}
-            onChange={e => setEditTitle(e.target.value)}
-            disabled={submitting}
+            maxLength={255}
+            onChange={event => {
+              void formik.setFieldValue("title", event.target.value);
+              setEditTitle(event.target.value);
+            }}
           />
-        </div>
-
-        <div className="form-group">
-          <ForumCategory value={selectedCategory} onChange={setSelectedCategory} />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="content">Message *</label>
-          <Suspense
-            fallback={
-              <div className="skeleton skeleton-text" style={{ width: "100%", height: 200 }} />
-            }
-          >
-            <Editor value={editContent} onChange={setEditContent} />
-          </Suspense>
-        </div>
-      </div>
-    </div>
+          <div className="form-group">
+            <ForumCategory
+              value={formik.values.categoryId}
+              onChange={categoryId => {
+                void formik.setFieldValue("categoryId", categoryId);
+                setSelectedCategory(categoryId);
+              }}
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="edit-thread-content">Message</label>
+            <p className="form-help">Update the context shown to other members.</p>
+            <Suspense
+              fallback={
+                <div className="skeleton skeleton-text" style={{ width: "100%", height: 200 }} />
+              }
+            >
+              <div id="edit-thread-content">
+                <Editor
+                  value={formik.values.content}
+                  onChange={content => {
+                    void formik.setFieldValue("content", content);
+                    setEditContent(content);
+                  }}
+                />
+              </div>
+            </Suspense>
+            {formik.touched.content && formik.errors.content && (
+              <p className="managed-field__error">{formik.errors.content}</p>
+            )}
+          </div>
+        </>
+      )}
+    </ManagedForm>
   );
 };
 

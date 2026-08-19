@@ -1,0 +1,32 @@
+# Unified Form System Migration
+
+## Context
+Non-authentication editors historically mixed raw forms, pseudo-forms, local submit buttons,
+and duplicate Formik bindings.
+
+## Goal
+- Use `ManagedForm` for non-authentication editor workflows.
+- Use header X/check actions instead of footer primary submit buttons.
+- Keep multi-section settings inside the same form with shared internal tabs.
+- Route editor pages under `/form/{module}/{resource}/{action}`.
+- Keep embedded command and confirmation microforms explicitly classified.
+
+## Non-Goals
+- Authentication, registration, recovery, MFA, and access-challenge forms.
+
+## Steps
+1. Maintain the shared Formik shell and normalized field bindings in `frontend/src/components/form`.
+2. Migrate routed content, store, documentation, page, user, wallet, and order editors.
+3. Remove legacy side-route shells and nested form cards from settings editors.
+4. Remove each migrated raw-form entry from the managed-form audit allowlist.
+5. Run the frontend build, complete test suite, and managed-form audit.
+
+## Verification
+- `npm run check:managed-forms`
+- `npm run build`
+- `npm test -- --run`
+
+## References
+- `frontend/src/components/form/ManagedForm.tsx`
+- `frontend/scripts/check-managed-forms.mjs`
+- `frontend/src/pages/routes.tsx`

@@ -1,5 +1,5 @@
 import { Trash2 } from "lucide-react";
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import type {
@@ -7,13 +7,12 @@ import type {
   DocumentationArticleView,
   DocumentationManifest,
 } from "../../atoms/documentation";
-import FormHeaderActions from "../../components/ui/FormHeaderActions";
+import { FormField, FormSelect, ManagedForm } from "../../components/form";
 import { confirmDestructiveAction } from "../../components/ui/Prompt";
 import RichTextEditor from "../../components/ui/RichTextEditor";
 import { useDirtyNavigationGuard } from "../../hooks/useDirtyNavigationGuard";
 import { apiRequest } from "../../utils/api";
 import "../../components/documentation/DocumentationShell.css";
-import "../../components/forum/NewThread.css";
 import "../../components/forum/IconButton.css";
 
 interface GuideDraft {
@@ -21,7 +20,7 @@ interface GuideDraft {
   slug: string;
   summary: string;
   content: string;
-  sectionId: number | null;
+  sectionId: string;
 }
 
 export default function DocumentationGuideEditorPage() {
@@ -34,15 +33,13 @@ export default function DocumentationGuideEditorPage() {
   const [manifest, setManifest] = useState<DocumentationManifest | null>(null);
   const [article, setArticle] = useState<DocumentationArticle | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [draft, setDraft] = useState<GuideDraft>({
     title: "",
     slug: "",
     summary: "",
     content: "<p>Start writing this guide.</p>",
-    sectionId: null,
+    sectionId: "",
   });
   useDirtyNavigationGuard(dirty, {
     title: "Discard unsaved guide changes?",
@@ -70,7 +67,7 @@ export default function DocumentationGuideEditorPage() {
           slug: response.article.slug,
           summary: response.article.summary,
           content: response.article.content ?? "",
-          sectionId: response.article.section_id ?? null,
+          sectionId: response.article.section_id ? String(response.article.section_id) : "",
         });
       }
       setDirty(false);
@@ -85,16 +82,9 @@ export default function DocumentationGuideEditorPage() {
     void load();
   }, [load]);
 
-  const updateDraft = (next: Partial<GuideDraft>) => {
-    setDraft(value => ({ ...value, ...next }));
-    setDirty(true);
-  };
-
-  const save = async (event: FormEvent) => {
-    event.preventDefault();
+  const save = async (values: GuideDraft, helpers: { setStatus: (status?: string) => void }) => {
     if (!manifest) return;
-    setError(null);
-    setSaving(true);
+    helpers.setStatus(undefined);
     try {
       const endpoint =
         editing && article
@@ -103,11 +93,11 @@ export default function DocumentationGuideEditorPage() {
       const updated = await apiRequest<DocumentationArticle>(endpoint, {
         method: editing ? "PUT" : "POST",
         body: JSON.stringify({
-          section_id: draft.sectionId,
-          slug: draft.slug,
-          title: draft.title,
-          summary: draft.summary,
-          content: draft.content,
+          section_id: values.sectionId ? Number(values.sectionId) : null,
+          slug: values.slug,
+          title: values.title,
+          summary: values.summary,
+          content: values.content,
           ...(editing && article ? { revision: article.revision } : {}),
         }),
       });
@@ -117,10 +107,8 @@ export default function DocumentationGuideEditorPage() {
     } catch (cause) {
       const message =
         cause instanceof Error ? cause.message : `Unable to ${editing ? "update" : "create"} guide`;
-      setError(message);
+      helpers.setStatus(message);
       toast.error(message);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -156,125 +144,111 @@ export default function DocumentationGuideEditorPage() {
     : `/doc/${manifest.documentation.slug}`;
 
   return (
-    <main className="modal documentation-guide-modal">
-      <header className="modal-header">
-        <div className="modal-title-wrapper">
-          <h2>{editing ? "Edit Guide" : "Create New Guide"}</h2>
-          <p className="documentation-guide-modal__subtitle">
-            {editing
-              ? `Update this guide in ${manifest.documentation.title}`
-              : `Add a guide to ${manifest.documentation.title}`}
-          </p>
-        </div>
-        <FormHeaderActions
-          formId="documentation-guide-form"
-          cancelTo={returnTo}
-          confirmDisabled={!draft.title.trim() || !draft.slug.trim()}
-          saving={saving}
-          confirmLabel={editing ? "Save guide" : "Create guide"}
-        />
-      </header>
-      <form
-        id="documentation-guide-form"
-        className="modal-form compact-form-card documentation-guide-editor"
-        onSubmit={save}
-      >
-        {error && (
-          <div className="documentation-form-error" role="alert">
-            {error}
-          </div>
-        )}
-        <div className="form-group">
-          <label htmlFor="documentation-guide-title">Guide display name</label>
-          <p className="form-help">Use a clear title that tells readers what this guide covers.</p>
-          <input
-            id="documentation-guide-title"
+    <ManagedForm<GuideDraft>
+      id="documentation-guide-form"
+      title={editing ? "Edit Guide" : "Create New Guide"}
+      eyebrow="Documentation"
+      description={
+        editing
+          ? `Update this guide in ${manifest.documentation.title}`
+          : `Add a guide to ${manifest.documentation.title}`
+      }
+      initialValues={draft}
+      enableReinitialize
+      cancelTo={returnTo}
+      submitLabel={editing ? "Save guide" : "Create guide"}
+      submitDisabled={formik => !formik.values.title.trim() || !formik.values.slug.trim()}
+      formClassName="documentation-guide-editor"
+      className="documentation-guide-modal"
+      validate={values => ({
+        ...(!values.title.trim() ? { title: "Guide display name is required" } : {}),
+        ...(!values.slug.trim() ? { slug: "Guide URL slug is required" } : {}),
+      })}
+      onSubmit={save}
+    >
+      {formik => (
+        <>
+          <FormField
+            name="title"
+            label="Guide display name"
+            help="Use a clear title that tells readers what this guide covers."
+            placeholder="Install the platform"
+            maxLength={255}
             autoFocus
             required
-            maxLength={255}
-            placeholder="Install the platform"
-            value={draft.title}
-            onChange={event => updateDraft({ title: event.target.value })}
-            disabled={saving}
+            onChange={event => {
+              setDirty(true);
+              void formik.setFieldValue("title", event.target.value);
+            }}
           />
-        </div>
-        <div className="form-group">
-          <label htmlFor="documentation-guide-slug">Guide URL slug</label>
-          <p className="form-help">
-            Published at /doc/{manifest.documentation.slug}/{draft.slug || "guide"}
-          </p>
-          <input
-            id="documentation-guide-slug"
-            required
-            maxLength={120}
+          <FormField
+            name="slug"
+            label="Guide URL slug"
+            help={`Published at /doc/${manifest.documentation.slug}/${formik.values.slug || "guide"}`}
             placeholder="install-platform"
-            value={draft.slug}
-            onChange={event => updateDraft({ slug: event.target.value })}
-            disabled={saving}
+            maxLength={120}
+            required
+            onChange={event => {
+              setDirty(true);
+              void formik.setFieldValue("slug", event.target.value);
+            }}
           />
-        </div>
-        <div className="form-group">
-          <label htmlFor="documentation-guide-summary">Guide summary</label>
-          <p className="form-help">Optional introduction displayed below the guide title.</p>
-          <textarea
-            id="documentation-guide-summary"
-            maxLength={2000}
+          <FormField
+            as="textarea"
+            name="summary"
+            label="Guide summary"
+            help="Optional introduction displayed below the guide title."
             placeholder="Help readers understand what they will learn."
-            value={draft.summary}
-            onChange={event => updateDraft({ summary: event.target.value })}
-            disabled={saving}
+            maxLength={2000}
+            onChange={event => {
+              setDirty(true);
+              void formik.setFieldValue("summary", event.target.value);
+            }}
           />
-        </div>
-        <div className="form-group">
-          <label htmlFor="documentation-guide-section">Sidebar section</label>
-          <p className="form-help">
-            Choose where this guide appears in the documentation navigation.
-          </p>
-          <select
-            id="documentation-guide-section"
-            value={draft.sectionId ?? ""}
-            onChange={event =>
-              updateDraft({
-                sectionId: event.target.value ? Number(event.target.value) : null,
-              })
-            }
-            disabled={saving}
-          >
-            <option value="">Overview</option>
-            {manifest.sections.map(section => (
-              <option key={section.id} value={section.id}>
-                {section.title}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="form-group documentation-guide-editor__content">
-          <label>Guide content</label>
-          <p className="form-help">Write and format the complete guide for readers.</p>
-          <RichTextEditor
-            value={draft.content}
-            onChange={content => updateDraft({ content })}
-            minHeight="420px"
+          <FormSelect
+            name="sectionId"
+            label="Sidebar section"
+            block
+            options={[
+              { value: "", label: "Overview" },
+              ...manifest.sections.map(section => ({
+                value: String(section.id),
+                label: section.title,
+              })),
+            ]}
+            onValueChange={() => setDirty(true)}
           />
-        </div>
-        {editing && (
-          <div className="documentation-guide-editor__danger">
-            <div>
-              <strong>Delete guide</strong>
-              <p>Move this guide to Trash.</p>
-            </div>
-            <button
-              className="btn btn-danger"
-              type="button"
-              disabled={saving}
-              onClick={() => void remove()}
-            >
-              <Trash2 size={15} />
-              Delete guide
-            </button>
+          <div className="form-group documentation-guide-editor__content">
+            <label>Guide content</label>
+            <p className="form-help">Write and format the complete guide for readers.</p>
+            <RichTextEditor
+              value={formik.values.content}
+              onChange={content => {
+                setDirty(true);
+                void formik.setFieldValue("content", content);
+              }}
+              minHeight="420px"
+            />
           </div>
-        )}
-      </form>
-    </main>
+          {editing && (
+            <div className="documentation-guide-editor__danger">
+              <div>
+                <strong>Delete guide</strong>
+                <p>Move this guide to Trash.</p>
+              </div>
+              <button
+                className="btn btn-danger"
+                type="button"
+                disabled={formik.isSubmitting}
+                onClick={() => void remove()}
+              >
+                <Trash2 size={15} />
+                Delete guide
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </ManagedForm>
   );
 }

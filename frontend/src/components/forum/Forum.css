@@ -372,17 +372,4 @@
   .thread-actions {
     opacity: 1;
   }
-
-  .modal {
-    padding: 24px;
-    width: 95%;
-  }
-
-  .modal-header {
-    flex-direction: column;
-  }
-
-  .modal-close {
-    align-self: flex-end;
-  }
 }

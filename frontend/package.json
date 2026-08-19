@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "check:native-dialogs": "node scripts/check-native-dialogs.mjs",
     "check:media-placeholders": "node scripts/check-media-placeholders.mjs",
+    "check:managed-forms": "node scripts/check-managed-forms.mjs",
     "lint": "biome lint .",
     "format": "biome format --write .",
     "preview": "vite preview",

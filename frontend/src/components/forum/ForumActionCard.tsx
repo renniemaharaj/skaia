@@ -17,7 +17,7 @@ export function ForumActionCard({ canCreateCategory, navigate }: ForumActionCard
         <div style={{ display: "flex", gap: "12px", width: "100%" }}>
           <button
             type="button"
-            onClick={() => navigate("/new-thread")}
+            onClick={() => navigate("/form/forum/thread/new")}
             onMouseEnter={() => setHoveredSection("discussion")}
             onMouseLeave={() => setHoveredSection(null)}
             style={{
@@ -47,7 +47,7 @@ export function ForumActionCard({ canCreateCategory, navigate }: ForumActionCard
               type="button"
               onClick={e => {
                 e.stopPropagation();
-                navigate("/forum/new-category");
+                navigate("/form/forum/category/new");
               }}
               onMouseEnter={() => setHoveredSection("category")}
               onMouseLeave={() => setHoveredSection(null)}

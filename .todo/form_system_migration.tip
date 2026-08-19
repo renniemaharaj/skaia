@@ -1,0 +1,24 @@
+<--/------->
+
+## form_system_migration
+
+### Current Progress
+- **Shared Formik foundation** - ✅ Complete
+- **Primary content editor migration** - ✅ Complete
+- **Settings and commerce editor migration** - ✅ Complete
+- **Shared tabbed settings surfaces** - ✅ Complete
+- **Compact eyebrow headers and icon subheaders** - ✅ Complete
+- **Shared local/upload-library media picker** - ✅ Complete
+- **Canonical page, user, and site form routes** - ✅ Complete
+- **Full verification** - ✅ Complete
+
+### Next Steps
+- [x] Migrate product edit, documentation settings, site settings, user security, wallet cards, and order editing.
+- [x] Remove completed migration allowlist entries.
+- [x] Replace Site Configuration and User Settings sidebars/nested cards with shared form tabs.
+- [x] Remove legacy `NewThread.css` form primitives and page-specific tab/form duplication.
+- [x] Route page management through `/form/page/:slug/manage` and expose canonical user/site form routes.
+- [x] Replace native file controls in managed forms with one upload and upload-library picker.
+- [x] Run managed-form audit, build, and full tests (2026-08-18: 50 files, 178 tests).
+
+<--/------->

@@ -10,7 +10,6 @@ import { confirmDestructiveAction } from "../ui/Prompt";
 
 import "./Forum.css";
 import "../ui/FeatureCard.css";
-import "./NewThread.css";
 import "../ui/FormGroup.css";
 
 import { BookOpen, LayoutGrid, List, Newspaper } from "lucide-react";

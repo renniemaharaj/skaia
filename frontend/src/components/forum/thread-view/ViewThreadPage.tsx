@@ -129,7 +129,7 @@ const ViewThreadPage = () => {
   }, [currentThread?.user_id, currentThread?.user_roles]);
 
   const handleEdit = () => {
-    navigate(`/edit-thread/${threadId}`);
+    navigate(`/form/forum/thread/${threadId}/edit`);
   };
 
   const handleDelete = async () => {

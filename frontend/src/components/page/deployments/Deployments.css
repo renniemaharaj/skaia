@@ -171,7 +171,7 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
-.modal-header {
+.deployments-modal .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -179,13 +179,13 @@
   border-bottom: 1px solid var(--border-color);
 }
 
-.modal-header h3 {
+.deployments-modal .modal-header h3 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
 }
 
-.modal-close {
+.deployments-modal .modal-close {
   background: none;
   border: none;
   color: var(--text-secondary);
@@ -195,16 +195,16 @@
   padding: 0 0.5rem;
 }
 
-.modal-close:hover {
+.deployments-modal .modal-close:hover {
   color: var(--text-primary);
 }
 
-.modal-body {
+.deployments-modal .modal-body {
   padding: 1.25rem;
   overflow-y: auto;
 }
 
-.modal-subtitle {
+.deployments-modal .modal-subtitle {
   margin: 0 0 1.25rem;
   color: var(--text-secondary);
 }

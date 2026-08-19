@@ -1,7 +1,8 @@
-import { Check, Copy, Film, ImageIcon, Plus, Trash2, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { Check, Copy, Film, ImageIcon, Trash2 } from "lucide-react";
+import { useState } from "react";
 import type { ProductMedia } from "../../atoms/store";
 import { uploader } from "../../atoms/uploadAtom";
+import { FormFileInput } from "../form";
 import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 import { TableView } from "../ui/TableView/TableView";
@@ -54,32 +55,23 @@ const mediaFromUploadResponse = (res: UploadMediaResponse, file: File): ProductM
 };
 
 export function ProductMediaTable({ media, onChange, editable = false }: ProductMediaTableProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
-  const handleFiles = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  const handleFiles = async (files: File[]) => {
     if (!files.length || !onChange) return;
 
-    setUploading(true);
-    try {
-      const uploaded: ProductMedia[] = [];
-      for (const file of files) {
-        const type = file.type.startsWith("video/") ? "video" : "image";
-        const res = await uploader.upload(file, { uploadType: type });
-        const item = mediaFromUploadResponse(res, file);
-        if (!item.url) {
-          throw new Error("Upload completed without a media URL");
-        }
-        uploaded.push(item);
+    const uploaded: ProductMedia[] = [];
+    for (const file of files) {
+      const type = file.type.startsWith("video/") ? "video" : "image";
+      const res = await uploader.upload(file, { uploadType: type });
+      const item = mediaFromUploadResponse(res, file);
+      if (!item.url) {
+        throw new Error("Upload completed without a media URL");
       }
-      onChange([...media, ...uploaded]);
-    } finally {
-      setUploading(false);
+      uploaded.push(item);
     }
+    onChange([...media, ...uploaded]);
   };
 
   const removeItem = (url: string) => {
@@ -99,25 +91,26 @@ export function ProductMediaTable({ media, onChange, editable = false }: Product
           {media.length} media item{media.length === 1 ? "" : "s"}
         </span>
         {editable && (
-          <>
-            <button
-              type="button"
-              className="action-btn"
-              title="Add media"
-              disabled={uploading}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {uploading ? <Upload size={14} className="spin" /> : <Plus size={14} />}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              style={{ display: "none" }}
-              onChange={handleFiles}
-            />
-          </>
+          <FormFileInput
+            label="Add product media"
+            accept="image/*,video/*"
+            multiple
+            mediaType="any"
+            onFilesChange={files => void handleFiles(files)}
+            onSelectUpload={upload =>
+              onChange?.([
+                ...media,
+                {
+                  url: upload.url,
+                  filename: upload.filename,
+                  mime_type: upload.mime_type,
+                  type: upload.mime_type?.startsWith("video/") ? "video" : "image",
+                  size: upload.size,
+                  created_at: upload.created_at,
+                },
+              ])
+            }
+          />
         )}
       </div>
 

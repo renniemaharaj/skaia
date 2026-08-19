@@ -17,7 +17,6 @@ import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { EditProductDialog } from "./EditProductDialog";
 import "./Store.css";
 import { useLayoutPosition } from "../../atoms/viewModes";
 import { MediaPreviewLightbox, type PreviewMediaItem } from "../ui/MediaPreviewLightbox";
@@ -79,7 +78,6 @@ export const Store: React.FC = () => {
   const [isCategoryBarDocked, setIsCategoryBarDocked] = useState(
     () => localStorage.getItem("store-category-bar-docked") === "true"
   );
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedMedia, setSelectedMedia] = useState<{
     items: PreviewMediaItem[];
     index: number;
@@ -478,7 +476,7 @@ export const Store: React.FC = () => {
           canEditProduct={canEditProduct}
           canDeleteProduct={canDeleteProduct}
           viewMode={viewMode}
-          onEditProduct={setEditingProduct}
+          onEditProduct={product => navigate(`/form/store/product/${product.id}/edit`)}
           onDeleteProduct={handleDeleteProduct}
           onAddToCart={handleAddToCart}
           onImagePreview={handlePreviewProductMedia}
@@ -491,16 +489,6 @@ export const Store: React.FC = () => {
           index={selectedMedia.index}
           onIndexChange={index => setSelectedMedia(prev => (prev ? { ...prev, index } : prev))}
           onClose={() => setSelectedMedia(null)}
-        />
-      )}
-
-      {editingProduct && (
-        <EditProductDialog
-          isOpen={!!editingProduct}
-          product={editingProduct}
-          categories={categories}
-          onClose={() => setEditingProduct(null)}
-          onSuccess={loadCatalog}
         />
       )}
     </div>

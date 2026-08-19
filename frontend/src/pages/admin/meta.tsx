@@ -1,10 +1,8 @@
 import { useSetAtom } from "jotai";
-import { FileText, Paintbrush } from "lucide-react";
 import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { layoutModeAtom } from "../../atoms/layoutMode";
 import MetaControlPanel from "../../components/admin/MetaControlPanel";
-import { SideRouteShell } from "../../components/layout/SideRouteShell";
 import { useSiteConfig } from "../../hooks/useSiteConfig";
 
 export function AdminMetaSettings() {
@@ -17,11 +15,7 @@ export function AdminMetaSettings() {
   }, [setLayoutMode]);
 
   if (!branding || !seo) {
-    return (
-      <SideRouteShell title="Site Configuration" backTo="/" backLabel="Exit">
-        <div style={{ textAlign: "center" }}>Loading settings...</div>
-      </SideRouteShell>
-    );
+    return <div className="managed-form modal">Loading settings...</div>;
   }
 
   const initialConfig = {
@@ -33,26 +27,7 @@ export function AdminMetaSettings() {
   };
 
   return (
-    <SideRouteShell
-      title="Site Configuration"
-      subtitle="Manage SEO, visuals, and site-wide metadata."
-      backTo="/"
-      backLabel="Exit"
-      tabs={[
-        {
-          to: "/admin/meta/seo",
-          match: "/admin/meta/seo",
-          label: "SEO",
-          icon: <FileText size={15} />,
-        },
-        {
-          to: "/admin/meta/visuals",
-          match: "/admin/meta/visuals",
-          label: "Visuals",
-          icon: <Paintbrush size={15} />,
-        },
-      ]}
-    >
+    <>
       <Routes>
         <Route
           path="seo"
@@ -76,6 +51,6 @@ export function AdminMetaSettings() {
         />
         <Route path="*" element={<Navigate to="seo" replace />} />
       </Routes>
-    </SideRouteShell>
+    </>
   );
 }

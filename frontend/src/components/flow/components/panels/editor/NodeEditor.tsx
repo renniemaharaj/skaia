@@ -2,8 +2,7 @@ import type { Node } from "@xyflow/react";
 import { Form, Formik } from "formik";
 import { useSetAtom } from "jotai";
 import { flowStateAtom } from "../../../../../atoms/flow";
-import FormikInput from "../../../../formik/FormikInput";
-import FormikSelect from "../../../../formik/FormikSelect";
+import { FormField, FormSelect } from "../../../../form";
 import { nodeGroups } from "../../../config";
 import PromptDialog from "./PromptDialog";
 
@@ -99,18 +98,17 @@ export default function NodeEditor({
           >
             {({ handleChange }: any) => (
               <Form style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <FormikSelect
+                <FormSelect
                   name="type"
                   label="Node Type"
                   options={typeOptions}
-                  // @ts-expect-error FormikSelect does not have onChange in props
-                  onChange={(e: any) => {
-                    handleChange(e);
-                    updateNode(selectedNode.id, "type", e.target.value);
+                  onValueChange={value => {
+                    handleChange({ target: { name: "type", value } });
+                    updateNode(selectedNode.id, "type", value);
                   }}
                 />
 
-                <FormikInput
+                <FormField
                   name="label"
                   label="Label"
                   type="text"
@@ -121,9 +119,9 @@ export default function NodeEditor({
                   }}
                 />
 
-                <FormikInput name="width" label="Width (readonly)" type="number" disabled />
+                <FormField name="width" label="Width (readonly)" type="number" disabled />
 
-                <FormikInput name="height" label="Height (readonly)" type="number" disabled />
+                <FormField name="height" label="Height (readonly)" type="number" disabled />
               </Form>
             )}
           </Formik>

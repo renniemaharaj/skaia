@@ -12,8 +12,7 @@ import { BalanceSheetCard } from "../cards/BalanceSheetCard";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import { TransactionHistoryCard } from "../cards/TransactionHistoryCard";
-import Button from "../input/Button";
-import Select from "../input/Select";
+import { FormField, FormSelect, ManagedForm } from "../form";
 import { confirmDestructiveAction } from "../ui/Prompt";
 import { useUserData } from "../user/useUserData";
 import { StorePageShell } from "./StorePageShell";
@@ -135,21 +134,23 @@ export const WalletPage = () => {
     fetchData();
   }, [fetchData]);
 
-  const handleSaveCard = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveCard = async (
+    values: typeof cardForm,
+    helpers: { setStatus: (status?: string) => void }
+  ) => {
     if (!canViewTargetWallet) return;
-    setLoading(true);
+    helpers.setStatus(undefined);
     try {
       if (editingCard) {
         await apiRequest(`/store/wallet/cards/${editingCard.id}${walletQueryString}`, {
           method: "PUT",
-          body: JSON.stringify(cardForm),
+          body: JSON.stringify(values),
         });
         toast.success("Card updated successfully!");
       } else {
         await apiRequest(`/store/wallet/cards${walletQueryString}`, {
           method: "POST",
-          body: JSON.stringify(cardForm),
+          body: JSON.stringify(values),
         });
         toast.success("Card added successfully!");
       }
@@ -157,9 +158,8 @@ export const WalletPage = () => {
       setEditingCard(null);
       fetchData();
     } catch (err) {
+      helpers.setStatus(err instanceof Error ? err.message : "Failed to save card");
       toast.error("Failed to save card");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -360,168 +360,89 @@ export const WalletPage = () => {
             </div>
 
             {showCardForm ? (
-              <form onSubmit={handleSaveCard} className="compact-form-card">
-                <div style={{ display: "grid", gap: "1rem" }}>
-                  <div className="form-group">
-                    <label htmlFor="wallet-card-name">Card name</label>
-                    <p className="form-help">A private label such as Personal Visa.</p>
-                    <input
-                      id="wallet-card-name"
-                      className="input-group input"
-                      type="text"
-                      placeholder="Personal Visa"
-                      value={cardForm.card_name}
-                      onChange={e => setCardForm({ ...cardForm, card_name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="wallet-card-description">Description</label>
-                    <input
-                      id="wallet-card-description"
-                      className="input-group input"
-                      type="text"
-                      placeholder="Optional note"
-                      value={cardForm.card_description}
-                      onChange={e =>
-                        setCardForm({
-                          ...cardForm,
-                          card_description: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div style={{ display: "flex", gap: "1rem" }}>
-                    <Select
-                      label="Card network"
-                      className="input-group input"
-                      style={{ flex: 1 }}
-                      value={cardForm.card_type}
-                      options={[
-                        { value: "visa", label: "Visa" },
-                        { value: "mastercard", label: "Mastercard" },
-                        { value: "amex", label: "Amex" },
-                        { value: "discover", label: "Discover" },
-                      ]}
-                      onChange={e =>
-                        setCardForm({
-                          ...cardForm,
-                          card_type: e.target.value,
-                        })
-                      }
-                    />
-                    <Select
-                      label="Card type"
-                      className="input-group input"
-                      style={{ flex: 1 }}
-                      value={cardForm.is_credit ? "true" : "false"}
-                      options={[
-                        { value: "false", label: "Debit" },
-                        { value: "true", label: "Credit" },
-                      ]}
-                      onChange={e =>
-                        setCardForm({
-                          ...cardForm,
-                          is_credit: e.target.value === "true",
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="wallet-card-number">Card number</label>
-                    {editingCard && (
-                      <p className="form-help">Leave blank to keep the saved number.</p>
-                    )}
-                    <input
-                      id="wallet-card-number"
-                      className="input-group input"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="cc-number"
-                      placeholder={editingCard ? "Optional replacement number" : "Card number"}
-                      value={cardForm.card_number}
-                      onChange={e =>
-                        setCardForm({
-                          ...cardForm,
-                          card_number: e.target.value,
-                        })
-                      }
-                      required={!editingCard}
-                    />
-                  </div>
-                  <div style={{ display: "flex", gap: "1rem" }}>
-                    <div className="form-group" style={{ flex: 1 }}>
-                      <label htmlFor="wallet-expiry-month">Expiry month</label>
-                      <input
-                        id="wallet-expiry-month"
-                        className="input-group input"
-                        type="number"
-                        min="1"
-                        max="12"
-                        placeholder="MM"
-                        value={cardForm.expiry_month}
-                        onChange={e =>
-                          setCardForm({
-                            ...cardForm,
-                            expiry_month: Number.parseInt(e.target.value) || 1,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="form-group" style={{ flex: 1 }}>
-                      <label htmlFor="wallet-expiry-year">Expiry year</label>
-                      <input
-                        id="wallet-expiry-year"
-                        className="input-group input"
-                        type="number"
-                        min="2020"
-                        max="2050"
-                        placeholder="YYYY"
-                        value={cardForm.expiry_year}
-                        onChange={e =>
-                          setCardForm({
-                            ...cardForm,
-                            expiry_year: Number.parseInt(e.target.value) || 2024,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="form-group" style={{ flex: 1 }}>
-                      <label htmlFor="wallet-card-cvv">Security code</label>
-                      <input
-                        id="wallet-card-cvv"
-                        className="input-group input"
-                        type="text"
-                        inputMode="numeric"
-                        autoComplete="cc-csc"
-                        placeholder={editingCard ? "Optional" : "CVV"}
-                        value={cardForm.cvv}
-                        onChange={e => setCardForm({ ...cardForm, cvv: e.target.value })}
-                        required={!editingCard}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="form-actions">
-                    <Button type="submit" variant="primary" style={{ flex: 1 }} loading={loading}>
-                      {editingCard ? "Update" : "Save"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      style={{ flex: 1 }}
-                      onClick={() => setShowCardForm(false)}
-                      disabled={loading}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
+              <ManagedForm
+                id="wallet-card-form"
+                title={editingCard ? "Edit payment card" : "Add payment card"}
+                eyebrow="Wallet"
+                description="Payment details are stored privately for this wallet."
+                initialValues={cardForm}
+                enableReinitialize
+                onCancel={() => setShowCardForm(false)}
+                submitLabel={editingCard ? "Update card" : "Save card"}
+                submitDisabled={formik =>
+                  !formik.values.card_name.trim() ||
+                  (!editingCard && !formik.values.card_number.trim())
+                }
+                onSubmit={handleSaveCard}
+              >
+                <FormField
+                  name="card_name"
+                  label="Card name"
+                  help="A private label such as Personal Visa."
+                  required
+                />
+                <FormField
+                  name="card_description"
+                  label="Description"
+                  placeholder="Optional note"
+                />
+                <div className="managed-form__grid">
+                  <FormSelect
+                    name="card_type"
+                    label="Card network"
+                    block
+                    options={[
+                      { value: "visa", label: "Visa" },
+                      { value: "mastercard", label: "Mastercard" },
+                      { value: "amex", label: "Amex" },
+                      { value: "discover", label: "Discover" },
+                    ]}
+                  />
+                  <FormSelect
+                    name="is_credit"
+                    label="Card type"
+                    block
+                    parseValue={value => value === "true"}
+                    options={[
+                      { value: "false", label: "Debit" },
+                      { value: "true", label: "Credit" },
+                    ]}
+                  />
                 </div>
-              </form>
+                <FormField
+                  name="card_number"
+                  label="Card number"
+                  help={editingCard ? "Leave blank to keep the saved number." : undefined}
+                  inputMode="numeric"
+                  autoComplete="cc-number"
+                  required={!editingCard}
+                />
+                <div className="managed-form__grid">
+                  <FormField
+                    name="expiry_month"
+                    label="Expiry month"
+                    type="number"
+                    min="1"
+                    max="12"
+                    required
+                  />
+                  <FormField
+                    name="expiry_year"
+                    label="Expiry year"
+                    type="number"
+                    min="2020"
+                    max="2050"
+                    required
+                  />
+                  <FormField
+                    name="cvv"
+                    label="Security code"
+                    inputMode="numeric"
+                    autoComplete="cc-csc"
+                    required={!editingCard}
+                  />
+                </div>
+              </ManagedForm>
             ) : (
               <div
                 style={{

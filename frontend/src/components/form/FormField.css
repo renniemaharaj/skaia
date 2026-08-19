@@ -1,0 +1,32 @@
+.managed-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.managed-field > label {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.managed-field .form-help {
+  margin: 0;
+}
+
+.managed-field > input,
+.managed-field > textarea {
+  width: 100%;
+}
+
+.managed-field--error > input,
+.managed-field--error > textarea {
+  border-color: var(--error-color);
+}
+
+.managed-field__error {
+  margin: 0;
+  color: var(--error-color);
+  font-size: 0.8rem;
+}

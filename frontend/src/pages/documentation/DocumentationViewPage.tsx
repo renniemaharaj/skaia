@@ -101,8 +101,8 @@ export default function DocumentationViewPage() {
 
   const sidebarActions = documentation.can_edit ? (
     <div className="documentation-sidebar-actions documentation-sidebar-actions--links">
-      <Link className="btn btn-ghost" to={`/doc/manage/${documentation.slug}/guides/new`}><Plus size={14} />New guide</Link>
-      <Link className="btn btn-ghost" to={`/doc/manage/${documentation.slug}/settings`}><Settings2 size={14} />Manage navigation</Link>
+      <Link className="btn btn-ghost" to={`/form/documentation/${documentation.slug}/guide/new`}><Plus size={14} />New guide</Link>
+      <Link className="btn btn-ghost" to={`/form/documentation/${documentation.slug}/settings`}><Settings2 size={14} />Manage navigation</Link>
     </div>
   ) : undefined;
 
@@ -121,14 +121,14 @@ export default function DocumentationViewPage() {
       headerActions={
         <>
           <button className="action-btn" type="button" title="Copy link" onClick={() => void navigator.clipboard.writeText(window.location.href).then(() => toast.success("Link copied"))}><Copy size={15} /></button>
-          {documentation.can_edit && articleView && <Link className="action-btn" title="Edit guide" to={`/doc/manage/${documentation.slug}/guides/${articleView.article.slug}`}><Edit3 size={15} /></Link>}
-          {documentation.can_edit && <Link className="action-btn" title="Documentation settings" aria-label="Documentation settings" to={`/doc/manage/${documentation.slug}/settings`}><Settings2 size={15} /></Link>}
+          {documentation.can_edit && articleView && <Link className="action-btn" title="Edit guide" to={`/form/documentation/${documentation.slug}/guide/${articleView.article.slug}/edit`}><Edit3 size={15} /></Link>}
+          {documentation.can_edit && <Link className="action-btn" title="Documentation settings" aria-label="Documentation settings" to={`/form/documentation/${documentation.slug}/settings`}><Settings2 size={15} /></Link>}
         </>
       }
       previous={articleView?.previous ? { href: `/doc/${documentation.slug}/${articleView.previous.slug}`, title: articleView.previous.title } : undefined}
       next={articleView?.next ? { href: `/doc/${documentation.slug}/${articleView.next.slug}`, title: articleView.next.title } : undefined}
     >
-      {!articleView && <div className="documentation-empty"><h1>{documentation.title}</h1><p>No guides have been created yet.</p>{documentation.can_edit && <Link className="btn btn-ghost" to={`/doc/manage/${documentation.slug}/guides/new`}><Plus size={15} />Create the first guide</Link>}</div>}
+      {!articleView && <div className="documentation-empty"><h1>{documentation.title}</h1><p>No guides have been created yet.</p>{documentation.can_edit && <Link className="btn btn-ghost" to={`/form/documentation/${documentation.slug}/guide/new`}><Plus size={15} />Create the first guide</Link>}</div>}
       {articleView && <><header className="documentation-article__hero"><h1>{articleView.article.title}</h1>{articleView.article.summary && <p>{articleView.article.summary}</p>}</header><RichTextRenderer className="ProseMirror" html={indexed.html} /></>}
     </DocumentationShell>
   );

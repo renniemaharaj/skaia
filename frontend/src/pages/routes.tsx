@@ -23,11 +23,13 @@ const OrderViewPage = lazy(() =>
     default: m.default,
   }))
 );
+const OrderStatusFormPage = lazy(() => import("../components/store/OrderStatusFormPage.tsx"));
 const NewProductPage = lazy(() =>
   import("../components/store/NewProductPage.tsx").then(m => ({
     default: m.NewProductPage,
   }))
 );
+const EditProductPage = lazy(() => import("../components/store/EditProductPage.tsx"));
 const NewStoreCategoryPage = lazy(() =>
   import("../components/store/NewStoreCategoryPage.tsx").then(m => ({
     default: m.NewStoreCategoryPage,
@@ -66,6 +68,7 @@ const DeploymentsPage = lazy(() =>
   }))
 );
 const PageBuilder = lazy(() => import("./page/index.tsx"));
+const PageManageFormPage = lazy(() => import("../components/page/PageManageFormPage.tsx"));
 const CustomPages = lazy(() => import("../components/page/CustomPages.tsx"));
 const DataSourcesPage = lazy(() => import("../components/page/datasources/DataSourcesPage.tsx"));
 const DataSourceEditorPage = lazy(
@@ -90,14 +93,66 @@ const DocumentationCatalogPage = lazy(() => import("./documentation/Documentatio
 const DocumentationViewPage = lazy(() => import("./documentation/DocumentationViewPage.tsx"));
 const ForumDocumentationPage = lazy(() => import("./documentation/ForumDocumentationPage.tsx"));
 const NewDocumentationPage = lazy(() => import("./documentation/NewDocumentationPage.tsx"));
-const DocumentationSettingsPage = lazy(() => import("./documentation/DocumentationSettingsPage.tsx"));
-const DocumentationGuideEditorPage = lazy(() => import("./documentation/DocumentationGuideEditorPage.tsx"));
+const DocumentationSettingsPage = lazy(
+  () => import("./documentation/DocumentationSettingsPage.tsx")
+);
+const DocumentationGuideEditorPage = lazy(
+  () => import("./documentation/DocumentationGuideEditorPage.tsx")
+);
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
+  { path: "form/page/:slug/manage", element: <PageManageFormPage /> },
+  { path: "form/user/:userId/*", element: <SettingsPage /> },
+  { path: "form/user/*", element: <SettingsPage /> },
+  { path: "form/site/*", element: <AdminMetaSettings /> },
+  { path: "form/documentation/new", element: <NewDocumentationPage />, conditional: "docs" },
+  {
+    path: "form/documentation/:documentationSlug/settings",
+    element: <DocumentationSettingsPage />,
+    conditional: "docs",
+  },
+  {
+    path: "form/documentation/:documentationSlug/guide/new",
+    element: <DocumentationGuideEditorPage />,
+    conditional: "docs",
+  },
+  {
+    path: "form/documentation/:documentationSlug/guide/:articleSlug/edit",
+    element: <DocumentationGuideEditorPage />,
+    conditional: "docs",
+  },
+  { path: "form/forum/thread/new", element: <NewThreadPage />, conditional: "forum" },
+  { path: "form/forum/thread/:threadId/edit", element: <EditThreadPage />, conditional: "forum" },
+  { path: "form/forum/category/new", element: <NewForumCategoryPage />, conditional: "forum" },
+  { path: "form/store/product/new", element: <NewProductPage />, conditional: "store" },
+  {
+    path: "form/store/product/:productId/edit",
+    element: <EditProductPage />,
+    conditional: "store",
+  },
+  { path: "form/store/category/new", element: <NewStoreCategoryPage />, conditional: "store" },
+  {
+    path: "form/store/order/:orderId/status",
+    element: <OrderStatusFormPage />,
+    conditional: "store",
+  },
+  // Legacy editor URLs remain available while external and saved links migrate.
   { path: "doc/new", element: <NewDocumentationPage />, conditional: "docs" },
-  { path: "doc/manage/:documentationSlug/settings", element: <DocumentationSettingsPage />, conditional: "docs" },
-  { path: "doc/manage/:documentationSlug/guides/new", element: <DocumentationGuideEditorPage />, conditional: "docs" },
-  { path: "doc/manage/:documentationSlug/guides/:articleSlug", element: <DocumentationGuideEditorPage />, conditional: "docs" },
+  {
+    path: "doc/manage/:documentationSlug/settings",
+    element: <DocumentationSettingsPage />,
+    conditional: "docs",
+  },
+  {
+    path: "doc/manage/:documentationSlug/guides/new",
+    element: <DocumentationGuideEditorPage />,
+    conditional: "docs",
+  },
+  {
+    path: "doc/manage/:documentationSlug/guides/:articleSlug",
+    element: <DocumentationGuideEditorPage />,
+    conditional: "docs",
+  },
   { path: "new-thread", element: <NewThreadPage />, conditional: "forum" },
   {
     path: "forum/new-category",
@@ -149,7 +204,11 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
 export const guestRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "forum/docs", element: <ForumDocumentationPage />, conditional: "forum" },
   { path: "forum/docs/:categoryId", element: <ForumDocumentationPage />, conditional: "forum" },
-  { path: "forum/docs/:categoryId/:threadId", element: <ForumDocumentationPage />, conditional: "forum" },
+  {
+    path: "forum/docs/:categoryId/:threadId",
+    element: <ForumDocumentationPage />,
+    conditional: "forum",
+  },
   { path: "store", element: <StorePage />, conditional: "store" },
   { path: "store/product/:id", element: <ProductPage />, conditional: "store" },
   { path: "forum", element: <ForumPage />, conditional: "forum" },
@@ -171,7 +230,11 @@ export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "kjv/:book/:chapter/:verse/:readerState", element: <KJVPage /> },
   { path: "doc", element: <DocumentationCatalogPage />, conditional: "docs" },
   { path: "doc/:documentationSlug", element: <DocumentationViewPage />, conditional: "docs" },
-  { path: "doc/:documentationSlug/:articleSlug", element: <DocumentationViewPage />, conditional: "docs" },
+  {
+    path: "doc/:documentationSlug/:articleSlug",
+    element: <DocumentationViewPage />,
+    conditional: "docs",
+  },
   { path: "pages", element: <CustomPages /> },
   { path: "page/:slug", element: <PageBuilder /> },
   { path: "privacy", element: <PageBuilder slug="privacy" /> },

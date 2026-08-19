@@ -1,105 +1,79 @@
-import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import type { Documentation } from "../../atoms/documentation";
-import FormHeaderActions from "../../components/ui/FormHeaderActions";
+import { FormField, ManagedForm } from "../../components/form";
 import { apiRequest } from "../../utils/api";
-import "../../components/forum/NewThread.css";
 import "../../components/documentation/DocumentationShell.css";
+
+interface DocumentationValues {
+  title: string;
+  slug: string;
+  description: string;
+}
 
 export default function NewDocumentationPage() {
   const navigate = useNavigate();
-  const [saving, setSaving] = useState(false);
-  const [title, setTitle] = useState("");
-  const [slug, setSlug] = useState("");
-  const [description, setDescription] = useState("");
-
-  const create = async (event: FormEvent) => {
-    event.preventDefault();
-    setSaving(true);
-    try {
-      const created = await apiRequest<Documentation>("/docs/", {
-        method: "POST",
-        body: JSON.stringify({ title, slug, description, visibility: "public" }),
-      });
-      toast.success("Documentation created");
-      navigate(`/doc/${created.slug}`);
-    } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : "Unable to create documentation");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
-    <main className="modal">
-      <header className="modal-header">
-        <div className="modal-title-wrapper">
-          <h2>Create Documentation</h2>
-          <p style={{ color: "var(--text-secondary)", marginBottom: 0 }}>
-            Start a separate collection of guides for this site.
-          </p>
-        </div>
-        <FormHeaderActions
-          formId="new-documentation-form"
-          onCancel={() => navigate("/doc")}
-          confirmDisabled={!title.trim() || !slug.trim()}
-          saving={saving}
-          confirmLabel="Create"
-        />
-      </header>
-
-      <form id="new-documentation-form" className="modal-form compact-form-card" onSubmit={create}>
-        <div className="form-group">
-          <label className="form-label" htmlFor="documentation-title">
-            Display name *
-          </label>
-          <input
-            id="documentation-title"
-            className="form-input"
+    <ManagedForm<DocumentationValues>
+      id="new-documentation-form"
+      title="Create Documentation"
+      eyebrow="Documentation"
+      description="Start a separate collection of guides for this site."
+      initialValues={{ title: "", slug: "", description: "" }}
+      onCancel={() => navigate("/doc")}
+      submitLabel="Create documentation"
+      submitDisabled={formik => !formik.values.title.trim() || !formik.values.slug.trim()}
+      validate={values => ({
+        ...(!values.title.trim() ? { title: "Display name is required" } : {}),
+        ...(!values.slug.trim() ? { slug: "URL slug is required" } : {}),
+      })}
+      onSubmit={async (values, helpers) => {
+        helpers.setStatus(undefined);
+        try {
+          const created = await apiRequest<Documentation>("/docs/", {
+            method: "POST",
+            body: JSON.stringify({ ...values, visibility: "public" }),
+          });
+          toast.success("Documentation created");
+          navigate(`/doc/${created.slug}`);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Unable to create documentation";
+          helpers.setStatus(message);
+          toast.error(message);
+        }
+      }}
+    >
+      {formik => (
+        <>
+          <FormField
+            name="title"
+            label="Display name"
+            help="Name this documentation collection for readers."
+            placeholder="Platform documentation"
+            maxLength={255}
             autoFocus
             required
-            maxLength={255}
-            value={title}
-            onChange={event => setTitle(event.target.value)}
-            placeholder="Platform documentation"
-            disabled={saving}
           />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label" htmlFor="documentation-slug">
-            URL slug *
-          </label>
-          <p className="form-help">Published at /doc/{slug || "platform"}</p>
-          <input
-            id="documentation-slug"
-            className="form-input"
-            required
-            maxLength={120}
-            value={slug}
-            onChange={event => setSlug(event.target.value)}
+          <FormField
+            name="slug"
+            label="URL slug"
+            help={`Published at /doc/${formik.values.slug || "platform"}`}
             placeholder="platform"
-            disabled={saving}
+            maxLength={120}
+            required
           />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label" htmlFor="documentation-description">
-            Description
-          </label>
-          <textarea
-            id="documentation-description"
-            className="form-input"
+          <FormField
+            as="textarea"
+            name="description"
+            label="Description"
+            help="Summarize the purpose of this documentation collection."
+            placeholder="Guides and reference material for the platform."
             rows={4}
             maxLength={2000}
-            value={description}
-            onChange={event => setDescription(event.target.value)}
-            placeholder="What will readers learn here?"
-            disabled={saving}
           />
-        </div>
-      </form>
-    </main>
+        </>
+      )}
+    </ManagedForm>
   );
 }

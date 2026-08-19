@@ -152,7 +152,7 @@ export function StoreCategoryBar({
               <Button
                 size="sm"
                 variant="action"
-                onClick={() => onNavigate("/store/new-category")}
+                onClick={() => onNavigate("/form/store/category/new")}
                 title="New category"
                 aria-label="New category"
                 iconLeft={<Plus size={16} />}
@@ -164,7 +164,7 @@ export function StoreCategoryBar({
               <Button
                 size="sm"
                 variant="action"
-                onClick={() => onNavigate("/store/new-product")}
+                onClick={() => onNavigate("/form/store/product/new")}
                 title="New product"
                 aria-label="New product"
                 iconLeft={<Plus size={16} />}

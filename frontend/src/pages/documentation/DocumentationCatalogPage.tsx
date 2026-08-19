@@ -75,7 +75,7 @@ export default function DocumentationCatalogPage() {
       viewMode={viewMode}
       onViewModeChange={setViewMode}
       headerActions={canCreate ? (
-        <Link className="btn btn-ghost documentation-directory__new" to="/doc/new">
+        <Link className="btn btn-ghost documentation-directory__new" to="/form/documentation/new">
           <Plus size={16} /> New documentation
         </Link>
       ) : undefined}

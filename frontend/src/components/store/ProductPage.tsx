@@ -12,7 +12,7 @@ import {
   User,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { currentUserAtom, isAuthenticatedAtom } from "../../atoms/auth";
 import { layoutModeAtom } from "../../atoms/layoutMode";
@@ -23,7 +23,6 @@ import {
   storeCartItemsAtom,
 } from "../../atoms/store";
 import CommentSection from "../../components/comments/CommentSection";
-import { EditProductDialog } from "../../components/store/EditProductDialog";
 import StarRating from "../../components/ui/StarRating";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
@@ -86,6 +85,7 @@ const errorMessage = (err: unknown, fallback: string) =>
 
 export const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const allProducts = useAtomValue(productsAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const currentUser = useAtomValue(currentUserAtom);
@@ -96,7 +96,6 @@ export const ProductPage = () => {
   const { subscribe, unsubscribe } = useWebSocketSync();
 
   const [product, setProduct] = useState<Product | null>(null);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [previewMediaIndex, setPreviewMediaIndex] = useState<number | null>(null);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
@@ -532,7 +531,7 @@ export const ProductPage = () => {
                   type="button"
                   className="action-btn edit-btn"
                   title="Edit product"
-                  onClick={() => setEditingProduct(product)}
+                  onClick={() => navigate(`/form/store/product/${product.id}/edit`)}
                 >
                   <Edit2 size={15} />
                 </button>
@@ -665,24 +664,6 @@ export const ProductPage = () => {
           </div>
         </div>
       </div>
-
-      {/* Edit dialog */}
-      {editingProduct && (
-        <EditProductDialog
-          isOpen={!!editingProduct}
-          product={editingProduct}
-          categories={categories}
-          onClose={() => setEditingProduct(null)}
-          onSuccess={() => {
-            setLoadingProduct(true);
-            apiRequest<Product>(`/store/products/${id}`)
-              .then(p => {
-                if (p) setProduct(p);
-              })
-              .finally(() => setLoadingProduct(false));
-          }}
-        />
-      )}
 
       {previewMediaIndex !== null && (
         <MediaPreviewLightbox

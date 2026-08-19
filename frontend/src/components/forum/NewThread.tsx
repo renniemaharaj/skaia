@@ -1,164 +1,133 @@
 import { useAtom } from "jotai";
-import { Suspense, lazy, useState } from "react";
-const Editor = lazy(() => import("./Editor"));
-import ForumCategory from "./ForumCategory";
-import "./NewThread.css";
+import { Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
 import { draftNewThreadAtom } from "../../atoms/forum";
+import { apiRequest } from "../../utils/api";
+import { FormField, ManagedForm } from "../form";
+import ForumCategory from "./ForumCategory";
 import "./IconButton.css";
 
-import { apiRequest } from "../../utils/api";
-import FormHeaderActions from "../ui/FormHeaderActions";
+const Editor = lazy(() => import("./Editor"));
 
 interface CreateThreadResponse {
   id: string;
+}
+
+interface ThreadValues {
   title: string;
-  category_id: string;
   content: string;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-  view_count: number;
-  reply_count: number;
+  categoryId: string;
 }
 
 const NewThread = () => {
   const [draft, setDraft] = useAtom(draftNewThreadAtom);
-
-  const threadTitle = draft?.title || "";
-  const threadContent = draft?.content || "";
-  const selectedCategory = draft?.categoryId || "";
-
-  const setThreadTitle = (title: string) =>
-    setDraft(prev => ({ title, content: prev?.content || "", categoryId: prev?.categoryId || "" }));
-
-  const setThreadContent = (content: string) =>
-    setDraft(prev => ({ title: prev?.title || "", content, categoryId: prev?.categoryId || "" }));
-
-  const setSelectedCategory = (categoryId: string) =>
-    setDraft(prev => ({ title: prev?.title || "", content: prev?.content || "", categoryId }));
-
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleCreateThread = async () => {
-    setError(null);
-
-    if (!threadTitle.trim()) {
-      setError("Thread title is required");
-      return;
-    }
-
-    if (!threadContent.trim()) {
-      setError("Thread content is required");
-      return;
-    }
-
-    if (!selectedCategory) {
-      setError("Please select a category");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const response = await apiRequest<CreateThreadResponse>("/forum/threads", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          category_id: selectedCategory,
-          title: threadTitle,
-          content: threadContent,
-        }),
-      });
-
-      if (response?.id) {
-        // Clear draft on success
-        setDraft(null);
-        // Navigate to the created thread
-        navigate(`/view-thread/${response.id}`);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create thread");
-    } finally {
-      setLoading(false);
-    }
+  const initialValues: ThreadValues = {
+    title: draft?.title ?? "",
+    content: draft?.content ?? "",
+    categoryId: draft?.categoryId ?? "",
   };
 
   return (
-    <div className="modal" onClick={e => e.stopPropagation()}>
-      <div className="modal-header">
-        <div className="modal-title-wrapper">
-          <h2>Create New Thread</h2>
-          <p style={{ color: "var(--text-secondary)", marginBottom: 0 }}>
-            Start a discussion with the community
-          </p>
-        </div>
-        <FormHeaderActions
-          formId="new-thread-form"
-          onCancel={() => navigate("/forum")}
-          saving={loading}
-          cancelLabel="Close"
-          confirmLabel="Submit"
-        />
-      </div>
+    <ManagedForm<ThreadValues>
+      id="new-thread-form"
+      title="Create New Thread"
+      eyebrow="Forum"
+      description="Start a discussion with the community"
+      initialValues={initialValues}
+      cancelTo="/forum"
+      submitLabel="Create thread"
+      submitDisabled={formik =>
+        !formik.values.title.trim() || !formik.values.content.trim() || !formik.values.categoryId
+      }
+      validate={values => ({
+        ...(!values.title.trim() ? { title: "Thread title is required" } : {}),
+        ...(!values.content.trim() ? { content: "Thread content is required" } : {}),
+        ...(!values.categoryId ? { categoryId: "Please select a category" } : {}),
+      })}
+      onSubmit={async (values, helpers) => {
+        helpers.setStatus(undefined);
+        try {
+          const response = await apiRequest<CreateThreadResponse>("/forum/threads", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              category_id: values.categoryId,
+              title: values.title.trim(),
+              content: values.content,
+            }),
+          });
+          setDraft(null);
+          navigate(`/view-thread/${response.id}`);
+        } catch (error) {
+          helpers.setStatus(error instanceof Error ? error.message : "Failed to create thread");
+        }
+      }}
+    >
+      {formik => {
+        const updateDraft = (values: ThreadValues) => {
+          setDraft({
+            title: values.title,
+            content: values.content,
+            categoryId: values.categoryId,
+          });
+        };
 
-      <form
-        id="new-thread-form"
-        className="modal-form compact-form-card"
-        onSubmit={event => {
-          event.preventDefault();
-          void handleCreateThread();
-        }}
-      >
-        {error && (
-          <div
-            style={{
-              color: "#ef4444",
-              padding: "12px",
-              backgroundColor: "rgba(239, 68, 68, 0.1)",
-              borderRadius: "4px",
-              fontSize: "14px",
-              marginBottom: "16px",
-            }}
-          >
-            {error}
-          </div>
-        )}
+        return (
+          <>
+            <FormField
+              name="title"
+              label="Thread title"
+              help="Use a clear title that summarizes the discussion."
+              placeholder="What's on your mind?"
+              maxLength={255}
+              autoFocus
+              onChange={event => {
+                void formik.setFieldValue("title", event.target.value);
+                updateDraft({ ...formik.values, title: event.target.value });
+              }}
+            />
 
-        <div className="form-group">
-          <label htmlFor="title">Thread title</label>
-          <p className="form-help">Use a clear title that summarizes the discussion.</p>
-          <input
-            id="title"
-            type="text"
-            placeholder="What's on your mind?"
-            value={threadTitle}
-            onChange={e => setThreadTitle(e.target.value)}
-            disabled={loading}
-          />
-        </div>
+            <div className="form-group">
+              <ForumCategory
+                value={formik.values.categoryId}
+                onChange={categoryId => {
+                  void formik.setFieldValue("categoryId", categoryId);
+                  updateDraft({ ...formik.values, categoryId });
+                }}
+              />
+              {formik.touched.categoryId && formik.errors.categoryId && (
+                <p className="managed-field__error">{formik.errors.categoryId}</p>
+              )}
+            </div>
 
-        <div className="form-group">
-          <ForumCategory value={selectedCategory} onChange={setSelectedCategory} />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="content">Message</label>
-          <p className="form-help">Add the context other members need to respond.</p>
-          <Suspense
-            fallback={
-              <div className="skeleton skeleton-text" style={{ width: "100%", height: 200 }} />
-            }
-          >
-            <Editor value={threadContent} onChange={setThreadContent} />
-          </Suspense>
-        </div>
-      </form>
-    </div>
+            <div className="form-group">
+              <label htmlFor="thread-content">Message</label>
+              <p className="form-help">Add the context other members need to respond.</p>
+              <Suspense
+                fallback={
+                  <div className="skeleton skeleton-text" style={{ width: "100%", height: 200 }} />
+                }
+              >
+                <div id="thread-content">
+                  <Editor
+                    value={formik.values.content}
+                    onChange={content => {
+                      void formik.setFieldValue("content", content);
+                      updateDraft({ ...formik.values, content });
+                    }}
+                  />
+                </div>
+              </Suspense>
+              {formik.touched.content && formik.errors.content && (
+                <p className="managed-field__error">{formik.errors.content}</p>
+              )}
+            </div>
+          </>
+        );
+      }}
+    </ManagedForm>
   );
 };
 

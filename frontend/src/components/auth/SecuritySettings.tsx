@@ -3,7 +3,6 @@ import {
   CheckCircle,
   Copy,
   Download,
-  Key,
   Mail,
   ShieldCheck,
   ShieldOff,
@@ -25,6 +24,8 @@ import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import { customPrompt } from "../ui/Prompt";
 import "./SecuritySettings.css";
 import Button from "../input/Button";
+import { FormField, FormSectionIntro, ManagedForm } from "../form";
+import { UserRound } from "lucide-react";
 
 interface SecuritySettingsProps {
   emailVerified: boolean;
@@ -33,6 +34,8 @@ interface SecuritySettingsProps {
   canManage?: boolean; // If true, this is an admin/power user managing another account
   managedUserId?: string;
   managedUsername?: string;
+  basePath?: string;
+  exitPath?: string;
 }
 
 export default function SecuritySettings({
@@ -42,6 +45,8 @@ export default function SecuritySettings({
   canManage = false,
   managedUserId,
   managedUsername,
+  basePath,
+  exitPath,
 }: SecuritySettingsProps) {
   // 2FA setup flow states
   const [setupData, setSetupData] = useState<TOTPSetupResponse | null>(null);
@@ -50,13 +55,6 @@ export default function SecuritySettings({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verifyLoading, setVerifyLoading] = useState(false);
-
-  // Password change states
-  const [oldPassword, setOldPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [pwError, setPwError] = useState("");
-  const [pwLoading, setPwLoading] = useState(false);
 
   useEffect(() => {
     console.log("TOTP enabled state:", totpEnabled);
@@ -287,8 +285,43 @@ export default function SecuritySettings({
     }
 
     return (
-      <div className="sec-panel">
-        <h2 className="sec-panel__title">Security (Manage User)</h2>
+      <ManagedForm<{ disabled: string }>
+        id="managed-user-security-form"
+        title="User Settings"
+        eyebrow="Account settings"
+        description={`Manage settings and preferences for ${managedUsername}.`}
+        initialValues={{ disabled: "" }}
+        onSubmit={async () => undefined}
+        {...(exitPath ? { cancelTo: exitPath } : { onCancel: () => window.history.back() })}
+        submitDisabled
+        tabsLabel="User settings"
+        tabs={
+          basePath
+            ? [
+                {
+                  id: "profile",
+                  label: "Profile",
+                  icon: <UserRound size={15} />,
+                  active: false,
+                  to: `${basePath}/profile`,
+                },
+                {
+                  id: "security",
+                  label: "Security",
+                  icon: <ShieldCheck size={15} />,
+                  active: true,
+                  to: `${basePath}/security`,
+                },
+              ]
+            : []
+        }
+        formClassName="sec-panel"
+      >
+        <FormSectionIntro
+          icon={<ShieldCheck size={18} />}
+          title="Security"
+          description={`Manage authentication safeguards for ${managedUsername}.`}
+        />
         <div className="sec-panel__section">
           <div className="sec-panel__section-header">
             <span className="sec-panel__section-title">
@@ -352,7 +385,7 @@ export default function SecuritySettings({
             </div>
           )}
         </div>
-      </div>
+      </ManagedForm>
     );
   }
   const handleResendVerification = async () => {
@@ -364,37 +397,6 @@ export default function SecuritySettings({
       toast.error(err instanceof Error ? err.message : "Failed to send verification email");
     } finally {
       setVerifyLoading(false);
-    }
-  };
-
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPwError("");
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      setPwError("Please fill out all fields.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPwError("New passwords do not match.");
-      return;
-    }
-    setPwLoading(true);
-    try {
-      await apiRequest("/auth/change-password", {
-        method: "POST",
-        body: JSON.stringify({
-          old_password: oldPassword,
-          new_password: newPassword,
-        }),
-      });
-      toast.success("Password updated successfully!");
-      setOldPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (err: any) {
-      setPwError(err.message || "Failed to update password");
-    } finally {
-      setPwLoading(false);
     }
   };
 
@@ -610,8 +612,71 @@ export default function SecuritySettings({
 
   // Main panel
   return (
-    <div className="sec-panel">
-      <h2 className="sec-panel__title">Security</h2>
+    <ManagedForm<{ oldPassword: string; newPassword: string; confirmPassword: string }>
+      id="user-security-form"
+      title="User Settings"
+      eyebrow="Account settings"
+      description="Manage settings and preferences for your account."
+      initialValues={{ oldPassword: "", newPassword: "", confirmPassword: "" }}
+      {...(exitPath ? { cancelTo: exitPath } : { onCancel: () => window.history.back() })}
+      submitLabel="Update password"
+      tabsLabel="User settings"
+      tabs={
+        basePath
+          ? [
+              {
+                id: "profile",
+                label: "Profile",
+                icon: <UserRound size={15} />,
+                active: false,
+                to: `${basePath}/profile`,
+              },
+              {
+                id: "security",
+                label: "Security",
+                icon: <ShieldCheck size={15} />,
+                active: true,
+                to: `${basePath}/security`,
+              },
+            ]
+          : []
+      }
+      formClassName="sec-panel"
+      submitDisabled={formik =>
+        !formik.values.oldPassword || !formik.values.newPassword || !formik.values.confirmPassword
+      }
+      validate={values => ({
+        ...(!values.oldPassword ? { oldPassword: "Current password is required" } : {}),
+        ...(!values.newPassword ? { newPassword: "New password is required" } : {}),
+        ...(!values.confirmPassword ? { confirmPassword: "Confirm the new password" } : {}),
+        ...(values.confirmPassword && values.newPassword !== values.confirmPassword
+          ? { confirmPassword: "New passwords do not match" }
+          : {}),
+      })}
+      onSubmit={async (values, helpers) => {
+        helpers.setStatus(undefined);
+        try {
+          await apiRequest("/auth/change-password", {
+            method: "POST",
+            body: JSON.stringify({
+              old_password: values.oldPassword,
+              new_password: values.newPassword,
+            }),
+          });
+          toast.success("Password updated successfully");
+          helpers.resetForm();
+        } catch (submitError) {
+          helpers.setStatus(
+            submitError instanceof Error ? submitError.message : "Failed to update password"
+          );
+        }
+      }}
+    >
+      <FormSectionIntro
+        icon={<ShieldCheck size={18} />}
+        title="Security"
+        description="Verify your identity, configure two-factor authentication, and update your password."
+      />
 
       {/* Email Verification */}
       <div className="sec-panel__section">
@@ -694,98 +759,31 @@ export default function SecuritySettings({
         )}
       </div>
 
-      {/* Change Password */}
-      {!canManage && (
-        <div className="sec-panel__section">
-          <div className="sec-panel__section-header">
-            <span className="sec-panel__section-title">
-              <Key size={16} />
-              Change Password
-            </span>
-          </div>
-          <p className="sec-panel__section-desc">
-            Update your password to keep your account secure.
-          </p>
-          <form
-            onSubmit={handlePasswordSubmit}
-            className="compact-form-card"
-            style={{
-              maxWidth: "400px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "1rem",
-              marginTop: "1rem",
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <label
-                htmlFor="old-password"
-                style={{ fontWeight: 500, fontSize: "0.85rem", color: "var(--text-secondary)" }}
-              >
-                Old Password
-              </label>
-              <input
-                id="old-password"
-                type="password"
-                className="sec-panel__input"
-                value={oldPassword}
-                onChange={e => setOldPassword(e.target.value)}
-                disabled={pwLoading}
-                required
-              />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <label
-                htmlFor="new-password"
-                style={{ fontWeight: 500, fontSize: "0.85rem", color: "var(--text-secondary)" }}
-              >
-                New Password
-              </label>
-              <input
-                id="new-password"
-                type="password"
-                className="sec-panel__input"
-                value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
-                disabled={pwLoading}
-                required
-              />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <label
-                htmlFor="confirm-password"
-                style={{ fontWeight: 500, fontSize: "0.85rem", color: "var(--text-secondary)" }}
-              >
-                Confirm New Password
-              </label>
-              <input
-                id="confirm-password"
-                type="password"
-                className="sec-panel__input"
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                disabled={pwLoading}
-                required
-              />
-            </div>
-            {pwError && (
-              <div className="sec-panel__error">
-                <AlertCircle size={14} />
-                <span>{pwError}</span>
-              </div>
-            )}
-            <Button
-              type="submit"
-              className="sec-panel__btn"
-              variant="primary"
-              loading={pwLoading}
-              style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}
-            >
-              Update Password
-            </Button>
-          </form>
-        </div>
-      )}
-    </div>
+      <div className="sec-panel__section">
+        <div className="sec-panel__section-title">Change Password</div>
+        <p className="sec-panel__section-desc">Update your password to keep your account secure.</p>
+        <FormField
+          name="oldPassword"
+          label="Current password"
+          type="password"
+          autoComplete="current-password"
+          required
+        />
+        <FormField
+          name="newPassword"
+          label="New password"
+          type="password"
+          autoComplete="new-password"
+          required
+        />
+        <FormField
+          name="confirmPassword"
+          label="Confirm new password"
+          type="password"
+          autoComplete="new-password"
+          required
+        />
+      </div>
+    </ManagedForm>
   );
 }

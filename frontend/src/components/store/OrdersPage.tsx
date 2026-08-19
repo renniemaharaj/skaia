@@ -156,8 +156,7 @@ export const OrdersPage = () => {
     setEditingReferenceCodeId(null);
   };
 
-  const submitReferenceCode = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const submitReferenceCode = async () => {
     const userID = Number.parseInt(referenceForm.user_id, 10);
     const incentiveAmount = Number.parseInt(referenceForm.incentive_amount, 10);
     if (
@@ -298,7 +297,7 @@ export const OrdersPage = () => {
           className="action-btn edit-btn"
           onClick={event => {
             event.stopPropagation();
-            updateOrderStatus(order.id, "accepted");
+            navigate(`/form/store/order/${order.id}/status`);
           }}
           title="Accept Order"
         >
@@ -310,7 +309,7 @@ export const OrdersPage = () => {
         className={`action-btn ${order.status === "completed" ? "active" : ""}`}
         onClick={event => {
           event.stopPropagation();
-          updateOrderStatus(order.id, order.status === "completed" ? "pending" : "completed");
+          navigate(`/form/store/order/${order.id}/status`);
         }}
         title={order.status === "completed" ? "Mark Pending" : "Mark Completed"}
       >
@@ -660,10 +659,7 @@ export const OrdersPage = () => {
             {isStoreAdmin && (
               <section className="reference-codes-panel">
                 <h3>{referenceSectionTitle}</h3>
-                <form
-                  onSubmit={submitReferenceCode}
-                  className="reference-code-form compact-form-card"
-                >
+                <div className="reference-code-form compact-form-card">
                   <div className="reference-code-field">
                     <label htmlFor="reference-code">Reference code</label>
                     <input
@@ -722,7 +718,12 @@ export const OrdersPage = () => {
                     />
                     Active
                   </label>
-                  <Button type="submit" variant="action" size="sm">
+                  <Button
+                    type="button"
+                    variant="action"
+                    size="sm"
+                    onClick={() => void submitReferenceCode()}
+                  >
                     {saveReferenceLabel}
                   </Button>
                   {editingReferenceCodeId && (
@@ -793,7 +794,7 @@ export const OrdersPage = () => {
                       </button>
                     )}
                   </div>
-                </form>
+                </div>
                 <TableView
                   data={referenceCodes}
                   columns={referenceCodeColumns}

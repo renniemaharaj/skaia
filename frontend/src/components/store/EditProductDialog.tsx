@@ -1,13 +1,13 @@
-import { Check, Loader, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Product, ProductMedia, StoreCategory } from "../../atoms/store";
 import { apiRequest } from "../../utils/api";
 import { centsToDollars } from "../../utils/money";
+import { FormCheckbox, FormField, FormSelect, ManagedForm } from "../form";
 import Button from "../input/Button";
 import Select from "../input/Select";
 import { ProductMediaTable } from "./ProductMediaTable";
-import "../forum/NewThread.css";
 import "../forum/IconButton.css";
 
 interface EditProductDialogProps {
@@ -18,389 +18,230 @@ interface EditProductDialogProps {
   onSuccess?: () => void;
 }
 
-export const EditProductDialog: React.FC<EditProductDialogProps> = ({
-  isOpen,
-  product,
-  categories,
-  onClose,
-  onSuccess,
-}) => {
-  const [formData, setFormData] = useState({
+interface SpecialAction {
+  type: string;
+  value: string;
+}
+
+interface ProductValues {
+  category_id: string;
+  name: string;
+  description: string;
+  price: string;
+  stock: string;
+  stock_unlimited: boolean;
+  image_url: string;
+  media: ProductMedia[];
+  is_active: boolean;
+  special_actions: SpecialAction[];
+}
+
+function productValues(product: Product): ProductValues {
+  let specialActions: SpecialAction[] = [];
+  try {
+    specialActions = product.special_actions ? JSON.parse(product.special_actions) : [];
+  } catch {
+    specialActions = [];
+  }
+  return {
     category_id: String(product.category_id),
     name: product.name,
     description: product.description,
-    // display price in dollars for editing (product.price is stored in cents)
     price: centsToDollars(product.price ?? 0).toFixed(2),
     stock: String(product.stock),
     stock_unlimited: product.stock_unlimited ?? false,
     image_url: product.image_url ?? "",
     media: (product.media ?? []) as ProductMedia[],
     is_active: product.is_active,
-  });
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [specialActions, setSpecialActions] = useState<{ type: string; value: string }[]>([]);
-  const [availableRoles, setAvailableRoles] = useState<any[]>([]);
-
-  useEffect(() => {
-    apiRequest("/users/roles")
-      .then(res => setAvailableRoles(Array.isArray(res) ? res : []))
-      .catch(err => console.error("Failed to load roles:", err));
-  }, []);
-
-  // Re-sync if the product prop changes
-  useEffect(() => {
-    setFormData({
-      category_id: String(product.category_id),
-      name: product.name,
-      description: product.description,
-      price: centsToDollars(product.price ?? 0).toFixed(2),
-      stock: String(product.stock),
-      stock_unlimited: product.stock_unlimited ?? false,
-      image_url: product.image_url ?? "",
-      media:
-        product.media && product.media.length > 0
-          ? product.media
-          : product.image_url
-            ? [
-                {
-                  url: product.image_url,
-                  filename: product.image_url.split("/").pop() || product.name,
-                  mime_type: "",
-                  type: "image",
-                  size: 0,
-                  created_at: product.created_at,
-                },
-              ]
-            : [],
-      is_active: product.is_active,
-    });
-
-    let initialActions: any[] = [];
-    if (
-      product.special_actions &&
-      product.special_actions !== "[]" &&
-      product.special_actions !== ""
-    ) {
-      try {
-        initialActions = JSON.parse(product.special_actions);
-      } catch (e) {}
-    }
-    setSpecialActions(initialActions);
-  }, [product]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      if (!formData.name.trim()) throw new Error("Product name is required");
-      const price = Number.parseFloat(formData.price);
-      if (Number.isNaN(price) || price < 0) throw new Error("Valid price is required");
-
-      await apiRequest(`/store/products/${product.id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          category_id: Number(formData.category_id),
-          name: formData.name,
-          description: formData.description,
-          price,
-          stock: Number(formData.stock),
-          stock_unlimited: formData.stock_unlimited,
-          image_url: formData.media[0]?.url ?? formData.image_url,
-          media: formData.media,
-          is_active: formData.is_active,
-          special_actions: JSON.stringify(specialActions.filter(a => a.value !== "")),
-        }),
-      });
-
-      onSuccess?.();
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update product");
-    } finally {
-      setLoading(false);
-    }
+    special_actions: specialActions,
   };
+}
 
+export const EditProductDialog = ({
+  isOpen,
+  product,
+  categories,
+  onClose,
+  onSuccess,
+}: EditProductDialogProps) => {
+  const [availableRoles, setAvailableRoles] = useState<{ name: string }[]>([]);
+  useEffect(() => {
+    void apiRequest("/users/roles").then(response =>
+      setAvailableRoles(Array.isArray(response) ? response : [])
+    );
+  }, []);
   if (!isOpen) return null;
 
   return createPortal(
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        backgroundColor: "var(--overlay-dark)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          position: "relative",
-          backgroundColor: "var(--bg-secondary)",
-          borderRadius: "8px",
-          padding: "24px",
-          maxWidth: "520px",
-          width: "90%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "20px",
+    <div className="managed-form-overlay" onClick={onClose}>
+      <div onClick={event => event.stopPropagation()}>
+        <ManagedForm<ProductValues>
+          id="edit-product-form"
+          title="Edit Product"
+          eyebrow="Store"
+          description={`Update ${product.name}`}
+          initialValues={productValues(product)}
+          enableReinitialize
+          onCancel={onClose}
+          submitLabel="Save product"
+          submitDisabled={formik => !formik.values.name.trim() || !formik.values.category_id}
+          validate={values => ({
+            ...(!values.name.trim() ? { name: "Product name is required" } : {}),
+            ...(Number.isNaN(Number.parseFloat(values.price))
+              ? { price: "Enter a valid price" }
+              : {}),
+          })}
+          onSubmit={async (values, helpers) => {
+            helpers.setStatus(undefined);
+            try {
+              await apiRequest(`/store/products/${product.id}`, {
+                method: "PUT",
+                body: JSON.stringify({
+                  ...values,
+                  category_id: Number(values.category_id),
+                  price: Number.parseFloat(values.price),
+                  stock: Number(values.stock),
+                  image_url: values.media[0]?.url ?? values.image_url,
+                  special_actions: JSON.stringify(
+                    values.special_actions.filter(action => action.value)
+                  ),
+                }),
+              });
+              onSuccess?.();
+              onClose();
+            } catch (error) {
+              helpers.setStatus(
+                error instanceof Error ? error.message : "Failed to update product"
+              );
+            }
           }}
         >
-          <div>
-            <h2 style={{ margin: 0, fontSize: "1.3rem" }}>Edit Product</h2>
-            <p
-              style={{
-                margin: "4px 0 0",
-                color: "var(--text-secondary)",
-                fontSize: "0.9rem",
-              }}
-            >
-              Update <em>{product.name}</em>
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: "0.75rem" }}>
-            <button type="button" className="action-btn btn-close" onClick={onClose} title="Cancel">
-              <X size={20} />
-            </button>
-            <button
-              type="submit"
-              form="edit-product-form"
-              className="action-btn btn-submit"
-              disabled={loading || !formData.name.trim()}
-              title="Save"
-            >
-              {loading ? <Loader size={20} className="spin" /> : <Check size={20} />}
-            </button>
-          </div>
-        </div>
-
-        <form
-          id="edit-product-form"
-          onSubmit={handleSubmit}
-          className="compact-form-card"
-          style={{ display: "flex", flexDirection: "column", gap: "14px" }}
-        >
-          {error && (
-            <div
-              style={{
-                padding: "10px 14px",
-                background: "var(--error-bg, #fee2e2)",
-                borderRadius: "6px",
-                color: "var(--error-text, #dc2626)",
-                fontSize: "0.9rem",
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          <div className="form-group">
-            <Select
-              className="form-input"
-              label="Category *"
-              value={formData.category_id}
-              options={categories.map(c => ({
-                value: String(c.id),
-                label: c.name,
-              }))}
-              onChange={e => setFormData(p => ({ ...p, category_id: e.target.value }))}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Name *</label>
-            <input
-              className="form-input"
-              type="text"
-              value={formData.name}
-              onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Description</label>
-            <textarea
-              className="form-input"
-              rows={3}
-              value={formData.description}
-              onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
-            />
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "14px",
-            }}
-          >
-            <div className="form-group">
-              <label className="form-label">Price (USD) *</label>
-              <input
-                className="form-input"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price}
-                onChange={e => setFormData(p => ({ ...p, price: e.target.value }))}
-                required
+          {formik => (
+            <>
+              <FormSelect
+                name="category_id"
+                label="Category"
+                block
+                options={categories.map(category => ({
+                  value: String(category.id),
+                  label: category.name,
+                }))}
               />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Stock</label>
-              <input
-                className="form-input"
-                type="number"
-                min="0"
-                value={formData.stock}
-                disabled={formData.stock_unlimited}
-                onChange={e => setFormData(p => ({ ...p, stock: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div
-            className="form-group"
-            style={{ flexDirection: "row", alignItems: "center", gap: "10px" }}
-          >
-            <input
-              type="checkbox"
-              id="edit_stock_unlimited"
-              checked={formData.stock_unlimited}
-              onChange={e =>
-                setFormData(p => ({
-                  ...p,
-                  stock_unlimited: e.target.checked,
-                }))
-              }
-            />
-            <label
-              htmlFor="edit_stock_unlimited"
-              className="form-label"
-              style={{ marginBottom: 0 }}
-            >
-              Unlimited stock (always shows as in stock)
-            </label>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Marketing Media</label>
-            <ProductMediaTable
-              media={formData.media}
-              editable
-              onChange={media =>
-                setFormData(p => ({
-                  ...p,
-                  media,
-                  image_url: media[0]?.url ?? "",
-                }))
-              }
-            />
-          </div>
-
-          <div
-            className="form-group"
-            style={{ flexDirection: "row", alignItems: "center", gap: "10px" }}
-          >
-            <input
-              type="checkbox"
-              id="edit_is_active"
-              checked={formData.is_active}
-              onChange={e => setFormData(p => ({ ...p, is_active: e.target.checked }))}
-            />
-            <label htmlFor="edit_is_active" className="form-label" style={{ marginBottom: 0 }}>
-              Active (visible to players)
-            </label>
-          </div>
-
-          <div className="form-group store-special-actions">
-            <label className="form-label">Special Actions on Purchase</label>
-            <p className="store-special-actions__help">
-              Add digital assets or perks to give users when they buy this product.
-            </p>
-            {specialActions.map((action, idx) => (
-              <div key={idx} className="store-special-action-row">
-                <Select
-                  size="sm"
-                  value={action.type}
-                  options={[
-                    { value: "role", label: "Assign Role" },
-                    { value: "credit", label: "Give Store Credit (cents)" },
-                  ]}
-                  onChange={e => {
-                    const newActions = [...specialActions];
-                    newActions[idx].type = e.target.value;
-                    newActions[idx].value = "";
-                    setSpecialActions(newActions);
-                  }}
+              <FormField name="name" label="Name" required autoFocus />
+              <FormField as="textarea" name="description" label="Description" rows={3} />
+              <div className="managed-form__grid">
+                <FormField
+                  name="price"
+                  label="Price (USD)"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
                 />
-
-                {action.type === "role" ? (
-                  <Select
-                    size="sm"
-                    value={action.value}
-                    options={[
-                      { value: "", label: "Select Role..." },
-                      ...availableRoles.map(r => ({
-                        value: r.name,
-                        label: r.name,
-                      })),
-                    ]}
-                    onChange={e => {
-                      const newActions = [...specialActions];
-                      newActions[idx].value = e.target.value;
-                      setSpecialActions(newActions);
-                    }}
-                  />
-                ) : (
-                  <input
-                    type="number"
-                    className="form-input form-input--sm"
-                    placeholder="Amount in cents"
-                    value={action.value}
-                    onChange={e => {
-                      const newActions = [...specialActions];
-                      newActions[idx].value = e.target.value;
-                      setSpecialActions(newActions);
-                    }}
-                  />
-                )}
+                <FormField
+                  name="stock"
+                  label="Stock"
+                  type="number"
+                  min="0"
+                  disabled={formik.values.stock_unlimited}
+                />
+              </div>
+              <FormCheckbox
+                name="stock_unlimited"
+                label="Unlimited stock"
+                description="Always show this product as in stock."
+              />
+              <div className="form-group">
+                <label className="form-label">Marketing media</label>
+                <ProductMediaTable
+                  media={formik.values.media}
+                  editable
+                  onChange={media => void formik.setFieldValue("media", media)}
+                />
+              </div>
+              <FormCheckbox
+                name="is_active"
+                label="Active"
+                description="Make this product visible to customers."
+              />
+              <div className="form-group store-special-actions">
+                <label className="form-label">Special actions on purchase</label>
+                {formik.values.special_actions.map((action, index) => (
+                  <div key={`${action.type}-${index}`} className="store-special-action-row">
+                    <Select
+                      size="sm"
+                      value={action.type}
+                      options={[
+                        { value: "role", label: "Assign Role" },
+                        { value: "credit", label: "Give Store Credit (cents)" },
+                      ]}
+                      onChange={event => {
+                        const actions = [...formik.values.special_actions];
+                        actions[index] = { type: event.target.value, value: "" };
+                        void formik.setFieldValue("special_actions", actions);
+                      }}
+                    />
+                    {action.type === "role" ? (
+                      <Select
+                        size="sm"
+                        value={action.value}
+                        options={[
+                          { value: "", label: "Select Role..." },
+                          ...availableRoles.map(role => ({ value: role.name, label: role.name })),
+                        ]}
+                        onChange={event => {
+                          const actions = [...formik.values.special_actions];
+                          actions[index] = { ...action, value: event.target.value };
+                          void formik.setFieldValue("special_actions", actions);
+                        }}
+                      />
+                    ) : (
+                      <input
+                        type="number"
+                        aria-label={`Action ${index + 1} amount`}
+                        value={action.value}
+                        onChange={event => {
+                          const actions = [...formik.values.special_actions];
+                          actions[index] = { ...action, value: event.target.value };
+                          void formik.setFieldValue("special_actions", actions);
+                        }}
+                      />
+                    )}
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="icon"
+                      aria-label="Remove special action"
+                      onClick={() =>
+                        void formik.setFieldValue(
+                          "special_actions",
+                          formik.values.special_actions.filter(
+                            (_, itemIndex) => itemIndex !== index
+                          )
+                        )
+                      }
+                    >
+                      <X size={18} />
+                    </Button>
+                  </div>
+                ))}
                 <Button
                   type="button"
-                  variant="danger"
-                  size="icon"
-                  onClick={() => setSpecialActions(specialActions.filter((_, i) => i !== idx))}
-                  aria-label="Remove special action"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    void formik.setFieldValue("special_actions", [
+                      ...formik.values.special_actions,
+                      { type: "role", value: "" },
+                    ])
+                  }
                 >
-                  <X size={18} />
+                  + Add action
                 </Button>
               </div>
-            ))}
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              style={{ alignSelf: "flex-start", marginTop: "0.5rem" }}
-              onClick={() => setSpecialActions([...specialActions, { type: "role", value: "" }])}
-            >
-              + Add Action
-            </Button>
-          </div>
-        </form>
+            </>
+          )}
+        </ManagedForm>
       </div>
     </div>,
     document.body

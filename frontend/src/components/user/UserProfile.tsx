@@ -153,7 +153,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
         isOwnProfile={isOwnProfile}
         suspendLoading={suspendLoading}
         resetPasswordLoading={resetPasswordLoading}
-        onEditOpen={() => navigate(`/settings/users/${user.id}/profile`)}
+        onEditOpen={() => navigate(`/form/user/${user.id}/profile`)}
         onSuspendOpen={() => setSuspendDialogOpen(true)}
         onUnsuspend={handleUnsuspend}
         onResetPassword={handleResetPassword}
