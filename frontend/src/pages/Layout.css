@@ -18,8 +18,9 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 0;
+  padding: 0 0 var(--layout-bottom-clearance);
   overflow-y: auto;
+  scroll-padding-bottom: var(--layout-bottom-clearance);
 }
 
 .layout--application .Footer {
@@ -32,7 +33,7 @@
   display: flex;
   flex-direction: column;
   padding-top: 2rem;
-  padding-bottom: 4rem;
+  padding-bottom: var(--layout-bottom-clearance);
 }
 
 .layout-guest-sandbox-banner {

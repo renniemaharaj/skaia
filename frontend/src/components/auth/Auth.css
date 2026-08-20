@@ -2,7 +2,7 @@
   flex: 1;
   min-height: 100%;
   display: flex;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
   padding: 20px;
   /* background: linear-gradient(135deg, var(--bg-color) 0%, var(--bg-secondary) 100%); */

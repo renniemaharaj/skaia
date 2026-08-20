@@ -145,7 +145,7 @@ export default function ManagedForm<Values extends FormikValues>({
                     <Link
                       key={tab.id}
                       to={tab.to}
-                      className={tab.active ? "active" : undefined}
+                      className={`managed-form__tab${tab.active ? " active" : ""}`}
                       aria-current={tab.active ? "page" : undefined}
                     >
                       {tab.icon}
@@ -157,7 +157,7 @@ export default function ManagedForm<Values extends FormikValues>({
                       type="button"
                       role="tab"
                       aria-selected={tab.active}
-                      className={tab.active ? "active" : undefined}
+                      className={`managed-form__tab${tab.active ? " active" : ""}`}
                       onClick={tab.onSelect}
                     >
                       {tab.icon}

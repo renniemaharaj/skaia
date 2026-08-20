@@ -47,3 +47,37 @@ describe("ManagedForm grouped variant", () => {
     );
   });
 });
+
+describe("ManagedForm tabs", () => {
+  it("uses one shared presentation for route and in-place tabs", async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+
+    render(
+      <MemoryRouter>
+        <ManagedForm
+          id="tabbed-form"
+          title="Settings"
+          initialValues={{}}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+          tabs={[
+            { id: "route", label: "Profile", active: false, to: "/profile" },
+            { id: "local", label: "Access", active: true, onSelect },
+          ]}
+        >
+          <div>Tab content</div>
+        </ManagedForm>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole("link", { name: "Profile" })).toHaveClass("managed-form__tab");
+    expect(screen.getByRole("tab", { name: "Access" })).toHaveClass(
+      "managed-form__tab",
+      "active"
+    );
+
+    await user.click(screen.getByRole("tab", { name: "Access" }));
+    expect(onSelect).toHaveBeenCalledOnce();
+  });
+});

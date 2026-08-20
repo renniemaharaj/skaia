@@ -3,6 +3,10 @@
   width: 100%;
 }
 
+.layout--application .store-container {
+  --store-category-sticky-top: 0px;
+}
+
 .store-catalog-layout {
   width: 100%;
 }
