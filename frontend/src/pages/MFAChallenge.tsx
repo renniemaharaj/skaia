@@ -1,9 +1,8 @@
-import { AlertCircle, Fingerprint, ShieldCheck } from "lucide-react";
+import { Fingerprint, ShieldCheck } from "lucide-react";
 import { useState } from "react";
+import type { FormikHelpers } from "formik";
 
-import { ContentFlatCard } from "../components/cards/ContentFlatCard";
-import { ContentStandOutCard } from "../components/cards/ContentStandOutCard";
-import Button from "../components/input/Button";
+import { FormField, ManagedForm } from "../components/form";
 import {
   type AuthResponse,
   type MFAChallengeReason,
@@ -68,96 +67,57 @@ const MFAChallenge = ({
   onBack,
   onAuthSuccess,
 }: MFAChallengeProps) => {
-  const [totpCode, setTotpCode] = useState("");
   const [useBackupCode, setUseBackupCode] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const reason = challengeCopy(reasonCode, action, Boolean(totpToken));
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+  const handleSubmit = async (
+    values: { code: string },
+    helpers: FormikHelpers<{ code: string }>
+  ) => {
+    helpers.setStatus(undefined);
     try {
       if (totpToken) {
         const data = await loginTOTP(
           totpToken,
-          useBackupCode ? undefined : totpCode,
-          useBackupCode ? totpCode : undefined
+          useBackupCode ? undefined : values.code,
+          useBackupCode ? values.code : undefined
         );
         if (onAuthSuccess) {
           onAuthSuccess(data.access_token, data);
         }
       } else {
         await verifyMFAChallenge(
-          useBackupCode ? undefined : totpCode,
-          useBackupCode ? totpCode : undefined
+          useBackupCode ? undefined : values.code,
+          useBackupCode ? values.code : undefined
         );
         if (onAuthSuccess) {
           onAuthSuccess("");
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid code");
-    } finally {
-      setLoading(false);
+      helpers.setStatus(err instanceof Error ? err.message : "Invalid code");
     }
   };
 
   return (
     <div className="auth-page">
       <div className="auth-container">
-        <ContentFlatCard className="auth-card auth-card--challenge">
-          <div className="section__header">
-            <Fingerprint size={24} className="section__header-icon" aria-hidden="true" />
-            <span className="section__header-eyebrow">Why now: {reason.label}</span>
-            <h1>Verify it's you</h1>
-            <p>{useBackupCode ? "Use an unused backup code." : "Use your authenticator code."}</p>
-          </div>
-
-          <div className="section__content">
-            {error && (
-              <div className="auth-error">
-                <AlertCircle size={20} />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="auth-form compact-form-card">
-              <ContentStandOutCard className="form-group" emphasis="group">
-                <label htmlFor="totp_code">
-                  {useBackupCode ? "Backup Code" : "Verification Code"}
-                </label>
-                <div className="input-wrapper">
-                  <ShieldCheck size={20} className="input-icon" />
-                  <input
-                    id="totp_code"
-                    type="text"
-                    inputMode={useBackupCode ? "text" : "numeric"}
-                    autoComplete="one-time-code"
-                    placeholder={useBackupCode ? "XXXX-XXXX" : "000000"}
-                    maxLength={useBackupCode ? 9 : 6}
-                    value={totpCode}
-                    onChange={e => setTotpCode(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </ContentStandOutCard>
-
-              <div className="form-actions">
-                <Button
-                  type="submit"
-                  className="auth-button"
-                  variant="primary"
-                  loading={loading}
-                  block
-                >
-                  Verify
-                </Button>
-              </div>
-            </form>
-
+        <ManagedForm
+          id="mfa-challenge-form"
+          className="auth-card auth-card--challenge"
+          formClassName="auth-form"
+          variant="grouped"
+          icon={<Fingerprint size={18} />}
+          eyebrow={`Why now: ${reason.label}`}
+          title="Verify it's you"
+          description={
+            useBackupCode ? "Use an unused backup code." : "Use your authenticator code."
+          }
+          initialValues={{ code: "" }}
+          validate={values => (!values.code ? { code: "Verification code is required" } : {})}
+          onSubmit={handleSubmit}
+          submitLabel="Verify"
+          afterActions={formik => (
             <div className="auth-toggle">
               <p>
                 <button
@@ -165,10 +125,9 @@ const MFAChallenge = ({
                   className="auth-toggle-btn"
                   onClick={() => {
                     setUseBackupCode(!useBackupCode);
-                    setTotpCode("");
-                    setError(null);
+                    formik.resetForm();
                   }}
-                  disabled={loading}
+                  disabled={formik.isSubmitting}
                 >
                   {useBackupCode ? "Use authenticator code" : "Use a backup code"}
                 </button>
@@ -179,15 +138,31 @@ const MFAChallenge = ({
                     type="button"
                     className="auth-toggle-btn"
                     onClick={onBack}
-                    disabled={loading}
+                    disabled={formik.isSubmitting}
                   >
                     Back to login
                   </button>
                 </p>
               )}
             </div>
-          </div>
-        </ContentFlatCard>
+          )}
+        >
+          {formik => (
+            <FormField
+              id="totp_code"
+              name="code"
+              label={useBackupCode ? "Backup Code" : "Verification Code"}
+              type="text"
+              inputMode={useBackupCode ? "text" : "numeric"}
+              autoComplete="one-time-code"
+              placeholder={useBackupCode ? "XXXX-XXXX" : "000000"}
+              maxLength={useBackupCode ? 9 : 6}
+              icon={<ShieldCheck size={20} />}
+              variant="grouped"
+              disabled={formik.isSubmitting}
+            />
+          )}
+        </ManagedForm>
 
         <div className="auth-bg-decoration">
           <div className="decoration-circle decoration-circle-1" />

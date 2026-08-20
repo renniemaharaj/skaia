@@ -1,41 +1,24 @@
 import { useSetAtom } from "jotai";
-import { AlertCircle, CheckCircle, Lock, Mail, User } from "lucide-react";
+import { CheckCircle, Lock, Mail, User } from "lucide-react";
 import { useEffect, useState } from "react";
+import type { FormikHelpers } from "formik";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import {
-  accessTokenAtom,
-  currentUserAtom,
-  refreshTokenAtom,
-} from "../../atoms/auth";
+import { accessTokenAtom, currentUserAtom, refreshTokenAtom } from "../../atoms/auth";
 import { type AuthResponse, loginUser, registerUser } from "../../utils/api";
 import "../ui/FormGroup.css";
 import "./Auth.css";
 import MFAChallenge from "../../pages/MFAChallenge";
-import { ContentFlatCard } from "../cards/ContentFlatCard";
-import { ContentStandOutCard } from "../cards/ContentStandOutCard";
-import Button from "../input/Button";
-import FormSectionIntro from "../form/FormSectionIntro";
-import "../form/ManagedForm.css";
+import { FormField, ManagedForm } from "../form";
 
 interface AuthPageProps {
   onAuthSuccess?: (token: string) => void;
   initialMode?: "login" | "register";
 }
 
-export const Auth: React.FC<AuthPageProps> = ({
-  onAuthSuccess,
-  initialMode = "login",
-}) => {
+export const Auth: React.FC<AuthPageProps> = ({ onAuthSuccess, initialMode = "login" }) => {
   const [isLogin, setIsLogin] = useState(initialMode === "login");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    passwordConfirm: "",
-  });
+  const [initialEmail, setInitialEmail] = useState("");
 
   // TOTP challenge state
   const [totpToken, setTotpToken] = useState<string | null>(null);
@@ -54,23 +37,12 @@ export const Auth: React.FC<AuthPageProps> = ({
       setSuccess(state.message);
       // Pre-fill email if provided
       if (state?.email) {
-        setFormData((prev) => ({
-          ...prev,
-          email: state.email,
-        }));
+        setInitialEmail(state.email);
       }
       // Clear the state so it doesn't persist on navigation
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
 
   const completeLogin = (data: AuthResponse) => {
     setAccessToken(data.access_token);
@@ -82,59 +54,46 @@ export const Auth: React.FC<AuthPageProps> = ({
       onAuthSuccess(data.access_token);
     }
     const from = (location.state as any)?.from?.pathname;
-    const redirectTo =
-      from && from !== "/register" && !from.startsWith("/tmp/") ? from : "/";
+    const redirectTo = from && from !== "/register" && !from.startsWith("/tmp/") ? from : "/";
     navigate(redirectTo);
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
+  const handleSubmit = async (
+    values: { username: string; email: string; password: string; passwordConfirm: string },
+    helpers: FormikHelpers<{
+      username: string;
+      email: string;
+      password: string;
+      passwordConfirm: string;
+    }>
+  ) => {
+    helpers.setStatus(undefined);
     try {
-      if (!isLogin && formData.password !== formData.passwordConfirm) {
-        throw new Error("Passwords do not match");
-      }
-
       let data: AuthResponse;
       if (isLogin) {
-        data = await loginUser(formData.email, formData.password);
+        data = await loginUser(values.email, values.password);
 
         // 2FA required - show TOTP challenge
         if (data.requires_totp && data.totp_token) {
           setTotpToken(data.totp_token);
-          setLoading(false);
           return;
         }
 
         completeLogin(data);
       } else {
-        data = await registerUser(
-          formData.username,
-          formData.email,
-          formData.password,
-        );
+        data = await registerUser(values.username, values.email, values.password);
 
-        setError(null);
-        setFormData({
-          username: "",
-          email: "",
-          password: "",
-          passwordConfirm: "",
-        });
+        helpers.resetForm();
 
         navigate("/login", {
           state: {
             message: "Account created successfully! Please log in.",
-            email: formData.email,
+            email: values.email,
           },
         });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
+      helpers.setStatus(err instanceof Error ? err.message : "An error occurred");
     }
   };
 
@@ -156,173 +115,120 @@ export const Auth: React.FC<AuthPageProps> = ({
   return (
     <div className="auth-page">
       <div className="auth-container">
-        <ContentFlatCard className="auth-card">
-          <FormSectionIntro
-            icon={<Lock size={18} />}
-            title={isLogin ? "Welcome Back" : "Join Us"}
-            description={
-              isLogin
-                ? "Log in to your account to continue"
-                : "Create a new account to get started"
+        <ManagedForm
+          id="auth-form"
+          className="auth-card"
+          formClassName="auth-form"
+          variant="grouped"
+          icon={<Lock size={18} />}
+          title={isLogin ? "Welcome Back" : "Join Us"}
+          description={
+            isLogin ? "Log in to your account to continue" : "Create a new account to get started"
+          }
+          initialValues={{ username: "", email: initialEmail, password: "", passwordConfirm: "" }}
+          enableReinitialize
+          validate={values => {
+            const errors: Partial<typeof values> = {};
+            if (!values.email.trim()) errors.email = "Email is required";
+            if (!values.password) errors.password = "Password is required";
+            if (!isLogin && !values.username.trim()) errors.username = "Username is required";
+            if (!isLogin && values.password !== values.passwordConfirm) {
+              errors.passwordConfirm = "Passwords do not match";
             }
-          />
-          <br />
-          <div className="section__content">
-            {error && (
-              <div className="auth-error">
-                <AlertCircle size={20} />
-                <span>{error}</span>
+            return errors;
+          }}
+          onSubmit={handleSubmit}
+          submitLabel={isLogin ? "Log In" : "Create Account"}
+          submittingLabel={isLogin ? "Logging in..." : "Creating account..."}
+          afterActions={formik => (
+            <>
+              <div className="auth-divider">
+                <span>or</span>
               </div>
-            )}
-
-            {success && (
-              <div className="auth-success">
-                <CheckCircle size={20} />
-                <span>{success}</span>
+              <div className="auth-toggle">
+                <p>
+                  {isLogin ? "Don't have an account?" : "Already have an account?"}
+                  <button
+                    type="button"
+                    className="auth-toggle-btn"
+                    onClick={() => {
+                      setIsLogin(!isLogin);
+                      setSuccess(null);
+                      setInitialEmail("");
+                      formik.resetForm();
+                    }}
+                    disabled={formik.isSubmitting}
+                  >
+                    {isLogin ? "Sign up" : "Log in"}
+                  </button>
+                </p>
               </div>
-            )}
-
-            <form
-              onSubmit={handleSubmit}
-              className="auth-form compact-form-card"
-            >
-              {!isLogin && (
-                <ContentStandOutCard className="form-group" emphasis="group">
-                  <label htmlFor="username">Username</label>
-                  <p className="form-help">
-                    This is how other members will identify you.
-                  </p>
-                  <div className="input-wrapper">
-                    <User size={20} className="input-icon" />
-                    <input
-                      id="username"
-                      type="text"
-                      name="username"
-                      placeholder="Choose a username"
-                      value={formData.username}
-                      onChange={handleChange}
-                      required={!isLogin}
-                      disabled={loading}
-                    />
-                  </div>
-                </ContentStandOutCard>
+            </>
+          )}
+        >
+          {formik => (
+            <>
+              {success && (
+                <div className="auth-success">
+                  <CheckCircle size={20} />
+                  <span>{success}</span>
+                </div>
               )}
 
-              <ContentStandOutCard className="form-group" emphasis="group">
-                <label htmlFor="email">Account email</label>
-                <div className="input-wrapper">
-                  <Mail size={20} className="input-icon" />
-                  <input
-                    id="email"
-                    type="email"
-                    name="email"
-                    placeholder="Enter your email address"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </ContentStandOutCard>
-
-              <ContentStandOutCard className="form-group" emphasis="group">
-                <label htmlFor="password">Password</label>
-                {!isLogin && (
-                  <p className="form-help">
-                    Use a unique password you do not use elsewhere.
-                  </p>
-                )}
-                <div className="input-wrapper">
-                  <Lock size={20} className="input-icon" />
-                  <input
-                    id="password"
-                    type="password"
-                    name="password"
-                    placeholder="Enter your password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </ContentStandOutCard>
-
               {!isLogin && (
-                <ContentStandOutCard className="form-group" emphasis="group">
-                  <label htmlFor="passwordConfirm">Confirm Password</label>
-                  <p className="form-help">Enter the same password again.</p>
-                  <div className="input-wrapper">
-                    <Lock size={20} className="input-icon" />
-                    <input
-                      id="passwordConfirm"
-                      type="password"
-                      name="passwordConfirm"
-                      placeholder="Confirm your password"
-                      value={formData.passwordConfirm}
-                      onChange={handleChange}
-                      required={!isLogin}
-                      disabled={loading}
-                    />
-                  </div>
-                </ContentStandOutCard>
+                <FormField
+                  name="username"
+                  label="Username"
+                  help="This is how other members will identify you."
+                  icon={<User size={20} />}
+                  variant="grouped"
+                  placeholder="Choose a username"
+                  required
+                  disabled={formik.isSubmitting}
+                />
               )}
-
+              <FormField
+                name="email"
+                label="Account email"
+                type="email"
+                icon={<Mail size={20} />}
+                variant="grouped"
+                placeholder="Enter your email address"
+                required
+                disabled={formik.isSubmitting}
+              />
+              <FormField
+                name="password"
+                label="Password"
+                type="password"
+                help={!isLogin ? "Use a unique password you do not use elsewhere." : undefined}
+                icon={<Lock size={20} />}
+                variant="grouped"
+                placeholder="Enter your password"
+                required
+                disabled={formik.isSubmitting}
+              />
+              {!isLogin && (
+                <FormField
+                  name="passwordConfirm"
+                  label="Confirm Password"
+                  type="password"
+                  help="Enter the same password again."
+                  icon={<Lock size={20} />}
+                  variant="grouped"
+                  placeholder="Confirm your password"
+                  required
+                  disabled={formik.isSubmitting}
+                />
+              )}
               {isLogin && (
                 <div className="auth-forgot">
                   <Link to="/forgot-password">Forgot your password?</Link>
                 </div>
               )}
-
-              <div className="form-actions">
-                <Button
-                  type="submit"
-                  className="auth-button"
-                  variant="primary"
-                  loading={loading}
-                  block
-                >
-                  {loading
-                    ? isLogin
-                      ? "Logging in..."
-                      : "Creating account..."
-                    : isLogin
-                      ? "Log In"
-                      : "Create Account"}
-                </Button>
-              </div>
-            </form>
-
-            <div className="auth-divider">
-              <span>or</span>
-            </div>
-
-            <div className="auth-toggle">
-              <p>
-                {isLogin
-                  ? "Don't have an account?"
-                  : "Already have an account?"}
-                <button
-                  type="button"
-                  className="auth-toggle-btn"
-                  onClick={() => {
-                    setIsLogin(!isLogin);
-                    setError(null);
-                    setSuccess(null);
-                    setFormData({
-                      username: "",
-                      email: "",
-                      password: "",
-                      passwordConfirm: "",
-                    });
-                  }}
-                  disabled={loading}
-                >
-                  {isLogin ? "Sign up" : "Log in"}
-                </button>
-              </p>
-            </div>
-          </div>
-        </ContentFlatCard>
+            </>
+          )}
+        </ManagedForm>
 
         <div className="auth-bg-decoration">
           <div className="decoration-circle decoration-circle-1" />

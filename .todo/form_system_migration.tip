@@ -11,6 +11,7 @@
 - **Shared local/upload-library media picker** - ✅ Complete
 - **Canonical page, user, and site form routes** - ✅ Complete
 - **Full verification** - ✅ Complete
+- **Grouped auth and access variant** - ✅ Complete
 
 ### Next Steps
 - [x] Migrate product edit, documentation settings, site settings, user security, wallet cards, and order editing.
@@ -20,5 +21,10 @@
 - [x] Route page management through `/form/page/:slug/manage` and expose canonical user/site form routes.
 - [x] Replace native file controls in managed forms with one upload and upload-library picker.
 - [x] Run managed-form audit, build, and full tests (2026-08-18: 50 files, 178 tests).
+- [x] Add grouped ManagedForm/FormField presentation without discarding separated field cards.
+- [x] Migrate login, registration, recovery, password reset, MFA, and rate-limit access forms.
+- [x] Replace checkout's legacy section headers with shared form-section intros.
+- [x] Run managed-form/native-dialog audits, all 179 frontend tests, lint, TypeScript,
+      production build, and diff checks (2026-08-20).
 
 <--/------->

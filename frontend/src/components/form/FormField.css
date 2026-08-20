@@ -20,8 +20,33 @@
   width: 100%;
 }
 
+.managed-field-group {
+  padding: 1rem;
+}
+
+.managed-field__input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.managed-field__input-wrapper > input {
+  width: 100%;
+  padding-right: 2.75rem;
+}
+
+.managed-field__icon {
+  position: absolute;
+  right: 1rem;
+  z-index: 1;
+  display: inline-flex;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
 .managed-field--error > input,
-.managed-field--error > textarea {
+.managed-field--error > textarea,
+.managed-field--error .managed-field__input-wrapper > input {
   border-color: var(--error-color);
 }
 

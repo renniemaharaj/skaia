@@ -33,6 +33,14 @@ export const presenceActiveTabAtom = atomWithStorage<
   "members" | "chat" | "voice" | "physics" | "defcon"
 >("presenceActiveTab", "members");
 export const presencePanelWidthAtom = atomWithStorage("presencePanelWidth", 440);
+export interface PresenceLauncherPosition {
+  x: number;
+  y: number;
+}
+export const presenceLauncherPositionAtom = atomWithStorage<PresenceLauncherPosition | null>(
+  "presenceLauncherPosition",
+  null
+);
 
 /**
  * Set by the WS sync hook when a "tp" (teleport) message is received.

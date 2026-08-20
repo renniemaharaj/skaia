@@ -2,6 +2,7 @@ import { CreditCard, Loader, Mail, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../../cards/ContentStandOutCard";
+import { FormSectionIntro } from "../../form";
 import Select, { type SelectOption } from "../../input/Select";
 import { MoneyAmount } from "../../ui/MoneyAmount";
 import { BillingInfoCard } from "./BillingInfoCard";
@@ -90,12 +91,12 @@ export function CheckoutPanel({
   return (
     <div className="cart-summary cart-checkout-panel">
       <ContentFlatCard className="cart-checkout-card cart-glass-tile cart-checkout-card--details">
-        <div className="section__header">
-          <CreditCard className="section__header-icon" size={24} />
-          <span className="section__header-eyebrow">Checkout</span>
-          <h3>Complete Order</h3>
-          <p>Please enter your delivery details securely.</p>
-        </div>
+        <FormSectionIntro
+          className="managed-form__section-intro--spaced"
+          icon={<CreditCard size={18} />}
+          title="Complete Order"
+          description="Please enter your delivery details securely."
+        />
 
         {!isAuthenticated && (
           <ContentStandOutCard className="cart-summary-section" emphasis="group">
@@ -147,12 +148,12 @@ export function CheckoutPanel({
       )}
 
       <ContentFlatCard className="cart-checkout-card cart-glass-tile cart-checkout-card--payment">
-        <div className="section__header" style={{ marginBottom: "16px" }}>
-          <ShieldCheck className="section__header-icon" size={24} />
-          <span className="section__header-eyebrow">Secure Payment</span>
-          <h3>Payment Method</h3>
-          <p>All transactions are secure and encrypted.</p>
-        </div>
+        <FormSectionIntro
+          className="managed-form__section-intro--spaced"
+          icon={<ShieldCheck size={18} />}
+          title="Payment Method"
+          description="All transactions are secure and encrypted."
+        />
         <ContentStandOutCard
           className="cart-summary-section cart-summary-section--last"
           emphasis="group"

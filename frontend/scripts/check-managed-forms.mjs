@@ -3,12 +3,6 @@ import { relative, resolve } from "node:path";
 
 const sourceRoot = resolve(process.cwd(), "src");
 const knownRawForms = new Set([
-  // Authentication and access challenges intentionally keep their dedicated surface.
-  "components/auth/Auth.tsx",
-  "components/auth/ForgotPasswordPage.tsx",
-  "components/auth/ResetPasswordPage.tsx",
-  "pages/MFAChallenge.tsx",
-  "pages/RateLimitedPage.tsx",
   // Embedded command/confirmation microforms are not routed editor screens.
   "components/page/layout/voice/MediaSection.tsx",
   "components/ui/Console.tsx",

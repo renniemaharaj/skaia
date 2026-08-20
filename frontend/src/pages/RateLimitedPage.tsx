@@ -1,8 +1,8 @@
 import { Lock, ShieldCheck } from "lucide-react";
 import React, { useState } from "react";
+import type { FormikHelpers } from "formik";
 import { toast } from "sonner";
-import { ContentStandOutCard } from "../components/cards/ContentStandOutCard";
-import Button from "../components/input/Button";
+import { FormField, FormSectionIntro, ManagedForm } from "../components/form";
 import { type RateLimitDefconInfo, apiRequest } from "../utils/api";
 import ErrorPage from "./ErrorPage";
 import "../components/ui/FormGroup.css";
@@ -24,8 +24,6 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
 }) => {
   const canRequestPriorityAccess = challenge === "totp";
   const [showOverride, setShowOverride] = useState(canRequestPriorityAccess);
-  const [totpCode, setTotpCode] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeLeft, setTimeLeft] = useState(retrySeconds || 0);
 
   React.useEffect(() => {
@@ -57,23 +55,21 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
     return parts.join(" ");
   };
 
-  const handleTotpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!totpCode || totpCode.length < 6) return;
-
-    setIsSubmitting(true);
+  const handleTotpSubmit = async (
+    values: { code: string },
+    helpers: FormikHelpers<{ code: string }>
+  ) => {
     try {
       await apiRequest("/auth/bypass-rate-limit", {
         method: "POST",
-        headers: { "X-TOTP-Code": totpCode },
+        headers: { "X-TOTP-Code": values.code },
       });
       toast.success("Identity verified. Network access restored.");
       onCleared?.();
     } catch (err) {
       toast.error("Access denied. Invalid signature or insufficient clearance.");
     } finally {
-      setIsSubmitting(false);
-      setTotpCode("");
+      helpers.resetForm();
     }
   };
 
@@ -96,50 +92,50 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
       )}
 
       {canRequestPriorityAccess && showOverride && (
-        <form onSubmit={handleTotpSubmit} className="rate-limited-form compact-form-card">
-          <ContentStandOutCard className="form-group" emphasis="group">
-            <label htmlFor="totp_code">Priority Override Code</label>
-            <p className="form-help">Enter the six-digit administrator verification code.</p>
-            <div className="input-wrapper">
-              <ShieldCheck size={18} className="input-icon" />
-              <input
-                id="totp_code"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder="000000"
-                maxLength={6}
-                value={totpCode}
-                onChange={e => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-          </ContentStandOutCard>
-
-          <Button
-            type="submit"
-            className="auth-button"
-            variant="primary"
-            loading={isSubmitting}
-            disabled={totpCode.length < 6}
-            block
-          >
-            Authorize Bypass
-          </Button>
-        </form>
+        <ManagedForm
+          id="rate-limit-override-form"
+          className="rate-limited-form"
+          variant="grouped"
+          icon={<ShieldCheck size={18} />}
+          title="Priority Access"
+          description="Enter the six-digit administrator verification code."
+          initialValues={{ code: "" }}
+          validate={values => (values.code.length === 6 ? {} : { code: "Enter all six digits" })}
+          onSubmit={handleTotpSubmit}
+          submitDisabled={formik => formik.values.code.length !== 6}
+          submitLabel="Authorize Bypass"
+        >
+          {formik => (
+            <FormField
+              id="totp_code"
+              name="code"
+              label="Priority Override Code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="000000"
+              maxLength={6}
+              icon={<ShieldCheck size={18} />}
+              variant="grouped"
+              disabled={formik.isSubmitting}
+              onChange={event => {
+                void formik.setFieldValue(
+                  "code",
+                  event.target.value.replace(/\D/g, "").slice(0, 6)
+                );
+              }}
+            />
+          )}
+        </ManagedForm>
       )}
 
       {defconInfo && (
-        <div className="section__header" style={{ alignSelf: "stretch", marginTop: "1rem" }}>
-          <ShieldCheck size={24} className="section__header-icon" aria-hidden="true" />
-          <span className="section__header-eyebrow">Rate limit telemetry</span>
-          <h2>Traffic guard status</h2>
-          <p>
-            Active jails: {defconInfo.ips_jailed} · Tracked signatures:{" "}
-            {defconInfo.distinct_ips_tracked} · Cleared citizens: {defconInfo.citizens} · Dynamic
-            threshold: {defconInfo.limiter_state} req/m
-          </p>
+        <div style={{ alignSelf: "stretch", marginTop: "1rem" }}>
+          <FormSectionIntro
+            icon={<ShieldCheck size={18} />}
+            title="Traffic guard status"
+            description={`Active jails: ${defconInfo.ips_jailed} · Tracked signatures: ${defconInfo.distinct_ips_tracked} · Cleared citizens: ${defconInfo.citizens} · Dynamic threshold: ${defconInfo.limiter_state} req/m`}
+          />
         </div>
       )}
     </div>

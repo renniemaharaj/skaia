@@ -24,6 +24,7 @@ import { seoAtom } from "../../../atoms/config";
 import { mediaStateAtom } from "../../../atoms/media";
 import {
   type OnlineUser,
+  presenceLauncherPositionAtom,
   pendingTpUserAtom,
   presencePanelExpandedAtom,
   layoutChildrenAtom,
@@ -40,6 +41,11 @@ import UserAvatar from "../../user/UserAvatar";
 import UserInlineCard from "../../user/UserInlineCard";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
 import { usePresenceUsers } from "../../../hooks/usePresenceUsers";
+import {
+  clampPresenceLauncherPosition,
+  isPresenceLauncherDragTarget,
+  presenceLauncherStyle,
+} from "./presenceLauncher";
 import "./PresencePanel.css";
 // Lazy-loaded: opened only on user interaction, so no reason to bloat the initial payload.
 const PhysicsControls = lazy(() => import("./PhysicsControls"));
@@ -261,7 +267,107 @@ const PresencePanel = () => {
       : 0
   );
   const [panelWidth, setPanelWidth] = useAtom(presencePanelWidthAtom);
+  const [launcherPosition, setLauncherPosition] = useAtom(presenceLauncherPositionAtom);
+  const [dragPosition, setDragPosition] = useState(launcherPosition);
   const [isResizing, setIsResizing] = useState(false);
+  const panelRootRef = useRef<HTMLDivElement>(null);
+  const launcherDragRef = useRef<{
+    pointerId: number;
+    offsetX: number;
+    offsetY: number;
+    width: number;
+    height: number;
+    startX: number;
+    startY: number;
+    moved: boolean;
+  } | null>(null);
+  const suppressLauncherClickRef = useRef(false);
+
+  const launcherViewportSize = () => ({
+    width: window.visualViewport?.width ?? window.innerWidth,
+    height: window.visualViewport?.height ?? window.innerHeight,
+  });
+
+  const handleLauncherPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (expanded || event.button !== 0) return;
+    if (!isPresenceLauncherDragTarget(event.target as Element)) return;
+    const rect = panelRootRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    launcherDragRef.current = {
+      pointerId: event.pointerId,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+      width: rect.width,
+      height: rect.height,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleLauncherPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = launcherDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) >= 5) {
+      drag.moved = true;
+    }
+    if (!drag.moved) return;
+    event.preventDefault();
+    setDragPosition(
+      clampPresenceLauncherPosition(
+        { x: event.clientX - drag.offsetX, y: event.clientY - drag.offsetY },
+        { width: drag.width, height: drag.height },
+        launcherViewportSize()
+      )
+    );
+  };
+
+  const handleLauncherPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = launcherDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    if (drag.moved) {
+      const position = clampPresenceLauncherPosition(
+        { x: event.clientX - drag.offsetX, y: event.clientY - drag.offsetY },
+        { width: drag.width, height: drag.height },
+        launcherViewportSize()
+      );
+      setDragPosition(position);
+      setLauncherPosition(position);
+      suppressLauncherClickRef.current = true;
+      window.setTimeout(() => {
+        suppressLauncherClickRef.current = false;
+      }, 0);
+    }
+    launcherDragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  useEffect(() => {
+    if (!launcherPosition) return;
+    const clampStoredPosition = () => {
+      const rect = panelRootRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const position = clampPresenceLauncherPosition(
+        launcherPosition,
+        { width: rect.width, height: rect.height },
+        launcherViewportSize()
+      );
+      setDragPosition(position);
+      if (position.x !== launcherPosition.x || position.y !== launcherPosition.y) {
+        setLauncherPosition(position);
+      }
+    };
+    clampStoredPosition();
+    window.addEventListener("resize", clampStoredPosition);
+    window.visualViewport?.addEventListener("resize", clampStoredPosition);
+    return () => {
+      window.removeEventListener("resize", clampStoredPosition);
+      window.visualViewport?.removeEventListener("resize", clampStoredPosition);
+    };
+  }, [launcherPosition, setLauncherPosition]);
 
   useEffect(() => {
     if (activeTab === "voice" && !hasOpenedVoice) {
@@ -559,18 +665,32 @@ const PresencePanel = () => {
       ? { "--presence-panel-height": `${mobilePanelHeight}px` }
       : {}),
     ...(isPanelSplit ? { "--presence-panel-width": `${actualPanelWidth}px` } : {}),
+    ...presenceLauncherStyle(expanded, dragPosition),
   } as React.CSSProperties;
   const layoutChildren = useAtomValue(layoutChildrenAtom);
 
   return (
     <div
+      ref={panelRootRef}
       className={`presence-panel${expanded ? " presence-panel--expanded" : ""}${isPanelSplit ? " pp-split-mode" : ""}`}
       style={panelStyle as any}
       id="presence-panel-root"
     >
       <div className="pp-wrapper" style={isPanelSplit ? { width: actualPanelWidth } : undefined}>
         {/* Control bar: mode tabs + expand toggle */}
-        <div className="pp-controls">
+        <div
+          className="pp-controls"
+          onPointerDown={handleLauncherPointerDown}
+          onPointerMove={handleLauncherPointerMove}
+          onPointerUp={handleLauncherPointerUp}
+          onPointerCancel={handleLauncherPointerUp}
+          onClickCapture={event => {
+            if (!suppressLauncherClickRef.current) return;
+            event.preventDefault();
+            event.stopPropagation();
+            suppressLauncherClickRef.current = false;
+          }}
+        >
           <div className="pp-tabs">
             <button
               type="button"

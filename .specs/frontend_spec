@@ -214,6 +214,13 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
   flat-glass surface while retaining domain layout classes. Form groups keep comfortable
   separation, labels explain their controls, major actions use `Button`, and icon-only
   actions use the `action-btn`/typed button variants.
+- `ManagedForm` is the shared Formik owner for routed editor, authentication, recovery, MFA,
+  and access-challenge workflows. Its default editor presentation uses header X/check actions;
+  the `grouped` presentation preserves auth-style separated field cards and full-width footer
+  submission. Both presentations use `FormSectionIntro` for internal section introductions.
+- Checkout retains its parent-owned multi-panel state and separated groups, but uses the same
+  `FormSectionIntro` presentation. Only embedded command/confirmation microforms may remain on
+  the managed-form audit allowlist.
 - Icon-only buttons use `.thread-action-btn` plus size/variant modifiers.
 - `!important` is allowed only for third-party overrides, page-builder inline
   alignment overrides, intentional resets, or mobile grid collapse.
@@ -230,6 +237,9 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
   uses compact full-width padding consistent with the read-only renderer.
 - Guest sandbox mode reveals management controls in the frontend only; backend auth
   remains the authority.
+- The collapsed presence launcher is viewport-clamped and remembers its user-selected
+  position. Its drag coordinates never affect the expanded mobile overlay or desktop
+  split-panel position, and dragging must not activate launcher controls.
 - Do not add marketing landing pages when building app functionality.
 
 ## Important Files

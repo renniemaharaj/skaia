@@ -20,6 +20,16 @@
   gap: 4px;
 }
 
+.presence-panel:not(.presence-panel--expanded) .pp-controls {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.presence-panel:not(.presence-panel--expanded):active .pp-controls {
+  cursor: grabbing;
+}
+
 .pp-tabs {
   display: flex;
   align-items: center;

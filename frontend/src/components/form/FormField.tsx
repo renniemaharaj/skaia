@@ -1,11 +1,19 @@
 import { useField } from "formik";
-import { type InputHTMLAttributes, type TextareaHTMLAttributes, useId } from "react";
+import {
+  type InputHTMLAttributes,
+  type ReactNode,
+  type TextareaHTMLAttributes,
+  useId,
+} from "react";
+import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import "./FormField.css";
 
 interface SharedFieldProps {
   name: string;
   label: string;
   help?: string;
+  icon?: ReactNode;
+  variant?: "default" | "grouped";
 }
 
 type FormFieldProps = SharedFieldProps &
@@ -15,7 +23,14 @@ type FormFieldProps = SharedFieldProps &
   );
 
 /** Formik-bound text field with one normalized label/help/error layout. */
-export default function FormField({ name, label, help, ...props }: FormFieldProps) {
+export default function FormField({
+  name,
+  label,
+  help,
+  icon,
+  variant = "default",
+  ...props
+}: FormFieldProps) {
   const generatedId = useId();
   const [field, meta] = useField(name);
   const id = props.id ?? `field-${generatedId}`;
@@ -25,7 +40,7 @@ export default function FormField({ name, label, help, ...props }: FormFieldProp
     .filter(Boolean)
     .join(" ");
 
-  return (
+  const content = (
     <div className={`managed-field${error ? " managed-field--error" : ""}`}>
       <label htmlFor={id}>{label}</label>
       {help && (
@@ -41,6 +56,19 @@ export default function FormField({ name, label, help, ...props }: FormFieldProp
           aria-describedby={describedBy || undefined}
           aria-invalid={Boolean(error) || undefined}
         />
+      ) : icon ? (
+        <div className="managed-field__input-wrapper">
+          <span className="managed-field__icon" aria-hidden="true">
+            {icon}
+          </span>
+          <input
+            {...field}
+            {...(controlProps as InputHTMLAttributes<HTMLInputElement>)}
+            id={id}
+            aria-describedby={describedBy || undefined}
+            aria-invalid={Boolean(error) || undefined}
+          />
+        </div>
       ) : (
         <input
           {...field}
@@ -56,5 +84,13 @@ export default function FormField({ name, label, help, ...props }: FormFieldProp
         </p>
       )}
     </div>
+  );
+
+  return variant === "grouped" ? (
+    <ContentStandOutCard className="managed-field-group" emphasis="group">
+      {content}
+    </ContentStandOutCard>
+  ) : (
+    content
   );
 }
