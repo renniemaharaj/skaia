@@ -1,5 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AccountTrustNotice from "./AccountTrustNotice";
@@ -43,7 +42,7 @@ describe("AccountTrustNotice", () => {
     );
   });
 
-  it("can be dismissed without changing authorization", async () => {
+  it("stays visible while the account is provisional", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -51,16 +50,13 @@ describe("AccountTrustNotice", () => {
         json: async () => ({ tier: "provisional", remaining_seconds: 30 }),
       })
     );
-    const user = userEvent.setup();
     render(
       <MemoryRouter>
         <AccountTrustNotice userId="7" />
       </MemoryRouter>
     );
-    await user.click(await screen.findByRole("button", { name: /continue browsing/i }));
-    await waitFor(() => {
-      expect(screen.queryByLabelText("New account limits")).not.toBeInTheDocument();
-    });
-    expect(sessionStorage.getItem("account.provisionalNoticeDismissed")).toBe("1");
+    expect(await screen.findByLabelText("New account limits")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /continue browsing/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /dismiss/i })).not.toBeInTheDocument();
   });
 });

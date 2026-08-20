@@ -541,6 +541,7 @@ div#root {
 
 .btn-primary:hover {
   background-color: var(--primary-dark);
+  color: var(--bg-color);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -553,6 +554,7 @@ div#root {
 
 .btn-secondary:hover {
   background-color: var(--bg-tertiary);
+  color: var(--text-primary);
   border-color: color-mix(in srgb, var(--primary-color) 48%, var(--border-color));
 }
 

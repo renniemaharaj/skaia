@@ -363,7 +363,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const location = useLocation();
   const isAppModeRoute = (pathname: string) => {
-    if (pathname.startsWith("/form/")) return true;
     if (pathname.startsWith("/inbox")) return true;
     if (pathname === "/users") return true;
     if (pathname.startsWith("/activity")) return true;

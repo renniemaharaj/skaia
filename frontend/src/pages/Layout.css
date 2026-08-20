@@ -91,16 +91,6 @@
   text-decoration: none;
 }
 
-.account-trust-notice__actions .account-trust-notice__close {
-  border-color: transparent;
-  color: var(--text-secondary);
-}
-
-.account-trust-notice__actions .account-trust-notice__close:hover {
-  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
-  color: var(--text-primary);
-}
-
 @media (max-width: 720px) {
   .account-trust-notice {
     align-items: flex-start;

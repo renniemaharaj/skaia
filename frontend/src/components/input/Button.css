@@ -82,6 +82,7 @@
 
 .sk-btn--primary:hover:not(:disabled) {
   background-color: var(--primary-dark);
+  color: var(--bg-color);
   border-color: var(--primary-dark);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
@@ -101,6 +102,7 @@
 
 .sk-btn--secondary:hover:not(:disabled) {
   background-color: var(--bg-tertiary);
+  color: var(--text-primary);
   border-color: color-mix(in srgb, var(--primary-color) 48%, var(--border-color));
 }
 

@@ -1,7 +1,6 @@
-import { ShieldCheck, X } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import Button from "../components/input/Button";
 import { apiRequest } from "../utils/api";
 import { getServerNow } from "../utils/serverTime";
 
@@ -13,8 +12,6 @@ export interface AccountTrustStatus {
   remaining_seconds: number;
 }
 
-const dismissKey = "account.provisionalNoticeDismissed";
-
 function countdownLabel(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const remainder = seconds % 60;
@@ -23,7 +20,6 @@ function countdownLabel(seconds: number): string {
 
 export default function AccountTrustNotice({ userId }: { userId?: string }) {
   const [status, setStatus] = useState<AccountTrustStatus | null>(null);
-  const [visible, setVisible] = useState(() => sessionStorage.getItem(dismissKey) !== "1");
   const [remaining, setRemaining] = useState(0);
 
   const refresh = useMemo(
@@ -55,8 +51,6 @@ export default function AccountTrustNotice({ userId }: { userId?: string }) {
       const detail = (event as CustomEvent<AccountTrustStatus>).detail;
       if (detail) setStatus(detail);
       setRemaining(detail?.remaining_seconds ?? 0);
-      setVisible(true);
-      sessionStorage.removeItem(dismissKey);
     };
     const onRefresh = () => void refresh();
     window.addEventListener("account:provisional", onProvisional);
@@ -82,7 +76,7 @@ export default function AccountTrustNotice({ userId }: { userId?: string }) {
     return () => window.clearInterval(timer);
   }, [status?.tier, remaining <= 0, refresh]);
 
-  if (!visible || status?.tier !== "provisional") return null;
+  if (status?.tier !== "provisional") return null;
 
   return (
     <section className="account-trust-notice" aria-live="polite" aria-label="New account limits">
@@ -96,32 +90,11 @@ export default function AccountTrustNotice({ userId }: { userId?: string }) {
       </div>
       <div className="account-trust-notice__actions">
         <Link
-          className="sk-btn sk-btn--primary sk-btn--md account-trust-notice__setup"
+          className="sk-btn sk-btn--secondary sk-btn--md account-trust-notice__setup"
           to="/settings/security"
         >
           Set up TOTP
         </Link>
-        <Button
-          variant="action"
-          onClick={() => {
-            sessionStorage.setItem(dismissKey, "1");
-            setVisible(false);
-          }}
-        >
-          Continue browsing
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="account-trust-notice__close"
-          aria-label="Dismiss new account notice"
-          onClick={() => {
-            sessionStorage.setItem(dismissKey, "1");
-            setVisible(false);
-          }}
-        >
-          <X size={15} aria-hidden="true" />
-        </Button>
       </div>
     </section>
   );
