@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -78,31 +77,6 @@ func apiCORSOptions(origins []string) cors.Options {
 	}
 }
 
-var sitemapPaths = []string{
-	"/",
-	"/store",
-	"/forum",
-	"/forum/docs",
-	"/doc",
-	"/kjv",
-	"/users",
-	"/pages",
-	"/privacy",
-	"/tos",
-}
-
-func getSitemapBaseURL() string {
-	if base := seo.ConfiguredPublicBaseURL(); base != "" {
-		return base
-	}
-
-	if v := os.Getenv("SITEMAP_BASE_URL"); v != "" {
-		return strings.TrimRight(v, "/")
-	}
-
-	return "http://localhost:8080"
-}
-
 func publicRequestScheme(r *http.Request) string {
 	if base := seo.ConfiguredPublicBaseURL(); base != "" {
 		if parsed, err := url.Parse(base); err == nil && (parsed.Scheme == "http" || parsed.Scheme == "https") {
@@ -113,74 +87,6 @@ func publicRequestScheme(r *http.Request) string {
 		return "https"
 	}
 	return "http"
-}
-
-func buildSitemapXML(baseURL string) string {
-	return buildSitemapXMLWithPaths(baseURL, sitemapPaths)
-}
-
-func buildSitemapXMLWithPaths(baseURL string, paths []string) string {
-	urlset := "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
-
-	for _, path := range paths {
-		loc := baseURL + path
-		urlset += "  <url>\n"
-		urlset += "    <loc>" + html.EscapeString(loc) + "</loc>\n"
-		urlset += "    <changefreq>daily</changefreq>\n"
-		urlset += "    <priority>0.7</priority>\n"
-		urlset += "  </url>\n"
-	}
-
-	urlset += "</urlset>\n"
-	return urlset
-}
-
-func documentationSitemapPaths(db *sql.DB) []string {
-	if db == nil {
-		return nil
-	}
-	rows, err := db.Query(`SELECT '/doc/' || d.slug, ''
-		FROM documentations d
-		WHERE d.visibility = 'public' AND d.deleted_at IS NULL
-		UNION ALL
-		SELECT '/doc/' || d.slug, '/' || a.slug
-		FROM documentation_articles a
-		JOIN documentations d ON d.id = a.documentation_id
-		WHERE d.visibility = 'public' AND d.deleted_at IS NULL AND a.deleted_at IS NULL
-		ORDER BY 1, 2`)
-	if err != nil {
-		return nil
-	}
-	defer rows.Close()
-
-	paths := make([]string, 0)
-	for rows.Next() {
-		var documentationPath, articlePath string
-		if rows.Scan(&documentationPath, &articlePath) == nil {
-			paths = append(paths, documentationPath+articlePath)
-		}
-	}
-	return paths
-}
-
-func writeSitemapResponse(w http.ResponseWriter, r *http.Request) {
-	client := chi.URLParam(r, "client")
-	configuredClient := os.Getenv("CLIENT_NAME")
-	if client != "" && configuredClient != "" && client != configuredClient {
-		http.NotFound(w, r)
-		return
-	}
-
-	baseURL := getSitemapBaseURL()
-	if baseURL == "" {
-		baseURL = "http://localhost:8080"
-	}
-
-	paths := append(append([]string(nil), sitemapPaths...), documentationSitemapPaths(database.DB)...)
-	sitemap := buildSitemapXMLWithPaths(baseURL, paths)
-	w.Header().Set("Content-Type", "application/xml")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(sitemap))
 }
 
 func envInt(key string, def int) int {
@@ -657,9 +563,23 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	r.Get("/health", healthHandler)
 	r.Head("/health", healthHandler)
 
+	sitemapHandler := func(w http.ResponseWriter, r *http.Request) {
+		client := chi.URLParam(r, "client")
+		configuredClient := os.Getenv("CLIENT_NAME")
+		if client != "" && configuredClient != "" && client != configuredClient {
+			http.NotFound(w, r)
+			return
+		}
+
+		sitemap := seo.BuildSitemapXML()
+		w.Header().Set("Content-Type", "application/xml")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(sitemap))
+	}
+
 	// Sitemap for SEO (per-client and default)
-	r.Get("/sitemap.xml", writeSitemapResponse)
-	r.Get("/sitemap/{client}.xml", writeSitemapResponse)
+	r.Get("/sitemap.xml", sitemapHandler)
+	r.Get("/sitemap/{client}.xml", sitemapHandler)
 
 	// WebSocket at root (nginx proxies /ws directly)
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
