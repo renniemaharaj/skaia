@@ -1,6 +1,7 @@
 import { ShieldCheck, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import Button from "../components/input/Button";
 import { apiRequest } from "../utils/api";
 import { getServerNow } from "../utils/serverTime";
 
@@ -94,18 +95,24 @@ export default function AccountTrustNotice({ userId }: { userId?: string }) {
         </span>
       </div>
       <div className="account-trust-notice__actions">
-        <Link to="/settings/security">Set up TOTP</Link>
-        <button
-          type="button"
+        <Link
+          className="sk-btn sk-btn--primary sk-btn--md account-trust-notice__setup"
+          to="/settings/security"
+        >
+          Set up TOTP
+        </Link>
+        <Button
+          variant="action"
           onClick={() => {
             sessionStorage.setItem(dismissKey, "1");
             setVisible(false);
           }}
         >
           Continue browsing
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
           className="account-trust-notice__close"
           aria-label="Dismiss new account notice"
           onClick={() => {
@@ -113,8 +120,8 @@ export default function AccountTrustNotice({ userId }: { userId?: string }) {
             setVisible(false);
           }}
         >
-          <X size={16} />
-        </button>
+          <X size={15} aria-hidden="true" />
+        </Button>
       </div>
     </section>
   );

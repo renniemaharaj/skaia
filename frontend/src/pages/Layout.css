@@ -87,26 +87,18 @@
   gap: 0.5rem;
 }
 
-.account-trust-notice__actions a,
-.account-trust-notice__actions button {
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: 0.45rem 0.65rem;
-  background: var(--bg-color);
-  color: var(--text-primary);
-  font: inherit;
-  text-decoration: none;
-  cursor: pointer;
-}
-
 .account-trust-notice__actions a {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
+  text-decoration: none;
 }
 
 .account-trust-notice__actions .account-trust-notice__close {
-  display: inline-flex;
-  padding: 0.45rem;
+  border-color: transparent;
+  color: var(--text-secondary);
+}
+
+.account-trust-notice__actions .account-trust-notice__close:hover {
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  color: var(--text-primary);
 }
 
 @media (max-width: 720px) {
