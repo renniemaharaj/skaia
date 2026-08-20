@@ -23,6 +23,9 @@ describe("MediaPreviewLightbox", () => {
     const dialog = screen.getByRole("dialog");
     const image = screen.getByRole("img", { name: "First image" });
     expect(screen.getByRole("status")).toHaveTextContent("Loading First image");
+    fireEvent.load(image);
+    expect(image).toHaveClass("ready");
+    expect(image.closest("figure")).toHaveAttribute("data-preserve-frame", "true");
     fireEvent.error(image);
     expect(screen.getByRole("alert")).toHaveTextContent("Asset failed to load");
 

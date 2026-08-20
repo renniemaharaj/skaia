@@ -821,53 +821,6 @@
   white-space: nowrap;
 }
 
-/* Lightbox */
-.up-upload-lightbox {
-  position: fixed;
-  inset: 0;
-  background: var(--overlay-dark-heavy);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1100;
-  padding: 24px;
-  cursor: pointer;
-}
-.up-upload-lightbox-content {
-  max-width: 90vw;
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-color);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-  cursor: default;
-}
-.up-upload-lightbox-content img {
-  max-width: 90vw;
-  max-height: calc(85vh - 48px);
-  object-fit: contain;
-  display: block;
-}
-.up-upload-lightbox-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-}
-.up-upload-lightbox-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-right: 12px;
-}
-
 /* Spinner */
 .up-spinner {
   display: inline-block;

@@ -40,13 +40,6 @@ dialog.up-upload-lightbox {
   cursor: default;
 }
 
-.up-upload-lightbox-content img {
-  display: block;
-  max-width: 90vw;
-  max-height: calc(85vh - 48px);
-  object-fit: contain;
-}
-
 .up-upload-lightbox-bar {
   display: flex;
   align-items: center;
