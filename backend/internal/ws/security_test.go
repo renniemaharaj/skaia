@@ -2,6 +2,7 @@ package ws
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -12,6 +13,52 @@ import (
 	wspb "github.com/skaia/grpc/ws"
 	"google.golang.org/protobuf/proto"
 )
+
+func TestGrengoBrowserActionIsRejectedWithoutControlPlaneCall(t *testing.T) {
+	hub := NewHub()
+	client := newSecurityTestClient(hub, 7)
+	client.handleMessage(Message{Type: GrengoJobAction, Payload: json.RawMessage(`{"request_id":"req-1"}`)})
+
+	var serverMessage wspb.ServerMessage
+	if err := proto.Unmarshal(<-client.Send, &serverMessage); err != nil {
+		t.Fatal(err)
+	}
+	if serverMessage.GetType() != string(GrengoActionAck) {
+		t.Fatalf("message type = %q", serverMessage.GetType())
+	}
+	var ack map[string]any
+	if err := json.Unmarshal(serverMessage.GetPayload(), &ack); err != nil {
+		t.Fatal(err)
+	}
+	if ack["accepted"] != false || ack["request_id"] != "req-1" {
+		t.Fatalf("ack = %#v", ack)
+	}
+}
+
+func TestPresenceCannotOverrideServerIdentity(t *testing.T) {
+	hub := NewHub()
+	client := newSecurityTestClient(hub, 7)
+	client.UserName = "canonical"
+	client.Avatar = "/canonical.png"
+	client.handlePresence(Message{Type: Presence, Payload: json.RawMessage(`{
+		"route":"/forum", "user_name":"admin", "avatar":"/spoof.png"
+	}`)})
+	update := <-hub.presenceUpdates
+	if update.UserName != "canonical" || update.Avatar != "/canonical.png" {
+		t.Fatalf("presence identity = %q %q", update.UserName, update.Avatar)
+	}
+}
+
+func TestTeleportRequiresEstablishedDBPermission(t *testing.T) {
+	hub := NewHub()
+	hub.AccountTrustAuthorizer = func(context.Context, int64) error { return nil }
+	hub.PermissionAuthorizer = func(int64, string) (bool, error) { return false, nil }
+	client := newSecurityTestClient(hub, 7)
+	client.handleTp(Message{Type: Tp, Payload: json.RawMessage(`{"target_user_id":8,"route":"/forum"}`)})
+	if len(hub.teleport) != 0 {
+		t.Fatal("teleport was queued without DB-backed permission")
+	}
+}
 
 func newSecurityTestClient(hub *Hub, userID int64) *Client {
 	ctx, cancel := context.WithCancel(context.Background())

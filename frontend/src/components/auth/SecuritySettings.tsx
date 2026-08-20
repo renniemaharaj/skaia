@@ -427,6 +427,7 @@ export default function SecuritySettings({
       setSetupData(null);
       setSetupCode("");
       toast.success("Two-factor authentication enabled");
+      window.dispatchEvent(new CustomEvent("account:trust-refresh"));
       onUpdate?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid code");
@@ -448,6 +449,7 @@ export default function SecuritySettings({
     try {
       await totpDisable(password);
       toast.success("Two-factor authentication disabled");
+      window.dispatchEvent(new CustomEvent("account:trust-refresh"));
       onUpdate?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to disable 2FA");

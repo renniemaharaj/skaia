@@ -83,8 +83,9 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   skeletons while pagination, mutations, empty results, stale refreshes, and
   errors retain separate feedback.
 - Page and thread analytics import only after the analytics action opens. Its
-  Suspense fallback mirrors the modal header, tabs, stat row, and chart and
+  Suspense fallback mirrors the modal header, stat row, and chart and
   keeps the close action usable. Recharts remains owned by that lazy module;
+  the UI exposes aggregates only and never requests visitor IP/identity rows;
   maps, editors, flow/stream canvases, and clipmaker remain isolated by their
   existing route or interaction boundaries.
 - `check-loading-boundaries` guards visible null Suspense fallbacks, eager

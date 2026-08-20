@@ -118,6 +118,16 @@ update specs and .tip with durable facts
 
 ## Last Run Remarks
 
+- Completed `guest_and_provisional_account_containment`: new accounts now use a
+  server-owned 30-minute-or-TOTP trust decision, a closed deny-before-work HTTP
+  registry, DB-backed sensitive WS policy, Redis mutation/upgrade/chat budgets,
+  and optional-TOTP countdown onboarding. Removed guest checkout, wallet credit,
+  full private page listing, raw visitor analytics, browser Grengo control and
+  guest media/history mutation; public profiles are explicit DTOs.
+- Verification passed: complete backend suite; WS/security race tests; all 213
+  frontend tests; lint, TypeScript, native-dialog policy, production build,
+  reference checks and diff checks.
+
 - Completed Phase 2 and the intent/data portion of Phase 3 for
   `viewport_deferred_rendering_and_suspense`: custom-page browse is bounded,
   content-free, cursor-paginated, and batch-enriched; exact previews are

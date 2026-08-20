@@ -35,6 +35,7 @@ type HubConfig struct {
 	APIGlobalConcurrency int
 	APIRequestTimeout    time.Duration
 	APIResponseBytes     int
+	MaxMediaRoutes       int
 }
 
 // envInt reads key from the environment, returning def when absent or invalid.
@@ -66,6 +67,7 @@ func loadHubConfig() HubConfig {
 		APIGlobalConcurrency: envInt("WS_API_GLOBAL_CONCURRENCY", maxWorkers),
 		APIRequestTimeout:    time.Duration(envInt("WS_API_REQUEST_TIMEOUT_SEC", 15)) * time.Second,
 		APIResponseBytes:     envInt("WS_API_RESPONSE_MAX_BYTES", 4<<20),
+		MaxMediaRoutes:       envInt("WS_MAX_MEDIA_ROUTES", 2048),
 	}
 }
 
@@ -160,9 +162,11 @@ type Hub struct {
 	// extract mentions and dispatch notifications.
 	MentionProcessor func(content string, senderID int64, message string, route string)
 
-	// GrengoActionHandler, when set, is called when a client sends a grengo action.
-	GrengoActionHandler  func(action []byte) (string, error)
-	OnGuestSessionClosed func(guestSessionID string)
+	OnGuestSessionClosed   func(guestSessionID string)
+	AccountTrustAuthorizer func(ctx context.Context, userID int64) error
+	ChatBudgetAuthorizer   func(client *Client) (time.Duration, error)
+	PermissionAuthorizer   func(userID int64, permission string) (bool, error)
+	IdentityResolver       func(userID int64) (userName, avatar string, err error)
 
 	// channels
 	clients         map[*Client]bool
@@ -177,7 +181,6 @@ type Hub struct {
 	globalChat      chan GlobalChatMessage
 	voiceControl    chan VoiceControlAction
 	mediaUpdates    chan MediaUpdateAction
-	grengoActions   chan []byte
 
 	// voice permissions - protected by voiceMu
 	voiceMu     sync.RWMutex
@@ -223,6 +226,25 @@ type Hub struct {
 	SubscriptionAuthorizer SubscriptionAuthorizer
 }
 
+func (h *Hub) canMutateAccount(client *Client) bool {
+	if client == nil || client.UserID == 0 || h.AccountTrustAuthorizer == nil {
+		return false
+	}
+	clientCtx := client.ctx
+	if clientCtx == nil {
+		clientCtx = context.Background()
+	}
+	return h.AccountTrustAuthorizer(clientCtx, client.UserID) == nil
+}
+
+func (h *Hub) hasPermission(client *Client, permission string) bool {
+	if client == nil || client.UserID == 0 || h.PermissionAuthorizer == nil {
+		return false
+	}
+	allowed, err := h.PermissionAuthorizer(client.UserID, permission)
+	return err == nil && allowed
+}
+
 // NewHub creates and initialises a Hub ready to be started with Run.
 func NewHub() *Hub {
 	cfg := loadHubConfig()
@@ -242,7 +264,6 @@ func NewHub() *Hub {
 		cursorUpdates:   make(chan CursorBroadcast, 2048),
 		voiceControl:    make(chan VoiceControlAction, 256),
 		mediaUpdates:    make(chan MediaUpdateAction, 256),
-		grengoActions:   make(chan []byte, 1024),
 		voiceRoutes:     make(map[string]*VoicePermissions),
 		mediaRoutes:     make(map[string]*MediaState),
 		sessions:        make(map[int64]int),
@@ -368,8 +389,6 @@ func (h *Hub) Run() {
 			h.dispatch(func() { h.handleVoiceControl(vc) })
 		case mu := <-h.mediaUpdates:
 			h.dispatch(func() { h.handleMediaUpdate(mu) })
-		case ga := <-h.grengoActions:
-			h.dispatch(func() { h.handleGrengoJobAction(ga) })
 		}
 	}
 }
@@ -402,11 +421,6 @@ func (h *Hub) MediaActions() <-chan MediaUpdateAction {
 	return h.mediaUpdates
 }
 
-// GrengoActions returns a channel providing grengo job actions directly from connected clients
-func (h *Hub) GrengoActions() <-chan []byte {
-	return h.grengoActions
-}
-
 // Broadcast enqueues a message for delivery to all connected clients.
 func (h *Hub) Broadcast(msg *Message) {
 	select {
@@ -418,11 +432,11 @@ func (h *Hub) Broadcast(msg *Message) {
 
 // BroadcastToPermission sends a message to all clients holding the specified permission.
 func (h *Hub) BroadcastToPermission(permission string, msg *Message) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
+	h.mu.RLock()
+	defer h.mu.RUnlock()
 
 	for client := range h.clients {
-		if !client.HasPermission(permission) {
+		if !h.hasPermission(client, permission) {
 			continue
 		}
 		client.queueMessage(msg)
@@ -472,12 +486,6 @@ func (h *Hub) SendTeleport(targetUserID int64, route string) {
 	case h.teleport <- TeleportRequest{TargetUserID: targetUserID, Route: route}:
 	default:
 		pkgLog.Warning("teleport channel full, request dropped")
-	}
-}
-
-func (h *Hub) handleGrengoJobAction(ga []byte) {
-	if h.GrengoActionHandler != nil {
-		_, _ = h.GrengoActionHandler(ga)
 	}
 }
 

@@ -37,6 +37,7 @@ import { useWebSocketSync } from "../hooks/useWebSocketSync";
 import { syncServerTime } from "../utils/serverTime";
 import MFAChallenge from "./MFAChallenge";
 import RateLimitedPage from "./RateLimitedPage";
+import AccountTrustNotice from "./AccountTrustNotice";
 
 // Heavy ambient/overlay widgets - lazy-loaded so they never block the
 // critical paint path.  Null fallbacks are intentional: these are decorative
@@ -590,6 +591,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </span>
         </div>
       )}
+      <AccountTrustNotice userId={currentUser?.id} />
       {seo?.particle_style === "gravity" && (
         <Suspense fallback={null}>
           <div

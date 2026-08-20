@@ -86,6 +86,7 @@ const ViewThreadPage = () => {
         const response = await apiRequest<typeof currentThread>(`/forum/threads/${threadId}`);
         if (response) {
           setCurrentThread(response);
+          apiRequest(`/forum/threads/${threadId}/view`, { method: "POST" }).catch(() => {});
           // Subscribe to thread updates
           subscribe("thread", Number(threadId));
         }

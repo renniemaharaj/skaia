@@ -1,0 +1,275 @@
+# Guest and Provisional Account Containment
+
+## Context
+
+The 2026-08-20 access audit found that Skaia authenticates a new registration
+immediately, assigns the `member` role, and issues a normal access/refresh token.
+There is no account-age, email-verification, or TOTP-based mutation boundary.
+The global DEFCON limiter is IP based (256 requests/minute for a new IP and
+1,500/minute after IP graduation), while several domain and WebSocket mutation
+paths have no durable per-user or per-action budget.
+
+Immediate containment findings are:
+
+- **Critical:** any WebSocket client, including a guest, can send
+  `grengo:action`. When Grengo is configured, the backend forwards that payload
+  through its control-plane client, including the backend-held passcode, without
+  checking authentication, `admin.general`, a Grengo session, or step-up. Actions
+  exposed by the frontend include compose down, ship, migrate, site removal,
+  node/site export, arbitrary Grengo commands, and site creation.
+- **Critical:** any unauthenticated WebSocket client can send `media:remove` and
+  tombstone a persisted `media_history` row. The same guest path can add/remove
+  queue items, advance or transition playback, and emit sound effects. Arbitrary
+  presence routes also allocate retained in-memory media state and trigger a
+  history query. Only pause/resume and clear-all currently check `home.manage`.
+- **Critical:** any authenticated account can call `POST /api/store/wallet/topup`
+  with an arbitrary positive amount and create its own credit transaction without
+  payment-provider confirmation or an administrative policy.
+- **High:** public `GET /api/pages/list` returns every active full page document
+  without a visibility predicate, including private pages. It is unused by the
+  frontend and bypasses the safe browse/preview paths.
+- **High:** authenticated and guest WebSocket identities can overwrite their
+  server-derived display name/avatar through `presence`; global chat then uses the
+  spoofed values. Chat limiting is per connection, so reconnecting resets it.
+- **High:** Grengo jobs, stats, storage, and hardware telemetry are broadcast to
+  every connected socket, and any authenticated member can send `tp` to navigate
+  another user because the handler does not enforce `presence.tp-here`.
+- **High:** both analytics routes require only a valid JWT. A newly registered
+  member can query arbitrary page/thread analytics and retrieve individual
+  visitor rows containing IP address, user identity, and timestamps; there is no
+  owner/editor/analytics permission policy.
+- **High:** guests can invoke server-side datasource execution (including stored
+  datasource environment data), enumerate async job IDs, mint guest LiveKit
+  tokens where a route permits guests, submit checkout/order lookups, write page
+  view analytics, and exercise all media actions. These exceptions have not been
+  governed by one explicit guest-action registry.
+- **High:** a fresh member can immediately create forum threads, comments, inbox
+  conversations/messages, uploads, store orders/reviews/cart rows, likes, page
+  interactive responses, and other account-owned records. Thread creation,
+  inbox, uploads, orders, and interactive submissions have no new-account
+  cooldown and no comprehensive per-action account budget.
+- **Medium:** auth limiting is an in-process 10 requests/minute client/IP bucket;
+  API-wide `RateLimitByIP` and `RateLimitByClient` middleware exist but are not
+  mounted. Redis failure in DEFCON counting fails open. The IP can graduate to a
+  shared trusted ceiling, so NAT peers and reconnects do not provide an account
+  containment boundary.
+- **Medium:** guest-safe user endpoints serialize the full `models.User`, including
+  email and internal account-state fields, instead of a dedicated public profile
+  DTO.
+
+This plan supersedes the former smart-rate-limiter todo: its useful weighted
+budgets, behavior isolation, telemetry, and admin-control goals are incorporated
+here, but deterministic guest/account trust policy must precede adaptive rooms.
+
+## Goal
+
+- Make guests browse-only by default, with a small explicit exception registry
+  for authentication/recovery and deliberately enabled global chat.
+- Treat an account as `provisional` until 30 minutes after registration, unless
+  it enables TOTP first; TOTP remains encouraged and optional.
+- Permit provisional users only guest capabilities plus the minimum self-service
+  routes needed to verify email, configure/enable TOTP, inspect their own trust
+  state, refresh/logout, and recover the account.
+- Enforce trust, authorization, rate, audit, and resource-cost policy before any
+  database write or expensive backend work across HTTP and WebSocket transports.
+- Preserve ordinary browsing and reviewed business exceptions without allowing
+  unbounded or anonymous mutation.
+
+## Non-Goals
+
+- Require every user to enable TOTP.
+- Treat IP address, Turnstile, email verification, JWT issuance time, or frontend
+  state as sufficient account trust.
+- Replace existing resource ownership, RBAC, sensitive-action step-up, validation,
+  idempotency, storage quotas, or database constraints.
+- Apply one low request ceiling to static assets or make shared NAT users inherit
+  another user's account trust.
+- Preserve a guest mutation merely because it already exists; every exception
+  needs an owner, cost model, abuse controls, and tests.
+
+## Access Contract
+
+| Tier | Qualification | Allowed capabilities |
+| --- | --- | --- |
+| Guest | No validated account | Bounded public reads; register/login/refresh/verification/recovery; deliberately enabled global chat. No direct durable content/media mutations. |
+| Provisional | Authenticated and `now < users.created_at + 30m`, with TOTP disabled | Guest capabilities plus own profile bootstrap, trust-status, email verification, TOTP setup/enable, logout, and necessary session recovery. |
+| Established | Account age is at least 30 minutes, or TOTP is enabled | Normal authenticated actions, still subject to ownership/RBAC, action budgets, step-up, validation, and audit. |
+| Privileged | Established plus required permission/power and fresh action-bound step-up | Sensitive or administrative actions only through centralized service policy. |
+
+The backend computes the tier from persisted account creation time and current
+TOTP state. Access-token `iat` is not account age. Existing accounts older than
+30 minutes are established on rollout. Disabling TOTP does not make an older
+account provisional; an account still inside its original 30-minute window
+returns to provisional unless an explicit security policy says the disable
+operation itself requires waiting. Clock comparisons use server UTC.
+
+## Steps
+
+1. **Contain confirmed critical paths before the broader rollout**
+   - Remove `grengo:action` from ordinary client ingress until it requires an
+     authenticated established administrator, `admin.general`, a live Grengo
+     session, a fresh action/target-bound step-up grant, an action/argument
+     allowlist, bounded concurrency, and an audit record. Never let a browser
+     borrow the backend's standing control-plane passcode.
+   - Deliver Grengo jobs/stats/storage/hardware/logs only through authorized
+     subscriptions or direct admin sessions. Test guest, member, stale/absent
+     session, missing permission, malformed action, and backend-passcode cases.
+   - Enforce `presence.tp-here` and account trust before teleport; bind the source
+     and target to canonical session identities and validate the destination.
+   - Deny guest and provisional media mutation. Add a route-aware service policy
+     for queue control, playback transitions, sound effects, individual history
+     deletion, and clear-all; do not rely on the WebSocket message allowlist.
+   - Apply the database mutation synchronously before changing/broadcasting media
+     state, attribute lifecycle audit rows to the acting user, handle errors, and
+     test guest, provisional, established non-manager, owner, and manager cases.
+   - Bound and expire per-route media state; validate canonical route length and
+     existence before loading history so arbitrary guest strings cannot retain
+     map entries or force database queries.
+   - Remove the wallet top-up route from production or require a verified payment
+     provider callback/ledger transaction. Any development credit faucet must be
+     build/environment gated, loopback-only, permission protected, audited, and
+     impossible to enable accidentally in production.
+   - Remove the unused `/api/pages/list` route or replace it with the authorized,
+     content-free browse contract. Never post-filter private full documents.
+   - Replace public user serialization with an explicit public-profile DTO that
+     excludes email, suspension/security internals, permissions, and private URLs.
+   - Put analytics summary and individual-visitor reads behind service-level
+     resource-owner/editor or explicit analytics permission policy. Return only
+     aggregates by default; raw IP/identity rows require a separately justified,
+     stepped-up admin capability or should be removed from application APIs.
+
+2. **Freeze a route/action capability inventory**
+   - Generate a checked registry for every HTTP method/route and client-originated
+     WebSocket message: read/write, authentication tier, resource policy, cost,
+     rate key, persistence side effect, audit event, and failure behavior.
+   - Classify browsing side effects such as page/thread views separately. Dedupe
+     them in Redis by tenant + resource + guest session/account + time window,
+     then persist asynchronously with a bounded queue; limiter/cache failure must
+     not turn a public read into unbounded synchronous writes.
+   - Review guest checkout as a business exception. If retained, require bounded
+     idempotency, stock/payment transaction safety, a narrow order DTO, distributed
+     IP/session budgets, and Turnstile only when risk warrants it. Otherwise require
+     an established account. Public datasource execution, job lookup, LiveKit
+     tokens, and media mutation default to denied until separately approved.
+   - Add a source-level policy gate that fails when a new mutation route/message
+     has no registry entry or when a public handler reaches an unapproved write or
+     expensive-work class.
+
+3. **Implement centralized trust policy**
+   - Add a transport-independent `AccountTrustPolicy` under
+     `backend/internal/security` with typed `Guest`, `Provisional`, `Established`,
+     and `Privileged` decisions and stable denial code `account_provisional`.
+   - Resolve persisted `users.created_at`, TOTP enabled state, suspension/deletion,
+     and the current authenticated identity. Cache only bounded derived trust data;
+     invalidate it on TOTP enable/disable and account lifecycle changes. Missing
+     dependencies, database/cache inconsistency, or malformed timestamps deny
+     mutations while public reads remain available.
+   - Enforce the policy in domain services as the authority. HTTP middleware and
+     route groups may reject early, but cannot be the only control; WebSocket and
+     REST-bridge paths use the same decision API.
+   - Return `403` with `reason_code`, `unlock_at`, `remaining_seconds`, and a
+     server-owned TOTP setup route/action. Never expose whether another account is
+     provisional.
+
+4. **Apply the provisional mutation boundary**
+   - Start with deny-by-default mutation middleware/registry, then explicitly
+     allow the provisional self-service routes. A fresh registration token must
+     not bypass the policy.
+   - Gate forum threads/comments/likes/shares; page claims, likes, comments and
+     interactive responses; inbox conversations/messages/blocks; uploads; cart,
+     reviews, orders, wallet and subscriptions; documentation; provisioning; and
+     all other persistent domain mutations.
+   - Keep ordinary public/authenticated reads bounded and visibility-safe. Private
+     reads still require their existing ownership/membership policy and are not
+     granted merely by account age.
+   - Add domain tests proving a provisional denial occurs before repository,
+     filesystem, dispatcher, cache invalidation, payment, compiler, or WebSocket
+     work, and that established/TOTP-unlocked callers still meet existing policy.
+
+5. **Make rate limiting identity-, tier-, and cost-aware**
+   - Replace the unused/local-only limiter split with Redis-backed hierarchical
+     budgets keyed by tenant + IP, signed guest-session cookie, user ID, trust tier,
+     action class, and resource where appropriate. An account bypass never clears
+     or promotes the shared IP budget.
+   - Initial configurable defaults: guest public API work is weighted within a
+     60-unit/minute IP budget; registration 3/hour per IP and guest session; login
+     10/15 minutes per IP plus normalized account key; recovery/verification
+     3/hour; guest chat one message/15 seconds with burst one; provisional chat one
+     message/8 seconds with burst one. Established chat remains configurable.
+   - Give database writes, search, SSR, compiler execution, checkout/payment,
+     uploads, and WebSocket fan-out higher weights than cached reads. Reject before
+     database/queue work. Define and test fail-closed behavior for mutations and a
+     bounded degraded cached-read behavior when Redis is unavailable.
+   - Add per-IP/session WebSocket connection and upgrade budgets plus distributed
+     message budgets. Per-connection token buckets remain defense in depth and
+     must cover media/SFX in addition to chat, presence, cursor, and signaling.
+   - Add bounded behavior isolation/penalty rooms and admin visibility only after
+     deterministic tiers pass. Overrides are session/account scoped, expiring,
+     fresh-step-up protected, and audited.
+
+6. **Provide non-coercive onboarding UX**
+   - After registration and on attempted restricted actions, show a persistent but
+     dismissible security notice: the account can browse and use allowed chat now,
+     normal account actions unlock at the server-provided time, and enabling TOTP
+     unlocks them immediately.
+   - Provide a live countdown driven by `/api/time`/trust-status, one clear “Set up
+     TOTP” action, and a “Continue browsing” option. Do not hide or disable the
+     recovery/logout paths and do not imply that TOTP is mandatory.
+   - Handle stale tabs and multi-tab unlock through an authoritative user/trust
+     invalidation; refetch after TOTP enablement or timer expiry. Preserve loading,
+     offline, denied, and screen-reader states without client-side authorization.
+
+7. **Audit, observe, and roll out safely**
+   - Emit content-free events for tier decisions, provisional denials, unlock by
+     time/TOTP, limiter denials, guest exceptions, and media/history mutations.
+     Bound labels and never log message bodies, answers, credentials, or tokens.
+   - Add dashboards for denial/action class, account tier, IP/session population,
+     limiter failure, websocket connections/messages, and database/queue work
+     prevented. Alerts distinguish abuse from shared-NAT pressure.
+   - Ship immediate containment independently. Then deploy additive trust policy in
+     observe-only mode, compare decisions, enable provisional enforcement for new
+     registrations, and finally enable deny-by-default registry enforcement.
+   - Run a two-browser matrix for guest, provisional, TOTP-unlocked provisional,
+     time-unlocked established, ordinary established, owner/editor, moderator,
+     admin, and changed-IP/session cases. Include reconnect, token refresh, Redis
+     outage, clock boundary, concurrent requests, and direct WebSocket frames.
+
+## Verification
+
+- Focused negative tests assert guests cannot mutate media/history, allocate
+  arbitrary media routes, invoke Grengo or receive its private telemetry, teleport,
+  execute unapproved datasources, mint unapproved voice access, retrieve private
+  pages/public email fields, or enumerate visitor IP/identity analytics.
+- Store tests assert no public/authenticated request can mint wallet credit; only
+  a verified provider/admin test path can create a credit ledger entry.
+- Trust-policy table tests cover exactly-before/at/after 30 minutes, TOTP enable
+  and disable, old accounts, refresh/relogin, suspended/deleted accounts, lookup
+  failures, and server clock use.
+- Route/message registry tests cover every mounted HTTP mutation and every
+  client-originated WebSocket message exactly once.
+- Distributed limiter tests cover reconnect/multi-connection bypass, shared NAT,
+  multi-tenant keys, Redis failure, weighted work, penalty expiry, and override
+  isolation.
+- Backend: `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
+- WebSocket race tests: `go test -race ./internal/ws ./internal/security`
+- Frontend: relevant onboarding/auth tests, full test suite, lint, TypeScript, and
+  production build.
+- Manual: throttle/reconnect two browsers and verify countdown, TOTP immediate
+  unlock, 30-minute unlock, guest chat feedback, and no stale privileged controls.
+
+## References
+
+- `.specs/security_architecture_spec`
+- `.specs/auth_user_separation_spec`
+- `.specs/backend_spec`
+- `.specs/realtime_wss_spec`
+- `.todo/security_invariants_hardening`
+- `.todo/session_cookie_ip_val`
+- `.routines/worker`
+- `.routines/auditor`
+- `.routines/correctness`
+- `backend/main.go`
+- `backend/middleware/ratelimit.go`
+- `backend/internal/middleware/{auth,auth_rate_limit,rate_limit}.go`
+- `backend/internal/ws/{client,handler,hub_media,media_repository}.go`
+- `backend/internal/{auth,forum,inbox,page,store,upload}/`

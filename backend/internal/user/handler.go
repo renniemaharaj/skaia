@@ -137,7 +137,7 @@ func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, user)
+	utils.WriteJSON(w, http.StatusOK, models.NewPublicUserProfile(user))
 }
 
 const maxUserBatchSize = 50
@@ -182,16 +182,16 @@ func (h *Handler) getUsersBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(ids) == 0 {
-		utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"users": []*models.User{}})
+		utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"users": []models.PublicUserProfile{}})
 		return
 	}
-	users := make([]*models.User, 0, len(ids))
+	users := make([]models.PublicUserProfile, 0, len(ids))
 	for _, id := range ids {
 		user, err := h.svc.GetByID(id)
 		if err != nil {
 			continue
 		}
-		users = append(users, user)
+		users = append(users, models.NewPublicUserProfile(user))
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{"users": users})
 }

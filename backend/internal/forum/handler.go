@@ -56,6 +56,7 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, comme
 		r.Get("/threads", h.listThreads)
 		r.With(jwt).Post("/threads", h.createThread)
 		r.Get("/threads/{id}", h.getThread)
+		r.Post("/threads/{id}/view", h.recordThreadView)
 		r.With(jwt).Put("/threads/{id}", h.updateThread)
 		r.With(jwt).Put("/threads/{id}/lock", h.lockThread)
 		r.With(jwt).Put("/threads/{id}/pin", h.pinThread)
@@ -541,14 +542,8 @@ func (h *Handler) getThread(w http.ResponseWriter, r *http.Request) {
 
 	userID, hasClaims := utils.UserIDFromCtx(r)
 
-	// Record view in the centralized resource_views table.
+	// Include the current aggregate without turning a public GET into a write.
 	if h.analyticsSvc != nil {
-		var uidp *int64
-		if hasClaims {
-			uidp = &userID
-		}
-		_ = h.analyticsSvc.RecordView("thread", id, uidp, ievents.ClientIP(r))
-		// Refresh the view count from resource_views so the response is up-to-date.
 		if vc, err := h.analyticsSvc.ViewCount("thread", id); err == nil {
 			thread.ViewCount = int(vc)
 		}
@@ -579,6 +574,30 @@ func (h *Handler) getThread(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, thread)
+}
+
+func (h *Handler) recordThreadView(w http.ResponseWriter, r *http.Request) {
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid thread ID")
+		return
+	}
+	if _, err := h.svc.GetThread(id); err != nil {
+		utils.WriteError(w, http.StatusNotFound, "thread not found")
+		return
+	}
+	userID, authenticated := utils.UserIDFromCtx(r)
+	var userIDPtr *int64
+	if authenticated {
+		userIDPtr = &userID
+	}
+	if h.analyticsSvc != nil {
+		if err := h.analyticsSvc.RecordView("thread", id, userIDPtr, ievents.ClientIP(r)); err != nil {
+			utils.WriteError(w, http.StatusServiceUnavailable, "failed to record thread view")
+			return
+		}
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (h *Handler) updateThread(w http.ResponseWriter, r *http.Request) {

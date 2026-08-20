@@ -45,7 +45,9 @@ func NewHandler(svc *Service, userSvc *iuser.Service, compileCache *CompileCache
 
 // enrich attaches creator info to a datasource.
 func (h *Handler) enrich(ds *models.DataSource) DataSourceResponse {
-	resp := DataSourceResponse{DataSource: ds}
+	copy := *ds
+	copy.EnvData = ""
+	resp := DataSourceResponse{DataSource: &copy}
 	if ds.CreatedBy != nil {
 		u, err := h.userSvc.GetByID(*ds.CreatedBy)
 		if err == nil && u != nil {
@@ -348,6 +350,10 @@ func (h *Handler) executeDataSourceByID(w http.ResponseWriter, r *http.Request) 
 		EnvData string `json:"env_data"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&body) // intentionally ignoring errors (empty body is fine)
+	if body.EnvData != "" && !h.requireHomeManage(r) {
+		utils.WriteError(w, http.StatusForbidden, "client environment data requires page administration")
+		return
+	}
 
 	useSharedCache := body.EnvData == ""
 	// Serve from cache only for DB-backed env executions. Client-supplied env

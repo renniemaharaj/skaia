@@ -74,6 +74,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 	// authenticate via token query param or Authorization header
 	var userID int64
 	var userName string
+	var userAvatar string
 	var permissions []string
 	var roles []string
 
@@ -90,6 +91,16 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 			userName = claims.Username
 			permissions = claims.Permissions
 			roles = claims.Roles
+		}
+	}
+	if userID > 0 {
+		if hub.IdentityResolver == nil {
+			userID, userName, permissions, roles, tokenStr = 0, "Guest", nil, nil, ""
+		} else if canonicalName, avatar, err := hub.IdentityResolver(userID); err != nil {
+			userID, userName, permissions, roles, tokenStr = 0, "Guest", nil, nil, ""
+		} else {
+			userName = canonicalName
+			userAvatar = avatar
 		}
 	}
 
@@ -116,6 +127,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 		Send:           make(chan []byte, 256),
 		UserID:         userID,
 		UserName:       userName,
+		Avatar:         userAvatar,
 		RealIP:         utils.RealIP(r),
 		Permissions:    permissions,
 		Roles:          roles,
@@ -131,6 +143,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request, hub *Hub) {
 		presenceLimit:  newRateBucket(5, 5),
 		broadcastLimit: newRateBucket(10, 10),
 		signalLimit:    newRateBucket(30, 30),
+		mediaLimit:     newRateBucket(2, 2),
 	}
 
 	hub.register <- client

@@ -1,5 +1,6 @@
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { isAuthenticatedAtom } from "../../../atoms/auth";
 import {
@@ -27,6 +28,7 @@ type SavedCheckoutInfo = {
 };
 
 export const CartPage = () => {
+	const navigate = useNavigate();
   const [cartItems, setCartItems] = useAtom(storeCartItemsAtom);
   const products = useAtomValue(productsAtom);
   const cartTotal = useAtomValue(cartTotalAtom);
@@ -151,8 +153,9 @@ export const CartPage = () => {
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
 
-    if (!isAuthenticated && !guestEmail) {
-      toast.error("Guest email is required.");
+	if (!isAuthenticated) {
+		toast.info("Sign in before placing an order. Your cart will stay here.");
+		navigate("/login", { state: { from: { pathname: "/store/cart" } } });
       return;
     }
     if (!guestPhone) {

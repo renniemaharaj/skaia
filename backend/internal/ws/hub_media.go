@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	log "github.com/skaia/backend/internal/syslog"
 	"time"
+
+	"github.com/skaia/backend/internal/streammeta"
 )
 
 // generateID creates a quick random hex string for queue items.
@@ -30,6 +32,18 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 	h.mu.RUnlock()
 	if route == "" || route != clientRoute {
 		return // Ignore updates without a route
+	}
+	if !h.canMutateAccount(mu.Client) || !h.canManageMediaRoute(mu.Client, route) || !validPresenceRoute(route) {
+		mu.Client.sendClientErrorAction("forbidden", "You do not have permission to control media on this route.", 0)
+		return
+	}
+	h.mediaMu.RLock()
+	_, exists := h.mediaRoutes[route]
+	full := len(h.mediaRoutes) >= h.cfg.MaxMediaRoutes
+	h.mediaMu.RUnlock()
+	if !exists && full {
+		mu.Client.sendClientErrorAction("capacity", "Media controls are temporarily at capacity.", 0)
+		return
 	}
 
 	state := h.getOrCreateMediaState(route)
@@ -72,10 +86,15 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 		// Also allow removing from History
 		for i, item := range state.History {
 			if item.ID == action.ItemID {
+				var err error
 				if item.HistoryID > 0 {
-					go h.mediaRepo.DeleteHistoryItem(item.HistoryID)
+					err = h.mediaRepo.DeleteHistoryItem(item.HistoryID, mu.Client.UserID)
 				} else {
-					go h.mediaRepo.DeleteHistoryItemByData(route, item.VideoID, item.CreatedAt)
+					err = h.mediaRepo.DeleteHistoryItemByData(route, item.VideoID, item.CreatedAt, mu.Client.UserID)
+				}
+				if err != nil {
+					log.Printf("ws: media history delete failed: %v", err)
+					break
 				}
 				state.History = append(state.History[:i], state.History[i+1:]...)
 				stateChanged = true
@@ -84,21 +103,10 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 		}
 
 	case MediaAction:
-		// Toggle pause for the route. Requires admin perm.
-		hasAdmin := false
-		for _, p := range mu.Client.Permissions {
-			if p == "home.manage" { // Or a specific media permission
-				hasAdmin = true
-				break
-			}
-		}
-		if hasAdmin {
-			// Toggle pause state
-			state.IsPaused = !state.IsPaused
-			state.CurrentPosition = action.Position // accept current position from admin
-			state.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
-			stateChanged = true
-		}
+		state.IsPaused = !state.IsPaused
+		state.CurrentPosition = action.Position
+		state.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+		stateChanged = true
 
 	case MediaEnded:
 		// Popping the top of the queue and handling loop/history logic
@@ -106,10 +114,17 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 		// ensuring multiple clients sending "ended" at the same time don't double-pop.
 		if len(state.Queue) > 0 && state.Queue[0].ID == action.ItemID {
 			top := state.Queue[0]
-			state.Queue = state.Queue[1:]
+			if !top.Loop {
+				historyID, err := h.mediaRepo.SaveHistory(route, top)
+				if err != nil {
+					log.Printf("ws: media history save failed: %v", err)
+					break
+				}
+				top.HistoryID = historyID
+			}
 
+			state.Queue = state.Queue[1:]
 			if top.Loop {
-				// Put back in queue at the bottom
 				state.Queue = append(state.Queue, top)
 			} else {
 				// Prepend to history
@@ -118,7 +133,6 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 				if len(state.History) > 50 {
 					state.History = state.History[:50]
 				}
-				go h.mediaRepo.SaveHistory(route, top)
 			}
 			state.CurrentPosition = 0
 			state.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
@@ -134,10 +148,17 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 	case MediaTransition:
 		if len(state.Queue) > 0 && state.Queue[0].ID == action.ItemID {
 			top := state.Queue[0]
-			state.Queue = state.Queue[1:]
+			if !top.Loop {
+				historyID, err := h.mediaRepo.SaveHistory(route, top)
+				if err != nil {
+					log.Printf("ws: media history save failed: %v", err)
+					break
+				}
+				top.HistoryID = historyID
+			}
 
+			state.Queue = state.Queue[1:]
 			if top.Loop {
-				// Put back in queue at the bottom
 				state.Queue = append(state.Queue, top)
 			} else {
 				// Prepend to history
@@ -146,7 +167,6 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 				if len(state.History) > 50 {
 					state.History = state.History[:50]
 				}
-				go h.mediaRepo.SaveHistory(route, top)
 			}
 			state.CurrentPosition = action.Position
 			state.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
@@ -155,18 +175,12 @@ func (h *Hub) handleMediaUpdate(mu MediaUpdateAction) {
 		}
 
 	case MediaHistoryClear:
-		hasAdmin := false
-		for _, p := range mu.Client.Permissions {
-			if p == "home.manage" {
-				hasAdmin = true
-				break
-			}
+		if err := h.mediaRepo.ClearHistory(route, mu.Client.UserID); err != nil {
+			log.Printf("ws: media history clear failed: %v", err)
+			break
 		}
-		if hasAdmin {
-			state.History = []MediaItem{}
-			stateChanged = true
-			go h.mediaRepo.ClearHistory(route)
-		}
+		state.History = []MediaItem{}
+		stateChanged = true
 
 	case MediaSfx:
 		// Broadcast the SFX message directly to all clients on this route (except sender)
@@ -228,7 +242,21 @@ func (h *Hub) sendMediaSyncToClient(client *Client) {
 		return
 	}
 
-	state := h.getOrCreateMediaState(route)
+	h.mediaMu.RLock()
+	state, exists := h.mediaRoutes[route]
+	h.mediaMu.RUnlock()
+	if !exists {
+		if !h.canMutateAccount(client) || !h.canManageMediaRoute(client, route) || !validPresenceRoute(route) {
+			return
+		}
+		h.mediaMu.RLock()
+		full := len(h.mediaRoutes) >= h.cfg.MaxMediaRoutes
+		h.mediaMu.RUnlock()
+		if full {
+			return
+		}
+		state = h.getOrCreateMediaState(route)
+	}
 	h.mediaMu.RLock()
 	defer h.mediaMu.RUnlock()
 
@@ -239,6 +267,17 @@ func (h *Hub) sendMediaSyncToClient(client *Client) {
 	msg := &Message{Type: MediaSync, Payload: payload}
 
 	client.queueMessage(msg)
+}
+
+func (h *Hub) canManageMediaRoute(client *Client, route string) bool {
+	if client == nil || client.UserID == 0 {
+		return false
+	}
+	if h.hasPermission(client, "home.manage") {
+		return true
+	}
+	ownerID, ok := streammeta.DefaultStore.OwnerIDForRoute(route)
+	return ok && ownerID == client.UserID
 }
 
 // cleanupInactiveMedia removes media state for routes that have been paused/empty and inactive for over 2 hours.

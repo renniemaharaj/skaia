@@ -20,10 +20,13 @@ export interface ApiError {
   error: string;
   message?: string;
   challenge?: string;
-  reason_code?: MFAChallengeReason;
+  reason_code?: MFAChallengeReason | "account_provisional" | "action_rate_limited";
   action?: string;
   defcon_info?: RateLimitDefconInfo;
   retry_after?: number;
+  unlock_at?: string;
+  remaining_seconds?: number;
+  totp_setup_route?: string;
 }
 
 export type MFAChallengeReason =
@@ -444,6 +447,20 @@ async function performApiRequest<T>(endpoint: string, options: RequestInit = {})
       }
     }
 
+    if (response.status === 403 && errorData?.reason_code === "account_provisional") {
+      window.dispatchEvent(
+        new CustomEvent("account:provisional", {
+          detail: {
+            tier: "provisional",
+            established: false,
+            totp_enabled: false,
+            unlock_at: errorData.unlock_at,
+            remaining_seconds: errorData.remaining_seconds,
+          },
+        })
+      );
+    }
+
     // Handle 503 - site may be armed (maintenance mode)
     if (response.status === 503 && errorMessage.toLowerCase().includes("armed")) {
       window.dispatchEvent(new CustomEvent("site:armed"));
@@ -456,7 +473,7 @@ async function performApiRequest<T>(endpoint: string, options: RequestInit = {})
         window.dispatchEvent(
           new CustomEvent<MFAChallengeContext>("auth:mfa-required", {
             detail: {
-              reasonCode: errorData?.reason_code,
+              reasonCode: errorData?.reason_code as MFAChallengeReason | undefined,
               action: errorData?.action,
             },
           })

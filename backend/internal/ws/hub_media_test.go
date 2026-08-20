@@ -1,13 +1,16 @@
 package ws
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 )
 
 func TestHandleMediaTransitionStartAndComplete(t *testing.T) {
 	h := NewHub()
-	client := &Client{UserID: 1, UserName: "Admin", Route: "/room", Send: make(chan []byte, 1)}
+	h.AccountTrustAuthorizer = func(context.Context, int64) error { return nil }
+	h.PermissionAuthorizer = func(int64, string) (bool, error) { return true, nil }
+	client := &Client{UserID: 1, UserName: "Admin", Route: "/room", Permissions: []string{"home.manage"}, Send: make(chan []byte, 1)}
 
 	h.mediaRoutes["/room"] = &MediaState{
 		Route: "/room",
@@ -52,6 +55,21 @@ func TestHandleMediaTransitionStartAndComplete(t *testing.T) {
 	}
 	if len(state.History) != 1 || state.History[0].ID != "current" {
 		t.Fatalf("history = %+v, want current item", state.History)
+	}
+}
+
+func TestHandleMediaUpdateRejectsGuestBeforeStateAllocation(t *testing.T) {
+	h := NewHub()
+	payload, err := json.Marshal(MediaClientAction{Route: "/guest-route", VideoID: "aaaaaaaaaaa"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.handleMediaUpdate(MediaUpdateAction{
+		Client:  &Client{Route: "/guest-route", Send: make(chan []byte, 1)},
+		Message: Message{Type: MediaAdd, Payload: payload},
+	})
+	if len(h.mediaRoutes) != 0 {
+		t.Fatalf("guest allocated media state: %#v", h.mediaRoutes)
 	}
 }
 

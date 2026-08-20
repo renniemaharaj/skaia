@@ -34,6 +34,11 @@ backup codes, auth migrations, password policy, or user/auth model boundaries.
   auth secrets.
 - Username/email identity remains on the user profile side; auth tables link by
   `user_id`.
+- New authenticated accounts are provisional for 30 minutes from persisted
+  `users.created_at` unless TOTP is enabled first. `GET /api/auth/trust-status`
+  returns the authoritative tier, unlock time and remaining seconds; TOTP stays
+  optional and disabling it inside the original window restores provisional
+  status.
 
 ## Security Invariants
 

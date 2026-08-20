@@ -51,13 +51,26 @@ limit/error WS messages.
 | `unsubscribe` | `{ resource_type, resource_id }` | Remove resource key |
 | `api:request` | protobuf `ApiRequest` | Experimental REST bridge; rejected unless both bridge feature gates are enabled |
 | `ping` | none | Heartbeat |
-| `presence` | `{ route, user_name, avatar }` | Current route presence |
+| `presence` | `{ route, guest_session_id, is_muted }` | Bounded current route presence; display identity fields are ignored and resolved by the server |
 | `global:chat` | `{ content }` | Global chat send |
 | `cursor:update` | `{ x, y }` | Same-route cursor |
 | `tp` | `{ target_user_id, route }` | Admin teleport |
 | `voice:control` | control payload | Admin voice state, authorized by backend |
 | `voice:signal` | WebRTC signaling payload | Same-route peer connection setup |
 | `media:*` | media control payloads | Shared media state/sfx |
+
+`tp` requires established account trust plus `presence.tp-here`. Grengo control
+actions are not part of ordinary client ingress: any future browser action also
+requires `admin.general`, a live Grengo session, fresh action-bound step-up, and
+an action/argument allowlist. Grengo telemetry uses authorized subscription or
+direct-session delivery and is never globally broadcast.
+
+The registry defines decodable message types, not authorization. `grengo:action`
+is retained only as a correlated rejection response for old clients and cannot
+reach a control-plane handler. Guests and
+provisional accounts may receive public route media state but cannot mutate queue,
+playback, SFX, retained route state, or persisted history. Every media mutation
+uses the centralized account-trust and route/resource policy before work.
 
 ## Server => Client Messages
 
@@ -166,6 +179,9 @@ shared mutations converge through WS:
 - Direct/private messages must be authorized server-side.
 - Client message dispatch is an explicit allowlist. Unknown and server-only
   message types receive an error and are never rebroadcast.
+- Per-connection buckets are defense in depth. Chat, media, presence, cursor,
+  signaling, and subscription work also use distributed tenant/IP/session/account
+  budgets so reconnecting or opening parallel sockets cannot reset enforcement.
 - Recovery credentials require both the connection-targeted guest session and
   the browser-tab pending request ID before frontend auth state changes.
 - Store cart updates target the owner; catalog updates broadcast.

@@ -24,8 +24,18 @@ func (r *Repository) RecordView(resource string, resourceID int64, userID *int64
 		uid = sql.NullInt64{Int64: *userID, Valid: true}
 	}
 	_, err := r.db.Exec(
-		`INSERT INTO resource_views (resource, resource_id, user_id, ip)
-		 VALUES ($1, $2, $3, $4)`,
+		`WITH dedupe_lock AS MATERIALIZED (
+		   SELECT pg_advisory_xact_lock(hashtextextended(
+		     concat_ws(':', $1, $2::TEXT, COALESCE($3::TEXT, $4)), 0
+		   ))
+		 )
+		 INSERT INTO resource_views (resource, resource_id, user_id, ip)
+		 SELECT $1, $2, $3, $4 FROM dedupe_lock
+		 WHERE NOT EXISTS (
+		   SELECT 1 FROM resource_views
+		   WHERE resource=$1 AND resource_id=$2 AND created_at > NOW() - INTERVAL '15 minutes'
+		     AND (($3::BIGINT IS NOT NULL AND user_id=$3) OR ($3::BIGINT IS NULL AND ip=$4))
+		 )`,
 		resource, resourceID, uid, ip,
 	)
 	return err

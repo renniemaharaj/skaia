@@ -35,6 +35,39 @@ check. Controls therefore compose independently and fail closed:
 AI-generated code is an explicit threat source. A handler-local permission check
 is not an architectural invariant and must not be treated as one.
 
+### Guest and account trust
+
+- Guests are browse-only by default. Public mutation or expensive-work exceptions
+  require a closed registry entry with an owner, cost, distributed rate policy,
+  validation/idempotency, audit behavior, and adversarial tests.
+- A new account is `provisional` until 30 minutes after persisted registration
+  time unless it enables TOTP first. Provisional users retain guest capabilities
+  plus the minimum self-service surface for profile bootstrap, email verification,
+  TOTP setup/enable, trust status, refresh/logout, and recovery.
+- TOTP is encouraged but optional. The server returns authoritative unlock time
+  and reason metadata; the client offers both TOTP setup and continued browsing.
+- Account trust is computed from server time, persisted `users.created_at`, and
+  current TOTP state. JWT issue time, frontend state, IP reputation, Turnstile,
+  and email verification do not independently establish account maturity.
+- Trust policy is centralized, transport independent, service enforced, and
+  deny-before-work for mutation. HTTP middleware, route grouping, and WebSocket
+  message allowlists are only early defense-in-depth checks.
+- Established account status never replaces resource ownership, membership,
+  permission/power, sensitive-action step-up, validation, quotas, or audit.
+- Public reads must not become unbounded database writes. Resource views are
+  atomically deduplicated by tenant database, resource and account/IP for 15
+  minutes; public view requests also consume distributed mutation budget before
+  reaching the repository.
+
+The implemented boundary is `security.AccountTrustPolicy` plus the closed HTTP
+exception registry in `middleware.AccountTrustBoundary`. Mutations fail closed
+before handlers when trust storage is unavailable. Distributed fixed-window
+budgets are tenant/IP and account scoped; registration is 3/hour, login is
+10/15 minutes, recovery is 3/hour, WebSocket upgrades are 20/minute, guest chat
+is one/15 seconds, and provisional chat is one/8 seconds. Limiter failure denies
+mutations/chat while ordinary reads remain available. The admin-only safeguard
+telemetry API exposes bounded counters and no identities or payloads.
+
 ## Required Invariants
 
 ### Privilege and authorization
@@ -70,6 +103,13 @@ is not an architectural invariant and must not be treated as one.
   the same fail-closed visibility/ownership policy.
 - WebSocket ingress uses an explicit client-originated message allowlist.
   Unknown or server-only event types are rejected rather than broadcast.
+- Control-plane WebSocket actions require an established authenticated admin,
+  `admin.general`, a live Grengo session, fresh action/target-bound step-up, and
+  a closed action/argument allowlist. A browser never borrows a backend-held
+  passcode, and control-plane telemetry is never broadcast to guests/members.
+- Teleport requires `presence.tp-here`, established account trust, canonical
+  connection identities, and a validated destination; authentication alone is
+  insufficient.
 - Every WebSocket resource subscription is authorized from the validated
   connection identity. Unknown resource types, cross-user identifiers, missing
   policy adapters, and lookup failures deny; private credential/session payloads
@@ -109,6 +149,10 @@ is not an architectural invariant and must not be treated as one.
 
 - DEFCON budgets measure weighted work, not only request count. Expensive routes
   consume more budget; pressure and jailed populations reduce available budget.
+- Budgets compose tenant, IP, signed guest session, account, trust tier, action,
+  and resource keys as appropriate. Reconnects and multiple WebSocket connections
+  cannot reset a distributed budget, and an account override never releases a
+  shared IP/NAT budget.
 - Rejection happens in Redis/middleware before database, SSR, or expensive Go
   work whenever possible. Limiter failure behavior must be explicit and tested.
 - Under pressure, public reads may serve a generic cached shell instead of DB,
@@ -155,6 +199,11 @@ is not an architectural invariant and must not be treated as one.
   methods/routes/headers, caps per-connection and global concurrent work plus
   response bytes, applies a deadline, and cancels work on disconnect.
   Unsupported HTTP semantics remain on ordinary HTTP.
+- Client-originated control-plane actions, teleport, media controls, history
+  deletion, sound effects, route-state allocation, datasource execution, and
+  voice-token issuance are governed actions, not public reads. They require
+  explicit trust/resource policy before database, queue, external-process, or
+  retained-memory work.
 
 ### Audit and observability
 
@@ -165,6 +214,10 @@ is not an architectural invariant and must not be treated as one.
 - Records include tenant, actor, target/resource, session, action, outcome,
   reason code, request correlation ID, source IP metadata, and timestamp. They do
   not contain passwords, TOTP/API secrets, raw tokens, or sensitive payloads.
+- Individual visitor IP/identity analytics are private security data and have no
+  application API. `events.view` grants only bounded aggregate resource analytics;
+  any future raw-row exception requires an explicit stepped-up administrative
+  policy and audit trail.
 - Security events and limiter telemetry use structured logs and bounded metrics.
   Required views include DEFCON state, jailed users, weighted request cost,
   authentication events, superuser activity, and per-tenant activity.
@@ -231,6 +284,7 @@ is not an architectural invariant and must not be treated as one.
 - `.specs/backend_spec`
 - `.specs/infrastructure_spec`
 - `.todo/security_invariants_hardening`
+- `.todo/guest_and_provisional_account_containment`
 - `.routines/auditor`
 - `.routines/correctness`
 - `.routines/worker`

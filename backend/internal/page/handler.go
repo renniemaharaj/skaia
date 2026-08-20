@@ -70,7 +70,6 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, comme
 		// Public reads
 		r.Get("/index", h.getIndex)
 		r.Get("/landing-slug", h.getLandingSlug)
-		r.Get("/list", h.listPages)
 		r.Get("/browse", h.browsePages)
 		r.Get("/browse/{id}/preview", h.getBrowsePreview)
 		r.Get("/{slug}", h.getBySlug)
@@ -305,22 +304,6 @@ func (h *Handler) getBySlug(w http.ResponseWriter, r *http.Request) {
 	p.CanDelete = h.canDeletePageForPage(r, p)
 	h.sanitizeInteractivePage(r, p)
 	utils.WriteJSON(w, http.StatusOK, p)
-}
-
-func (h *Handler) listPages(w http.ResponseWriter, r *http.Request) {
-	pages, err := h.svc.List()
-	if err != nil {
-		log.Printf("page.listPages: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "failed to list pages")
-		return
-	}
-	if pages == nil {
-		pages = []*models.Page{}
-	}
-	for _, p := range pages {
-		h.sanitizeInteractivePage(r, p)
-	}
-	utils.WriteJSON(w, http.StatusOK, pages)
 }
 
 func (h *Handler) createPage(w http.ResponseWriter, r *http.Request) {

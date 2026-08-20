@@ -50,7 +50,7 @@ The target contracts are authoritative in `.specs/security_architecture_spec`.
 - `.specs/backend_spec`
 - `.todo/session_cookie_ip_val`
 - `.todo/nat_jail_bypass`
-- `.todo/smart_rate_limiter`
+- `.todo/guest_and_provisional_account_containment`
 - `.routines/worker`
 - `.routines/auditor`
 - `.routines/correctness`

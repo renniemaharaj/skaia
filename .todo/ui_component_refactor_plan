@@ -131,7 +131,7 @@ Use existing Skaia endpoints and add registry metadata paths where needed:
 
 - GET `/pages/landing-slug`
 - GET `/pages/{slug}`
-- GET `/pages/list`
+- GET `/pages/browse` (content-free summaries)
 - POST `/pages`
 - PUT `/pages/{id}`
 - POST `/pages/{id}/duplicate`

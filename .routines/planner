@@ -107,6 +107,24 @@ operational policies.
 
 ## Last Run Remarks
 
+- Reconciled the completed guest/provisional implementation into the security,
+  auth, backend, frontend and realtime contracts: persisted age/TOTP trust,
+  closed guest exceptions, aggregate-only analytics, public profile DTOs,
+  disabled browser control-plane ingress, DB-backed WS identity/permissions,
+  deduplicated views, Redis budgets and optional-TOTP onboarding are authoritative.
+- Marked all plan phases complete after the full backend/frontend/race/policy
+  verification set and removed remaining stale `/pages/list` references.
+
+- Created `guest_and_provisional_account_containment` from the whole-system
+  guest/new-account audit. The handoff prioritizes confirmed unauthenticated
+  Grengo control/telemetry, media-history, wallet-credit, teleport, private-page,
+  visitor-analytics, public-profile, realtime-identity, and expensive guest-action
+  containment before a centralized 30-minute-or-TOTP trust policy,
+  deny-before-work registry, distributed tier budgets, and non-coercive onboarding.
+  Folded and retired the overlapping unfinished smart-rate-limiter plan after
+  preserving its useful weighted-budget, behavior-isolation, telemetry, and admin
+  control requirements.
+
 - Reconciled the implemented Phase 2 and intent/data portion of Phase 3 for
   `viewport_deferred_rendering_and_suspense`. Backend, cache, security, document,
   multiplayer, and frontend specs now define bounded content-free summaries,

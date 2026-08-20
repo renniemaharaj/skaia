@@ -67,14 +67,13 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 
 		// Wallet routes
 		r.With(jwt).Get("/wallet", h.getWallet)
-		r.With(jwt).Post("/wallet/topup", h.topUpWallet)
 		r.With(jwt).Get("/wallet/cards", h.getCards)
 		r.With(jwt).Post("/wallet/cards", h.addCard)
 		r.With(jwt).Put("/wallet/cards/{id}", h.updateCard)
 		r.With(jwt).Delete("/wallet/cards/{id}", h.deleteCard)
 
 		// Checkout - all payment logic is backend-only
-		r.Post("/checkout", h.checkout)
+		r.With(jwt).Post("/checkout", h.checkout)
 
 		// Reference code routes
 		r.With(jwt).Get("/reference-codes", h.listReferenceCodes)
@@ -639,48 +638,6 @@ func (h *Handler) getWallet(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"balance":      balance,
 		"transactions": txs,
-	})
-}
-
-// topUpWallet creates a credit transaction for the user's wallet.
-func (h *Handler) topUpWallet(w http.ResponseWriter, r *http.Request) {
-	userID, ok := h.resolveWalletUser(w, r)
-	if !ok {
-		return
-	}
-
-	var req struct {
-		Amount      int64  `json:"amount"` // in cents
-		Description string `json:"description"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, "Invalid request payload")
-		return
-	}
-	if req.Amount <= 0 {
-		utils.WriteError(w, http.StatusBadRequest, "Amount must be positive")
-		return
-	}
-	if req.Description == "" {
-		req.Description = "Wallet top up"
-	}
-
-	tx := &models.WalletTransaction{
-		UserID:      userID,
-		Amount:      req.Amount,
-		Type:        "credit",
-		Description: req.Description,
-	}
-
-	createdTx, err := h.svc.WalletRepo.CreateTransaction(tx)
-	if err != nil {
-		log.Printf("Wallet top up error: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "Failed to process top up")
-		return
-	}
-
-	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
-		"transaction": createdTx,
 	})
 }
 

@@ -297,6 +297,48 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 	authRepo := auth.NewSQLRepository(db)
 	authSvc := auth.NewService(authRepo, userSvc)
+	accountTrustPolicy := isecurity.NewAccountTrustPolicy(userSvc, authSvc)
+	actionBudget := isecurity.NewActionBudget(rdb, os.Getenv("CLIENT_ID"))
+	hub.AccountTrustAuthorizer = func(ctx context.Context, userID int64) error {
+		_, err := accountTrustPolicy.RequireEstablished(ctx, userID)
+		return err
+	}
+	hub.PermissionAuthorizer = userSvc.HasPermission
+	hub.IdentityResolver = func(userID int64) (string, string, error) {
+		user, err := userSvc.GetByID(userID)
+		if err != nil {
+			return "", "", err
+		}
+		return user.Username, user.AvatarURL, nil
+	}
+	hub.ChatBudgetAuthorizer = func(client *ws.Client) (time.Duration, error) {
+		if client == nil {
+			return 0, isecurity.ErrBudgetUnavailable
+		}
+		scope := "chat:guest"
+		identity := "ip:" + client.RealIP
+		limit := int64(1)
+		window := 15 * time.Second
+		if client.UserID > 0 {
+			decision, err := accountTrustPolicy.Evaluate(context.Background(), client.UserID)
+			if err != nil {
+				return 0, err
+			}
+			identity = "user:" + strconv.FormatInt(client.UserID, 10)
+			if decision.Tier == isecurity.TierProvisional {
+				scope, window = "chat:provisional", 8*time.Second
+			} else {
+				scope, limit, window = "chat:established", 30, time.Minute
+			}
+		}
+		retry, err := actionBudget.Allow(context.Background(), scope, identity, 1, limit, window)
+		if errors.Is(err, isecurity.ErrAccountRateLimited) {
+			isecurity.DefaultSafeguardTelemetry.RecordRateDenial()
+		} else if err != nil {
+			isecurity.DefaultSafeguardTelemetry.RecordLimiterFailure()
+		}
+		return retry, err
+	}
 
 	forumCatRepo := iforum.NewCategoryRepository(db)
 	forumThreadRepo := iforum.NewThreadRepository(db)
@@ -571,9 +613,9 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 	// WebSocket at root (nginx proxies /ws directly)
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
-		defconLimiter(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defconLimiter(imw.WebSocketUpgradeBudget(actionBudget)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ws.HandleConnection(w, r, hub)
-		})).ServeHTTP(w, r)
+		}))).ServeHTTP(w, r)
 	})
 
 	//  Static file serving for user uploads (at root - URLs are stored
@@ -621,14 +663,20 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			armedDir = "armed"
 		}
 		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/site/arm", "/api/site/disarm", "/api/health", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh", "/api/grengo/"}))
-		api.Use(defconLimiter, imw.ExtractTokenMiddleware, imw.IPHoppingMiddleware(authSvc), imw.MFARequiredMiddleware(authSvc))
+		api.Use(defconLimiter, imw.ExtractTokenMiddleware, imw.IPHoppingMiddleware(authSvc), imw.MFARequiredMiddleware(authSvc), imw.AccountTrustBoundary(accountTrustPolicy), imw.MutationBudget(actionBudget))
 
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
 		})
 
-		api.Get("/defcon/telemetry", func(w http.ResponseWriter, r *http.Request) {
+		api.With(imw.JWTAuthMiddleware).Get("/defcon/telemetry", func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := utils.UserIDFromCtx(r)
+			allowed, err := userSvc.HasPermission(userID, "admin.general")
+			if !ok || err != nil || !allowed {
+				utils.WriteError(w, http.StatusForbidden, "forbidden")
+				return
+			}
 			stats := ratelimit.GetLatestStats()
 			if stats == nil {
 				http.Error(w, `{"error":"telemetry uninitialized"}`, http.StatusServiceUnavailable)
@@ -636,6 +684,16 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			}
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(stats)
+		})
+
+		api.With(imw.JWTAuthMiddleware).Get("/account-safeguards/telemetry", func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := utils.UserIDFromCtx(r)
+			allowed, err := userSvc.HasPermission(userID, "admin.general")
+			if !ok || err != nil || !allowed {
+				utils.WriteError(w, http.StatusForbidden, "forbidden")
+				return
+			}
+			utils.WriteJSON(w, http.StatusOK, isecurity.DefaultSafeguardTelemetry.Snapshot())
 		})
 
 		api.Post("/defcon/reset", func(w http.ResponseWriter, r *http.Request) {
@@ -911,9 +969,17 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			})
 		})
 
-		api.Get("/internal/storage", iupload.HandleInternalStorage)
+		api.With(imw.JWTAuthMiddleware).Get("/internal/storage", func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := utils.UserIDFromCtx(r)
+			allowed, err := userSvc.HasPermission(userID, "home.manage")
+			if !ok || err != nil || !allowed {
+				utils.WriteError(w, http.StatusForbidden, "forbidden")
+				return
+			}
+			iupload.HandleInternalStorage(w, r)
+		})
 
-		api.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
+		api.With(imw.WebSocketUpgradeBudget(actionBudget)).Get("/ws", func(w http.ResponseWriter, r *http.Request) {
 			ws.HandleConnection(w, r, hub)
 		})
 
@@ -950,6 +1016,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		authHandler := auth.NewHandler(authSvc, hub, dispatcher, emailSender, inboxSvc, userSvc)
 		hub.OnGuestSessionClosed = authHandler.ExpireRecoveryRequestsForGuestSession
 		authhandler.NewHandler(authHandler).Mount(api, imw.JWTAuthMiddleware)
+		isecurity.NewAccountTrustHandler(accountTrustPolicy).Mount(api, imw.JWTAuthMiddleware)
 		iuser.NewHandler(userSvc, hub, dispatcher, inboxSender, emailSender).Mount(api, imw.JWTAuthMiddleware)
 		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, commentSlowMode)
 		idocumentation.NewHandler(documentationSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware)
@@ -1002,7 +1069,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		ievents.NewHandler(eventsRepo, userSvc).Mount(api, imw.JWTAuthMiddleware)
 
 		// Analytics API.
-		ianalytics.NewHandler(analyticsSvc).Mount(api, imw.JWTAuthMiddleware)
+		ianalytics.NewHandler(analyticsSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
 
 		// Grengo multi-tenant management API.
 		grengoAPI := os.Getenv("GRENGO_API_URL")
@@ -1015,7 +1082,6 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 					grengoSvc = grengoSvc.WithPasscode(parts[0], parts[1])
 				}
 			}
-			hub.GrengoActionHandler = grengoSvc.SendAction
 			go grengoSvc.WatchJobs()
 			go grengoSvc.WatchStats()
 			go grengoSvc.WatchStorage()

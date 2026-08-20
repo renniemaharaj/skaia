@@ -89,9 +89,31 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Ran
 
-- 2026-08-16
+- 2026-08-20
 
 ## Last Run Remarks
+
+- Completed the affected-system containment audit after implementation. Guest
+  access is browse-only by default with closed low-cost exceptions; provisional
+  accounts cannot reach durable or expensive actions; Grengo/media/teleport,
+  wallet, pages, analytics, datasource env, public profile and realtime identity
+  findings are contained. No Critical, High or Medium issue remains in scope.
+- The complete backend suite, WS/security race tests, all 213 frontend tests,
+  lint, TypeScript, native-dialog policy, production build, reference and diff
+  gates pass. Deterministic tests cover the browser matrix because browser
+  automation was unavailable in this environment.
+
+- Audited guest and newly registered access across HTTP, WebSocket, auth/TOTP,
+  forum, pages/interactive records, inbox, uploads, store/wallet, datasource
+  execution, voice, analytics, rate limiting, audit, schemas, specs, and tests.
+  Confirmed critical unauthenticated Grengo control-plane action forwarding,
+  individual media-history deletion, and unrestricted authenticated wallet
+  credit, plus globally broadcast infrastructure telemetry, permissionless member
+  teleport, unrestricted visitor IP/identity analytics, private full-page listing,
+  spoofable realtime identity, ungoverned guest expensive actions, and absence of
+  any account-age/TOTP mutation tier.
+  Recorded the implementation handoff in
+  `.todo/guest_and_provisional_account_containment`; no application code changed.
 
 - Audited `viewport_deferred_rendering_and_suspense` across browse/preview
   authorization and bounds, section mount ownership, preview/view renderer

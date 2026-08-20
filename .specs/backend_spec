@@ -88,7 +88,8 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 | `/api/pages` | `internal/page` | public page reads, protected page/page-admin writes |
 | `/api/upload` | `internal/upload` | image/video/file/banner/chunked uploads |
 | `/api/events` | `internal/events` | activity listing |
-| `/api/analytics` | `internal/analytics` | resource stats/visitors |
+| `/api/analytics` | `internal/analytics` | `events.view`-protected aggregate resource stats; no individual visitor API |
+| `/api/account-safeguards` | `main.go` + `internal/security` | `admin.general`-protected bounded trust/limiter counters |
 | `/api/mediascraper` | `internal/mediascraper` | scrape/job controls |
 | `/api/grengo` | `internal/grengo` | in-app tenant administration proxy |
 | `/api/bible/kjv` | `internal/bible` | public immutable KJV catalog and per-book reads |
@@ -115,7 +116,7 @@ bibliographical certification.
 | --- | --- | --- |
 | `GET` | `/pages/landing-slug` | Current `landing_page_slug` |
 | `GET` | `/pages/index` | Legacy inline landing fetch |
-| `GET` | `/pages/list`, `/pages/{slug}` | Legacy page listing and exact page fetch |
+| `GET` | `/pages/{slug}` | Visibility-aware exact page fetch; the unsafe full-document `/pages/list` route does not exist |
 | `GET` | `/pages/browse` | Content-free browse summaries, stable `updated_at`/id cursor pagination (24 default, 100 maximum), server search, batched owner/editor projection, and caller-derived action flags |
 | `GET` | `/pages/browse/{id}/preview` | Intent-time caller-safe content plus `updated_at` revision; private access and interactive sanitization are service-enforced |
 | `POST` | `/pages/{slug}/view` | Record page view |
@@ -183,9 +184,11 @@ bibliographical certification.
 ## User Read Contracts
 
 - `POST /api/users/batch` is a guest-safe bounded read for high-fanout rich-user
-  UI. It accepts at most 50 unique positive IDs and returns the users found.
-- The batch route reduces HTTP fan-out; individual profile routes remain the
-  authoritative fresh-read path for full profile screens.
+  UI. It accepts at most 50 unique positive IDs and returns explicit public
+  profiles only. Public batch and individual profile DTOs exclude email,
+  suspension/security state, permissions, and auth metadata.
+- The authenticated `/users/profile` route remains authoritative for the
+  caller's complete account/profile state.
 
 ## Persistence Contracts
 

@@ -80,7 +80,7 @@ func (s *Service) WatchJobs() {
 			waitingForPasscode = false
 
 			if s.hub != nil {
-				s.hub.Broadcast(&ws.Message{
+				s.hub.BroadcastToPermission("admin.general", &ws.Message{
 					Type:    ws.GrengoJobUpdate,
 					Payload: json.RawMessage(resp.EventJson),
 				})
@@ -128,7 +128,7 @@ func (s *Service) WatchStats() {
 			continue
 		}
 
-		s.hub.Broadcast(&ws.Message{
+		s.hub.BroadcastToPermission("admin.general", &ws.Message{
 			Type:    ws.GrengoStatsUpdate,
 			Payload: json.RawMessage(data),
 		})
@@ -171,7 +171,7 @@ func (s *Service) WatchStorage() {
 			continue
 		}
 
-		s.hub.Broadcast(&ws.Message{
+		s.hub.BroadcastToPermission("admin.general", &ws.Message{
 			Type:    ws.GrengoStorageUpdate,
 			Payload: json.RawMessage(data),
 		})
@@ -216,7 +216,7 @@ func (s *Service) WatchHardware() {
 			continue
 		}
 
-		s.hub.Broadcast(&ws.Message{
+		s.hub.BroadcastToPermission("admin.general", &ws.Message{
 			Type:    ws.GrengoHardwareUpdate,
 			Payload: json.RawMessage(data),
 		})

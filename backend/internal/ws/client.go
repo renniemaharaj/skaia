@@ -51,8 +51,10 @@ type Client struct {
 	presenceLimit  rateBucket
 	broadcastLimit rateBucket
 	signalLimit    rateBucket
+	mediaLimit     rateBucket
 	// lastChatAt tracks when the last global chat message was sent, for slow-mode enforcement.
-	lastChatAt time.Time
+	lastChatAt      time.Time
+	chatBudgetRetry time.Duration
 }
 
 func (c *Client) HasPermission(perm string) bool {
@@ -214,7 +216,9 @@ func (c *Client) handleMessage(msg Message) {
 	case Ping:
 		// nothing - client keepalive only
 	case VoiceControl:
-		c.handleVoiceControlMsg(msg)
+		if c.mediaLimit.allow() {
+			c.handleVoiceControlMsg(msg)
+		}
 	case VoiceSignal:
 		if c.signalLimit.allow() {
 			c.handleWebRTCMessage(msg)
@@ -222,6 +226,14 @@ func (c *Client) handleMessage(msg Message) {
 			c.sendClientError("You are sending WebRTC signals too quickly.", 0)
 		}
 	case MediaAdd, MediaRemove, MediaAction, MediaEnded, MediaTransitionStart, MediaTransition, MediaHistoryClear, MediaSfx:
+		if !c.mediaLimit.allow() {
+			c.sendClientError("You are sending media actions too quickly.", c.mediaLimit.nextAvailable())
+			return
+		}
+		if !c.Hub.canMutateAccount(c) {
+			c.sendClientErrorAction("account_provisional", "Media controls require an established account.", 0)
+			return
+		}
 		c.Hub.mediaUpdates <- MediaUpdateAction{Client: c, Message: msg}
 	case GrengoJobAction:
 		c.handleGrengoJobAction(msg)
@@ -456,31 +468,16 @@ func (c *Client) handleGrengoJobAction(msg Message) {
 	}
 	_ = json.Unmarshal(msg.Payload, &req)
 
-	go func() {
-		var jobID string
-		var err error
-		if c.Hub.GrengoActionHandler == nil {
-			err = errors.New("grengo action handler is not configured")
-		} else {
-			jobID, err = c.Hub.GrengoActionHandler(msg.Payload)
-		}
-
-		payload := map[string]any{
-			"request_id": req.RequestID,
-			"accepted":   err == nil,
-			"job_id":     jobID,
-		}
-		if err != nil {
-			payload["error"] = err.Error()
-		}
-		data, marshalErr := json.Marshal(payload)
-		if marshalErr != nil {
-			return
-		}
-		if !c.queueMessage(&Message{Type: GrengoActionAck, Payload: data}) {
-			return
-		}
-	}()
+	payload := map[string]any{
+		"request_id": req.RequestID,
+		"accepted":   false,
+		"job_id":     "",
+		"error":      "browser control is disabled; use the authenticated Grengo session API",
+	}
+	data, err := json.Marshal(payload)
+	if err == nil {
+		c.queueMessage(&Message{Type: GrengoActionAck, Payload: data})
+	}
 }
 
 // WritePump pumps encoded outbound messages from the hub to the connection and
@@ -562,6 +559,16 @@ func (c *Client) handlePresence(msg Message) {
 	if err := json.Unmarshal(msg.Payload, &p); err != nil {
 		return
 	}
+	if !validPresenceRoute(p.Route) {
+		return
+	}
+	if c.UserID == 0 {
+		p.UserName = "Guest"
+		p.Avatar = ""
+	} else {
+		p.UserName = c.UserName
+		p.Avatar = c.Avatar
+	}
 	select {
 	case c.Hub.presenceUpdates <- ClientPresence{Client: c, Route: p.Route, UserName: p.UserName, Avatar: p.Avatar, IsMuted: p.IsMuted, GuestSessionID: p.GuestSessionID}:
 	default:
@@ -597,8 +604,8 @@ func (c *Client) handleCursor(msg Message) {
 
 // handleTp forwards a teleport request to the hub for targeted routing.
 func (c *Client) handleTp(msg Message) {
-	// Only authenticated users may send tp messages.
-	if c.UserID == 0 {
+	if !c.Hub.canMutateAccount(c) || !c.Hub.hasPermission(c, "presence.tp-here") {
+		c.sendClientErrorAction("forbidden", "You do not have permission to move another session.", 0)
 		return
 	}
 	type tpPayload struct {
@@ -609,7 +616,7 @@ func (c *Client) handleTp(msg Message) {
 	if err := json.Unmarshal(msg.Payload, &p); err != nil {
 		return
 	}
-	if p.Route == "" || p.TargetUserID == 0 {
+	if !validPresenceRoute(p.Route) || p.TargetUserID == 0 || p.TargetUserID == c.UserID {
 		return
 	}
 	c.Hub.SendTeleport(p.TargetUserID, p.Route)
@@ -624,7 +631,7 @@ func (c *Client) handleVoiceControlMsg(msg Message) {
 	if p.Route == "" || p.Action == "" {
 		return
 	}
-	if !c.HasPermission("home.manage") {
+	if !c.Hub.canMutateAccount(c) || !c.Hub.hasPermission(c, "home.manage") {
 		c.sendClientErrorAction("forbidden", "You do not have permission to manage route voice chat.", 0)
 		return
 	}
@@ -632,6 +639,18 @@ func (c *Client) handleVoiceControlMsg(msg Message) {
 	case c.Hub.voiceControl <- VoiceControlAction{Client: c, Payload: p}:
 	default:
 	}
+}
+
+func validPresenceRoute(route string) bool {
+	if route == "" || len(route) > 256 || route[0] != '/' {
+		return false
+	}
+	for _, r := range route {
+		if r < 0x20 || r == 0x7f || r == '\\' {
+			return false
+		}
+	}
+	return !strings.Contains(route, "..")
 }
 
 // handleGlobalChat validates and enqueues a global chat message from this client.
@@ -686,6 +705,14 @@ func (c *Client) handleGlobalChat(msg Message) {
 // right now. It respects the hub's dynamic slow-mode setting; when slow mode is
 // disabled it falls back to the per-client token bucket.
 func (c *Client) allowChat() bool {
+	if c.Hub.ChatBudgetAuthorizer == nil {
+		return false
+	}
+	retry, err := c.Hub.ChatBudgetAuthorizer(c)
+	c.chatBudgetRetry = retry
+	if err != nil {
+		return false
+	}
 	if c.Hub.chatSlowModeEnabled.Load() {
 		interval := c.Hub.chatSlowModeInterval.Load()
 		if interval < 1 {
@@ -704,6 +731,9 @@ func (c *Client) allowChat() bool {
 // chatRetryAfter returns how long the client should wait before sending another
 // global chat message.
 func (c *Client) chatRetryAfter() time.Duration {
+	if c.chatBudgetRetry > 0 {
+		return c.chatBudgetRetry
+	}
 	if c.Hub.chatSlowModeEnabled.Load() {
 		interval := c.Hub.chatSlowModeInterval.Load()
 		if interval < 1 {
