@@ -8,3 +8,10 @@ func TestRouteKeyIsTenantScopedAndVersioned(t *testing.T) {
 		t.Fatalf("RouteKey() = %q, want %q", got, want)
 	}
 }
+
+func TestSitemapKeyUsesTenantSEONamespace(t *testing.T) {
+	t.Setenv("CLIENT_NAME", "writer")
+	if got, want := RouteKey(sitemapRoute), "writer:seo:meta:v3:/sitemap.xml"; got != want {
+		t.Fatalf("sitemap RouteKey() = %q, want %q", got, want)
+	}
+}

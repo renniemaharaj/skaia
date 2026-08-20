@@ -11,6 +11,7 @@ import (
 const (
 	legacyNamespace = "ssr:meta:"
 	namespace       = "seo:meta:v3:"
+	sitemapRoute    = "/sitemap.xml"
 )
 
 func clientPrefix() string {
@@ -34,6 +35,13 @@ func InvalidateRoute(ctx context.Context, rdb *redis.Client, route string) error
 		return fmt.Errorf("invalidate SEO route %q: %w", route, err)
 	}
 	return nil
+}
+
+// InvalidateSitemap removes the active tenant's generated sitemap. Content
+// mutations call this alongside their exact metadata invalidation so newly
+// public, renamed, or deleted resources do not wait for the sitemap TTL.
+func InvalidateSitemap(ctx context.Context, rdb *redis.Client) error {
+	return InvalidateRoute(ctx, rdb, sitemapRoute)
 }
 
 // InvalidateAll removes all current SEO metadata for the active tenant.

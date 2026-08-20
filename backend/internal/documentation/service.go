@@ -88,6 +88,7 @@ func (s *Service) invalidate(routes ...string) {
 	for _, route := range routes {
 		_ = seocache.InvalidateRoute(context.Background(), s.rdb, route)
 	}
+	_ = seocache.InvalidateSitemap(context.Background(), s.rdb)
 }
 
 func (s *Service) ListPublic(actorID int64) ([]models.Documentation, error) {

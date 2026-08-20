@@ -136,6 +136,9 @@ func (s *Service) invalidateSEO(slug string) {
 			log.Printf("page: invalidate SEO cache for %q: %v", route, err)
 		}
 	}
+	if err := seocache.InvalidateSitemap(context.Background(), s.rdb); err != nil {
+		log.Printf("page: invalidate sitemap cache: %v", err)
+	}
 }
 
 func (s *Service) Create(p *models.Page) error {

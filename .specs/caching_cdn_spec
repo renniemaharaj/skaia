@@ -28,6 +28,7 @@ resolution, Bible data loading, SSR, or CDN-facing behavior.
 | Vite assets | hashed filenames; immutable-style static caching |
 | WebSocket | not cacheable; upgrade proxied at `/ws` and `/api/ws` |
 | SSR HTML | no-store; semantic route metadata uses tenant-scoped `seo:meta:v3:` Redis keys and is rendered against the validated canonical tenant origin |
+| Sitemap XML | generated from canonical static routes plus public database content; tenant-scoped Redis cache for 15 minutes with mutation invalidation |
 | Documentation APIs | no-store; route state is refreshed by scoped content-free WebSocket invalidation |
 | KJV frontend reads | API remains `no-store`; one catalog promise plus an eight-book in-memory LRU and in-flight coalescing |
 
@@ -52,8 +53,11 @@ resolution, Bible data loading, SSR, or CDN-facing behavior.
   mutations also invalidate `/users`. Live stream metadata is resolved per SSR
   request because its in-memory state has no durable mutation invalidator.
 - Documentation writes invalidate exact set/guide paths; public set/guide paths
-  are discovered dynamically in the sitemap. Forum thread writes also invalidate
-  their `/forum/docs/{categoryId}/{threadId}` presentation path.
+  are discovered dynamically in the sitemap. Page, documentation, forum-thread,
+  and product mutations also evict `/sitemap.xml`; transient database failures
+  may serve the static route set but never cache that degraded result. Forum
+  thread writes also invalidate their `/forum/docs/{categoryId}/{threadId}`
+  presentation path.
 - Missing recognized resources and unknown extensionless SPA paths return `404`
   plus HTML and `X-Robots-Tag` noindex. Authenticated/authentication routes remain
   renderable SPA shells but are noindex and absent from the sitemap.

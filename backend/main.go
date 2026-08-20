@@ -563,19 +563,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	r.Get("/health", healthHandler)
 	r.Head("/health", healthHandler)
 
-	sitemapHandler := func(w http.ResponseWriter, r *http.Request) {
-		client := chi.URLParam(r, "client")
-		configuredClient := os.Getenv("CLIENT_NAME")
-		if client != "" && configuredClient != "" && client != configuredClient {
-			http.NotFound(w, r)
-			return
-		}
-
-		sitemap := seo.BuildSitemapXML(r.Context(), rdb)
-		w.Header().Set("Content-Type", "application/xml")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(sitemap))
-	}
+	sitemapHandler := seo.NewSitemapHandler(db, rdb)
 
 	// Sitemap for SEO (per-client and default)
 	r.Get("/sitemap.xml", sitemapHandler)

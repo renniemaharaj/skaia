@@ -91,6 +91,9 @@ func (c *ThreadCache) Invalidate(id int64) {
 	if err := seocache.InvalidateRoute(ctx, c.rdb, "/view-thread/"+strconv.FormatInt(id, 10)); err != nil {
 		log.Printf("forum.ThreadCache.InvalidateSEO(%d): %v", id, err)
 	}
+	if err := seocache.InvalidateSitemap(ctx, c.rdb); err != nil {
+		log.Printf("forum.ThreadCache.InvalidateSitemap(%d): %v", id, err)
+	}
 }
 
 func (c *ThreadCache) InvalidateDocumentation(categoryID, threadID int64) {

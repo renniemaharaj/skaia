@@ -4,12 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"encoding/xml"
+	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/redis/go-redis/v9"
-	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/internal/seocache"
 	log "github.com/skaia/backend/internal/syslog"
 )
@@ -20,6 +21,7 @@ var sitemapPaths = []string{
 	"/",
 	"/store",
 	"/forum",
+	"/forum/docs",
 	"/doc",
 	"/kjv",
 	"/pages",
@@ -27,7 +29,7 @@ var sitemapPaths = []string{
 	"/tos",
 }
 
-type SitemapEntry struct {
+type sitemapEntry struct {
 	Path    string
 	LastMod sql.NullTime
 }
@@ -55,22 +57,44 @@ func getSitemapBaseURL() string {
 	return "http://localhost:8080"
 }
 
-func BuildSitemapXML(ctx context.Context, rdb *redis.Client) string {
+// NewSitemapHandler serves the canonical and legacy tenant-named sitemap
+// routes. Generation, tenant validation, and caching remain owned together.
+func NewSitemapHandler(db *sql.DB, rdb *redis.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		client := chi.URLParam(r, "client")
+		configuredClient := os.Getenv("CLIENT_NAME")
+		if client != "" && configuredClient != "" && client != configuredClient {
+			http.NotFound(w, r)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(buildCachedSitemapXML(r.Context(), db, rdb)))
+	}
+}
+
+func buildCachedSitemapXML(ctx context.Context, db *sql.DB, rdb *redis.Client) string {
 	cacheKey := seocache.RouteKey("/sitemap.xml")
 
 	if rdb != nil {
 		cached, err := rdb.Get(ctx, cacheKey).Result()
 		switch {
-		case err == nil:
+		case err == nil && cached != "":
 			return cached
 		case err != redis.Nil:
 			log.Printf("seo: read sitemap route cache: %v", err)
 		}
 	}
 
-	xmlContent := buildSitemapXML()
+	xmlContent, contentErr := buildSitemapXML(ctx, db)
+	if contentErr != nil {
+		// A static-only sitemap is still useful, but must not be persisted for
+		// the full TTL after a transient database failure.
+		log.Printf("seo: build dynamic sitemap content: %v", contentErr)
+	}
 
-	if xmlContent != "" && rdb != nil {
+	if xmlContent != "" && contentErr == nil && rdb != nil {
 		if err := rdb.Set(ctx, cacheKey, xmlContent, sitemapCacheTTL).Err(); err != nil {
 			log.Printf("seo: write sitemap route cache: %v", err)
 		}
@@ -79,19 +103,24 @@ func BuildSitemapXML(ctx context.Context, rdb *redis.Client) string {
 	return xmlContent
 }
 
-func buildSitemapXML() string {
+func buildSitemapXML(ctx context.Context, db *sql.DB) (string, error) {
 	baseURL := getSitemapBaseURL()
 
-	entries := make([]SitemapEntry, 0, len(sitemapPaths))
+	entries := make([]sitemapEntry, 0, len(sitemapPaths))
 
 	for _, path := range sitemapPaths {
-		entries = append(entries, SitemapEntry{
+		entries = append(entries, sitemapEntry{
 			Path: path,
 		})
 	}
 
-	entries = append(entries, contentSitemapEntries(database.DB)...)
+	dynamicEntries, contentErr := contentSitemapEntries(ctx, db)
+	entries = append(entries, dynamicEntries...)
 
+	return marshalSitemapXML(baseURL, entries), contentErr
+}
+
+func marshalSitemapXML(baseURL string, entries []sitemapEntry) string {
 	urls := make([]sitemapURL, 0, len(entries))
 
 	for _, entry := range entries {
@@ -118,12 +147,12 @@ func buildSitemapXML() string {
 	return xml.Header + string(data) + "\n"
 }
 
-func contentSitemapEntries(db *sql.DB) []SitemapEntry {
+func contentSitemapEntries(ctx context.Context, db *sql.DB) ([]sitemapEntry, error) {
 	if db == nil {
-		return nil
+		return nil, nil
 	}
 
-	rows, err := db.Query(`
+	rows, err := db.QueryContext(ctx, `
 		SELECT path, updated_at
 		FROM (
 			SELECT
@@ -175,28 +204,25 @@ func contentSitemapEntries(db *sql.DB) []SitemapEntry {
 		ORDER BY path
 	`)
 	if err != nil {
-		log.Printf("seo: query sitemap content: %v", err)
-		return nil
+		return nil, err
 	}
 	defer rows.Close()
 
-	entries := make([]SitemapEntry, 0)
+	entries := make([]sitemapEntry, 0)
 
 	for rows.Next() {
-		var entry SitemapEntry
+		var entry sitemapEntry
 
 		if err := rows.Scan(&entry.Path, &entry.LastMod); err != nil {
-			log.Printf("seo: scan sitemap content: %v", err)
-			continue
+			return nil, err
 		}
 
 		entries = append(entries, entry)
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Printf("seo: iterate sitemap content: %v", err)
-		return nil
+		return nil, err
 	}
 
-	return entries
+	return entries, nil
 }
