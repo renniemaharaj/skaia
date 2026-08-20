@@ -1,14 +1,20 @@
 package seo
 
 import (
+	"context"
 	"database/sql"
 	"encoding/xml"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/skaia/backend/database"
+	"github.com/skaia/backend/internal/seocache"
+	log "github.com/skaia/backend/internal/syslog"
 )
+
+const sitemapCacheTTL = 15 * time.Minute
 
 var sitemapPaths = []string{
 	"/",
@@ -27,10 +33,8 @@ type SitemapEntry struct {
 }
 
 type sitemapURL struct {
-	Loc        string `xml:"loc"`
-	LastMod    string `xml:"lastmod,omitempty"`
-	ChangeFreq string `xml:"changefreq,omitempty"`
-	Priority   string `xml:"priority,omitempty"`
+	Loc     string `xml:"loc"`
+	LastMod string `xml:"lastmod,omitempty"`
 }
 
 type sitemapURLSet struct {
@@ -51,7 +55,31 @@ func getSitemapBaseURL() string {
 	return "http://localhost:8080"
 }
 
-func BuildSitemapXML() string {
+func BuildSitemapXML(ctx context.Context, rdb *redis.Client) string {
+	cacheKey := seocache.RouteKey("/sitemap.xml")
+
+	if rdb != nil {
+		cached, err := rdb.Get(ctx, cacheKey).Result()
+		switch {
+		case err == nil:
+			return cached
+		case err != redis.Nil:
+			log.Printf("seo: read sitemap route cache: %v", err)
+		}
+	}
+
+	xmlContent := buildSitemapXML()
+
+	if xmlContent != "" && rdb != nil {
+		if err := rdb.Set(ctx, cacheKey, xmlContent, sitemapCacheTTL).Err(); err != nil {
+			log.Printf("seo: write sitemap route cache: %v", err)
+		}
+	}
+
+	return xmlContent
+}
+
+func buildSitemapXML() string {
 	baseURL := getSitemapBaseURL()
 
 	entries := make([]SitemapEntry, 0, len(sitemapPaths))
@@ -83,6 +111,7 @@ func BuildSitemapXML() string {
 		URLs:  urls,
 	}, "", "  ")
 	if err != nil {
+		log.Printf("seo: marshal sitemap: %v", err)
 		return ""
 	}
 
@@ -103,6 +132,7 @@ func contentSitemapEntries(db *sql.DB) []SitemapEntry {
 			FROM pages p
 			WHERE p.visibility = 'public'
 			  AND p.deleted_at IS NULL
+			  AND p.slug NOT IN ('privacy', 'tos')
 
 			UNION ALL
 
@@ -145,6 +175,7 @@ func contentSitemapEntries(db *sql.DB) []SitemapEntry {
 		ORDER BY path
 	`)
 	if err != nil {
+		log.Printf("seo: query sitemap content: %v", err)
 		return nil
 	}
 	defer rows.Close()
@@ -155,6 +186,7 @@ func contentSitemapEntries(db *sql.DB) []SitemapEntry {
 		var entry SitemapEntry
 
 		if err := rows.Scan(&entry.Path, &entry.LastMod); err != nil {
+			log.Printf("seo: scan sitemap content: %v", err)
 			continue
 		}
 
@@ -162,6 +194,7 @@ func contentSitemapEntries(db *sql.DB) []SitemapEntry {
 	}
 
 	if err := rows.Err(); err != nil {
+		log.Printf("seo: iterate sitemap content: %v", err)
 		return nil
 	}
 

@@ -571,7 +571,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			return
 		}
 
-		sitemap := seo.BuildSitemapXML()
+		sitemap := seo.BuildSitemapXML(r.Context(), rdb)
 		w.Header().Set("Content-Type", "application/xml")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(sitemap))
