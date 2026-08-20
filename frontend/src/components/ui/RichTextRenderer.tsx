@@ -3,6 +3,7 @@ import parse, { type DOMNode, Element } from "html-react-parser";
 import type React from "react";
 import UserLink from "../user/UserLink";
 import { MediaPlaceholder, type MediaSize, type MediaType } from "./MediaPlaceholder";
+import "./RichTextRenderer.css";
 
 interface RichTextRendererProps {
   html: string;

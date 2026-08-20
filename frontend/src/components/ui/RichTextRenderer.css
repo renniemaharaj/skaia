@@ -1,0 +1,9 @@
+.rich-text-renderer p {
+  white-space: pre-wrap;
+}
+
+/* Tiptap serializes an intentionally blank line as an empty paragraph. The
+   non-breaking space creates a line box that inherits any authored line-height. */
+.rich-text-renderer p:empty::before {
+  content: "\00a0";
+}

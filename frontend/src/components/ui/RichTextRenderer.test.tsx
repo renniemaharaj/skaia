@@ -2,7 +2,22 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { RichTextRenderer } from "./RichTextRenderer";
 
-describe("RichTextRenderer media", () => {
+describe("RichTextRenderer", () => {
+  it("keeps literal and empty paragraph line breaks for prose and poetry", () => {
+    const { container } = render(
+      <RichTextRenderer
+        html={'<p>First line\nSecond line</p><p style="line-height: 2.25"></p><p>Next stanza</p>'}
+      />
+    );
+
+    const paragraphs = container.querySelectorAll("p");
+    expect(paragraphs).toHaveLength(3);
+    expect(paragraphs[0]).toHaveTextContent("First line Second line");
+    expect(paragraphs[1]).toBeEmptyDOMElement();
+    expect(paragraphs[1]).toHaveStyle({ lineHeight: "2.25" });
+    expect(paragraphs[2]).toHaveTextContent("Next stanza");
+  });
+
   it("sanitizes authored HTML without changing Tiptap image markup", () => {
     const savedHtml =
       '<h2 id="saved-heading">Overview</h2><img src="/uploads/map.webp" alt="Route map" width="640" height="360" class="authored-image"><script>unsafe()</script>';
