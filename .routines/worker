@@ -114,9 +114,31 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-08-17
+- 2026-08-20
 
 ## Last Run Remarks
+
+- Completed Phase 2 and the intent/data portion of Phase 3 for
+  `viewport_deferred_rendering_and_suspense`: custom-page browse is bounded,
+  content-free, cursor-paginated, and batch-enriched; exact previews are
+  service-authorized, sanitized, no-store, revision-validated, abortable,
+  intent-only, inert, and held in a 24-entry client LRU. Complete backend and
+  frontend suites, lint, build, TypeScript, media, and dialog gates pass.
+- Completed the remainder of Phase 3 and Phase 4: exact previews now scope
+  section observation to their clipped thumbnail, and shared frames defer every
+  later view/editor renderer behind bounded type-shaped skeletons. First-section
+  eagerness, editor intent, sticky draft mounts, collapse lifecycle, observer
+  fallback, and page/JSON-ID teardown semantics have focused coverage.
+- Corrected the Phase 4 visual fallbacks after review: restored the established
+  responsive full-bleed hero silhouette and replaced generic section-family
+  cards with renderer-specific text, icon, media, profile, CTA, code, table, and
+  form compositions. All 205 frontend tests, lint, build, and policy gates pass.
+- Closed Phases 5-7 with a single route-aware shell, shared primary-surface
+  skeletons, interaction-only analytics/Recharts loading, and a focused loading
+  policy. The bounded 500-record fixture emits 100 summaries/19,392 bytes with
+  one repository call; complete backend and 210-test frontend suites pass.
+
+## Previous Run Remarks (2026-08-17)
 
 - Completed `multi_documentation_hub_and_forum_view`: added an independent
   lifecycle-aware multi-documentation backend and `/doc` authoring experience,

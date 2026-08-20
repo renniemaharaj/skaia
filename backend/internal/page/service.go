@@ -3,10 +3,12 @@ package page
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/skaia/backend/internal/s_registry"
@@ -17,6 +19,33 @@ import (
 
 var ErrInvalidContent = errors.New("invalid page content")
 var ErrInvalidSEO = errors.New("invalid page SEO")
+var ErrInvalidBrowseCursor = errors.New("invalid page browse cursor")
+var ErrPageForbidden = errors.New("page forbidden")
+
+const (
+	DefaultBrowseLimit = 24
+	MaxBrowseLimit     = 100
+)
+
+type BrowseRequest struct {
+	Limit        int
+	Query        string
+	Cursor       string
+	ActorID      int64
+	IsAdmin      bool
+	CanDeleteAll bool
+}
+
+type BrowseResponse struct {
+	Pages      []*models.PageBrowseSummary `json:"pages"`
+	NextCursor string                      `json:"next_cursor,omitempty"`
+	HasMore    bool                        `json:"has_more"`
+}
+
+type browseCursorPayload struct {
+	UpdatedAt int64 `json:"updated_at"`
+	ID        int64 `json:"id"`
+}
 
 type DataSourceGetter interface {
 	GetByID(id int64) (*models.DataSource, error)
@@ -114,6 +143,104 @@ func (s *Service) GetByID(id int64) (*models.Page, error) {
 
 func (s *Service) List() ([]*models.Page, error) {
 	return s.repo.List()
+}
+
+func decodeBrowseCursor(value string) (*BrowseCursor, error) {
+	if value == "" {
+		return nil, nil
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(value)
+	if err != nil {
+		return nil, ErrInvalidBrowseCursor
+	}
+	var payload browseCursorPayload
+	if err := json.Unmarshal(raw, &payload); err != nil || payload.UpdatedAt <= 0 || payload.ID <= 0 {
+		return nil, ErrInvalidBrowseCursor
+	}
+	return &BrowseCursor{UpdatedAt: time.Unix(0, payload.UpdatedAt).UTC(), ID: payload.ID}, nil
+}
+
+func encodeBrowseCursor(cursor BrowseCursor) string {
+	raw, _ := json.Marshal(browseCursorPayload{UpdatedAt: cursor.UpdatedAt.UnixNano(), ID: cursor.ID})
+	return base64.RawURLEncoding.EncodeToString(raw)
+}
+
+func (s *Service) BrowsePages(request BrowseRequest) (*BrowseResponse, error) {
+	if request.Limit <= 0 {
+		request.Limit = DefaultBrowseLimit
+	}
+	if request.Limit > MaxBrowseLimit {
+		request.Limit = MaxBrowseLimit
+	}
+	cursor, err := decodeBrowseCursor(request.Cursor)
+	if err != nil {
+		return nil, err
+	}
+	result, err := s.repo.BrowsePages(BrowseOptions{
+		Limit:   request.Limit,
+		Query:   strings.TrimSpace(request.Query),
+		Cursor:  cursor,
+		ActorID: request.ActorID,
+		IsAdmin: request.IsAdmin,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		result = &BrowseResult{}
+	}
+	if result.Pages == nil {
+		result.Pages = []*models.PageBrowseSummary{}
+	}
+	if len(result.Pages) > request.Limit {
+		result.Pages = result.Pages[:request.Limit]
+		result.HasMore = true
+	}
+	for _, page := range result.Pages {
+		if page == nil {
+			continue
+		}
+		isOwner := page.OwnerID != nil && *page.OwnerID == request.ActorID
+		isEditor := false
+		for _, editor := range page.Editors {
+			if editor != nil && editor.ID == request.ActorID {
+				isEditor = true
+				break
+			}
+		}
+		page.CanEdit = request.IsAdmin || isOwner || isEditor
+		page.CanDelete = request.IsAdmin || request.CanDeleteAll || isOwner
+	}
+	response := &BrowseResponse{Pages: result.Pages, HasMore: result.HasMore}
+	if result.HasMore && len(result.Pages) > 0 {
+		last := result.Pages[len(result.Pages)-1]
+		response.NextCursor = encodeBrowseCursor(BrowseCursor{UpdatedAt: last.UpdatedAt, ID: last.ID})
+	}
+	return response, nil
+}
+
+// GetPreview returns only the authorized, sanitized document needed by an
+// intent-activated browse card. Private access is enforced here, not only by
+// the handler.
+func (s *Service) GetPreview(pageID, actorID int64, isAdmin bool) (*models.PagePreview, error) {
+	page, err := s.repo.GetByID(pageID)
+	if err != nil {
+		return nil, err
+	}
+	canManage := isAdmin || (page.OwnerID != nil && *page.OwnerID == actorID)
+	if !canManage && actorID > 0 {
+		isEditor, editorErr := s.repo.IsEditor(pageID, actorID)
+		if editorErr == nil {
+			canManage = isEditor
+		} else if page.Visibility == "private" {
+			return nil, ErrPageForbidden
+		}
+	}
+	if page.Visibility == "private" && !canManage {
+		return nil, ErrPageForbidden
+	}
+	s.SanitizeInteractivePage(page, actorID, canManage)
+	return &models.PagePreview{ID: page.ID, Content: page.Content, UpdatedAt: page.UpdatedAt}, nil
 }
 
 func (s *Service) DeleteAll(actorID int64) error {
@@ -305,10 +432,6 @@ func (s *Service) GetOwner(pageID int64) (*models.PageUser, error) {
 
 func (s *Service) IsEditor(pageID, userID int64) (bool, error) {
 	return s.repo.IsEditor(pageID, userID)
-}
-
-func (s *Service) ListWithOwnership() ([]*models.Page, error) {
-	return s.repo.ListWithOwnership()
 }
 
 // EnrichPage populates Owner and Editors on the given page.

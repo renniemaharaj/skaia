@@ -103,9 +103,28 @@ operational policies.
 
 ## Last Ran
 
-- 2026-08-17
+- 2026-08-20
 
 ## Last Run Remarks
+
+- Reconciled the implemented Phase 2 and intent/data portion of Phase 3 for
+  `viewport_deferred_rendering_and_suspense`. Backend, cache, security, document,
+  multiplayer, and frontend specs now define bounded content-free summaries,
+  authorized no-store previews, omitted-field preservation, abortable cursor
+  loading, combined viewport/intent activation, and revision-keyed preview LRU.
+- Reconciled completed Phase 3/4 contracts: `SectionFrame` now separates
+  reversible animation from one-shot child mounting, preview roots are clipped,
+  every section family has bounded config-aware skeleton geometry, activated
+  editor children are sticky, and page/JSON-ID keys define teardown.
+- Tightened the Phase 4 skeleton contract after visual review: skeletons mirror
+  each renderer's hierarchy, and the hero preserves its established responsive
+  full-bleed geometry instead of using the generic media-card composition.
+- Closed `viewport_deferred_rendering_and_suspense` after the lean Phase 5-7
+  pass added route-family shells, migrated named initial loading states, deferred
+  analytics/Recharts, enforced the boundary policy, recorded bounded browse
+  measurements, and passed the complete verification set.
+
+## Previous Run Remarks (2026-08-17)
 
 - Created `multi_documentation_hub_and_forum_view` after inventorying the
   standalone `integrate/` documentation reference and tracing Skaia's forum,

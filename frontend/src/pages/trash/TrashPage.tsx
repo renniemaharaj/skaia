@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import Button from "../../components/input/Button";
 import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
 import { customConfirm } from "../../components/ui/Prompt";
+import { SkeletonContent } from "../../components/ui/Skeleton";
 import { type TableColumn, TableView } from "../../components/ui/TableView/TableView";
 import { apiRequest } from "../../utils/api";
 import "./TrashPage.css";
@@ -194,7 +195,16 @@ export default function TrashPage() {
       customListContent={
         <div className="trash-groups" aria-live="polite">
           {loading ? (
-            <div className="trash-directory__state">Loading Trash…</div>
+            <div className="trash-directory__state">
+              {Array.from({ length: 4 }, (_, index) => (
+                <SkeletonContent
+                  key={`trash-skeleton-${index}`}
+                  variant="table-row"
+                  label={index === 0 ? "Loading Trash" : undefined}
+                  announce={index === 0}
+                />
+              ))}
+            </div>
           ) : visibleGroups.every(group => group.items.length === 0) ? (
             <div className="trash-directory__state">
               <Trash2 size={30} aria-hidden="true" />

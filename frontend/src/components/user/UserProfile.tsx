@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
 import { contextUserAtom } from "../../atoms/contextUser";
 import { customConfirm } from "../ui/Prompt";
+import { SkeletonContent, SkeletonPrimitive, SkeletonText } from "../ui/Skeleton";
 
 import { useThreadsFeed } from "../../hooks/useThreadsFeed";
 import { useUserData } from "./useUserData";
@@ -108,7 +109,15 @@ const UserProfile: React.FC<UserProfileProps> = ({
     return () => setContextUser(null);
   }, [user, setContextUser]);
 
-  if (loading) return <div className="up-container up-loading">Loading profile…</div>;
+  if (loading)
+    return (
+      <SkeletonContent className="up-container up-loading" label="Loading profile">
+        <SkeletonPrimitive shape="media" height={220} />
+        <SkeletonPrimitive shape="avatar" width={96} height={96} />
+        <SkeletonPrimitive shape="heading" width="34%" />
+        <SkeletonText />
+      </SkeletonContent>
+    );
   if (error || !user)
     return <div className="up-container up-error">{error ?? "User not found"}</div>;
 

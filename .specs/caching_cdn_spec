@@ -31,6 +31,7 @@ resolution, Bible data loading, SSR, or CDN-facing behavior.
 | Sitemap XML | generated from canonical static routes plus public database content; tenant-scoped Redis cache for 15 minutes with mutation invalidation |
 | Documentation APIs | no-store; route state is refreshed by scoped content-free WebSocket invalidation |
 | KJV frontend reads | API remains `no-store`; one catalog promise plus an eight-book in-memory LRU and in-flight coalescing |
+| Custom-page browse previews | API remains `no-store`; caller-safe previews use a 24-entry browser-memory LRU keyed by page id plus exact `updated_at` revision |
 
 ## SSR/SEO Cache Integrity
 
@@ -84,6 +85,11 @@ Live page changes bypass CDN through WebSocket:
 - `page:update landing_page_changed` carries page identity only.
 - `page:update page_updated` carries a content-free invalidation.
 - `config:update landing_page_updated` carries `{ slug }` as a fallback/UI signal.
+
+`GET /pages/browse` never transfers `pages.content`. Exact preview documents are
+requested from `/pages/browse/{id}/preview` only after viewport and interaction
+intent. They remain personalized, no-store responses and must not enter a CDN or
+shared server cache.
 
 The embedded KJV corpus is immutable, but `/api/bible/kjv/*` is not an exception
 to the global API header policy. Reuse is process-local in the Go repository and

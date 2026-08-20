@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import type { FeedThread } from "../../hooks/useThreadsFeed";
 import { formatDate } from "../../utils/serverTime";
 import { TableView } from "../ui/TableView/TableView";
+import { SkeletonContent } from "../ui/Skeleton";
 import UserAvatar from "../user/UserAvatar";
 import UserLink from "../user/UserLink";
 import UserProfileOverlay from "../user/UserProfileOverlay";
@@ -46,7 +47,16 @@ const ThreadsFeed = ({
       </div>
 
       {isLoading ? (
-        <div className="threads-feed-empty">Loading threads…</div>
+        <div className="threads-feed-skeletons">
+          {Array.from({ length: 3 }, (_, index) => (
+            <SkeletonContent
+              key={`thread-skeleton-${index}`}
+              variant="card"
+              label={index === 0 ? "Loading threads" : undefined}
+              announce={index === 0}
+            />
+          ))}
+        </div>
       ) : threads.length === 0 ? (
         <div className="threads-feed-empty">{emptyMessage}</div>
       ) : (

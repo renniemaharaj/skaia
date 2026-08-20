@@ -1,11 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { BLOCK_RENDERER_TYPES, BlockRenderer } from "./BlockRenderer";
 import { SECTION_RENDERER_REGISTRY } from "./sectionRendererRegistry";
-import {
-  SECTION_TYPES,
-  type PageSection,
-} from "./types";
+import { type PageSection, SECTION_TYPES } from "./types";
 
 const callbacks = () => ({
   onUpdateSection: vi.fn(),
@@ -51,5 +48,44 @@ describe("BlockRenderer registry contract", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remove section" }));
     expect(handlers.onDeleteSection).toHaveBeenCalledWith(1);
     expect(screen.getByRole("alert")).not.toHaveTextContent(unsupportedSection.config);
+  });
+
+  it("keeps later preview sections unmounted until they intersect the clipped root", () => {
+    let callback: IntersectionObserverCallback | undefined;
+    const previewRoot = document.createElement("div");
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        constructor(next: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+          callback = next;
+          expect(options?.root).toBe(previewRoot);
+        }
+        observe() {}
+        disconnect() {}
+      }
+    );
+    const second = { ...unsupportedSection, id: 2, display_order: 2 };
+    const { container } = render(
+      <BlockRenderer
+        sections={[unsupportedSection, second]}
+        canEdit={false}
+        viewportRoot={previewRoot}
+        preview
+        {...callbacks()}
+      />
+    );
+
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(
+      container.querySelector('[data-render-state="deferred"] .section-skeleton')
+    ).toBeInTheDocument();
+    const deferred = container.querySelector('[data-render-state="deferred"]')!;
+    act(() =>
+      callback?.(
+        [{ isIntersecting: true, target: deferred } as IntersectionObserverEntry],
+        {} as IntersectionObserver
+      )
+    );
+    expect(screen.getAllByRole("alert")).toHaveLength(2);
   });
 });

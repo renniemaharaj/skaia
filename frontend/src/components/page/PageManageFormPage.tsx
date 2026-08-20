@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { usePageData } from "../../hooks/usePageData";
+import { SkeletonContent } from "../ui/Skeleton";
 import PageManagePanel from "./PageManagePanel";
 
 export default function PageManageFormPage() {
@@ -13,7 +14,15 @@ export default function PageManageFormPage() {
   }, [refresh, slug]);
 
   if (!slug) return <Navigate to="/" replace />;
-  if (loading) return <main className="managed-form modal">Loading page settings…</main>;
+  if (loading) {
+    return (
+      <SkeletonContent
+        className="managed-form modal"
+        variant="form"
+        label="Loading page settings"
+      />
+    );
+  }
   if (error || !page) {
     return <main className="managed-form modal">{error || "Page not found"}</main>;
   }

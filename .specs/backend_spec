@@ -115,12 +115,14 @@ bibliographical certification.
 | --- | --- | --- |
 | `GET` | `/pages/landing-slug` | Current `landing_page_slug` |
 | `GET` | `/pages/index` | Legacy inline landing fetch |
-| `GET` | `/pages/list`, `/pages/browse`, `/pages/{slug}` | Page discovery/fetch |
+| `GET` | `/pages/list`, `/pages/{slug}` | Legacy page listing and exact page fetch |
+| `GET` | `/pages/browse` | Content-free browse summaries, stable `updated_at`/id cursor pagination (24 default, 100 maximum), server search, batched owner/editor projection, and caller-derived action flags |
+| `GET` | `/pages/browse/{id}/preview` | Intent-time caller-safe content plus `updated_at` revision; private access and interactive sanitization are service-enforced |
 | `POST` | `/pages/{slug}/view` | Record page view |
 | `POST` | `/pages/` | Create page |
 | `POST` | `/pages/claim` | Claim/create allocated page |
 | `GET` | `/pages/my-allocation` | Current user's allocation |
-| `PUT/DELETE` | `/pages/{id}` | Update/delete page |
+| `PUT/DELETE` | `/pages/{id}` | Update/delete page; omitted update fields preserve current values so metadata-only directory changes cannot erase `pages.content` |
 | `POST` | `/pages/{id}/duplicate` | Duplicate page |
 | `POST/PATCH/DELETE` | `/pages/{id}/sections/{sectionId}/responses...` | Locked-document interactive participation and moderation |
 | `PUT/DELETE` | `/pages/{id}/owner` | Set/clear owner |

@@ -16,6 +16,7 @@ import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import Button from "../input/Button";
 import Checkbox from "../input/Checkbox";
 import { SideRouteShell } from "../layout/SideRouteShell";
+import { SkeletonContent } from "../ui/Skeleton";
 
 interface RoleWithPerms extends Role {
   loadedPerms?: Permission[];
@@ -322,7 +323,16 @@ export default function RolesManagementPage() {
   if (loading)
     return (
       <SideRouteShell title="Roles" backTo="/" backLabel="Exit">
-        <div className="rmp-state">Loading roles...</div>
+        <div className="rmp-state">
+          {Array.from({ length: 3 }, (_, index) => (
+            <SkeletonContent
+              key={`role-skeleton-${index}`}
+              variant="card"
+              label={index === 0 ? "Loading roles" : undefined}
+              announce={index === 0}
+            />
+          ))}
+        </div>
       </SideRouteShell>
     );
   if (error)

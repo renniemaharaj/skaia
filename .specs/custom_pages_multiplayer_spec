@@ -83,6 +83,13 @@ Breaking any link can make every section rerender on every save/push.
 - Section sync bails out while unsaved local sections or active editors exist.
 - Structural mutations use immediate whole-document saves; reconnect replay
   forces an authoritative refetch.
+- Directory rename requests are metadata-only; omitted `content` is preserved
+  by the page update boundary. Exact browse previews validate the summary
+  `updated_at` revision and never join the editor save/reconciliation path.
+- Deferred section frames retain their activated child while keyed section
+  identity survives movement and ordinary merge updates. Pointer/focus editing
+  activates before the editor mounts; collapse after activation hides without
+  unmounting drafts. Page-key plus JSON ID type resets state at page teardown.
 
 ## Verify
 

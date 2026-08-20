@@ -19,7 +19,7 @@ import { contextUserAtom } from "../../../atoms/contextUser";
 import { currentThreadAtom, threadPermissionsAtom } from "../../../atoms/forum";
 import { useWebSocketSync } from "../../../hooks/useWebSocketSync";
 import { apiRequest } from "../../../utils/api";
-import ResourceAnalytics from "../../analytics/ResourceAnalytics";
+import { AnalyticsSkeleton } from "../../analytics/AnalyticsSkeleton";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import WebRTCPanel from "../../page/layout/WebRTCPanel";
 import { confirmDestructiveAction } from "../../ui/Prompt";
@@ -29,6 +29,7 @@ import TableOfContentsTile from "../TableOfContentsTile";
 import ThreadMediaViewer from "../ThreadMediaViewer";
 import { ThreadUserTiles } from "../ThreadUserTiles";
 const ViewThread = lazy(() => import("../ViewThread"));
+const ResourceAnalytics = lazy(() => import("../../analytics/ResourceAnalytics"));
 import ViewThreadComments from "../ViewThreadComments";
 import ViewThreadMeta from "../ViewThreadMeta";
 
@@ -410,12 +411,14 @@ const ViewThreadPage = () => {
       </div>
 
       {showAnalytics && currentThread && (
-        <ResourceAnalytics
-          resource="thread"
-          resourceId={Number(currentThread.id)}
-          title={currentThread.title}
-          onClose={() => setShowAnalytics(false)}
-        />
+        <Suspense fallback={<AnalyticsSkeleton onClose={() => setShowAnalytics(false)} />}>
+          <ResourceAnalytics
+            resource="thread"
+            resourceId={Number(currentThread.id)}
+            title={currentThread.title}
+            onClose={() => setShowAnalytics(false)}
+          />
+        </Suspense>
       )}
     </div>
   );

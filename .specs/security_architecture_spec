@@ -57,6 +57,10 @@ is not an architectural invariant and must not be treated as one.
 - Interactive page response moderation/deletion uses `security.PagePolicy` through
   a required page-service dependency; owner, editor, and `home.manage` decisions
   fail closed on missing dependencies or lookup errors.
+- Custom-page browse summaries apply private visibility in SQL before
+  pagination. Intent-time preview reads enforce private owner/editor/admin
+  access in the page service and fail closed on editor lookup errors before
+  returning the caller-specific interactive-record projection.
 - Section-preset create/update/delete calls a required service-level
   `home.manage` policy. JWT route grouping and handler checks are not the
   authorization boundary, and permission-store failures deny mutation.

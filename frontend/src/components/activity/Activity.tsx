@@ -7,6 +7,7 @@ import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
+import { SkeletonContent } from "../ui/Skeleton";
 import "./Activity.css";
 
 interface EventsResponse {
@@ -68,7 +69,16 @@ export default function Activity() {
           </div>
         )}
         {isLoading ? (
-          <div className="activity-empty">Loading activity…</div>
+          <div className="activity-skeletons">
+            {Array.from({ length: 3 }, (_, index) => (
+              <SkeletonContent
+                key={`activity-skeleton-${index}`}
+                variant="card"
+                label={index === 0 ? "Loading activity" : undefined}
+                announce={index === 0}
+              />
+            ))}
+          </div>
         ) : events.length === 0 ? (
           <div className="activity-empty">No events recorded yet.</div>
         ) : (

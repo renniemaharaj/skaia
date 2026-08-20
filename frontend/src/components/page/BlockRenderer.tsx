@@ -1,16 +1,17 @@
-import type { PageDocumentID, PageItem, PageSection, SectionType } from "./types";
-import { SECTION_TYPE_GROUPS, SECTION_TYPE_LABELS, canonicalSectionType } from "./types";
+import { SectionFrame } from "./SectionFrame";
+import { SectionSkeleton } from "./SectionSkeleton";
 import {
   clearInteractiveRecords,
   configForNewSection,
   isInteractiveSectionType,
 } from "./interactiveTypes";
-import { SectionFrame } from "./SectionFrame";
 import { SECTION_RENDERER_REGISTRY, SECTION_RENDERER_TYPES } from "./sectionRendererRegistry";
+import type { PageDocumentID, PageItem, PageSection, SectionType } from "./types";
+import { SECTION_TYPE_GROUPS, SECTION_TYPE_LABELS, canonicalSectionType } from "./types";
 import "./page-builder-core.css";
 import { Plus } from "lucide-react";
-import { toast } from "sonner";
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 interface BlockRendererProps {
   sections: PageSection[];
@@ -23,9 +24,15 @@ interface BlockRendererProps {
   onDeleteItem: (id: PageDocumentID) => void;
   onMoveSection: (sourceSectionId: PageDocumentID, targetSectionId: PageDocumentID) => void;
   pageKey?: string;
+  viewportRoot?: Element | null;
+  preview?: boolean;
 }
 
 export const BLOCK_RENDERER_TYPES = SECTION_RENDERER_TYPES;
+
+function sectionReactKey(pageKey: string | undefined, id: PageDocumentID) {
+  return `${pageKey ?? "page"}:${typeof id}:${String(id)}`;
+}
 
 /**
  * Memoised wrapper for a single section block.  When the parent re-renders
@@ -46,15 +53,9 @@ interface SectionBlockProps {
   onItemUpdate: (item: PageItem) => void;
   onItemDelete: (id: PageDocumentID) => void;
   pageKey?: string;
+  viewportRoot?: Element | null;
+  preview?: boolean;
 }
-
-/** Minimal skeleton shown while a heavy block chunk is fetching. */
-const SectionBlockSkeleton = () => (
-  <div
-    className="skeleton"
-    style={{ width: "100%", height: 80, borderRadius: 8, margin: "4px 0" }}
-  />
-);
 
 const SectionBlock = memo(function SectionBlock({
   section,
@@ -68,6 +69,8 @@ const SectionBlock = memo(function SectionBlock({
   onItemUpdate,
   onItemDelete,
   pageKey,
+  viewportRoot,
+  preview,
 }: SectionBlockProps) {
   const canonicalType = canonicalSectionType(section.section_type);
   const Block = canonicalType ? SECTION_RENDERER_REGISTRY[canonicalType].component : null;
@@ -82,6 +85,10 @@ const SectionBlock = memo(function SectionBlock({
         onUpdate={onUpdate}
         onDelete={onDelete}
         pageKey={pageKey}
+        eager={isFirst}
+        viewportRoot={viewportRoot}
+        preview={preview}
+        fallback={<SectionSkeleton section={section} />}
       >
         <section
           className="pb-section-unsupported"
@@ -109,7 +116,10 @@ const SectionBlock = memo(function SectionBlock({
       onUpdate={onUpdate}
       onDelete={onDelete}
       pageKey={pageKey}
-      fallback={<SectionBlockSkeleton />}
+      eager={isFirst}
+      viewportRoot={viewportRoot}
+      preview={preview}
+      fallback={<SectionSkeleton section={section} />}
     >
       <Block
         section={section}
@@ -135,6 +145,8 @@ export const BlockRenderer = memo(function BlockRenderer({
   onDeleteItem,
   onMoveSection,
   pageKey,
+  viewportRoot,
+  preview = false,
 }: BlockRendererProps) {
   const [activeAddIndex, setActiveAddIndex] = useState<number | null>(null);
 
@@ -354,7 +366,7 @@ export const BlockRenderer = memo(function BlockRenderer({
         const isLast = i === orderedSections.length - 1;
 
         return (
-          <React.Fragment key={section.id}>
+          <React.Fragment key={sectionReactKey(pageKey, section.id)}>
             <SectionBlock
               section={section}
               canEdit={canEdit}
@@ -367,6 +379,8 @@ export const BlockRenderer = memo(function BlockRenderer({
               onItemUpdate={onUpdateItem}
               onItemDelete={onDeleteItem}
               pageKey={pageKey}
+              viewportRoot={viewportRoot}
+              preview={preview}
             />
             {canEdit && renderAddSectionTrigger(i + 1)}
           </React.Fragment>

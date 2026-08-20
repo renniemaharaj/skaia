@@ -42,6 +42,7 @@ import Input from "../input/Input";
 import { GlassMenu } from "../ui/GlassMenu";
 import PersonPicker from "../ui/PersonPicker";
 import { customConfirm } from "../ui/Prompt";
+import { SkeletonContent } from "../ui/Skeleton";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
 import { MessageAttachment } from "./MessageAttachment";
@@ -599,7 +600,18 @@ const InboxPage = () => {
           )}
 
           <div className="inbox-conv-list">
-            {loadingConvs && <p className="inbox-loading">Loading…</p>}
+            {loadingConvs && (
+              <div className="inbox-loading">
+                {Array.from({ length: 4 }, (_, index) => (
+                  <SkeletonContent
+                    key={`conversation-skeleton-${index}`}
+                    variant="card"
+                    label={index === 0 ? "Loading conversations" : undefined}
+                    announce={index === 0}
+                  />
+                ))}
+              </div>
+            )}
             {!loadingConvs && conversations.length === 0 && !showNewDm && (
               <p className="inbox-empty">No conversations yet.</p>
             )}
@@ -653,7 +665,18 @@ const InboxPage = () => {
               />
               {/* Messages */}
               <div className="inbox-feed" ref={feedRef} onScroll={handleScroll}>
-                {loadingMsgs && <p className="inbox-loading">Loading messages…</p>}
+                {loadingMsgs && (
+                  <div className="inbox-loading">
+                    {Array.from({ length: 3 }, (_, index) => (
+                      <SkeletonContent
+                        key={`message-skeleton-${index}`}
+                        variant="card"
+                        label={index === 0 ? "Loading messages" : undefined}
+                        announce={index === 0}
+                      />
+                    ))}
+                  </div>
+                )}
                 {activeConv?.is_group && !loadingMsgs && (
                   <div
                     style={{

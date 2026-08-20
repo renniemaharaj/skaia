@@ -26,6 +26,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { apiRequest } from "../../../utils/api";
 import Button from "../../input/Button";
+import { SkeletonContent, SkeletonPrimitive } from "../../ui/Skeleton";
 import Select from "../../input/Select";
 import { customConfirm } from "../../ui/Prompt";
 import { ComponentGroupEditor, ComponentGroupRenderer } from "../ComponentGroupEditor";
@@ -546,10 +547,11 @@ export default function DataSourceEditorPage() {
   if (loading) {
     return (
       <div className="ds-editor-page">
-        <div className="ds-editor__loading">
-          <Loader2 size={24} className="spin" />
-          <span>Loading data source…</span>
-        </div>
+        <SkeletonContent className="ds-editor__loading" label="Loading data source">
+          <SkeletonPrimitive shape="heading" width="36%" />
+          <SkeletonPrimitive height={42} />
+          <SkeletonPrimitive height={280} />
+        </SkeletonContent>
       </div>
     );
   }

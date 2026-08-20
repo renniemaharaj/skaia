@@ -1,6 +1,7 @@
 package page
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,6 +31,34 @@ type Handler struct {
 	analyticsSvc *ianalytics.Service
 }
 
+type pageUpdateInput struct {
+	Slug        *string `json:"slug"`
+	Title       *string `json:"title"`
+	Description *string `json:"description"`
+	Visibility  *string `json:"visibility"`
+	Content     *string `json:"content"`
+}
+
+func mergePageUpdate(current *models.Page, body pageUpdateInput) models.Page {
+	page := *current
+	if body.Slug != nil {
+		page.Slug = *body.Slug
+	}
+	if body.Title != nil {
+		page.Title = *body.Title
+	}
+	if body.Description != nil {
+		page.Description = *body.Description
+	}
+	if body.Visibility != nil {
+		page.Visibility = *body.Visibility
+	}
+	if body.Content != nil {
+		page.Content = *body.Content
+	}
+	return page
+}
+
 // NewHandler creates a page Handler.
 func NewHandler(svc *Service, configSvc *iconfig.Service, userSvc *iuser.Service, hub *ws.Hub, dispatcher *ievents.Dispatcher, analyticsSvc *ianalytics.Service) *Handler {
 	return &Handler{svc: svc, configSvc: configSvc, userSvc: userSvc, hub: hub, dispatcher: dispatcher, analyticsSvc: analyticsSvc}
@@ -43,6 +72,7 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, comme
 		r.Get("/landing-slug", h.getLandingSlug)
 		r.Get("/list", h.listPages)
 		r.Get("/browse", h.browsePages)
+		r.Get("/browse/{id}/preview", h.getBrowsePreview)
 		r.Get("/{slug}", h.getBySlug)
 		r.Get("/{slug}/comments", h.listComments)
 		r.Post("/{slug}/view", h.recordView)
@@ -135,12 +165,19 @@ func (h *Handler) requireHomeManage(r *http.Request) bool {
 	if !ok {
 		return false
 	}
-	has, _ := h.userSvc.HasPermission(uid, "home.manage")
-	return has
+	return h.hasPermission(uid, "home.manage")
 }
 
 func (h *Handler) isAdmin(r *http.Request) bool {
 	return h.requireHomeManage(r)
+}
+
+func (h *Handler) hasPermission(userID int64, permission string) bool {
+	if userID <= 0 || h.userSvc == nil {
+		return false
+	}
+	has, err := h.userSvc.HasPermission(userID, permission)
+	return err == nil && has
 }
 
 func parseID(r *http.Request, param string) (int64, error) {
@@ -395,12 +432,12 @@ func (h *Handler) updatePage(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusForbidden, "forbidden")
 		return
 	}
-	var p models.Page
-	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+	var body pageUpdateInput
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
 		return
 	}
-	p.ID = id
+	p := mergePageUpdate(current, body)
 	// SEO has a dedicated settings endpoint. Preserve it during ordinary page
 	// and live-editor saves so older clients cannot accidentally erase it.
 	p.SEOTitle = current.SEOTitle
@@ -699,58 +736,77 @@ func (h *Handler) deletePage(w http.ResponseWriter, r *http.Request) {
 
 // browse (public feed of custom pages)
 func (h *Handler) browsePages(w http.ResponseWriter, r *http.Request) {
-	pages, err := h.svc.ListWithOwnership()
+	limit := DefaultBrowseLimit
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 {
+			utils.WriteError(w, http.StatusBadRequest, "invalid limit")
+			return
+		}
+		limit = parsed
+	}
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	if len([]rune(query)) > 200 {
+		utils.WriteError(w, http.StatusBadRequest, "search query is too long")
+		return
+	}
+	uid, _ := utils.UserIDFromCtx(r)
+	isAdmin := h.hasPermission(uid, "home.manage")
+	result, err := h.svc.BrowsePages(BrowseRequest{
+		Limit:        limit,
+		Query:        query,
+		Cursor:       r.URL.Query().Get("cursor"),
+		ActorID:      uid,
+		IsAdmin:      isAdmin,
+		CanDeleteAll: h.hasPermission(uid, "home.page-delete"),
+	})
 	if err != nil {
+		if errors.Is(err, ErrInvalidBrowseCursor) {
+			utils.WriteError(w, http.StatusBadRequest, "invalid cursor")
+			return
+		}
 		log.Printf("page.browsePages: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to list pages")
 		return
 	}
-	if pages == nil {
-		pages = []*models.Page{}
-	}
-
-	isAdm := h.isAdmin(r)
-	uid, _ := utils.UserIDFromCtx(r)
-
-	// Filter private pages for non-privileged users
-	var visible []*models.Page
-	for _, p := range pages {
-		if p.Visibility == "private" && !isAdm {
-			isOwner := p.OwnerID != nil && *p.OwnerID == uid
-			isEditor, _ := h.svc.IsEditor(p.ID, uid)
-			if !isOwner && !isEditor {
-				continue
-			}
-		}
-		visible = append(visible, p)
-	}
-	if visible == nil {
-		visible = []*models.Page{}
-	}
-
-	// Enrich each page with editors
-	for _, p := range visible {
-		if editors, err := h.svc.GetEditors(p.ID); err == nil {
-			p.Editors = editors
-		}
-		if p.Editors == nil {
-			p.Editors = []*models.PageUser{}
-		}
-		p.CanDelete = h.canDeletePageForPage(r, p)
-		p.CanEdit = h.canEditPage(r, p.ID)
-		h.sanitizeInteractivePage(r, p)
-	}
 
 	// Include the current landing page slug so the frontend can show a badge.
 	landingSlug := ""
-	if sc, err := h.configSvc.GetConfig("landing_page_slug"); err == nil {
-		_ = json.Unmarshal([]byte(sc.Value), &landingSlug)
+	if h.configSvc != nil {
+		if sc, err := h.configSvc.GetConfig("landing_page_slug"); err == nil {
+			_ = json.Unmarshal([]byte(sc.Value), &landingSlug)
+		}
 	}
 
 	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
-		"pages":             visible,
+		"pages":             result.Pages,
 		"landing_page_slug": landingSlug,
+		"next_cursor":       result.NextCursor,
+		"has_more":          result.HasMore,
 	})
+}
+
+func (h *Handler) getBrowsePreview(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r, "id")
+	if err != nil || id <= 0 {
+		utils.WriteError(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+	uid, _ := utils.UserIDFromCtx(r)
+	preview, err := h.svc.GetPreview(id, uid, h.hasPermission(uid, "home.manage"))
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			utils.WriteError(w, http.StatusNotFound, "page not found")
+		case errors.Is(err, ErrPageForbidden):
+			utils.WriteError(w, http.StatusForbidden, "this page is private")
+		default:
+			log.Printf("page.getBrowsePreview(%d): %v", id, err)
+			utils.WriteError(w, http.StatusInternalServerError, "failed to load preview")
+		}
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, preview)
 }
 
 // ownership & editor management

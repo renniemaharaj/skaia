@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { SectionMoveButtons, SectionToolbarActions } from "./EditControls";
 import { SectionFrame } from "./SectionFrame";
@@ -130,9 +130,98 @@ describe("SectionFrame", () => {
 
     const trigger = screen.getByRole("button", { name: "Expand Frame fixture" });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByText("Collapsible content").parentElement).toHaveAttribute("hidden");
+    expect(screen.queryByText("Collapsible content")).not.toBeInTheDocument();
     fireEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Collapsible content").parentElement).not.toHaveAttribute("hidden");
+    fireEvent.click(trigger);
+    expect(screen.getByText("Collapsible content").parentElement).toHaveAttribute("hidden");
+  });
+
+  it("defers child mounting against a supplied preview root while keeping the shell", () => {
+    let callback: IntersectionObserverCallback | undefined;
+    const previewRoot = document.createElement("div");
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        constructor(next: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+          callback = next;
+          expect(options?.root).toBe(previewRoot);
+          expect(options?.rootMargin).toBe("0px");
+        }
+        observe() {}
+        disconnect() {}
+      }
+    );
+    const plainSection = { ...section, config: "{}" };
+    const { container } = render(
+      <SectionFrame
+        section={plainSection}
+        isFirst={false}
+        isLast
+        canEdit={false}
+        onMove={vi.fn()}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+        eager={false}
+        preview
+        viewportRoot={previewRoot}
+        fallback={<div>Rich text skeleton</div>}
+      >
+        <div>Deferred rich editor</div>
+      </SectionFrame>
+    );
+
+    expect(container.querySelector(".pb-section-layout")).toHaveAttribute(
+      "data-render-state",
+      "deferred"
+    );
+    expect(screen.getByText("Rich text skeleton")).toBeInTheDocument();
+    expect(screen.queryByText("Deferred rich editor")).not.toBeInTheDocument();
+    const target = container.querySelector(".pb-section-layout")!;
+    act(() =>
+      callback?.(
+        [{ isIntersecting: true, target } as IntersectionObserverEntry],
+        {} as IntersectionObserver
+      )
+    );
+    expect(screen.getByText("Deferred rich editor")).toBeInTheDocument();
+  });
+
+  it("activates editor content on intent and keeps it mounted across movement", () => {
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      }
+    );
+    const plainSection = { ...section, config: "{}" };
+    const props = {
+      section: plainSection,
+      isFirst: false,
+      isLast: true,
+      canEdit: true,
+      onMove: vi.fn(),
+      onUpdate: vi.fn(),
+      onDelete: vi.fn(),
+      eager: false,
+      fallback: <div>Editor skeleton</div>,
+    };
+    const { container, rerender } = render(
+      <SectionFrame {...props}>
+        <input aria-label="Section draft" defaultValue="retained" />
+      </SectionFrame>
+    );
+    expect(screen.queryByLabelText("Section draft")).not.toBeInTheDocument();
+    fireEvent.pointerEnter(container.querySelector(".pb-section-layout")!);
+    const draft = screen.getByLabelText("Section draft") as HTMLInputElement;
+    fireEvent.change(draft, { target: { value: "unsaved" } });
+    rerender(
+      <SectionFrame {...props} isFirst isLast={false}>
+        <input aria-label="Section draft" defaultValue="retained" />
+      </SectionFrame>
+    );
+    expect(screen.getByLabelText("Section draft")).toHaveValue("unsaved");
   });
 });

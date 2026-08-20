@@ -1,6 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { BarChart3, Eye, MoreHorizontal, ThumbsUp } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { currentUserAtom, isAuthenticatedAtom } from "../../atoms/auth";
@@ -10,7 +10,7 @@ import { usePageData } from "../../hooks/usePageData";
 import type { PageBuilderDoc } from "../../hooks/usePageData";
 import { useSetHomepage } from "../../hooks/useSetHomepage";
 import { apiRequest } from "../../utils/api";
-import ResourceAnalytics from "../analytics/ResourceAnalytics";
+import { AnalyticsSkeleton } from "../analytics/AnalyticsSkeleton";
 import Button from "../input/Button";
 import Select from "../input/Select";
 import { confirmDestructiveAction, customConfirm } from "../ui/Prompt";
@@ -22,6 +22,8 @@ import { SaveStatusBar } from "./SaveStatusBar";
 import type { PageDocumentID, PageItem, PageSection, SectionEditor } from "./types";
 import "./PageBuilder.css";
 import "../ui/FeatureCard.css";
+
+const ResourceAnalytics = lazy(() => import("../analytics/ResourceAnalytics"));
 
 const sortSections = (secs: PageSection[]) =>
   [...secs].sort((a, b) => a.display_order - b.display_order);
@@ -964,12 +966,14 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       </div>
 
       {showAnalytics && page?.id && (
-        <ResourceAnalytics
-          resource="page"
-          resourceId={page.id}
-          title={page.title || page.slug}
-          onClose={() => setShowAnalytics(false)}
-        />
+        <Suspense fallback={<AnalyticsSkeleton onClose={() => setShowAnalytics(false)} />}>
+          <ResourceAnalytics
+            resource="page"
+            resourceId={page.id}
+            title={page.title || page.slug}
+            onClose={() => setShowAnalytics(false)}
+          />
+        </Suspense>
       )}
     </PageBuilderContext.Provider>
   );

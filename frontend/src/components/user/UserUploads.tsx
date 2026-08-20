@@ -23,6 +23,7 @@ import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 import { confirmDestructiveAction, customAlert } from "../ui/Prompt";
+import { SkeletonContent } from "../ui/Skeleton";
 import { TableView } from "../ui/TableView/TableView";
 
 import "../page/layout/templates/DirectoryLayout.css";
@@ -389,8 +390,15 @@ const UserUploads = ({
             Uploads
           </h2>
         )}
-        <div className="up-uploads-loading">
-          <span className="up-spinner" /> Loading uploads…
+        <div className="up-uploads-grid up-uploads-loading">
+          {Array.from({ length: 3 }, (_, index) => (
+            <SkeletonContent
+              key={`upload-skeleton-${index}`}
+              variant="media"
+              label={index === 0 ? "Loading uploads" : undefined}
+              announce={index === 0}
+            />
+          ))}
         </div>
       </div>
     );

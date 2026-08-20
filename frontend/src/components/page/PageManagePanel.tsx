@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { uploader } from "../../atoms/uploadAtom";
 import type { PageBuilderDoc, PageUser } from "../../hooks/usePageData";
 import { FormField, FormFileInput, FormSectionIntro, ManagedForm } from "../form";
+import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import PageOwnershipPanel from "./PageOwnershipPanel";
 import "./PageManagePanel.css";
 
@@ -186,7 +187,16 @@ export default function PageManagePanel({
                 }`}
               >
                 {imagePreview || formik.values.seo_image ? (
-                  <img src={imagePreview || formik.values.seo_image} alt="Custom social preview" />
+                  <MediaPlaceholder
+                    alt="Custom social preview"
+                    fit="cover"
+                    href={imagePreview || formik.values.seo_image}
+                    layout="fill"
+                    mediaType="image"
+                    preserveFrame
+                    showCaption={false}
+                    size={{ height: 180, width: "100%" }}
+                  />
                 ) : (
                   <div>
                     <ImageIcon size={24} />

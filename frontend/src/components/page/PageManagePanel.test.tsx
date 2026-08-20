@@ -56,4 +56,22 @@ describe("PageManagePanel", () => {
       expect(onClose).toHaveBeenCalledOnce();
     });
   });
+
+  it("uses the shared loading lifecycle for the social image preview", () => {
+    render(
+      <PageManagePanel
+        page={{ ...page, seo_image: "/uploads/social.webp" }}
+        owner={null}
+        editors={[]}
+        onSaveSEO={vi.fn().mockResolvedValue(undefined)}
+        onOwnershipUpdate={vi.fn()}
+      />
+    );
+
+    const image = screen.getByRole("img", { name: "Custom social preview" });
+    expect(image.closest("figure")).toHaveAttribute("aria-busy", "true");
+    fireEvent.load(image);
+    expect(image).toHaveClass("ready");
+    expect(image.closest("figure")).toHaveAttribute("aria-busy", "false");
+  });
 });

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"strconv"
 
+	"github.com/lib/pq"
 	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
 )
@@ -325,53 +326,110 @@ func (r *sqlRepository) IsEditor(pageID, userID int64) (bool, error) {
 	return count > 0, err
 }
 
-func (r *sqlRepository) ListWithOwnership() ([]*models.Page, error) {
+func (r *sqlRepository) BrowsePages(options BrowseOptions) (*BrowseResult, error) {
+	var cursorTime interface{}
+	var cursorID int64
+	if options.Cursor != nil {
+		cursorTime = options.Cursor.UpdatedAt
+		cursorID = options.Cursor.ID
+	}
+
 	rows, err := r.db.Query(
-		`SELECT p.id, p.slug, p.title, p.description, p.seo_title, p.seo_description, p.seo_image, p.content::text,
-		        p.owner_id,
-		        COALESCE((SELECT COUNT(*) FROM resource_views WHERE resource='page' AND resource_id=p.id), 0),
-		        p.visibility, p.created_at, p.updated_at,
-		        u.id, u.username, u.display_name, COALESCE(u.avatar_url, ''), u.background_video_url, u.background_image_url, u.background_position,
-		        (SELECT COUNT(*) FROM page_likes WHERE page_id = p.id AND inactive_at IS NULL),
-		        (SELECT COUNT(*) FROM page_comments WHERE page_id = p.id AND deleted_at IS NULL)
+		`SELECT p.id, p.slug, p.title, p.description, p.visibility, p.owner_id,
+		        p.created_at, p.updated_at,
+		        u.id, u.username, u.display_name, COALESCE(u.avatar_url, '')
 		 FROM pages p
 		 LEFT JOIN users u ON u.id = p.owner_id
 		 WHERE p.deleted_at IS NULL
-		 ORDER BY p.updated_at DESC`)
+		   AND ($1 OR p.visibility <> 'private' OR p.owner_id = $2 OR EXISTS (
+		       SELECT 1 FROM page_editors pe
+		       WHERE pe.page_id = p.id AND pe.user_id = $2 AND pe.inactive_at IS NULL
+		   ))
+		   AND ($3 = '' OR strpos(lower(p.title), lower($3)) > 0
+		        OR strpos(lower(p.slug), lower($3)) > 0
+		        OR strpos(lower(p.description), lower($3)) > 0)
+		   AND ($4::timestamptz IS NULL OR p.updated_at < $4
+		        OR (p.updated_at = $4 AND p.id < $5))
+		 ORDER BY p.updated_at DESC, p.id DESC
+		 LIMIT $6`,
+		options.IsAdmin, options.ActorID, options.Query, cursorTime, cursorID, options.Limit+1,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var pages []*models.Page
+	pages := make([]*models.PageBrowseSummary, 0, options.Limit)
 	for rows.Next() {
-		p := &models.Page{}
-		var ownerID sql.NullInt64
-		var oID sql.NullInt64
-		var oUsername, oDisplayName, oAvatar, bgVid, bgImg, bgPos sql.NullString
-		if err := rows.Scan(&p.ID, &p.Slug, &p.Title, &p.Description, &p.SEOTitle, &p.SEODesc, &p.SEOImage,
-			&p.Content, &ownerID, &p.ViewCount, &p.Visibility, &p.CreatedAt, &p.UpdatedAt,
-			&oID, &oUsername, &oDisplayName, &oAvatar, &bgVid, &bgImg, &bgPos,
-			&p.Likes, &p.CommentCount); err != nil {
+		page := &models.PageBrowseSummary{}
+		var ownerID, ownerUserID sql.NullInt64
+		var ownerUsername, ownerDisplayName, ownerAvatar sql.NullString
+		if err := rows.Scan(
+			&page.ID, &page.Slug, &page.Title, &page.Description, &page.Visibility,
+			&ownerID, &page.CreatedAt, &page.UpdatedAt,
+			&ownerUserID, &ownerUsername, &ownerDisplayName, &ownerAvatar,
+		); err != nil {
 			return nil, err
 		}
 		if ownerID.Valid {
-			p.OwnerID = &ownerID.Int64
+			id := ownerID.Int64
+			page.OwnerID = &id
 		}
-		if oID.Valid {
-			p.Owner = &models.PageUser{
-				ID:                 oID.Int64,
-				Username:           oUsername.String,
-				DisplayName:        oDisplayName.String,
-				AvatarURL:          oAvatar.String,
-				BackgroundVideoURL: bgVid.String,
-				BackgroundImageURL: bgImg.String,
-				BackgroundPosition: bgPos.String,
+		if ownerUserID.Valid {
+			page.Owner = &models.PageUser{
+				ID:          ownerUserID.Int64,
+				Username:    ownerUsername.String,
+				DisplayName: ownerDisplayName.String,
+				AvatarURL:   ownerAvatar.String,
 			}
 		}
-		pages = append(pages, p)
+		page.Editors = []*models.PageUser{}
+		pages = append(pages, page)
 	}
-	return pages, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	hasMore := len(pages) > options.Limit
+	if hasMore {
+		pages = pages[:options.Limit]
+	}
+	if len(pages) == 0 {
+		return &BrowseResult{Pages: pages, HasMore: false}, nil
+	}
+
+	pageIDs := make([]int64, 0, len(pages))
+	byID := make(map[int64]*models.PageBrowseSummary, len(pages))
+	for _, page := range pages {
+		pageIDs = append(pageIDs, page.ID)
+		byID[page.ID] = page
+	}
+	editorRows, err := r.db.Query(
+		`SELECT pe.page_id, u.id, u.username, u.display_name, COALESCE(u.avatar_url, '')
+		 FROM page_editors pe
+		 JOIN users u ON u.id = pe.user_id
+		 WHERE pe.page_id = ANY($1) AND pe.inactive_at IS NULL
+		 ORDER BY pe.page_id, pe.granted_at`,
+		pq.Array(pageIDs),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer editorRows.Close()
+	for editorRows.Next() {
+		var pageID int64
+		editor := &models.PageUser{}
+		if err := editorRows.Scan(&pageID, &editor.ID, &editor.Username, &editor.DisplayName, &editor.AvatarURL); err != nil {
+			return nil, err
+		}
+		if page := byID[pageID]; page != nil {
+			page.Editors = append(page.Editors, editor)
+		}
+	}
+	if err := editorRows.Err(); err != nil {
+		return nil, err
+	}
+	return &BrowseResult{Pages: pages, HasMore: hasMore}, nil
 }
 
 // engagement: likes, comments

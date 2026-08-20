@@ -1,6 +1,28 @@
 package page
 
-import "github.com/skaia/backend/models"
+import (
+	"time"
+
+	"github.com/skaia/backend/models"
+)
+
+type BrowseCursor struct {
+	UpdatedAt time.Time
+	ID        int64
+}
+
+type BrowseOptions struct {
+	Limit   int
+	Query   string
+	Cursor  *BrowseCursor
+	ActorID int64
+	IsAdmin bool
+}
+
+type BrowseResult struct {
+	Pages   []*models.PageBrowseSummary
+	HasMore bool
+}
 
 // Repository defines data-access operations for custom pages.
 type Repository interface {
@@ -22,7 +44,7 @@ type Repository interface {
 	GetEditors(pageID int64) ([]*models.PageUser, error)
 	GetOwner(pageID int64) (*models.PageUser, error)
 	IsEditor(pageID, userID int64) (bool, error)
-	ListWithOwnership() ([]*models.Page, error)
+	BrowsePages(options BrowseOptions) (*BrowseResult, error)
 
 	// Engagement
 	LikePage(pageID, userID int64) (int64, error)

@@ -5,7 +5,11 @@ import { Link } from "react-router-dom";
 import { hasPermissionAtom, isAuthenticatedAtom } from "../../atoms/auth";
 import type { Documentation } from "../../atoms/documentation";
 import { useLayoutPosition } from "../../atoms/viewModes";
-import { DirectoryLayout, type ViewMode } from "../../components/page/layout/templates/DirectoryLayout";
+import {
+  DirectoryLayout,
+  type ViewMode,
+} from "../../components/page/layout/templates/DirectoryLayout";
+import { SkeletonContent } from "../../components/ui/Skeleton";
 import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
 import "../../components/documentation/DocumentationShell.css";
@@ -74,11 +78,13 @@ export default function DocumentationCatalogPage() {
       onSearchChange={setSearch}
       viewMode={viewMode}
       onViewModeChange={setViewMode}
-      headerActions={canCreate ? (
-        <Link className="btn btn-ghost documentation-directory__new" to="/form/documentation/new">
-          <Plus size={16} /> New documentation
-        </Link>
-      ) : undefined}
+      headerActions={
+        canCreate ? (
+          <Link className="btn btn-ghost documentation-directory__new" to="/form/documentation/new">
+            <Plus size={16} /> New documentation
+          </Link>
+        ) : undefined
+      }
       metrics={[
         <span key="count">
           <strong>{filtered.length}</strong> {filtered.length === 1 ? "collection" : "collections"}
@@ -86,16 +92,36 @@ export default function DocumentationCatalogPage() {
       ]}
       items={loading || error ? [] : filtered}
       emptyState={
-        loading ? <p className="documentation-directory__status">Loading documentation...</p>
-        : error ? <p className="documentation-directory__status" role="alert">{error}</p>
-        : emptyState
+        loading ? (
+          <div className="documentation-directory__status">
+            {Array.from({ length: 3 }, (_, index) => (
+              <SkeletonContent
+                key={`documentation-skeleton-${index}`}
+                variant="card"
+                label={index === 0 ? "Loading documentation" : undefined}
+                announce={index === 0}
+              />
+            ))}
+          </div>
+        ) : error ? (
+          <p className="documentation-directory__status" role="alert">
+            {error}
+          </p>
+        ) : (
+          emptyState
+        )
       }
       tableColumns={[
         {
           header: "Documentation",
           width: "minmax(210px, 2fr)",
           className: "table-view__cell--bold",
-          cell: item => <span className="documentation-directory__table-title"><BookOpen size={15} />{item.title}</span>,
+          cell: item => (
+            <span className="documentation-directory__table-title">
+              <BookOpen size={15} />
+              {item.title}
+            </span>
+          ),
         },
         {
           header: "Description",
@@ -106,7 +132,14 @@ export default function DocumentationCatalogPage() {
         {
           header: "Visibility",
           width: "120px",
-          cell: item => <span className={`documentation-visibility documentation-visibility--${item.visibility}`}>{item.visibility === "private" && <EyeOff size={12} />}{item.visibility}</span>,
+          cell: item => (
+            <span
+              className={`documentation-visibility documentation-visibility--${item.visibility}`}
+            >
+              {item.visibility === "private" && <EyeOff size={12} />}
+              {item.visibility}
+            </span>
+          ),
         },
         {
           header: "Updated",
@@ -117,13 +150,22 @@ export default function DocumentationCatalogPage() {
       ]}
       tableRowKey={item => item.id}
       renderRowWrapper={(item, _index, rowProps, cells) => (
-        <Link key={item.id} to={`/doc/${item.slug}`} {...rowProps}>{cells}</Link>
+        <Link key={item.id} to={`/doc/${item.slug}`} {...rowProps}>
+          {cells}
+        </Link>
       )}
       renderGridCard={item => (
         <Link className="documentation-directory__card" to={`/doc/${item.slug}`} key={item.id}>
           <div className="documentation-directory__card-heading">
-            <span className="documentation-directory__card-icon"><BookOpen size={18} /></span>
-            <span className={`documentation-visibility documentation-visibility--${item.visibility}`}>{item.visibility === "private" && <EyeOff size={12} />}{item.visibility}</span>
+            <span className="documentation-directory__card-icon">
+              <BookOpen size={18} />
+            </span>
+            <span
+              className={`documentation-visibility documentation-visibility--${item.visibility}`}
+            >
+              {item.visibility === "private" && <EyeOff size={12} />}
+              {item.visibility}
+            </span>
           </div>
           <div className="documentation-directory__card-body">
             <h2>{item.title}</h2>

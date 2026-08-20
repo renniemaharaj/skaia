@@ -8,6 +8,7 @@ import { currentOrderAtom, ordersAtom } from "../../atoms/store";
 import type { Order } from "../../atoms/store";
 import OrderSubmittedView from "../../components/store/OrderStatusView";
 import { apiRequest } from "../../utils/api";
+import { SkeletonContent, SkeletonPrimitive } from "../ui/Skeleton";
 import { StorePageShell } from "./StorePageShell";
 
 type OrderResponse = Order | { order: Order };
@@ -68,7 +69,12 @@ const OrderViewPage: React.FC = () => {
   if (loading) {
     return (
       <StorePageShell backTo="/store/orders" backLabel="Back to orders" title="Order">
-        <div className="store-page-shell__empty">Loading order…</div>
+        <SkeletonContent label="Loading order">
+          <SkeletonPrimitive shape="heading" width="32%" />
+          <SkeletonContent variant="table-row" announce={false} />
+          <SkeletonContent variant="table-row" announce={false} />
+          <SkeletonPrimitive height={180} />
+        </SkeletonContent>
       </StorePageShell>
     );
   }

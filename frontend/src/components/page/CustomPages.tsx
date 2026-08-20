@@ -12,16 +12,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import {
-  type MouseEvent,
-  Suspense,
-  lazy,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { Suspense, type MouseEvent, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { currentUserAtom } from "../../atoms/auth";
@@ -31,30 +22,18 @@ import type { PageBuilderDoc, PageUser } from "../../hooks/usePageData";
 import { useSetHomepage } from "../../hooks/useSetHomepage";
 import { apiRequest } from "../../utils/api";
 import { relativeTimeAgo } from "../../utils/serverTime";
-import ResourceAnalytics from "../analytics/ResourceAnalytics";
+import { AnalyticsSkeleton } from "../analytics/AnalyticsSkeleton";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
+import { useViewportActivation } from "../ui/DeferredRender";
 import { confirmDestructiveAction } from "../ui/Prompt";
+import { SkeletonContent } from "../ui/Skeleton";
 import UserAvatar from "../user/UserAvatar";
 import UserProfileOverlay from "../user/UserProfileOverlay";
+import { PageBrowsePreview } from "./PageBrowsePreview";
 import { DirectoryLayout } from "./layout/templates/DirectoryLayout";
-import type { PageSection } from "./types";
 import "./CustomPages.css";
 
-const BlockRenderer = lazy(() =>
-  import("./BlockRenderer").then(m => ({ default: m.BlockRenderer }))
-);
-
-const parsePageSections = (content: string) => {
-  try {
-    const parsed = JSON.parse(content);
-    if (Array.isArray(parsed)) return parsed as PageSection[];
-  } catch {
-    // ignore invalid content
-  }
-  return [];
-};
-
-const noop = () => {};
+const ResourceAnalytics = lazy(() => import("../analytics/ResourceAnalytics"));
 
 type ViewMode = "grid" | "list";
 
@@ -65,24 +44,59 @@ interface Allocation {
   is_admin?: boolean;
 }
 
+export interface PageBrowseSummary {
+  id: number;
+  slug: string;
+  title: string;
+  description: string;
+  visibility: "public" | "private" | "unlisted";
+  owner?: PageUser;
+  editors: PageUser[];
+  can_edit: boolean;
+  can_delete: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface BrowseResponse {
+  pages: PageBrowseSummary[];
+  landing_page_slug: string;
+  next_cursor?: string;
+  has_more: boolean;
+}
+
+function LoadMoreSentinel({ onVisible }: { onVisible: () => void }) {
+  const viewport = useViewportActivation({ rootMargin: "320px 0px", onActivate: onVisible });
+  return (
+    <div ref={viewport.ref} className="custom-pages__sentinel" aria-label="Loading more pages">
+      <SkeletonContent variant="table-row" label="Loading more pages" />
+    </div>
+  );
+}
+
 export default function CustomPages() {
   const currentUser = useAtomValue(currentUserAtom);
   const navigate = useNavigate();
-  const [pages, setPages] = useState<PageBuilderDoc[]>([]);
+  const [pages, setPages] = useState<PageBrowseSummary[]>([]);
   const [landingPageSlug, setLandingPageSlug] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [nextCursor, setNextCursor] = useState("");
+  const [hasMore, setHasMore] = useState(false);
   const [search, setSearch] = useState("");
   const [allocation, setAllocation] = useState<Allocation | null>(null);
   const [claiming, setClaiming] = useState(false);
-  const [renamingPage, setRenamingPage] = useState<PageBuilderDoc | null>(null);
-  const [duplicatingPage, setDuplicatingPage] = useState<PageBuilderDoc | null>(null);
+  const [renamingPage, setRenamingPage] = useState<PageBrowseSummary | null>(null);
+  const [duplicatingPage, setDuplicatingPage] = useState<PageBrowseSummary | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
   const [renameSlug, setRenameSlug] = useState("");
   const [dupSlug, setDupSlug] = useState("");
   const [dupTitle, setDupTitle] = useState("");
   const [renaming, setRenaming] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
-  const [analyticsPage, setAnalyticsPage] = useState<PageBuilderDoc | null>(null);
+  const [analyticsPage, setAnalyticsPage] = useState<PageBrowseSummary | null>(null);
+  const browseAbortRef = useRef<AbortController | null>(null);
   // Homepage setting logic (shared hook)
   const { handleSetHomepage, settingHomepageId } = useSetHomepage(
     landingPageSlug,
@@ -93,28 +107,52 @@ export default function CustomPages() {
   const hasPermission = usePageData().isAdmin; // home.manage permission
   const [viewMode, setViewMode] = useLayoutPosition<ViewMode>("customPages", "grid");
 
-  useEffect(() => {
-    apiRequest<{ pages: PageBuilderDoc[]; landing_page_slug: string }>("/pages/browse")
-      .then(data => {
-        setPages(data?.pages ?? []);
-        setLandingPageSlug(data?.landing_page_slug ?? "");
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+  const loadPages = useCallback(async (query: string, cursor = "", append = false) => {
+    browseAbortRef.current?.abort();
+    const controller = new AbortController();
+    browseAbortRef.current = controller;
+    append ? setLoadingMore(true) : setLoading(true);
+    setLoadError(false);
+    const params = new URLSearchParams({ limit: "24" });
+    if (query.trim()) params.set("q", query.trim());
+    if (cursor) params.set("cursor", cursor);
+    try {
+      const data = await apiRequest<BrowseResponse>(`/pages/browse?${params}`, {
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
+      setPages(previous => {
+        if (!append) return data.pages ?? [];
+        const byID = new Map(previous.map(page => [page.id, page]));
+        for (const page of data.pages ?? []) byID.set(page.id, page);
+        return Array.from(byID.values());
+      });
+      setLandingPageSlug(data.landing_page_slug ?? "");
+      setNextCursor(data.next_cursor ?? "");
+      setHasMore(Boolean(data.has_more && data.next_cursor));
+    } catch (error) {
+      if ((error as Error)?.name !== "AbortError") setLoadError(true);
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    }
   }, []);
 
   useEffect(() => {
-    const handler = () => {
-      apiRequest<{ pages: PageBuilderDoc[]; landing_page_slug: string }>("/pages/browse")
-        .then(data => {
-          setPages(data?.pages ?? []);
-          setLandingPageSlug(data?.landing_page_slug ?? "");
-        })
-        .catch(() => {});
+    const timer = window.setTimeout(() => void loadPages(search), 250);
+    return () => {
+      window.clearTimeout(timer);
+      browseAbortRef.current?.abort();
     };
+  }, [loadPages, search]);
+
+  useEffect(() => {
+    const handler = () => void loadPages(search);
     window.addEventListener("page:live:event", handler);
     return () => window.removeEventListener("page:live:event", handler);
-  }, []);
+  }, [loadPages, search]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -138,7 +176,7 @@ export default function CustomPages() {
     }
   }, [navigate]);
 
-  const openRename = useCallback((e: MouseEvent<HTMLButtonElement>, page: PageBuilderDoc) => {
+  const openRename = useCallback((e: MouseEvent<HTMLButtonElement>, page: PageBrowseSummary) => {
     e.preventDefault();
     e.stopPropagation();
     setRenameTitle(page.title || page.slug);
@@ -153,12 +191,22 @@ export default function CustomPages() {
       const updated = await apiRequest<PageBuilderDoc>(`/pages/${renamingPage.id}`, {
         method: "PUT",
         body: JSON.stringify({
-          ...renamingPage,
           title: renameTitle.trim(),
           slug: renameSlug.trim() || renamingPage.slug,
         }),
       });
-      setPages(prev => prev.map(p => (p.id === updated.id ? updated : p)));
+      setPages(prev =>
+        prev.map(page =>
+          page.id === updated.id
+            ? {
+                ...page,
+                slug: updated.slug,
+                title: updated.title,
+                updated_at: updated.updated_at,
+              }
+            : page
+        )
+      );
       toast.success("Page renamed");
       setRenamingPage(null);
     } catch {
@@ -168,7 +216,7 @@ export default function CustomPages() {
     }
   }, [renamingPage, renameTitle, renameSlug]);
 
-  const openDuplicate = useCallback((e: MouseEvent<HTMLButtonElement>, page: PageBuilderDoc) => {
+  const openDuplicate = useCallback((e: MouseEvent<HTMLButtonElement>, page: PageBrowseSummary) => {
     e.preventDefault();
     e.stopPropagation();
     setDupSlug(`${page.slug}-copy`);
@@ -187,7 +235,6 @@ export default function CustomPages() {
           title: dupTitle.trim() || dupSlug.trim(),
         }),
       });
-      setPages(prev => [...prev, created]);
       apiRequest<Allocation>("/pages/my-allocation")
         .then(data => setAllocation(data))
         .catch(() => {});
@@ -205,17 +252,6 @@ export default function CustomPages() {
     !!currentUser &&
     !!allocation &&
     (allocation.is_admin || allocation.used_pages < allocation.max_pages);
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return pages;
-    const q = search.toLowerCase();
-    return pages.filter(
-      p =>
-        (p.title ?? "").toLowerCase().includes(q) ||
-        (p.slug ?? "").toLowerCase().includes(q) ||
-        (p.description ?? "").toLowerCase().includes(q)
-    );
-  }, [pages, search]);
 
   const toggleView = useCallback((mode: ViewMode) => {
     setViewMode(mode);
@@ -241,54 +277,10 @@ export default function CustomPages() {
     </UserProfileOverlay>
   );
 
-  const PageThumb = ({ page }: { page: PageBuilderDoc }) => {
-    const sections = useMemo(() => parsePageSections(page.content), [page.content]);
-    const ref = useRef<HTMLDivElement>(null);
-    const [inView, setInView] = useState(false);
-
-    useEffect(() => {
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setInView(true);
-            observer.disconnect();
-          }
-        },
-        { threshold: 0.1 }
-      );
-      if (ref.current) observer.observe(ref.current);
-      return () => observer.disconnect();
-    }, []);
-
-    return (
-      <div ref={ref} className="cp-card__thumb" data-custom-page-preview>
-        {inView && sections.length > 0 ? (
-          <div className="cp-card__thumb-inner">
-            <Suspense fallback={<div className="cp-card__thumb-empty">Loading...</div>}>
-              <BlockRenderer
-                sections={sections}
-                canEdit={false}
-                onUpdateSection={noop}
-                onDeleteSection={noop}
-                onCreateSection={noop}
-                onCreateItem={noop}
-                onUpdateItem={noop}
-                onDeleteItem={noop}
-                onMoveSection={noop}
-              />
-            </Suspense>
-          </div>
-        ) : (
-          <div className="cp-card__thumb-empty">{inView ? "No preview" : "Loading preview..."}</div>
-        )}
-      </div>
-    );
-  };
-
   const [deletingPageId, setDeletingPageId] = useState<number | null>(null);
 
   const handleDeletePage = useCallback(
-    async (event: MouseEvent<HTMLButtonElement>, page: PageBuilderDoc) => {
+    async (event: MouseEvent<HTMLButtonElement>, page: PageBrowseSummary) => {
       event.preventDefault();
       event.stopPropagation();
       if (!page.id || !page.can_delete) return;
@@ -351,16 +343,32 @@ export default function CustomPages() {
         onSearchChange={setSearch}
         metrics={[
           <span key="count" className="custom-pages__count">
-            <strong>{filtered.length}</strong> {filtered.length === 1 ? "Page" : "Pages"} total
+            <strong>{pages.length}</strong> {pages.length === 1 ? "Page" : "Pages"} loaded
             {search && ` matching "${search}"`}
           </span>,
         ]}
         viewMode={viewMode}
         onViewModeChange={toggleView}
-        items={loading ? [] : filtered}
+        items={loading ? [] : pages}
         emptyState={
           loading ? (
-            <p className="custom-pages__status">Loading pages…</p>
+            <div className="custom-pages__loading" aria-label="Loading custom pages">
+              <SkeletonContent variant="card" label="Loading custom pages" />
+              <SkeletonContent variant="card" label="Loading custom pages" />
+              <SkeletonContent variant="card" label="Loading custom pages" />
+            </div>
+          ) : loadError ? (
+            <div className="custom-pages__empty" role="alert">
+              <FileText size={32} />
+              <p>Custom pages could not load.</p>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => void loadPages(search)}
+              >
+                Retry
+              </button>
+            </div>
           ) : pages.length === 0 ? (
             <div className="custom-pages__empty">
               <FileText size={32} />
@@ -562,7 +570,7 @@ export default function CustomPages() {
 
               {page.description && <p className="cp-card__desc">{page.description}</p>}
 
-              <PageThumb page={page} />
+              <PageBrowsePreview pageId={page.id} revision={page.updated_at} />
 
               <div className="cp-card__meta">
                 {page.owner && (
@@ -629,6 +637,15 @@ export default function CustomPages() {
           </Link>
         )}
       />
+
+      {hasMore && nextCursor && !loading && (
+        <LoadMoreSentinel
+          key={nextCursor}
+          onVisible={() => {
+            if (!loadingMore) void loadPages(search, nextCursor, true);
+          }}
+        />
+      )}
 
       {renamingPage && (
         <div className="cp-modal-overlay" onClick={() => setRenamingPage(null)}>
@@ -719,12 +736,14 @@ export default function CustomPages() {
       )}
 
       {analyticsPage && (
-        <ResourceAnalytics
-          resource="page"
-          resourceId={analyticsPage.id}
-          title={analyticsPage.title || analyticsPage.slug}
-          onClose={() => setAnalyticsPage(null)}
-        />
+        <Suspense fallback={<AnalyticsSkeleton onClose={() => setAnalyticsPage(null)} />}>
+          <ResourceAnalytics
+            resource="page"
+            resourceId={analyticsPage.id}
+            title={analyticsPage.title || analyticsPage.slug}
+            onClose={() => setAnalyticsPage(null)}
+          />
+        </Suspense>
       )}
     </>
   );

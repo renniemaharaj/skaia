@@ -1,4 +1,6 @@
-import React, { type ReactNode, useEffect, useRef, useState } from "react";
+import React, { type ReactNode } from "react";
+import { useViewportActivation } from "../DeferredRender";
+import { SkeletonPrimitive } from "../Skeleton";
 import "./TableView.css";
 
 export interface TableColumn<T> {
@@ -61,26 +63,7 @@ function LazyRow<T>({
   rowKey,
   renderRowWrapper,
 }: LazyRowProps<T>) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect(); // render once, then stop observing
-        }
-      },
-      // rootMargin pre-loads rows 200px before they scroll into view so
-      // there's no perceptible flash of skeleton content during normal scrolling.
-      { rootMargin: "200px 0px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+  const { active: visible, ref } = useViewportActivation({ rootMargin: "200px 0px" });
 
   const rowProps = {
     className: "table-view__row",
@@ -103,7 +86,7 @@ function LazyRow<T>({
             key={col.id ?? `${String(col.header)}-ph`}
             className={`table-view__cell ${col.className || ""}`}
           >
-            <div className="skeleton" style={{ width: "60%", height: 10, borderRadius: 4 }} />
+            <SkeletonPrimitive shape="text" width="60%" height={10} />
           </div>
         ))}
       </div>

@@ -9,6 +9,11 @@
 - Ordinary saves lock the page row and merge current interactive `records` into
   the incoming document before updating it. Interactive mutations lock and
   rewrite the same document.
+- `PUT /pages/{id}` preserves omitted fields. Directory metadata edits omit
+  `content`; builder saves continue sending the complete authoritative document.
+- `/pages/browse` exposes bounded content-free summaries. The intent-only
+  `/pages/browse/{id}/preview` read returns a service-authorized and
+  caller-sanitized copy without creating a second content authority.
 
 ## Stored envelope
 
@@ -48,7 +53,14 @@ by editors without exposing config.
 ## Shared UI
 
 `SectionFrame` owns layout, spacing, animation, literal/inherited colors,
-collapsing, toolbar composition, and viewport animation. Its config helper:
+collapsing, toolbar composition, viewport animation, and child mount deferral.
+Animation observation remains reversible and separate from one-shot renderer
+activation. The first section is eager; later sections use renderer-shaped
+skeletons and a near-viewport boundary, while preview sections use the clipped
+thumbnail as their observer root. The hero fallback preserves the real
+500px/400px full-bleed silhouette; collection fallbacks retain their actual
+text-only, icon-led, or media-led hierarchy instead of sharing one generic card.
+Its config helper:
 
 - accepts both config encodings;
 - reads established camelCase and snake_case aliases;

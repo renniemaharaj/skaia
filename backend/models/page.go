@@ -37,6 +37,31 @@ type Page struct {
 	CanDelete    bool        `json:"can_delete,omitempty"`
 }
 
+// PageBrowseSummary is the bounded, content-free projection used by the page
+// directory. Full builder documents are fetched only for page view or preview.
+type PageBrowseSummary struct {
+	ID          int64       `json:"id"`
+	Slug        string      `json:"slug"`
+	Title       string      `json:"title"`
+	Description string      `json:"description"`
+	Visibility  string      `json:"visibility"`
+	OwnerID     *int64      `json:"-"`
+	Owner       *PageUser   `json:"owner,omitempty"`
+	Editors     []*PageUser `json:"editors"`
+	CanEdit     bool        `json:"can_edit"`
+	CanDelete   bool        `json:"can_delete"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
+}
+
+// PagePreview is the caller-safe document projection loaded after browse
+// intent. UpdatedAt is the revision key used by clients to discard stale data.
+type PagePreview struct {
+	ID        int64     `json:"id"`
+	Content   string    `json:"content"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 // PageSection is an ordered block on a custom page (not just the landing page).
 type PageSection struct {
 	ID           int64       `json:"id"`

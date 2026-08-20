@@ -93,6 +93,18 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Run Remarks
 
+- Audited `viewport_deferred_rendering_and_suspense` across browse/preview
+  authorization and bounds, section mount ownership, preview/view renderer
+  parity, route and primary-surface loading states, analytics deferral, action
+  availability, responsive/token/reduced-motion CSS, tests, policies, specs, and
+  todo completion. No Critical, High, or Medium issue remains; complete backend
+  tests, all 210 frontend tests, lint, build, four policy gates, and diff checks
+  pass. The 500-record fixture produces 100 summaries/19,392 bytes with one
+  repository call and no document content.
+- Final commit-handoff polish traced each page skeleton against its renderer DOM
+  and CSS, removing invented CTA/rich-text/social content, restoring profile
+  hierarchy, matching flat collection chrome, and correcting root/form/wallet
+  route shells. No material finding remains after the complete gate rerun.
 - Audited shared-media Phases 1 and 2 across stale URL events, empty/error/loading
   accessibility, fixed geometry, reduced motion, theme tokens, hero cycling,
   picker overlays, profile-avatar semantics, sanitization, and saved rich-text

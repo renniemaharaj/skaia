@@ -19,6 +19,9 @@ navigation/narration, WebSocket consumers, or page-builder UX.
 - WebSocket singleton: `frontend/src/hooks/useWebSocketSync.ts`
 - Design tokens/utilities: `frontend/src/index.css`, `frontend/src/utilities.css`
 - Shared URL-backed media state: `frontend/src/components/ui/MediaPlaceholder.tsx`
+- Deferred rendering and loading UI: `frontend/src/components/ui/DeferredRender.tsx`,
+  `frontend/src/components/ui/Skeleton.tsx`,
+  `frontend/src/components/ui/AsyncBoundary.tsx`
 - Domain pages/components: `src/pages/*`, `src/components/*`, `src/styles/*`
 - Bible UI/data: `src/pages/kjv/*`, `src/components/bible/*`,
   `src/atoms/bible.ts`
@@ -59,6 +62,45 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   media, and commerce. It uses a native modal lifecycle, restores prior focus,
   supports Escape and arrow-key navigation, and keeps controls independent of
   media load success.
+- Viewport deferral is an explicit mount boundary, not merely a `Suspense`
+  fallback. `useViewportActivation` defaults to one-shot activation 200px before
+  intersection, accepts custom scroll roots, and renders eagerly when browser
+  observation is unavailable. `useIntentActivation` ignores touch/pen hover,
+  cancels pointer fly-overs, and activates immediately for keyboard focus or an
+  explicit caller-owned touch control.
+- Shared skeleton primitives provide token-only text, heading, avatar, media,
+  card, table-row, form, chart, and content geometry. One owning live region
+  announces loading while decorative bars remain hidden from assistive
+  technology; reduced-motion users receive a static treatment.
+- `AsyncBoundary` contains lazy/render failures around the smallest useful
+  subtree and leaves sibling navigation/actions mounted. Visible async content
+  must have a retry path; null Suspense fallbacks are reserved for reviewed
+  decorative overlays. Large `TableView` collections use the shared viewport
+  hook and skeleton primitive while retaining the existing 25-row threshold.
+- The application route boundary uses one pathname-selected skeleton shell for
+  page, commerce, documentation/reader, feed, form, profile, table/admin, and
+  canvas route families. Primary data surfaces use shared domain-shaped initial
+  skeletons while pagination, mutations, empty results, stale refreshes, and
+  errors retain separate feedback.
+- Page and thread analytics import only after the analytics action opens. Its
+  Suspense fallback mirrors the modal header, tabs, stat row, and chart and
+  keeps the close action usable. Recharts remains owned by that lazy module;
+  maps, editors, flow/stream canvases, and clipmaker remain isolated by their
+  existing route or interaction boundaries.
+- `check-loading-boundaries` guards visible null Suspense fallbacks, eager
+  analytics/Recharts imports, and the named retired bare initial-loading states.
+  Reviewed decorative overlays and compact pagination/mutation indicators are
+  explicit exceptions.
+- `CustomPages` consumes a content-free browse-summary type independently of
+  `PageBuilderDoc`, performs abortable debounced server search, and extends the
+  bounded cursor feed from a near-viewport sentinel. List mode never constructs
+  preview renderers. Grid cards reserve a 160px domain skeleton; exact preview
+  content and the lazy `BlockRenderer` activate only after viewport eligibility
+  plus delayed mouse hover, keyboard focus, or an explicit touch action.
+- Page previews are inert, reject mismatched page/revision responses, abort on
+  revision/card teardown, and use a 24-entry in-memory LRU keyed by page id plus
+  `updated_at`. Empty, pending, retryable failure, and ready states retain the
+  same thumbnail geometry.
 - `sectionRegistry.ts` is the compact renderer-type allowlist. Page section IDs
   and configs retain their observed numeric/string and string/object encodings;
   individual renderers narrow the config fields they consume.
@@ -67,6 +109,27 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   toolbar; renderers may portal type-specific actions into it but must not create
   block-local shared shell controls. Renderers retain semantic heading placement
   and inline content editing where their DOM contracts differ.
+- `SectionFrame` also owns one-shot child mounting independently from its
+  reversible entrance-animation observer. The first section is eager; later
+  view/editor sections preload within 280px. Preview sections observe against
+  the clipped thumbnail root with no margin, so content below the visible crop
+  does not mount. Missing observer support activates safely.
+- `SectionSkeleton` covers every canonical and unsupported type with bounded,
+  renderer-specific geometry rather than a shared visual-family card. Hero
+  retains the real full-bleed 500px desktop/400px mobile composition; ordinary
+  cards are text-only, events and galleries own media frames, stats/features
+  own icon-led layouts, and CTA, profile, social, rich-text, code, data, and
+  interactive sections mirror their distinct hierarchy. It accepts both config
+  encodings and bounded `section.items`/field counts without importing
+  renderers. The frame owns `aria-busy`; offscreen decorative skeletons do not
+  create competing live-region announcements.
+- Skeleton composition follows renderer truth, including absence: CTA has no
+  fabricated buttons, rich text has no fabricated section heading, social links
+  use the exact configured count (including zero), and profile skeletons retain
+  the real heading, responsive banner/avatar, links, and checklist layout.
+- Editor pointer/focus and collapse expansion activate a deferred section.
+  Activation is sticky across moves, content updates, collapse, and active
+  drafts; page-key/type-preserving React keys reset it only at page teardown.
 - Section colors are inherited or literal; content scale applies to the shared
   inner wrapper. `PageBuilder` always saves the complete authoritative document
   with the page update endpoint.

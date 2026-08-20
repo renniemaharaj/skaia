@@ -1,17 +1,18 @@
+import { ChevronDown, ChevronRight } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { useViewportActivation } from "../ui/DeferredRender";
 import { SectionMoveContext, SectionToolbar } from "./EditControls";
 import { SectionShellControls } from "./SectionShellControls";
 import { adaptLegacySectionShell, projectSharedShellToLegacyConfig } from "./sectionAdapter";
 import { SECTION_RENDERER_REGISTRY } from "./sectionRendererRegistry";
 import {
-  SECTION_TYPE_LABELS,
-  canonicalSectionType,
-  type PageSection,
   type PageDocumentID,
+  type PageSection,
+  SECTION_TYPE_LABELS,
   type SharedSectionShell,
+  canonicalSectionType,
 } from "./types";
 
 interface SectionFrameProps {
@@ -25,6 +26,9 @@ interface SectionFrameProps {
   pageKey?: string;
   fallback?: ReactNode;
   children: ReactNode;
+  eager?: boolean;
+  viewportRoot?: Element | null;
+  preview?: boolean;
 }
 
 type SectionFrameStyle = CSSProperties &
@@ -45,17 +49,37 @@ export function SectionFrame({
   pageKey = "page",
   fallback,
   children,
+  eager = true,
+  viewportRoot = null,
+  preview = false,
 }: SectionFrameProps) {
   const shell = useMemo(() => adaptLegacySectionShell(section.config), [section.config]);
   const [toolbarExtraTarget, setToolbarExtraTarget] = useState<Element | null>(null);
   const collapseIdentity = `${pageKey}:${section.id}:${section.revision ?? section.last_edited_by?.edited_at ?? section.config}`;
-  const [collapsed, setCollapsed] = useState(shell.collapsible && shell.default_collapsed);
+  const initiallyCollapsed = shell.collapsible && shell.default_collapsed;
+  const [collapsed, setCollapsed] = useState(initiallyCollapsed);
+  const [contentMounted, setContentMounted] = useState(eager && !initiallyCollapsed);
 
   useEffect(() => {
     setCollapsed(shell.collapsible && shell.default_collapsed);
   }, [collapseIdentity, shell.collapsible, shell.default_collapsed]);
 
   const sectionRef = useRef<HTMLDivElement>(null);
+  const mount = useViewportActivation({
+    eager,
+    root: viewportRoot,
+    rootMargin: preview ? "0px" : "280px 0px",
+  });
+  useEffect(() => {
+    if (mount.active && !collapsed) setContentMounted(true);
+  }, [collapsed, mount.active]);
+  const setSectionRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      sectionRef.current = node;
+      mount.ref(node);
+    },
+    [mount.ref]
+  );
   const [inView, setInView] = useState(shell.animation === "none");
   const [outView, setOutView] = useState(false);
 
@@ -67,6 +91,11 @@ export function SectionFrame({
     }
     const element = sectionRef.current;
     if (!element) return;
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) {
+      setInView(true);
+      setOutView(false);
+      return;
+    }
     const observer = new window.IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -92,11 +121,15 @@ export function SectionFrame({
     ...(shell.padding_right ? { paddingRight: `${shell.padding_right}px` } : {}),
     ...(shell.padding_bottom ? { paddingBottom: `${shell.padding_bottom}px` } : {}),
     ...(shell.padding_left ? { paddingLeft: `${shell.padding_left}px` } : {}),
-    backgroundColor: shell.background_color.mode === "literal" ? shell.background_color.value : undefined,
+    backgroundColor:
+      shell.background_color.mode === "literal" ? shell.background_color.value : undefined,
     color: shell.text_color.mode === "literal" ? shell.text_color.value : undefined,
-    "--skaia-section-h1-color": shell.h1_color.mode === "literal" ? shell.h1_color.value : undefined,
-    "--skaia-section-h2-color": shell.h2_color.mode === "literal" ? shell.h2_color.value : undefined,
-    "--skaia-section-h3-color": shell.h3_color.mode === "literal" ? shell.h3_color.value : undefined,
+    "--skaia-section-h1-color":
+      shell.h1_color.mode === "literal" ? shell.h1_color.value : undefined,
+    "--skaia-section-h2-color":
+      shell.h2_color.mode === "literal" ? shell.h2_color.value : undefined,
+    "--skaia-section-h3-color":
+      shell.h3_color.mode === "literal" ? shell.h3_color.value : undefined,
     "--skaia-section-content-scale": shell.content_scale,
   };
 
@@ -163,13 +196,16 @@ export function SectionFrame({
   return (
     <SectionMoveContext.Provider value={moveContext}>
       <div
-        ref={sectionRef}
+        ref={setSectionRef}
         className={`pb-section-layout pb-section-layout-${shell.layout}`}
         style={sectionStyle}
         data-animation={shell.animation !== "none" ? shell.animation : undefined}
         data-intensity={shell.animation !== "none" ? shell.animation_intensity : undefined}
         data-in-view={inView ? "" : undefined}
         data-out-view={outView && !inView ? "" : undefined}
+        data-render-state={contentMounted ? "active" : "deferred"}
+        onFocusCapture={canEdit ? mount.activate : undefined}
+        onPointerEnter={canEdit ? mount.activate : undefined}
       >
         {canEdit && (
           <SectionToolbar
@@ -211,7 +247,10 @@ export function SectionFrame({
             className="section-frame-collapse"
             aria-expanded={!collapsed}
             aria-controls={contentId}
-            onClick={() => setCollapsed(value => !value)}
+            onClick={() => {
+              mount.activate();
+              setCollapsed(value => !value);
+            }}
           >
             {collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
             <span>
@@ -225,8 +264,13 @@ export function SectionFrame({
           id={contentId}
           className={`pb-section-content pb-section-container-${shell.container_width}`}
           hidden={collapsed}
+          aria-busy={!contentMounted}
         >
-          <Suspense fallback={fallback ?? null}>{children}</Suspense>
+          {contentMounted ? (
+            <Suspense fallback={fallback ?? null}>{children}</Suspense>
+          ) : (
+            (fallback ?? null)
+          )}
         </div>
       </div>
     </SectionMoveContext.Provider>
