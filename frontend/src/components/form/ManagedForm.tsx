@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import Button from "../input/Button";
 import FormHeaderActions from "../ui/FormHeaderActions";
 import FormSectionIntro from "./FormSectionIntro";
-import "./ManagedForm.css";
 
 export interface ManagedFormTab {
   id: string;

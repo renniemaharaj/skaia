@@ -358,6 +358,8 @@
   background: color-mix(in srgb, var(--primary-color) 14%, transparent);
 }
 
+.managed-form__section-intro h1,
+.managed-form__section-intro h2,
 .managed-form__section-intro h3,
 .managed-form__section-intro p {
   margin: 0;
@@ -373,6 +375,8 @@
   text-transform: uppercase;
 }
 
+.managed-form__section-intro h1,
+.managed-form__section-intro h2,
 .managed-form__section-intro h3 {
   font-size: 0.9rem;
   line-height: 1.35;

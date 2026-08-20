@@ -19,8 +19,10 @@ describe("RateLimitedPage", () => {
   });
 
   it("shows the TOTP override form when the server offers priority access", () => {
-    renderPage("totp");
+    const { container } = renderPage("totp");
 
+    expect(screen.getByRole("heading", { level: 1, name: "Rate limit exceeded" })).toBeInTheDocument();
+    expect(container.querySelector(".managed-form__section-intro")).toBeInTheDocument();
     expect(screen.getByLabelText("Priority Override Code")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Authorize Bypass/i })).toBeInTheDocument();
   });

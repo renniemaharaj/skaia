@@ -24,7 +24,12 @@
 - [x] Add grouped ManagedForm/FormField presentation without discarding separated field cards.
 - [x] Migrate login, registration, recovery, password reset, MFA, and rate-limit access forms.
 - [x] Replace checkout's legacy section headers with shared form-section intros.
+- [x] Retire the remaining generic `section__header` presentation from shared error,
+      access-denied, and not-found surfaces; the TOTP rate-limit challenge now inherits the
+      shared form-section intro through `ErrorPage`.
 - [x] Run managed-form/native-dialog audits, all 179 frontend tests, lint, TypeScript,
       production build, and diff checks (2026-08-20).
+- [x] Re-run managed-form/native-dialog audits, all 210 frontend tests, lint, TypeScript,
+      production build, and diff checks after final legacy-header retirement (2026-08-20).
 
 <--/------->
