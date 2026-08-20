@@ -1,24 +1,22 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { RichTextRenderer } from "./RichTextRenderer";
 
 describe("RichTextRenderer media", () => {
-  it("sanitizes authored HTML and renders images through the shared media lifecycle", () => {
+  it("sanitizes authored HTML without changing Tiptap image markup", () => {
     const savedHtml =
       '<h2 id="saved-heading">Overview</h2><img src="/uploads/map.webp" alt="Route map" width="640" height="360" class="authored-image"><script>unsafe()</script>';
 
     const { container } = render(<RichTextRenderer html={savedHtml} previewMode />);
     const image = screen.getByRole("img", { name: "Route map" });
-    const frame = image.closest("figure");
 
     expect(container.querySelector("script")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Overview" })).not.toHaveAttribute("id");
     expect(image).toHaveClass("authored-image");
-    expect(frame).toHaveClass("rich-text-media-placeholder");
-    expect(frame).toHaveStyle({ height: "360px", width: "640px" });
-    expect(screen.getByRole("status")).toHaveTextContent("Loading Route map");
-
-    fireEvent.load(image);
+    expect(image).toHaveAttribute("src", "/uploads/map.webp");
+    expect(image).toHaveAttribute("width", "640");
+    expect(image).toHaveAttribute("height", "360");
+    expect(image.closest("figure")).not.toBeInTheDocument();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(savedHtml).toContain('id="saved-heading"');
   });
@@ -45,21 +43,18 @@ describe("RichTextRenderer media", () => {
     expect(screen.getByText("Interview excerpt")).toBeInTheDocument();
   });
 
-  it("preserves Tiptap image alignment and opens images in the shared lightbox", () => {
-    render(
+  it("leaves Tiptap image wrappers and alignment untouched", () => {
+    const { container } = render(
       <RichTextRenderer html='<div class="image" style="text-align: center"><img src="/flower.jpg" alt="Flower" width="240" align="center"></div>' />
     );
 
-    const previewTrigger = screen.getByRole("button", { name: "Preview Flower" });
-    expect(previewTrigger).toHaveStyle({ marginLeft: "auto", marginRight: "auto" });
+    const image = screen.getByRole("img", { name: "Flower" });
+    const wrapper = container.querySelector("div.image");
 
-    fireEvent.click(previewTrigger);
-
-    const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByRole("img", { name: "Flower" })).toHaveAttribute(
-      "src",
-      "/flower.jpg"
-    );
-    expect(within(dialog).getByText("Flower")).toBeInTheDocument();
+    expect(wrapper).toHaveStyle({ textAlign: "center" });
+    expect(wrapper).toContainElement(image);
+    expect(image).toHaveAttribute("align", "center");
+    expect(image).toHaveAttribute("width", "240");
+    expect(screen.queryByRole("button", { name: "Preview Flower" })).not.toBeInTheDocument();
   });
 });
