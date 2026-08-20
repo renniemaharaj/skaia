@@ -4,6 +4,30 @@ import { describe, expect, it, vi } from "vitest";
 import { MediaPlaceholder } from "./MediaPlaceholder";
 
 describe("MediaPlaceholder", () => {
+  it("opens its own media in the lightbox by default", () => {
+    render(<MediaPlaceholder alt="Gallery sunset" href="/sunset.webp" mediaType="image" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview Gallery sunset" }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getAllByRole("img", { name: "Gallery sunset" })).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "Close media preview" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("can explicitly disable lightbox preview", () => {
+    render(
+      <MediaPlaceholder
+        alt="Decorative texture"
+        href="/texture.webp"
+        mediaType="image"
+        previewable={false}
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: /Preview/ })).not.toBeInTheDocument();
+  });
+
   it("shows an editable placeholder when no content server URL is configured", () => {
     render(<MediaPlaceholder alt="Payroll entry screen" mediaType="image" />);
 

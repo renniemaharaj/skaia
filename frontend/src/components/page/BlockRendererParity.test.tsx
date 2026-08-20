@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { BlockRenderer } from "./BlockRenderer";
 import { configForNewSection } from "./interactiveTypes";
@@ -86,6 +86,8 @@ describe("BlockRenderer family parity", () => {
     expect(await screen.findByRole("heading", { name: "Fixture hero" })).toBeInTheDocument();
     expect(container.querySelector("section.hero-banner.hero-v1")).toBeInTheDocument();
     expect(container.querySelector('img[src="/fixture.webp"]')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Preview Fixture hero background image" }));
+    expect(screen.getByRole("button", { name: "Close media preview" })).toBeInTheDocument();
   });
 
   it("preserves the datasource family empty state without requiring saved data", async () => {

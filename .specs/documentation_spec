@@ -86,6 +86,11 @@ forum documentation projection, documentation SEO/cache/realtime, or migration
   duplicate primary save control below the editor.
 - The forum editor and documentation editor are the same `RichTextEditor`
   boundary. Read-only HTML always passes through `RichTextRenderer`.
+- A custom-page `resource_embed` configured for documentation stores only a
+  documentation slug. It resolves the normal visibility-aware manifest
+  APIs, renders guide HTML through `RichTextRenderer`, subscribes to existing
+  documentation key, and links to the canonical `/doc` route; it never copies
+  documentation records into `pages.content`.
 - In-app link navigation while editing uses Skaia's Prompt through the
   declarative-`BrowserRouter` compatible dirty-navigation guard; data-router-only
   `useBlocker` and native unload/confirm/prompt/alert dialogs are forbidden.

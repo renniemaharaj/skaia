@@ -118,6 +118,14 @@ update specs and .tip with durable facts
 
 ## Last Run Remarks
 
+- Completed the simplified `page_section_media_preview_and_resource_embeds`:
+  every eligible `MediaPlaceholder` directly opens the shared accessible
+  lightbox (including gallery images), and the 20-type registry has one compact
+  `resource_embed` with resource-type/resource dropdowns for products, forum
+  threads, and documentation.
+- Verification passed: complete backend suite; all 221 frontend tests; lint,
+  TypeScript, media/native-dialog/loading/form policies, and production build.
+
 - Completed `guest_and_provisional_account_containment`: new accounts now use a
   server-owned 30-minute-or-TOTP trust decision, a closed deny-before-work HTTP
   registry, DB-backed sensitive WS policy, Redis mutation/upgrade/chat budgets,

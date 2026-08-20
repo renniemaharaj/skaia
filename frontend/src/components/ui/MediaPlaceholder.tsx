@@ -1,4 +1,5 @@
 import {
+  Fragment,
   type CSSProperties,
   type ImgHTMLAttributes,
   type ReactElement,
@@ -7,6 +8,7 @@ import {
   useState,
 } from "react";
 import "./MediaPlaceholder.css";
+import { MediaPreviewLightbox } from "./MediaPreviewLightbox";
 
 export type MediaType = "audio" | "image" | "video";
 export type MediaLayout = "background" | "block" | "fill" | "inline" | "thumbnail";
@@ -37,6 +39,8 @@ export interface MediaPlaceholderProps {
   muted?: boolean;
   /** Make the rendered media frame keyboard- and pointer-activatable. */
   onActivate?: () => void;
+  /** Open this media in the shared lightbox when activated. Defaults to true. */
+  previewable?: boolean;
   onEnded?: () => void;
   onError?: () => void;
   onReady?: () => void;
@@ -85,12 +89,14 @@ export function MediaPlaceholder({
   playsInline = false,
   poster,
   preload = "metadata",
+  previewable = true,
   preserveFrame = layout !== "block",
   showCaption = layout === "block",
   size,
   style,
   videoRef,
 }: MediaPlaceholderProps) {
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [mediaState, setMediaState] = useState<MediaState>(() => ({
     href,
     status: initialStatus(href),
@@ -143,63 +149,74 @@ export function MediaPlaceholder({
   ]
     .filter(Boolean)
     .join(" ");
+  const activate =
+    onActivate ?? (previewable && !decorative && href ? () => setPreviewOpen(true) : undefined);
 
   return (
-    <figure
-      aria-hidden={decorative || undefined}
-      aria-busy={status === "loading"}
-      aria-label={onActivate ? `Preview ${alt}` : undefined}
-      className={classes}
-      data-media-status={status}
-      data-preserve-frame={preserveFrame}
-      onClick={
-        onActivate
-          ? event => {
-              event.preventDefault();
-              event.stopPropagation();
-              onActivate();
-            }
-          : undefined
-      }
-      onKeyDown={
-        onActivate
-          ? event => {
-              if (event.key !== "Enter" && event.key !== " ") return;
-              event.preventDefault();
-              event.stopPropagation();
-              onActivate();
-            }
-          : undefined
-      }
-      role={onActivate ? "button" : undefined}
-      style={frameStyle}
-      tabIndex={onActivate ? 0 : undefined}
-    >
-      {media}
-      {status === "loading" && (
-        <div className="media-placeholder-skeleton" role="status">
-          <span>Loading {alt}</span>
-          <i />
-          <i />
-          <i />
-        </div>
+    <Fragment>
+      <figure
+        aria-hidden={decorative || undefined}
+        aria-busy={status === "loading"}
+        aria-label={activate ? `Preview ${alt}` : undefined}
+        className={classes}
+        data-media-status={status}
+        data-preserve-frame={preserveFrame}
+        onClick={
+          activate
+            ? event => {
+                event.preventDefault();
+                event.stopPropagation();
+                activate();
+              }
+            : undefined
+        }
+        onKeyDown={
+          activate
+            ? event => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                event.stopPropagation();
+                activate();
+              }
+            : undefined
+        }
+        role={activate ? "button" : undefined}
+        style={frameStyle}
+        tabIndex={activate ? 0 : undefined}
+      >
+        {media}
+        {status === "loading" && (
+          <div className="media-placeholder-skeleton" role="status">
+            <span>Loading {alt}</span>
+            <i />
+            <i />
+            <i />
+          </div>
+        )}
+        {status === "empty" && (
+          <div className="media-placeholder-message">
+            <strong>Placeholder for asset here</strong>
+            <span>{alt}</span>
+            <small>{`Add a content server ${mediaType} URL to display this asset.`}</small>
+          </div>
+        )}
+        {status === "error" && (
+          <div className="media-placeholder-message" role="alert">
+            <strong>Asset failed to load</strong>
+            <span>{alt}</span>
+            <small>The content server asset is unavailable.</small>
+          </div>
+        )}
+        {status === "ready" && showCaption && <figcaption>{alt}</figcaption>}
+      </figure>
+      {previewOpen && href && (
+        <MediaPreviewLightbox
+          items={[{ url: href, filename: alt, type: mediaType }]}
+          index={0}
+          onClose={() => setPreviewOpen(false)}
+        />
       )}
-      {status === "empty" && (
-        <div className="media-placeholder-message">
-          <strong>Placeholder for asset here</strong>
-          <span>{alt}</span>
-          <small>{`Add a content server ${mediaType} URL to display this asset.`}</small>
-        </div>
-      )}
-      {status === "error" && (
-        <div className="media-placeholder-message" role="alert">
-          <strong>Asset failed to load</strong>
-          <span>{alt}</span>
-          <small>The content server asset is unavailable.</small>
-        </div>
-      )}
-      {status === "ready" && showCaption && <figcaption>{alt}</figcaption>}
-    </figure>
+    </Fragment>
   );
 }
 

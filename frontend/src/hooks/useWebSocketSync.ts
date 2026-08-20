@@ -185,6 +185,7 @@ export const useWebSocketSync = () => {
 
             case "store:update":
               handleStoreUpdate(payload);
+              window.dispatchEvent(new CustomEvent("store:updated", { detail: payload }));
               return;
 
             case "notification":

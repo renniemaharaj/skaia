@@ -89,6 +89,7 @@ export const InlineProduct = ({
                 mediaType={coverIsVideo ? "video" : "image"}
                 muted
                 playsInline
+                previewable={false}
                 preserveFrame
                 showCaption={false}
                 size={{ height: "100%", width: "100%" }}

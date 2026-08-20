@@ -20,6 +20,8 @@ interface MediaPreviewLightboxProps {
 
 const isVideo = (item: PreviewMediaItem) =>
   item.mime_type?.startsWith("video/") || item.type === "video";
+const isAudio = (item: PreviewMediaItem) =>
+  item.mime_type?.startsWith("audio/") || item.type === "audio";
 
 export function MediaPreviewLightbox({
   items,
@@ -90,8 +92,9 @@ export function MediaPreviewLightbox({
             fit="contain"
             href={item.url}
             layout="fill"
-            mediaType={isVideo(item) ? "video" : "image"}
+            mediaType={isVideo(item) ? "video" : isAudio(item) ? "audio" : "image"}
             playsInline
+            previewable={false}
             preserveFrame
             showCaption={false}
             size={{ height: "100%", width: "100%" }}

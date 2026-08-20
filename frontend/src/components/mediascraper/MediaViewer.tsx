@@ -72,6 +72,7 @@ export function MediaViewer({ job }: { job: MediaScrapeJob }) {
               href={item.thumbnail}
               layout="thumbnail"
               mediaType="image"
+              onActivate={() => setSelectedImage(item.link)}
               preserveFrame
               showCaption={false}
               size={{ height: 40, width: 40 }}

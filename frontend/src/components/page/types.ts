@@ -40,7 +40,7 @@ export const SECTION_TYPE_LABELS: Record<string, string> = {
   image_gallery: "Image Gallery", feature_grid: "Feature Grid (icon tiles)", cta: "Call to Action",
   event_highlights: "Event Highlights", profile_card: "Profile Card", rich_text: "Rich Text", code_editor: "Code Editor",
   data_sources: "Data Sources", derived_section: "Derived Section", custom_section: "Custom Section", form: "Form",
-  qa: "Questions & Answers", survey: "Survey", poll: "Poll", vote: "Voting",
+  qa: "Questions & Answers", survey: "Survey", poll: "Poll", vote: "Voting", resource_embed: "Resource Embed",
 };
 export interface SectionTypeGroup { id: string; label: string; description?: string; types: SectionType[]; }
 export const SECTION_TYPE_GROUPS: SectionTypeGroup[] = [
@@ -48,6 +48,7 @@ export const SECTION_TYPE_GROUPS: SectionTypeGroup[] = [
   { id: "content", label: "Content blocks", types: ["card_group", "stat_cards", "social_links", "image_gallery", "feature_grid"] },
   { id: "rich", label: "Rich content", types: ["rich_text", "code_editor", "data_sources", "derived_section", "custom_section"] },
   { id: "interactive", label: "Interactive", types: ["form", "qa", "survey", "poll", "vote"] },
+  { id: "embeds", label: "Resource embeds", description: "Place an existing Skaia resource on this page.", types: ["resource_embed"] },
 ];
 
 export interface DataSourceCreator { id: number; username: string; display_name: string; avatar_url: string; }

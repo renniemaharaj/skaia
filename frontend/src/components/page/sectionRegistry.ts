@@ -1,7 +1,7 @@
 export const SECTION_TYPES = [
   "hero", "card_group", "stat_cards", "social_links", "image_gallery", "feature_grid",
   "cta", "event_highlights", "profile_card", "rich_text", "code_editor", "data_sources",
-  "derived_section", "custom_section", "form", "qa", "survey", "poll", "vote",
+  "derived_section", "custom_section", "form", "qa", "survey", "poll", "vote", "resource_embed",
 ] as const;
 
 export type SectionType = (typeof SECTION_TYPES)[number];

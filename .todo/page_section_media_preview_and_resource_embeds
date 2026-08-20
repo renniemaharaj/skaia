@@ -1,0 +1,58 @@
+# Page Section Media Preview and Resource Embeds
+
+## Context
+
+Page-section media uses the shared validated media primitive but does not consistently
+activate the shared preview lightbox. The builder also cannot yet place existing store
+products, forum threads, or documentation sets as page sections.
+
+## Goal
+
+- Make every URL-backed `MediaPlaceholder` keyboard- and pointer-previewable
+  through the shared media lightbox by default, including gallery images.
+- Add one registered `resource_embed` section with compact resource-type and
+  resource dropdowns, bounded public reads,
+  resilient loading/error/empty states, and canonical in-app links.
+- Preserve the authoritative `pages.content` document model and the existing
+  store, forum, and documentation ownership/visibility boundaries.
+
+## Non-Goals
+
+- Do not copy product, thread, or documentation bodies into page JSON.
+- Do not add iframe/remote-URL embedding or a second resource API.
+- Do not add product mutation, forum participation, or documentation authoring
+  controls to embedded sections.
+
+## Steps
+
+1. Make `MediaPlaceholder` directly own its lightbox activation and cover its
+   pointer, keyboard, failure-state, opt-out, and teardown behavior.
+2. Extend the backend/frontend section registries with one generic
+   resource-reference section type.
+3. Implement a shared resource-embed renderer that uses existing bounded public
+   APIs, exposes picker controls only to page editors, and renders read-only
+   linked summaries through existing domain primitives.
+4. Add gallery-click, media, renderer, registry, skeleton, picker,
+   loading/error, and stale-request regression tests.
+5. Reconcile custom-page/frontend/documentation contracts and run the affected
+   backend/frontend quality gates.
+
+## Verification
+
+- Backend registry and page compatibility tests, then complete backend suite.
+- Focused page-section tests, complete frontend tests, lint, TypeScript, media
+  policy, native-dialog policy, production build, and `git diff --check`.
+- Todo pairing/status checks and spec reference checks.
+
+## References
+
+- `.specs/custom_page_section_compatibility_spec`
+- `.specs/frontend_spec`
+- `.specs/documentation_spec`
+- `.specs/security_architecture_spec`
+- `.routines/worker`
+- `.routines/planner`
+- `.routines/auditor`
+- `backend/internal/s_registry/registry.go`
+- `frontend/src/components/page/sectionRendererRegistry.tsx`
+- `frontend/src/components/ui/MediaPlaceholder.tsx`

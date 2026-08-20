@@ -44,6 +44,10 @@ auth, store, cache, WebSocket emission, uploads, SSR, or grengo proxy behavior.
   authority. Saves accept the observed numeric/string IDs and string/object
   config encodings, preserve unknown fields, and validate registered types,
   integrations, components, and interactive definitions.
+- Its allowlist contains 20 renderer types. The generic resource embed keeps
+  only a supported resource type plus a product/thread identifier or
+  documentation slug in `pages.content` and resolves data through the
+  existing source-domain APIs and policies.
 
 ## Middleware Contracts
 

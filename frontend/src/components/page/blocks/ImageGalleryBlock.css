@@ -58,6 +58,7 @@
  border: 1px solid var(--border-color);
  border-radius: 12px;
  box-sizing: border-box;
+ pointer-events: none;
 }
 
 .showcase-overlay h3 {
@@ -270,6 +271,7 @@
  right: 0;
  padding: 24px 32px;
  background: linear-gradient(transparent, var(--overlay-dark-heavy));
+ pointer-events: none;
 }
 
 .gallery-wide-overlay h3 {
@@ -277,6 +279,13 @@
  font-size: 1.4rem;
  margin: 0;
  text-shadow: 0 2px 8px var(--overlay-dark-heavy);
+}
+
+.showcase-overlay.is-editable .pb-edit-btn,
+.showcase-overlay.is-editable .pb-inline-input,
+.gallery-wide-overlay.is-editable .pb-edit-btn,
+.gallery-wide-overlay.is-editable .pb-inline-input {
+ pointer-events: auto;
 }
 
 /* Card images (grid) */
@@ -289,7 +298,7 @@
 .gallery-card-item {
  position: relative;
  aspect-ratio: 3 / 4;
- cursor: pointer;
+
  grid-column: span 4;
 }
 

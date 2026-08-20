@@ -46,13 +46,13 @@ func TestRegistryDefinitionsIncludeInteractivePageSections(t *testing.T) {
 	}
 }
 
-func TestRegistryContainsExactlyTheNineteenPageSectionTypes(t *testing.T) {
+func TestRegistryContainsExactlyTheTwentyPageSectionTypes(t *testing.T) {
 	expected := map[string]bool{
 		"hero": true, "card_group": true, "stat_cards": true, "social_links": true,
 		"image_gallery": true, "feature_grid": true, "cta": true, "event_highlights": true,
 		"profile_card": true, "rich_text": true, "code_editor": true, "data_sources": true,
 		"derived_section": true, "custom_section": true, "form": true, "qa": true,
-		"survey": true, "poll": true, "vote": true,
+		"survey": true, "poll": true, "vote": true, "resource_embed": true,
 	}
 	definitions := List()
 	if len(definitions) != len(expected) {

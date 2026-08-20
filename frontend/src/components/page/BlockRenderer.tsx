@@ -129,6 +129,7 @@ const SectionBlock = memo(function SectionBlock({
         onItemCreate={onItemCreate}
         onItemUpdate={onItemUpdate}
         onItemDelete={onItemDelete}
+        preview={preview}
       />
     </SectionFrame>
   );

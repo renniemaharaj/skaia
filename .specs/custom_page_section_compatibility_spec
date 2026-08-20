@@ -42,9 +42,19 @@ Compatibility is intentional:
 
 ## Registry
 
-Backend `internal/s_registry` and frontend `sectionRegistry.ts` list the 19
+Backend `internal/s_registry` and frontend `sectionRegistry.ts` list the 20
 renderer types and presentation metadata. They are allowlists and dispatch
 registries, not a claim that every config shares one schema.
+
+`resource_embed` stores only a supported resource type, the selected
+product/thread identifier or documentation slug. Its renderer
+reads the existing store, forum, and visibility-aware documentation APIs; page
+JSON never becomes a copied resource authority. Picker lists retain the source
+API bounds, exact
+resources subscribe through their existing realtime keys, and reconnect or
+invalidation refetches remain authoritative.
+Browse previews render an inert reference-shaped fallback and never fan out
+source-domain enrichment reads or subscriptions.
 
 The frontend registry maps each canonical type to a lazy renderer and clipboard
 sanitizer. Unknown types receive a visible safe fallback and remain removable
@@ -60,6 +70,9 @@ skeletons and a near-viewport boundary, while preview sections use the clipped
 thumbnail as their observer root. The hero fallback preserves the real
 500px/400px full-bleed silhouette; collection fallbacks retain their actual
 text-only, icon-led, or media-led hierarchy instead of sharing one generic card.
+Each eligible `MediaPlaceholder` directly opens the shared lightbox. URL-backed
+image, video, and audio frames are pointer/keyboard activatable even when loading
+fails; decorative, nested-lightbox, and inert preview callers explicitly opt out.
 Its config helper:
 
 - accepts both config encodings;
@@ -81,6 +94,8 @@ Reusable datasource-backed section presets remain in the existing
 - Duplicate pages clear interactive records.
 - Page WebSocket events are content-free invalidations.
 - HTML and component output retain their existing sanitization boundaries.
+- Resource embeds never bypass source-domain visibility or mutation policy and
+  expose only canonical read links; they do not add iframe or remote-URL embeds.
 
 ## Retirement guard
 
@@ -93,5 +108,7 @@ shadow projections, quarantine, themes, and cutover telemetry are disposable.
 - Backend fixture: `backend/internal/page/testdata/production_page_shapes.json`
 - Backend tests: `internal/page/compatibility_test.go`, `interactive_test.go`,
   and `internal/s_registry/registry_test.go`
-- Frontend tests: `sectionCompatibility.test.ts`, `BlockRenderer.test.tsx`, and
+- Frontend tests: `sectionCompatibility.test.ts`, `BlockRenderer.test.tsx`,
+  `BlockRendererParity.test.tsx`, `MediaPlaceholder.test.tsx`,
+  `ImageGalleryBlock.test.tsx`, `ResourceEmbedBlock.test.tsx`, and
   `SectionShellControls.test.tsx`

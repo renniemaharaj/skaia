@@ -107,6 +107,11 @@ operational policies.
 
 ## Last Run Remarks
 
+- Reconciled and closed `page_section_media_preview_and_resource_embeds` after
+  simplifying the page registry to one generic `resource_embed` (20 total
+  types), moving lightbox ownership directly into `MediaPlaceholder`, and
+  aligning the backend, frontend, custom-page, and documentation contracts.
+
 - Reconciled the completed guest/provisional implementation into the security,
   auth, backend, frontend and realtime contracts: persisted age/TOTP trust,
   closed guest exceptions, aggregate-only analytics, public profile DTOs,

@@ -388,7 +388,7 @@ export const ImageGalleryBlock = ({
                 size={{ height: "100%", width: "100%" }}
               />
               {item.heading && (
-                <div className="gallery-wide-overlay">
+                <div className={`gallery-wide-overlay${canEdit ? " is-editable" : ""}`}>
                   {canEdit ? (
                     <EditableText
                       value={item.heading}
@@ -446,7 +446,7 @@ export const ImageGalleryBlock = ({
                 size={{ height: "100%", width: "100%" }}
               />
               {item.heading && (
-                <div className="gallery-wide-overlay">
+                <div className={`gallery-wide-overlay${canEdit ? " is-editable" : ""}`}>
                   {canEdit ? (
                     <EditableText
                       value={item.heading}
@@ -504,7 +504,7 @@ export const ImageGalleryBlock = ({
               size={{ height: "100%", width: "100%" }}
             />
             {(item.heading || canEdit) && (
-              <div className="showcase-overlay">
+              <div className={`showcase-overlay${canEdit ? " is-editable" : ""}`}>
                 {canEdit ? (
                   <EditableText
                     value={item.heading}

@@ -1,10 +1,10 @@
-import { lazy, type ComponentType } from "react";
+import { type ComponentType, lazy } from "react";
 import { sectionForClipboard } from "./interactiveTypes";
 import {
-  SECTION_TYPES,
   type PageDocumentID,
   type PageItem,
   type PageSection,
+  SECTION_TYPES,
   type SectionType,
 } from "./types";
 
@@ -55,6 +55,9 @@ const ImageGalleryBlock = lazy(() =>
 const CodeEditorBlock = lazy(() =>
   import("./blocks/CodeEditorBlock").then(module => ({ default: module.CodeEditorBlock }))
 );
+const ResourceEmbedBlock = lazy(() =>
+  import("./blocks/ResourceEmbedBlock").then(module => ({ default: module.ResourceEmbedBlock }))
+);
 
 export type SectionBlockComponent = ComponentType<{
   section: PageSection;
@@ -64,6 +67,7 @@ export type SectionBlockComponent = ComponentType<{
   onItemCreate: (sectionId: PageDocumentID, item: Omit<PageItem, "id">) => void;
   onItemUpdate: (item: PageItem) => void;
   onItemDelete: (id: PageDocumentID) => void;
+  preview?: boolean;
 }>;
 
 const components = {
@@ -86,6 +90,7 @@ const components = {
   survey: InteractiveSectionBlock,
   poll: InteractiveSectionBlock,
   vote: InteractiveSectionBlock,
+  resource_embed: ResourceEmbedBlock,
 } satisfies Record<SectionType, SectionBlockComponent>;
 
 export interface SectionRendererDefinition {
@@ -122,6 +127,7 @@ export const SECTION_RENDERER_REGISTRY = {
   survey: definition("survey"),
   poll: definition("poll"),
   vote: definition("vote"),
+  resource_embed: definition("resource_embed"),
 } satisfies SectionRendererRegistry;
 
 export const SECTION_RENDERER_TYPES = Object.freeze([...SECTION_TYPES].sort());

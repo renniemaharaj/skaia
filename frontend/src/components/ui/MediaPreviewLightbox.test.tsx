@@ -55,4 +55,17 @@ describe("MediaPreviewLightbox", () => {
     expect(video).toHaveAttribute("controls");
     expect(video).toHaveAttribute("playsinline");
   });
+
+  it("renders audio as audio instead of falling back to an image", () => {
+    render(
+      <MediaPreviewLightbox
+        items={[{ url: "/uploads/episode.ogg", filename: "Episode", type: "audio" }]}
+        index={0}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText("Episode").tagName).toBe("AUDIO");
+    expect(screen.queryByRole("img", { name: "Episode" })).not.toBeInTheDocument();
+  });
 });

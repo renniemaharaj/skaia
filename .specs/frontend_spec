@@ -62,6 +62,10 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   media, and commerce. It uses a native modal lifecycle, restores prior focus,
   supports Escape and arrow-key navigation, and keeps controls independent of
   media load success.
+- Every eligible `MediaPlaceholder` directly opens its image/video/audio in the
+  shared lightbox by pointer or keyboard, including from stable failure states.
+  Callers can explicitly opt out for decorative, nested-lightbox, or inert
+  preview media; no section-level preview boundary is required.
 - Viewport deferral is an explicit mount boundary, not merely a `Suspense`
   fallback. `useViewportActivation` defaults to one-shot activation 200px before
   intersection, accepts custom scroll roots, and renders eagerly when browser
@@ -134,6 +138,11 @@ navigation/narration, WebSocket consumers, or page-builder UX.
 - Section colors are inherited or literal; content scale applies to the shared
   inner wrapper. `PageBuilder` always saves the complete authoritative document
   with the page update endpoint.
+- `resource_embed` persists a supported resource type plus its source identifier
+  or slug. Its compact editor uses resource-type and resource dropdowns backed by bounded existing catalog
+  APIs; their read-only renderers retain shared media/rich-text sanitization,
+  canonical links, source visibility decisions, exact realtime subscriptions,
+  reconnect refetch, and explicit empty/loading/error/retry states.
 - Datasource-backed reusable designs use the `SectionPreset` type and
   `/config/section-presets`; `CustomSection` remains a deprecated type alias and
   the backend retains the old route during the compatibility window.

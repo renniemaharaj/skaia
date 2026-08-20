@@ -66,7 +66,7 @@ type PagePreview struct {
 type PageSection struct {
 	ID           int64       `json:"id"`
 	DisplayOrder int         `json:"display_order"`
-	SectionType  string      `json:"section_type"` // hero, card_group, stat_cards, social_links, image_gallery, feature_grid, cta
+	SectionType  string      `json:"section_type"` // canonical key from internal/s_registry
 	Heading      string      `json:"heading"`
 	Subheading   string      `json:"subheading"`
 	Config       string      `json:"config"` // raw JSON

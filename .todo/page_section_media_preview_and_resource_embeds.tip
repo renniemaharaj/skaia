@@ -1,0 +1,22 @@
+<--/------->
+
+## page_section_media_preview_and_resource_embeds
+
+### Current Progress
+
+- **Phase 1: Contract and registry reconciliation** - ✅ Complete
+- **Phase 2: Section media preview boundary** - ✅ Complete
+- **Phase 3: Resource embed sections** - ✅ Complete
+- **Phase 4: Verification and documentation** - ✅ Complete
+
+### Next Steps
+
+- [x] Added the 20-type backend/frontend registry and renderer-shaped skeletons.
+- [x] Made every eligible `MediaPlaceholder` directly open the shared image/video/audio lightbox; gallery overlays no longer intercept viewer or editor card-layout clicks while pencil/input controls remain interactive.
+- [x] Added one compact, reference-only resource embed with resource-type and resource dropdowns for products, forum threads, and documentation.
+- [x] Reconciled backend, frontend, custom-page, and documentation specs.
+- [x] 2026-08-20: complete backend suite; all 221 frontend tests; lint,
+  TypeScript, media/native-dialog/loading/form policy checks and production
+  build passed. Todo/reference/diff checks passed after final trace updates.
+
+<--/------->

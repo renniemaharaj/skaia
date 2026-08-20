@@ -93,6 +93,12 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Run Remarks
 
+- Audited direct `MediaPlaceholder` preview activation and the generic resource
+  embed across viewer/editor gallery overlay hit-testing, nested preview ownership, source
+  visibility, picker bounds, realtime teardown, loading/error/empty states, and
+  responsive/token CSS. No Critical, High, or Medium issue remains after the
+  complete backend/frontend verification set.
+
 - Completed the affected-system containment audit after implementation. Guest
   access is browse-only by default with closed low-cost exceptions; provisional
   accounts cannot reach durable or expensive actions; Grengo/media/teleport,

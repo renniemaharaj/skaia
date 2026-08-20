@@ -20,8 +20,8 @@ import {
 
 describe("legacy page section compatibility", () => {
   it("freezes the complete 19-type frontend registry", () => {
-    expect(SECTION_TYPES).toHaveLength(19);
-    expect(new Set(SECTION_TYPES).size).toBe(19);
+    expect(SECTION_TYPES).toHaveLength(20);
+    expect(new Set(SECTION_TYPES).size).toBe(20);
 
     const grouped = SECTION_TYPE_GROUPS.flatMap(group => group.types);
     expect(new Set(grouped)).toEqual(new Set(SECTION_TYPES));

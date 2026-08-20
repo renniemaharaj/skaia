@@ -69,6 +69,8 @@ export function sectionSkeletonHeight(section: PageSection): number {
     case "derived_section":
     case "custom_section":
       return 300;
+    case "resource_embed":
+      return 420;
     case "form":
     case "qa":
     case "survey":
@@ -312,6 +314,20 @@ function InteractiveSkeleton({ section }: SectionSkeletonProps) {
   );
 }
 
+function ResourceEmbedSkeleton({ media = false }: { media?: boolean }) {
+  return (
+    <div className="section-skeleton section-skeleton--data" data-skeleton-kind="resource-embed">
+      <Heading compact />
+      <div className="section-skeleton__profile-layout">
+        {media && <SkeletonPrimitive shape="media" className="section-skeleton__profile-banner" />}
+        <div className="section-skeleton__profile-copy">
+          <SkeletonText lines={5} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UnsupportedSkeleton() {
   return (
     <div
@@ -363,6 +379,9 @@ export function SectionSkeleton({ section }: SectionSkeletonProps) {
     case "derived_section":
     case "custom_section":
       content = <DataSkeleton />;
+      break;
+    case "resource_embed":
+      content = <ResourceEmbedSkeleton media />;
       break;
     case "form":
     case "qa":
