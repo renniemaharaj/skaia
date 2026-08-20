@@ -19,7 +19,12 @@ describe("ProductMediaTable media", () => {
     const onChange = vi.fn();
     render(<ProductMediaTable media={media} editable onChange={onChange} />);
 
-    fireEvent.error(screen.getByLabelText("Demo video"));
+    const video = screen.getByLabelText("Demo video");
+    const thumbnail = video.closest("figure");
+    expect(thumbnail).toHaveClass("product-media-table__thumb");
+    expect(thumbnail?.parentElement).toHaveClass("product-media-table__file");
+
+    fireEvent.error(video);
     const failure = screen.getByRole("alert");
     expect(failure).toHaveTextContent("Demo video");
     fireEvent.click(failure);

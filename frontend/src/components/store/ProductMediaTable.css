@@ -44,12 +44,7 @@
 }
 
 .product-media-table__thumb {
-  width: 32px;
-  height: 32px;
   flex: 0 0 32px;
-  overflow: hidden;
-  border-radius: 4px;
-  background: var(--bg-tertiary);
 }
 
 .product-media-table__thumb img,

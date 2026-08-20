@@ -20,7 +20,9 @@ export const ImageCardGrid = ({ items }: { items: ImageCardItem[] }) => (
       const width = item.width ?? "regular";
       return (
         <ContentFlatCard key={index} className={`image-card-item image-card-item--${width}`}>
-          <div className="image-card-image">
+          <div
+            className={`image-card-image${item.image_url || !item.icon ? " image-card-image--media" : ""}`}
+          >
             {item.image_url || !item.icon ? (
               <MediaPlaceholder
                 alt={item.heading || "Card image"}

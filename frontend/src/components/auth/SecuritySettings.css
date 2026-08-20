@@ -141,10 +141,6 @@
   margin: 16px 0;
 }
 
-.sec-panel__qr img {
-  border-radius: 8px;
-}
-
 .sec-panel__secret {
   background: var(--bg-tertiary);
   padding: 12px 16px;

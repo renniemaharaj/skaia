@@ -38,7 +38,11 @@ describe("UserUploads media", () => {
 
     const image = await screen.findByRole("img", { name: "Photo" });
     const video = screen.getByLabelText("Clip");
-    expect(image.closest("figure")).toHaveClass("media-placeholder--fill");
+    const imagePlaceholder = image.closest("figure");
+    expect(imagePlaceholder).toHaveClass("media-placeholder--fill");
+    expect(imagePlaceholder?.parentElement).toHaveClass("up-upload-thumb");
+    expect(imagePlaceholder?.parentElement).not.toHaveClass("up-upload-thumb--file");
+    expect(imagePlaceholder?.parentElement?.style.backgroundColor).toBe("");
     expect(video.closest("figure")).toHaveAttribute("data-preserve-frame", "true");
 
     fireEvent.error(image);

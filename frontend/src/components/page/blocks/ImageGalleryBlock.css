@@ -242,8 +242,6 @@
 .gallery-wide-item {
  position: relative;
  height: 280px;
- border-radius: 16px;
- overflow: hidden;
  cursor: pointer;
 }
 
@@ -291,10 +289,7 @@
 .gallery-card-item {
  position: relative;
  aspect-ratio: 3 / 4;
- border-radius: 12px;
- overflow: hidden;
  cursor: pointer;
- border: 1px solid var(--border-color);
  grid-column: span 4;
 }
 

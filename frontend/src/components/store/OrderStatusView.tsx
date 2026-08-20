@@ -127,22 +127,23 @@ const OrderSubmittedView: React.FC<Props> = ({
             const displayName = product?.name ?? `Product #${item.product_id}`;
             return (
               <ContentFlatCard key={`${item.product_id}-${index}`} className="order-status-item">
-                <div className="order-status-item-media">
-                  {product?.image_url ? (
-                    <MediaPlaceholder
-                      alt={displayName}
-                      fit="cover"
-                      href={product.image_url}
-                      layout="fill"
-                      mediaType="image"
-                      preserveFrame
-                      showCaption={false}
-                      size={{ height: "100%", width: "100%" }}
-                    />
-                  ) : (
+                {product?.image_url ? (
+                  <MediaPlaceholder
+                    alt={displayName}
+                    className="order-status-item-media"
+                    fit="cover"
+                    href={product.image_url}
+                    layout="thumbnail"
+                    mediaType="image"
+                    preserveFrame
+                    showCaption={false}
+                    size={{ height: "3.5rem", width: "3.5rem" }}
+                  />
+                ) : (
+                  <div className="order-status-item-media order-status-item-media--fallback">
                     <span>{displayName.slice(0, 1).toUpperCase()}</span>
-                  )}
-                </div>
+                  </div>
+                )}
                 <div className="order-status-item-info">
                   <h3>{displayName}</h3>
                   <span>

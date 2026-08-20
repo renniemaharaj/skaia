@@ -609,25 +609,26 @@ export const ProductPage = () => {
                       to={`/store/product/${sp.id}`}
                       className="similar-product-item"
                     >
-                      <div className="similar-product-thumb">
-                        {similarCover ? (
-                          <MediaPlaceholder
-                            alt={sp.name}
-                            controls={false}
-                            fit="cover"
-                            href={similarCover.url}
-                            layout="thumbnail"
-                            mediaType={similarCoverIsVideo ? "video" : "image"}
-                            muted
-                            playsInline
-                            preserveFrame
-                            showCaption={false}
-                            size={{ height: 64, width: 64 }}
-                          />
-                        ) : (
+                      {similarCover ? (
+                        <MediaPlaceholder
+                          alt={sp.name}
+                          className="similar-product-thumb"
+                          controls={false}
+                          fit="cover"
+                          href={similarCover.url}
+                          layout="thumbnail"
+                          mediaType={similarCoverIsVideo ? "video" : "image"}
+                          muted
+                          playsInline
+                          preserveFrame
+                          showCaption={false}
+                          size={{ height: 64, width: 64 }}
+                        />
+                      ) : (
+                        <div className="similar-product-thumb similar-product-thumb--fallback">
                           <Package size={18} />
-                        )}
-                      </div>
+                        </div>
+                      )}
                       <div className="similar-product-info">
                         <span className="similar-product-name">{sp.name}</span>
                         {sp.description && (

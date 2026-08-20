@@ -2,19 +2,9 @@
 /* Image */
 .cdp-image {
   position: relative;
-  overflow: hidden;
-  background: var(--bg-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.cdp-image--top {
-  border-radius: var(--card-radius) var(--card-radius) 0 0;
-}
-
-.cdp-image--bottom {
-  border-radius: 0 0 var(--card-radius) var(--card-radius);
 }
 
 .cdp-image--background {

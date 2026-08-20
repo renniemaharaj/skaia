@@ -685,8 +685,9 @@
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  overflow: hidden;
   cursor: pointer;
+}
+.up-upload-thumb--file {
   background: var(--bg-tertiary);
 }
 .up-upload-thumb img,
@@ -700,6 +701,10 @@
 .up-upload-thumb:hover img,
 .up-upload-thumb:hover video {
   transform: scale(1.03);
+}
+
+.up-upload-table-thumb {
+  flex: 0 0 32px;
 }
 
 .up-upload-type-badge {
@@ -992,7 +997,6 @@
 }
 
 .up-img-preview {
-  border-radius: 8px;
   object-fit: cover;
   display: block;
 }

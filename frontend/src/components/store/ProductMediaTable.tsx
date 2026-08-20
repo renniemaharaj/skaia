@@ -137,20 +137,19 @@ export function ProductMediaTable({ media, onChange, editable = false }: Product
             className: "table-view__cell--bold",
             cell: item => (
               <div className="product-media-table__file">
-                <div className="product-media-table__thumb">
-                  <MediaPlaceholder
-                    alt={item.filename}
-                    controls={false}
-                    fit="cover"
-                    href={item.url}
-                    layout="thumbnail"
-                    mediaType={isVideo(item) ? "video" : "image"}
-                    muted
-                    preserveFrame
-                    showCaption={false}
-                    size={{ height: 32, width: 32 }}
-                  />
-                </div>
+                <MediaPlaceholder
+                  alt={item.filename}
+                  className="product-media-table__thumb"
+                  controls={false}
+                  fit="cover"
+                  href={item.url}
+                  layout="thumbnail"
+                  mediaType={isVideo(item) ? "video" : "image"}
+                  muted
+                  preserveFrame
+                  showCaption={false}
+                  size={{ height: 32, width: 32 }}
+                />
                 <span title={item.filename}>{item.filename}</span>
               </div>
             ),

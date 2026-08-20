@@ -79,9 +79,6 @@
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  overflow: hidden;
-  border-radius: var(--radius-sm);
-  background: var(--bg-tertiary);
 }
 
 .vp-stream-meta__preview video,
@@ -345,9 +342,6 @@
   position: relative;
   flex: 0 0 100px;
   height: 56px; /* 16:9 for 100px width approx */
-  border-radius: 4px;
-  overflow: hidden;
-  background: var(--bg-tertiary);
   cursor: pointer;
 }
 
@@ -407,10 +401,8 @@
   width: 48px;
   height: 27px;
   padding: 0;
-  overflow: hidden;
   background: transparent;
   border: 0;
-  border-radius: 2px;
   cursor: pointer;
   transition: transform 0.2s;
 }
@@ -490,7 +482,6 @@
   width: 40px;
   height: 22px;
   object-fit: cover;
-  border-radius: 2px;
 }
 
 .vp-search-result-item span {

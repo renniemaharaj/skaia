@@ -210,8 +210,6 @@
   width: 56px;
   height: 56px;
   object-fit: cover;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
   flex-shrink: 0;
 }
 
@@ -767,10 +765,13 @@
 .order-status-item-media {
   width: 3.5rem;
   aspect-ratio: 1 / 1;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+  flex: 0 0 3.5rem;
+}
+
+.order-status-item-media--fallback {
   background: color-mix(in srgb, var(--primary-color) 8%, transparent);
   border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
   color: var(--text-secondary);
   display: flex;
   align-items: center;

@@ -34,7 +34,6 @@
   width: 100%;
   min-height: clamp(220px, 30vw, 400px);
   max-height: 60vh;
-  background: var(--bg-secondary);
 }
 
 .profile-card-banner > img {

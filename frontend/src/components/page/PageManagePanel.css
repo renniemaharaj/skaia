@@ -18,9 +18,15 @@
 }
 
 .page-manage__image-preview .media-placeholder {
+ width: 100%;
+}
+
+.page-manage__image-preview.has-image {
+ min-height: 0;
+ overflow: visible;
  border: 0;
  border-radius: 0;
- box-shadow: none;
+ background: transparent;
 }
 
 .page-manage__image-row {

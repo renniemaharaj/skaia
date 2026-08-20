@@ -636,12 +636,11 @@ const UserUploads = ({
                 }}
               >
                 <div
-                  className="up-upload-thumb"
+                  className={`up-upload-thumb${isImage(u) || isVideo(u) ? "" : " up-upload-thumb--file"}`}
                   style={{
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "var(--bg-tertiary)",
                     position: "relative",
                   }}
                 >
@@ -798,50 +797,31 @@ const UserUploads = ({
                   onClick={() => setSelectedUpload(u)}
                 >
                   {isImage(u) ? (
-                    <div
-                      style={{
-                        width: "32px",
-                        height: "32px",
-                        borderRadius: "4px",
-                        overflow: "hidden",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <MediaPlaceholder
-                        alt={u.filename}
-                        fit="cover"
-                        href={u.url}
-                        layout="thumbnail"
-                        mediaType="image"
-                        preserveFrame
-                        showCaption={false}
-                        size={{ height: 32, width: 32 }}
-                      />
-                    </div>
+                    <MediaPlaceholder
+                      alt={u.filename}
+                      className="up-upload-table-thumb"
+                      fit="cover"
+                      href={u.url}
+                      layout="thumbnail"
+                      mediaType="image"
+                      preserveFrame
+                      showCaption={false}
+                      size={{ height: 32, width: 32 }}
+                    />
                   ) : isVideo(u) ? (
-                    <div
-                      style={{
-                        width: "32px",
-                        height: "32px",
-                        borderRadius: "4px",
-                        overflow: "hidden",
-                        flexShrink: 0,
-                        backgroundColor: "var(--overlay-dark-heavy)",
-                      }}
-                    >
-                      <MediaPlaceholder
-                        alt={u.filename}
-                        controls={false}
-                        fit="cover"
-                        href={u.url}
-                        layout="thumbnail"
-                        mediaType="video"
-                        muted
-                        preserveFrame
-                        showCaption={false}
-                        size={{ height: 32, width: 32 }}
-                      />
-                    </div>
+                    <MediaPlaceholder
+                      alt={u.filename}
+                      className="up-upload-table-thumb"
+                      controls={false}
+                      fit="cover"
+                      href={u.url}
+                      layout="thumbnail"
+                      mediaType="video"
+                      muted
+                      preserveFrame
+                      showCaption={false}
+                      size={{ height: 32, width: 32 }}
+                    />
                   ) : (
                     <div
                       style={{
