@@ -53,6 +53,11 @@ JSON never becomes a copied resource authority. Picker lists retain the source
 API bounds, exact
 resources subscribe through their existing realtime keys, and reconnect or
 invalidation refetches remain authoritative.
+Product embeds and product pages share one media-carousel/lightbox owner, so
+every product media item retains the same cycling and preview behavior.
+Documentation embeds resolve the first visible guide and render it through the
+shared documentation shell's bounded embedded variant; navigation and content
+scroll within the embed instead of expanding into full-page chrome.
 Browse previews render an inert reference-shaped fallback and never fan out
 source-domain enrichment reads or subscriptions.
 

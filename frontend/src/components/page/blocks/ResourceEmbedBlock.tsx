@@ -1,14 +1,23 @@
-import { BookOpen, ExternalLink, MessageSquare, Package } from "lucide-react";
+import { ExternalLink, MessageSquare } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { Documentation, DocumentationManifest } from "../../../atoms/documentation";
+import type {
+  Documentation,
+  DocumentationArticleView,
+  DocumentationManifest,
+} from "../../../atoms/documentation";
 import type { ForumThread } from "../../../atoms/forum";
 import type { Product } from "../../../atoms/store";
 import { useWebSocketSync } from "../../../hooks/useWebSocketSync";
 import { apiRequest } from "../../../utils/api";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
+import {
+  DocumentationShell,
+  type DocumentationNavSection,
+} from "../../documentation/DocumentationShell";
 import Select from "../../input/Select";
-import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
+import { ProductMediaCarousel } from "../../store/ProductMediaCarousel";
+import { getProductMediaItems } from "../../store/storeMedia";
 import { MoneyAmount } from "../../ui/MoneyAmount";
 import { RichTextRenderer } from "../../ui/RichTextRenderer";
 import { SkeletonPrimitive, SkeletonText } from "../../ui/Skeleton";
@@ -32,7 +41,12 @@ interface EmbedConfig {
   resource_id?: string;
 }
 
-type EmbedResource = Product | ForumThread | DocumentationManifest;
+interface DocumentationEmbedResource {
+  manifest: DocumentationManifest;
+  articleView?: DocumentationArticleView;
+}
+
+type EmbedResource = Product | ForumThread | DocumentationEmbedResource;
 type ResourceType = "product" | "forum_thread" | "documentation";
 
 const RESOURCE_TYPE_OPTIONS: Array<{ value: ResourceType; label: string }> = [
@@ -84,30 +98,14 @@ function ResourceLoading() {
 }
 
 function ProductEmbed({ product }: { product: Product }) {
-  const cover = product.media?.[0];
-  const href = cover?.url || product.image_url;
-  const isVideo = cover?.mime_type?.startsWith("video/") || cover?.type === "video";
+  const media = getProductMediaItems(product);
   return (
     <ContentFlatCard className="resource-embed-card resource-embed-product">
-      <div className="resource-embed-media">
-        {href ? (
-          <MediaPlaceholder
-            alt={product.name}
-            controls={false}
-            fit="cover"
-            href={href}
-            layout="fill"
-            mediaType={isVideo ? "video" : "image"}
-            muted
-            playsInline
-            preserveFrame
-            showCaption={false}
-            size={{ height: "100%", width: "100%" }}
-          />
-        ) : (
-          <Package aria-hidden="true" size={52} />
-        )}
-      </div>
+      <ProductMediaCarousel
+        media={media}
+        alt={product.name}
+        className="product-media-carousel--embed"
+      />
       <div className="resource-embed-copy">
         <span className="resource-embed-eyebrow">Store product</span>
         <h3>{product.name}</h3>
@@ -154,30 +152,68 @@ function ThreadEmbed({ thread }: { thread: ForumThread }) {
 }
 
 function DocumentationEmbed({
-  manifest,
+  resource,
 }: {
-  manifest: DocumentationManifest;
+  resource: DocumentationEmbedResource;
 }) {
+  const { manifest, articleView } = resource;
   const documentation = manifest.documentation;
+  const ungrouped = manifest.articles.filter(article => !article.section_id);
+  const sections: DocumentationNavSection[] = [
+    ...(ungrouped.length
+      ? [
+          {
+            id: "overview",
+            title: "Overview",
+            articles: ungrouped.map(article => ({
+              id: article.id,
+              title: article.title,
+              href: `/doc/${documentation.slug}/${article.slug}`,
+              active: article.id === articleView?.article.id,
+            })),
+          },
+        ]
+      : []),
+    ...manifest.sections.map(section => ({
+      id: section.id,
+      title: section.title,
+      articles: manifest.articles
+        .filter(article => article.section_id === section.id)
+        .map(article => ({
+          id: article.id,
+          title: article.title,
+          href: `/doc/${documentation.slug}/${article.slug}`,
+          active: article.id === articleView?.article.id,
+        })),
+    })),
+  ];
   return (
-    <ContentFlatCard className="resource-embed-card resource-embed-document">
-      <header className="resource-embed-document-header">
-        <BookOpen aria-hidden="true" size={22} />
-        <div>
-          <span className="resource-embed-eyebrow">Documentation</span>
-          <h3>{documentation.title}</h3>
+    <DocumentationShell
+      title={documentation.title}
+      description={documentation.description}
+      catalogHref="/doc"
+      catalogLabel="All documentation"
+      sections={sections}
+      searchValue=""
+      onSearchChange={() => undefined}
+      variant="embedded"
+      openHref={`/doc/${documentation.slug}`}
+    >
+      {articleView ? (
+        <>
+          <header className="documentation-article__hero">
+            <h1>{articleView.article.title}</h1>
+            {articleView.article.summary && <p>{articleView.article.summary}</p>}
+          </header>
+          <RichTextRenderer className="ProseMirror" html={articleView.article.content || ""} />
+        </>
+      ) : (
+        <div className="documentation-empty">
+          <h1>{documentation.title}</h1>
+          <p>No guides have been created yet.</p>
         </div>
-      </header>
-      {documentation.description && <p>{documentation.description}</p>}
-      <div className="resource-embed-guide-list">
-        {manifest.articles.slice(0, 8).map(guide => (
-          <span key={guide.id}>{guide.title}</span>
-        ))}
-      </div>
-      <Link className="resource-embed-link" to={`/doc/${documentation.slug}`}>
-        Open documentation <ExternalLink size={14} />
-      </Link>
-    </ContentFlatCard>
+      )}
+    </DocumentationShell>
   );
 }
 
@@ -194,8 +230,10 @@ export const ResourceEmbedBlock = ({ section, canEdit, onUpdate, preview = false
   const [pickerError, setPickerError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
   const { subscribe, unsubscribe } = useWebSocketSync();
-  const documentationManifest =
-    resourceType === "documentation" && resource ? (resource as DocumentationManifest) : null;
+  const documentationResource =
+    resourceType === "documentation" && resource
+      ? (resource as DocumentationEmbedResource)
+      : null;
 
   useEffect(() => {
     if (preview) return;
@@ -230,12 +268,18 @@ export const ResourceEmbedBlock = ({ section, canEdit, onUpdate, preview = false
   }, [preview, reference, resourceType]);
 
   useEffect(() => {
-    if (preview || !documentationManifest) return;
-    subscribe("documentation", documentationManifest.documentation.id);
+    if (preview || !documentationResource) return;
+    subscribe("documentation", documentationResource.manifest.documentation.id);
+    if (documentationResource.articleView) {
+      subscribe("documentation_article", documentationResource.articleView.article.id);
+    }
     return () => {
-      unsubscribe("documentation", documentationManifest.documentation.id);
+      unsubscribe("documentation", documentationResource.manifest.documentation.id);
+      if (documentationResource.articleView) {
+        unsubscribe("documentation_article", documentationResource.articleView.article.id);
+      }
     };
-  }, [documentationManifest, preview, subscribe, unsubscribe]);
+  }, [documentationResource, preview, subscribe, unsubscribe]);
 
   useEffect(() => {
     if (!canEdit || preview) return;
@@ -306,7 +350,14 @@ export const ResourceEmbedBlock = ({ section, canEdit, onUpdate, preview = false
             `/docs/${encodeURIComponent(reference)}`,
             { signal: controller.signal }
           );
-          setResource(manifest);
+          const firstArticle = manifest.articles[0];
+          const articleView = firstArticle
+            ? await apiRequest<DocumentationArticleView>(
+                `/docs/${encodeURIComponent(reference)}/articles/${encodeURIComponent(firstArticle.slug)}`,
+                { signal: controller.signal }
+              )
+            : undefined;
+          setResource({ manifest, articleView });
         }
       } catch (cause) {
         if (!controller.signal.aborted)
@@ -432,8 +483,8 @@ export const ResourceEmbedBlock = ({ section, canEdit, onUpdate, preview = false
       {!preview && !loading && !error && resourceType === "forum_thread" && resource && (
         <ThreadEmbed thread={resource as ForumThread} />
       )}
-      {!preview && !loading && !error && documentationManifest && (
-        <DocumentationEmbed manifest={documentationManifest} />
+      {!preview && !loading && !error && documentationResource && (
+        <DocumentationEmbed resource={documentationResource} />
       )}
     </section>
   );

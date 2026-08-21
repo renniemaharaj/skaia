@@ -1,6 +1,5 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import {
-  ChevronLeft,
   ChevronRight,
   Clock,
   Edit2,
@@ -31,9 +30,9 @@ import "./ProductPage.css";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import { MediaPlaceholder } from "../ui/MediaPlaceholder";
-import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 import { MoneyAmount } from "../ui/MoneyAmount";
 import { ProductMediaTable } from "./ProductMediaTable";
+import { ProductMediaCarousel } from "./ProductMediaCarousel";
 import { StorePageShell } from "./StorePageShell";
 import { getProductMediaItems } from "./storeMedia";
 
@@ -96,15 +95,12 @@ export const ProductPage = () => {
   const { subscribe, unsubscribe } = useWebSocketSync();
 
   const [product, setProduct] = useState<Product | null>(null);
-  const [activeMediaIndex, setActiveMediaIndex] = useState(0);
-  const [previewMediaIndex, setPreviewMediaIndex] = useState<number | null>(null);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [similarLoading, setSimilarLoading] = useState(true);
-  const [hasInteracted, setHasInteracted] = useState(false);
 
   const canEditProduct =
     currentUser?.permissions?.includes("store.product-edit") ||
@@ -117,12 +113,6 @@ export const ProductPage = () => {
     setLayoutMode("application");
     return () => setLayoutMode("web");
   }, [setLayoutMode]);
-
-  useEffect(() => {
-    if (!id) return;
-    setActiveMediaIndex(0);
-    setPreviewMediaIndex(null);
-  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -265,22 +255,12 @@ export const ProductPage = () => {
   }, [reviews]);
 
   const media = product ? getProductMediaItems(product) : [];
-  const canCycleMedia = media.length > 1;
-
-  useEffect(() => {
-    if (hasInteracted || !canCycleMedia || media.length === 0) return;
-    const interval = setInterval(() => {
-      setActiveMediaIndex(index => (index + 1) % media.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [hasInteracted, canCycleMedia, media.length]);
-
   if (loadingProduct) {
     return (
       <StorePageShell className="product-page-container" backTo="/store">
         <div className="product-page-layout">
           <div className="product-page-hero">
-            <div className="product-page-image-container">
+            <div className="product-page-media-skeleton">
               <div className="skeleton" style={{ width: "100%", height: "100%" }} />
             </div>
 
@@ -373,21 +353,6 @@ export const ProductPage = () => {
 
   const isSoldOut = !product.stock_unlimited && product.stock <= 0;
   const productCategoryName = categories.find(cat => cat.id === product.category_id)?.name;
-  const safeActiveMediaIndex =
-    media.length > 0 ? Math.min(Math.max(activeMediaIndex, 0), media.length - 1) : 0;
-  const activeMedia = media[safeActiveMediaIndex];
-  const activeMediaIsVideo =
-    activeMedia?.mime_type?.startsWith("video/") || activeMedia?.type === "video";
-
-  const previousMedia = () => {
-    setHasInteracted(true);
-    setActiveMediaIndex(index => (index - 1 + media.length) % media.length);
-  };
-  const nextMedia = () => {
-    setHasInteracted(true);
-    setActiveMediaIndex(index => (index + 1) % media.length);
-  };
-
   const formatDateTime = (value: string) =>
     new Date(value).toLocaleString(undefined, {
       month: "short",
@@ -401,74 +366,7 @@ export const ProductPage = () => {
     <StorePageShell className="product-page-container" backTo="/store">
       <div className="product-page-layout">
         <ContentStandOutCard className="product-page-hero">
-          <div className={`product-page-image-container${!activeMedia ? " fallback" : ""}`}>
-            {activeMedia ? (
-              <button
-                type="button"
-                className="product-page-image-button"
-                onClick={e => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setHasInteracted(true);
-                  setPreviewMediaIndex(safeActiveMediaIndex);
-                }}
-              >
-                <MediaPlaceholder
-                  alt={activeMedia.filename || product.name}
-                  controls={false}
-                  fit="cover"
-                  href={activeMedia.url}
-                  layout="fill"
-                  mediaType={activeMediaIsVideo ? "video" : "image"}
-                  muted
-                  playsInline
-                  preserveFrame
-                  showCaption={false}
-                  size={{ height: "100%", width: "100%" }}
-                />
-              </button>
-            ) : (
-              <Package size={48} style={{ opacity: 0.25 }} />
-            )}
-            {canCycleMedia && (
-              <>
-                <button
-                  type="button"
-                  className="action-btn btn-ghost product-page-media-cycle product-page-media-cycle--prev"
-                  onClick={event => {
-                    event.stopPropagation();
-                    previousMedia();
-                  }}
-                  title="Previous media"
-                  aria-label="Previous media"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <button
-                  type="button"
-                  className="action-btn btn-ghost product-page-media-cycle product-page-media-cycle--next"
-                  onClick={event => {
-                    event.stopPropagation();
-                    nextMedia();
-                  }}
-                  title="Next media"
-                  aria-label="Next media"
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </>
-            )}
-            {activeMedia && (
-              <div className="up-upload-lightbox-bar product-page-media-bar">
-                <span className="up-upload-lightbox-name">{activeMedia.filename}</span>
-                <div className="thread-actions">
-                  <span className="up-upload-lightbox-count">
-                    {safeActiveMediaIndex + 1}/{media.length}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
+          <ProductMediaCarousel media={media} alt={product.name} />
 
           <div className="product-page-details">
             <h1>{product.name}</h1>
@@ -666,17 +564,6 @@ export const ProductPage = () => {
         </div>
       </div>
 
-      {previewMediaIndex !== null && (
-        <MediaPreviewLightbox
-          items={media}
-          index={previewMediaIndex}
-          onIndexChange={index => {
-            setPreviewMediaIndex(index);
-            setActiveMediaIndex(index);
-          }}
-          onClose={() => setPreviewMediaIndex(null)}
-        />
-      )}
     </StorePageShell>
   );
 };

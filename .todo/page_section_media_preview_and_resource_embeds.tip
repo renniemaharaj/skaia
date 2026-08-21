@@ -23,5 +23,13 @@
 - [x] 2026-08-21: focused page-renderer tests, all 226 frontend tests, lint,
   TypeScript/production build, media/native-dialog/loading/form policy checks,
   spec references, and diff checks passed.
+- [x] 2026-08-21 follow-up: consolidated product-page and product-embed media
+  into one carousel/lightbox component with all-media cycling. Documentation
+  embeds now use the shared documentation shell's bounded embedded mode and the
+  first visibility-authorized guide payload instead of a duplicated manifest
+  summary card.
+- [x] Follow-up verification: all 227 frontend tests, lint, TypeScript,
+  production build, media/native-dialog/loading/form policies, spec references,
+  and diff checks passed.
 
 <--/------->

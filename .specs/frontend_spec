@@ -143,6 +143,10 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   APIs; their read-only renderers retain shared media/rich-text sanitization,
   canonical links, source visibility decisions, exact realtime subscriptions,
   reconnect refetch, and explicit empty/loading/error/retry states.
+  Store product embeds and product pages use the same cycling media/lightbox
+  component. Documentation embeds use the shared documentation shell in an
+  explicitly height-bounded embedded mode and render the first visible guide
+  from the normal article endpoint rather than reconstructing a summary card.
 - Datasource-backed reusable designs use the `SectionPreset` type and
   `/config/section-presets`; `CustomSection` remains a deprecated type alias and
   the backend retains the old route during the compatibility window.

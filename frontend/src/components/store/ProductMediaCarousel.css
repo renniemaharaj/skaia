@@ -1,0 +1,115 @@
+.product-media-carousel {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: clamp(280px, 36vw, 460px);
+  max-height: min(72vh, 680px);
+  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+.product-media-carousel.fallback {
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+}
+
+.product-media-carousel__preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.product-media-carousel__preview:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: -2px;
+}
+
+.product-media-carousel__preview:hover {
+  transform: scale(1.02);
+}
+
+.product-media-carousel__preview img,
+.product-media-carousel__preview video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.product-media-carousel__cycle.action-btn.btn-ghost {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--border-color) 80%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg-color) 78%, transparent);
+  box-shadow: var(--shadow);
+  transform: translateY(-50%);
+  backdrop-filter: blur(8px);
+  gap: 0;
+}
+
+.product-media-carousel__cycle.action-btn.btn-ghost:hover {
+  color: var(--primary-color);
+  border-color: color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+}
+
+.product-media-carousel__cycle--previous {
+  left: 10px;
+}
+
+.product-media-carousel__cycle--next {
+  right: 10px;
+}
+
+.product-media-carousel__bar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  border-top-color: color-mix(in srgb, var(--border-color) 75%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.product-media-carousel--embed {
+  height: clamp(15rem, 34vw, 30rem);
+  min-height: 15rem;
+  max-height: 30rem;
+}
+
+@media (max-width: 640px) {
+  .product-media-carousel {
+    min-height: 260px;
+  }
+
+  .product-media-carousel--embed {
+    height: 15rem;
+    min-height: 15rem;
+  }
+}

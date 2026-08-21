@@ -1,4 +1,4 @@
-import { BookOpen, Menu, Search, X } from "lucide-react";
+import { BookOpen, ExternalLink, Menu, Search, X } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { DocumentHeading } from "./headings";
@@ -34,6 +34,40 @@ interface DocumentationShellProps {
   previous?: { href: string; title: string };
   next?: { href: string; title: string };
   children: ReactNode;
+  variant?: "page" | "embedded";
+  openHref?: string;
+}
+
+function NavigationGroups({
+  sections,
+  onNavigate,
+}: {
+  sections: DocumentationNavSection[];
+  onNavigate?: () => void;
+}) {
+  return (
+    <nav className="documentation-navigation">
+      {sections.map(section => (
+        <section key={section.id} className="documentation-navigation__group">
+          <div className="documentation-navigation__label">
+            <span>{section.title}</span>
+            {section.actions}
+          </div>
+          {section.articles.map(article => (
+            <Link
+              key={article.id}
+              className={article.active ? "is-active" : undefined}
+              to={article.href}
+              onClick={onNavigate}
+            >
+              <span>{article.title}</span>
+              {article.meta && <small>{article.meta}</small>}
+            </Link>
+          ))}
+        </section>
+      ))}
+    </nav>
+  );
 }
 
 export function DocumentationShell({
@@ -51,6 +85,8 @@ export function DocumentationShell({
   previous,
   next,
   children,
+  variant = "page",
+  openHref,
 }: DocumentationShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -69,6 +105,36 @@ export function DocumentationShell({
   }, [sidebarOpen]);
 
   const closeSidebar = () => setSidebarOpen(false);
+
+  if (variant === "embedded") {
+    return (
+      <div className="documentation-shell documentation-shell--embedded">
+        <aside className="documentation-sidebar" aria-label="Documentation navigation">
+          <div className="documentation-sidebar__header">
+            <BookOpen size={18} aria-hidden="true" />
+            <strong>{title}</strong>
+          </div>
+          <NavigationGroups sections={sections} />
+        </aside>
+        <div className="documentation-content">
+          <header className="documentation-topbar">
+            <div className="documentation-topbar__title">
+              <strong>{title}</strong>
+              {description && <span>{description}</span>}
+            </div>
+            {openHref && (
+              <Link className="documentation-embedded-open" to={openHref}>
+                Open documentation <ExternalLink size={14} />
+              </Link>
+            )}
+          </header>
+          <div className="documentation-grid">
+            <main className="documentation-article">{children}</main>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="documentation-shell">
@@ -107,27 +173,7 @@ export function DocumentationShell({
         </label>
         {searchResults}
         {sidebarActions}
-        <nav className="documentation-navigation">
-          {sections.map(section => (
-            <section key={section.id} className="documentation-navigation__group">
-              <div className="documentation-navigation__label">
-                <span>{section.title}</span>
-                {section.actions}
-              </div>
-              {section.articles.map(article => (
-                <Link
-                  key={article.id}
-                  className={article.active ? "is-active" : undefined}
-                  to={article.href}
-                  onClick={closeSidebar}
-                >
-                  <span>{article.title}</span>
-                  {article.meta && <small>{article.meta}</small>}
-                </Link>
-              ))}
-            </section>
-          ))}
-        </nav>
+        <NavigationGroups sections={sections} onNavigate={closeSidebar} />
       </aside>
 
       <div className="documentation-content">

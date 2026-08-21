@@ -88,9 +88,12 @@ forum documentation projection, documentation SEO/cache/realtime, or migration
   boundary. Read-only HTML always passes through `RichTextRenderer`.
 - A custom-page `resource_embed` configured for documentation stores only a
   documentation slug. It resolves the normal visibility-aware manifest
-  APIs, renders guide HTML through `RichTextRenderer`, subscribes to existing
-  documentation key, and links to the canonical `/doc` route; it never copies
-  documentation records into `pages.content`.
+  and article APIs, renders the first visible guide through the shared
+  documentation shell and `RichTextRenderer`, subscribes to the existing
+  documentation and article keys, and links to the canonical `/doc` route. The
+  shell's embedded variant has bounded height and internal navigation/content
+  scrolling; it never copies documentation records into `pages.content` or
+  mounts unconstrained full-page/authoring chrome.
 - In-app link navigation while editing uses Skaia's Prompt through the
   declarative-`BrowserRouter` compatible dirty-navigation guard; data-router-only
   `useBlocker` and native unload/confirm/prompt/alert dialogs are forbidden.

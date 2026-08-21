@@ -118,6 +118,14 @@ update specs and .tip with durable facts
 
 ## Last Run Remarks
 
+- Completed the resource-embed presentation correction: product pages and
+  embeds now share one all-media carousel/lightbox owner, while documentation
+  embeds use the real shared documentation shell in a bounded, internally
+  scrollable embedded mode with the first authorized guide payload.
+- Verification passed: all 227 frontend tests, lint, TypeScript, production
+  build, media/native-dialog/loading/form policies, spec references, and diff
+  checks.
+
 - Completed the page-section presentation follow-up: new sections no longer
   persist picker labels as headings, legacy generated labels are viewer-hidden,
   empty heading wrappers reserve no space, and builder identification remains

@@ -60,6 +60,24 @@ describe("ResourceEmbedBlock", () => {
       created_at: "2026-08-20T00:00:00Z",
       updated_at: "2026-08-20T00:00:00Z",
       image_url: "/guide.webp",
+      media: [
+        {
+          url: "/guide.webp",
+          filename: "Cover",
+          mime_type: "image/webp",
+          type: "image",
+          size: 10,
+          created_at: "2026-08-20T00:00:00Z",
+        },
+        {
+          url: "/guide-demo.mp4",
+          filename: "Demo",
+          mime_type: "video/mp4",
+          type: "video",
+          size: 20,
+          created_at: "2026-08-20T00:00:00Z",
+        },
+      ],
     });
     render(
       <MemoryRouter>
@@ -79,6 +97,9 @@ describe("ResourceEmbedBlock", () => {
       "href",
       "/store/product/7"
     );
+    expect(screen.getByText("1/2")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next media" }));
+    expect(screen.getByText("2/2")).toBeInTheDocument();
     expect(subscribeMock).toHaveBeenCalledWith("store_product", 7);
   });
 
@@ -138,6 +159,16 @@ describe("ResourceEmbedBlock", () => {
           sections: [],
           articles: [{ id: 4, slug: "start", title: "Start here" }],
         } as never;
+      if (endpoint === "/docs/handbook/articles/start")
+        return {
+          article: {
+            id: 4,
+            slug: "start",
+            title: "Start here",
+            summary: "Begin with the platform basics.",
+            content: "<p>Install the application first.</p>",
+          },
+        } as never;
       throw new Error(`Unexpected ${endpoint}`);
     });
     render(
@@ -152,8 +183,8 @@ describe("ResourceEmbedBlock", () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole("heading", { name: "Handbook" })).toBeInTheDocument();
-    expect(screen.getByText("Start here")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Start here" })).toBeInTheDocument();
+    expect(screen.getByText("Install the application first.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Open documentation/ })).toHaveAttribute(
       "href",
       "/doc/handbook"

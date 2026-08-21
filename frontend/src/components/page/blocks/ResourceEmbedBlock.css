@@ -37,16 +37,9 @@
   padding: 0;
 }
 
-.resource-embed-media,
 .resource-embed-loading-media {
   min-height: 22rem;
   background: var(--bg-tertiary);
-}
-
-.resource-embed-media {
-  display: grid;
-  place-items: center;
-  color: var(--text-tertiary);
 }
 
 .resource-embed-copy,
@@ -130,19 +123,6 @@
   padding-right: 0.25rem;
 }
 
-.resource-embed-guide-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: 0.5rem;
-}
-
-.resource-embed-guide-list span {
-  padding: 0.65rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-}
-
 .resource-embed-state {
   display: grid;
   justify-items: start;
@@ -177,7 +157,6 @@
     grid-template-columns: 1fr;
   }
 
-  .resource-embed-media,
   .resource-embed-loading-media {
     min-height: 14rem;
   }
