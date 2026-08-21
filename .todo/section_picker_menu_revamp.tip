@@ -1,0 +1,25 @@
+<--/------->
+
+## section_picker_menu_revamp
+
+### Current Progress
+
+- **Phase 1: Metadata and interaction design** - ✅ Complete
+- **Phase 2: Responsive picker implementation** - ✅ Complete
+- **Phase 3: Tests and quality gates** - ✅ Complete
+
+### Next Steps
+
+- [x] Added complete category and section descriptions for all 20 registered types.
+- [x] Implemented the searchable accessible dialog, category list, and compact view.
+- [x] Covered insertion, search, keyboard dismissal, and metadata completeness.
+- [x] 2026-08-21: all 231 frontend tests, lint, TypeScript/production build,
+  native-dialog, managed-form, loading-boundary, and media-placeholder checks
+  passed. Todo pairing, spec references, and `git diff --check` passed.
+- [x] Visual follow-up replaced the picker-specific search, close, and single
+  view-toggle treatments with the shared compact FilterBar/SearchField,
+  standard icon button, and directory-style grid/list control. The modal
+  toolbar now stays on one row at narrow breakpoints and uses tighter view
+  buttons. The complete 231-test frontend set and focused follow-up checks pass.
+
+<--/------->

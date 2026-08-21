@@ -118,6 +118,17 @@ update specs and .tip with durable facts
 
 ## Last Run Remarks
 
+- Completed `section_picker_menu_revamp`: replaced the narrow absolute section
+  dropdown with a responsive accessible dialog, complete category/type
+  descriptions, description-aware search, list/grid views, token-based icon
+  families, and preserved insertion/clipboard semantics.
+- Verification passed: all 231 frontend tests, lint, TypeScript/production
+  build, native-dialog, managed-form, loading-boundary, media-placeholder, todo
+  pairing, spec-reference, and diff checks.
+- Visual follow-up aligned the picker search, close, and view controls with the
+  platform's shared compact FilterBar, Button, and directory-toggle patterns;
+  the complete 231-test and frontend gate set passed again.
+
 - Completed the resource-embed presentation correction: product pages and
   embeds now share one all-media carousel/lightbox owner, while documentation
   embeds use the real shared documentation shell in a bounded, internally

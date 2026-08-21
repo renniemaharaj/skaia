@@ -107,6 +107,11 @@ operational policies.
 
 ## Last Run Remarks
 
+- Created and completed `section_picker_menu_revamp` after confirming the old
+  insertion dropdown had incomplete metadata and no scalable discovery surface.
+  Reconciled the responsive searchable modal picker and complete 20-type
+  metadata contract into the custom-page compatibility spec.
+
 - Reconciled the custom-page presentation contract after section picker labels
   were separated from authored headings for both new and legacy page documents.
 

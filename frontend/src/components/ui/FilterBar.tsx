@@ -12,6 +12,8 @@ interface FilterBarProps {
   ariaLabel?: string;
   searchValue?: string;
   searchPlaceholder?: string;
+  searchAriaLabel?: string;
+  searchAutoFocus?: boolean;
   onSearchChange?: (value: string) => void;
   resultCount?: ReactNode;
   hasActiveFilters?: boolean;
@@ -26,6 +28,8 @@ export function FilterBar({
   ariaLabel = "Filters",
   searchValue,
   searchPlaceholder = "Search...",
+  searchAriaLabel,
+  searchAutoFocus = false,
   onSearchChange,
   resultCount,
   hasActiveFilters = false,
@@ -43,6 +47,8 @@ export function FilterBar({
           value={searchValue}
           onChange={onSearchChange}
           placeholder={searchPlaceholder}
+          aria-label={searchAriaLabel}
+          autoFocus={searchAutoFocus}
         />
       )}
       <div className="filter-bar__controls">{children}</div>

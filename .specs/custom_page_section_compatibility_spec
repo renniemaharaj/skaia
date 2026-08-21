@@ -69,6 +69,10 @@ by editors without exposing config.
 
 `SectionFrame` owns layout, spacing, animation, literal/inherited colors,
 collapsing, toolbar composition, viewport animation, and child mount deferral.
+The editor's insertion control opens one responsive modal section picker. Its
+static frontend metadata covers every registered type exactly once, gives every
+category and type a description, and supports description-aware search plus
+list/grid presentation without changing the stored section contract.
 Section-type labels identify blocks in the editor only. New sections start with
 an empty optional heading, and viewers suppress the exact legacy picker label
 previously persisted as a heading; deliberately authored headings remain part of

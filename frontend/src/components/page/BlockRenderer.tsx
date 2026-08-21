@@ -7,12 +7,8 @@ import {
 } from "./interactiveTypes";
 import { SECTION_RENDERER_REGISTRY, SECTION_RENDERER_TYPES } from "./sectionRendererRegistry";
 import type { PageDocumentID, PageItem, PageSection, SectionType } from "./types";
-import {
-  SECTION_TYPE_GROUPS,
-  SECTION_TYPE_LABELS,
-  canonicalSectionType,
-  isGeneratedSectionHeading,
-} from "./types";
+import { SECTION_TYPE_LABELS, canonicalSectionType, isGeneratedSectionHeading } from "./types";
+import { SectionPicker } from "./SectionPicker";
 import "./page-builder-core.css";
 import { Plus } from "lucide-react";
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
@@ -237,7 +233,6 @@ export const BlockRenderer = memo(function BlockRenderer({
     onMoveSectionRef.current(sectionId, secs[neighborIdx].id);
   }, []);
 
-  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
   const [clipboardSection, setClipboardSection] = useState<any | null>(null);
 
   const checkClipboardForSection = async () => {
@@ -258,22 +253,13 @@ export const BlockRenderer = memo(function BlockRenderer({
     }
   };
 
-  const toggleGroup = useCallback((groupId: string) => {
-    setOpenGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(groupId)) {
-        next.delete(groupId);
-      } else {
-        next.add(groupId);
-      }
-      return next;
-    });
-  }, []);
-
   const renderAddSectionTrigger = (insertIndex: number) => (
     <div className="pb-add-section" key={`add-section-${insertIndex}`}>
       <button
         className="pb-add-section-btn"
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={activeAddIndex === insertIndex}
         onClick={() => {
           if (activeAddIndex === insertIndex) {
             setActiveAddIndex(null);
@@ -287,17 +273,18 @@ export const BlockRenderer = memo(function BlockRenderer({
       </button>
 
       {activeAddIndex === insertIndex && (
-        <div className="pb-add-section-menu">
-          {clipboardSection && (
-            <div className="pb-add-section-group" key="paste-section-btn">
-              <button
-                type="button"
-                className="pb-add-section-group-header"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  border: "1px dashed var(--primary)",
-                }}
-                onClick={() => {
+        <SectionPicker
+          clipboardLabel={
+            clipboardSection
+              ? (SECTION_TYPE_LABELS[clipboardSection.section_type] ??
+                clipboardSection.section_type)
+              : undefined
+          }
+          onClose={() => setActiveAddIndex(null)}
+          onSelect={type => addSection(type, insertIndex)}
+          onPaste={
+            clipboardSection
+              ? () => {
                   const newSection: Omit<PageSection, "id"> = {
                     display_order: insertIndex + 1,
                     section_type: clipboardSection.section_type,
@@ -315,56 +302,10 @@ export const BlockRenderer = memo(function BlockRenderer({
                   setActiveAddIndex(null);
                   setClipboardSection(null);
                   toast.success("Section pasted successfully!");
-                }}
-              >
-                <div>
-                  <div className="pb-add-section-group-label" style={{ color: "var(--primary)" }}>
-                    Paste Section Here
-                  </div>
-                  <div className="pb-add-section-group-desc">
-                    Paste copied{" "}
-                    {SECTION_TYPE_LABELS[clipboardSection.section_type] ??
-                      clipboardSection.section_type}{" "}
-                    block
-                  </div>
-                </div>
-              </button>
-            </div>
-          )}
-          {SECTION_TYPE_GROUPS.map(group => (
-            <div className="pb-add-section-group" key={group.id}>
-              <button
-                type="button"
-                className="pb-add-section-group-header"
-                onClick={() => toggleGroup(group.id)}
-              >
-                <div>
-                  <div className="pb-add-section-group-label">{group.label}</div>
-                  {group.description && (
-                    <div className="pb-add-section-group-desc">{group.description}</div>
-                  )}
-                </div>
-                <span className="pb-add-section-group-toggle">
-                  {openGroups.has(group.id) ? "−" : "+"}
-                </span>
-              </button>
-
-              {openGroups.has(group.id) && (
-                <div className="pb-add-section-group-items">
-                  {group.types.map(type => (
-                    <button
-                      key={type}
-                      className="pb-add-section-menu-item"
-                      onClick={() => addSection(type, insertIndex)}
-                    >
-                      {SECTION_TYPE_LABELS[type] ?? type}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+                }
+              : undefined
+          }
+        />
       )}
     </div>
   );

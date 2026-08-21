@@ -43,19 +43,72 @@ export const SECTION_TYPE_LABELS: Record<string, string> = {
   qa: "Questions & Answers", survey: "Survey", poll: "Poll", vote: "Voting", resource_embed: "Resource Embed",
 };
 
+export const SECTION_TYPE_DESCRIPTIONS: Record<SectionType, string> = {
+  hero: "Introduce the page with a large visual banner.",
+  card_group: "Arrange related content in a structured card grid.",
+  stat_cards: "Highlight metrics with concise icon and text cards.",
+  social_links: "Connect visitors to your social profiles.",
+  image_gallery: "Present a collection of uploaded or linked images.",
+  feature_grid: "Showcase features with icons, text, and links.",
+  cta: "Focus attention on one clear next action.",
+  event_highlights: "Promote events, dates, and schedule highlights.",
+  profile_card: "Introduce a person with a compact profile summary.",
+  rich_text: "Publish formatted headings, copy, lists, and media.",
+  code_editor: "Display and edit a formatted code snippet.",
+  data_sources: "Manage data that can power reusable sections.",
+  derived_section: "Render a section from a connected data source.",
+  custom_section: "Reuse a saved, data-backed section design.",
+  form: "Collect structured responses with a custom form.",
+  qa: "Host moderated questions and answers.",
+  survey: "Gather answers across multiple questions.",
+  poll: "Run a quick audience poll and summarize results.",
+  vote: "Collect confirmed ballots with controlled results.",
+  resource_embed: "Reference an existing Skaia resource without copying it.",
+};
+
 export function isGeneratedSectionHeading(section: Pick<PageSection, "heading" | "section_type">): boolean {
   const canonicalType = canonicalSectionType(section.section_type);
   if (!canonicalType) return false;
   return section.heading.trim() === SECTION_TYPE_LABELS[canonicalType];
 }
 
-export interface SectionTypeGroup { id: string; label: string; description?: string; types: SectionType[]; }
+export interface SectionTypeGroup {
+  id: string;
+  label: string;
+  description: string;
+  types: SectionType[];
+}
 export const SECTION_TYPE_GROUPS: SectionTypeGroup[] = [
-  { id: "featured", label: "Featured blocks", types: ["hero", "cta", "event_highlights", "profile_card"] },
-  { id: "content", label: "Content blocks", types: ["card_group", "stat_cards", "social_links", "image_gallery", "feature_grid"] },
-  { id: "rich", label: "Rich content", types: ["rich_text", "code_editor", "data_sources", "derived_section", "custom_section"] },
-  { id: "interactive", label: "Interactive", types: ["form", "qa", "survey", "poll", "vote"] },
-  { id: "embeds", label: "Resource embeds", description: "Place an existing Skaia resource on this page.", types: ["resource_embed"] },
+  {
+    id: "featured",
+    label: "Featured sections",
+    description: "Lead with high-impact messages, people, and moments.",
+    types: ["hero", "cta", "event_highlights", "profile_card"],
+  },
+  {
+    id: "content",
+    label: "Content sections",
+    description: "Organize images, links, metrics, and repeatable content.",
+    types: ["card_group", "stat_cards", "social_links", "image_gallery", "feature_grid"],
+  },
+  {
+    id: "rich",
+    label: "Rich content",
+    description: "Publish formatted, code, and data-powered content.",
+    types: ["rich_text", "code_editor", "data_sources", "derived_section", "custom_section"],
+  },
+  {
+    id: "interactive",
+    label: "Interactive",
+    description: "Collect responses and invite audience participation.",
+    types: ["form", "qa", "survey", "poll", "vote"],
+  },
+  {
+    id: "embeds",
+    label: "Resource embeds",
+    description: "Place an existing Skaia resource on this page.",
+    types: ["resource_embed"],
+  },
 ];
 
 export interface DataSourceCreator { id: number; username: string; display_name: string; avatar_url: string; }
