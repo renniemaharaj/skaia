@@ -388,17 +388,6 @@
   line-height: 1.4;
 }
 
-.managed-form-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  overflow-y: auto;
-  background: var(--overlay-dark);
-}
-
 @media (max-width: 640px) {
   .managed-form.modal {
     width: calc(100% - 1rem);

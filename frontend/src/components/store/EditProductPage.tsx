@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Product, StoreCategory } from "../../atoms/store";
 import { apiRequest } from "../../utils/api";
-import { EditProductDialog } from "./EditProductDialog";
+import { EditProductForm } from "./EditProductForm";
 
 export default function EditProductPage() {
   const { productId = "" } = useParams<{ productId: string }>();
@@ -32,11 +32,10 @@ export default function EditProductPage() {
   if (!product) return <div className="card">Loading product editor...</div>;
   const returnTo = `/store/product/${product.id}`;
   return (
-    <EditProductDialog
-      isOpen
+    <EditProductForm
       product={product}
       categories={categories}
-      onClose={() => navigate(returnTo)}
+      cancelTo={returnTo}
       onSuccess={() => navigate(returnTo)}
     />
   );
