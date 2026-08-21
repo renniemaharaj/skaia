@@ -42,6 +42,13 @@ export const SECTION_TYPE_LABELS: Record<string, string> = {
   data_sources: "Data Sources", derived_section: "Derived Section", custom_section: "Custom Section", form: "Form",
   qa: "Questions & Answers", survey: "Survey", poll: "Poll", vote: "Voting", resource_embed: "Resource Embed",
 };
+
+export function isGeneratedSectionHeading(section: Pick<PageSection, "heading" | "section_type">): boolean {
+  const canonicalType = canonicalSectionType(section.section_type);
+  if (!canonicalType) return false;
+  return section.heading.trim() === SECTION_TYPE_LABELS[canonicalType];
+}
+
 export interface SectionTypeGroup { id: string; label: string; description?: string; types: SectionType[]; }
 export const SECTION_TYPE_GROUPS: SectionTypeGroup[] = [
   { id: "featured", label: "Featured blocks", types: ["hero", "cta", "event_highlights", "profile_card"] },

@@ -172,26 +172,28 @@ export const DataSourcesBlock = ({ section, canEdit }: Props) => {
 
   return (
     <section className="data-sources-block">
-      <div className="data-sources-header">
-        <h2>
-          {editingDS ? (
-            <>
-              <Database size={20} style={{ marginRight: 8, verticalAlign: "middle" }} />
-              {section.heading || "Data Sources"}
-            </>
-          ) : (
-            <Link to="/datasources" className="data-sources-heading-link">
-              <Database size={20} style={{ marginRight: 8, verticalAlign: "middle" }} />
-              {section.heading || "Data Sources"}
-            </Link>
+      {(canEdit || section.heading) && (
+        <div className="data-sources-header">
+          <h2>
+            {editingDS ? (
+              <>
+                <Database size={20} style={{ marginRight: 8, verticalAlign: "middle" }} />
+                {section.heading || "Data Sources"}
+              </>
+            ) : (
+              <Link to="/datasources" className="data-sources-heading-link">
+                <Database size={20} style={{ marginRight: 8, verticalAlign: "middle" }} />
+                {section.heading || "Data Sources"}
+              </Link>
+            )}
+          </h2>
+          {canEdit && !editingDS && (
+            <Button unstyled className="data-sources-add-btn" onClick={startNew}>
+              <Plus size={16} /> New Data Source
+            </Button>
           )}
-        </h2>
-        {canEdit && !editingDS && (
-          <Button unstyled className="data-sources-add-btn" onClick={startNew}>
-            <Plus size={16} /> New Data Source
-          </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Inline editor */}
       {editingDS && (

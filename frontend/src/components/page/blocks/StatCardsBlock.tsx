@@ -26,7 +26,7 @@ export const StatCardsBlock = ({
 
   return (
     <section className="stats-section">
-      {(section.heading || canEdit) && (
+      {(section.heading || section.subheading || canEdit) && (
         <div className="section-header">
           {canEdit ? (
             <>

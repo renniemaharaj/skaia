@@ -103,9 +103,12 @@ operational policies.
 
 ## Last Ran
 
-- 2026-08-20
+- 2026-08-21
 
 ## Last Run Remarks
+
+- Reconciled the custom-page presentation contract after section picker labels
+  were separated from authored headings for both new and legacy page documents.
 
 - Reconciled and closed `page_section_media_preview_and_resource_embeds` after
   simplifying the page registry to one generic `resource_embed` (20 total

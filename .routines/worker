@@ -114,9 +114,14 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-08-20
+- 2026-08-21
 
 ## Last Run Remarks
+
+- Completed the page-section presentation follow-up: new sections no longer
+  persist picker labels as headings, legacy generated labels are viewer-hidden,
+  empty heading wrappers reserve no space, and builder identification remains
+  editor-only. All 226 frontend tests, lint, build, policy and diff gates pass.
 
 - Completed the simplified `page_section_media_preview_and_resource_embeds`:
   every eligible `MediaPlaceholder` directly opens the shared accessible

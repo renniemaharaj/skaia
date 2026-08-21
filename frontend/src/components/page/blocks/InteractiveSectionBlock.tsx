@@ -626,33 +626,39 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate }: Props) {
   return (
     <section className="interactive-section">
       <header className="interactive-heading">
-        <div>
-          <span>{type === "qa" ? "Questions & answers" : type}</span>
-          {canEdit ? (
-            <EditableText
-              value={section.heading}
-              onSave={heading => onUpdate({ ...section, heading })}
-              tag="h2"
-            />
-          ) : (
-            <h2>{section.heading}</h2>
-          )}
-          {canEdit ? (
-            <EditableText
-              value={section.subheading}
-              onSave={subheading => onUpdate({ ...section, subheading })}
-              tag="p"
-              placeholder="Optional description"
-            />
-          ) : (
-            section.subheading && <p>{section.subheading}</p>
-          )}
-        </div>
+        {(canEdit || section.heading || section.subheading) && (
+          <div>
+            {canEdit && <span>{type === "qa" ? "Questions & answers" : type}</span>}
+            {canEdit ? (
+              <EditableText
+                value={section.heading}
+                onSave={heading => onUpdate({ ...section, heading })}
+                tag="h2"
+              />
+            ) : (
+              section.heading && <h2>{section.heading}</h2>
+            )}
+            {canEdit ? (
+              <EditableText
+                value={section.subheading}
+                onSave={subheading => onUpdate({ ...section, subheading })}
+                tag="p"
+                placeholder="Optional description"
+              />
+            ) : (
+              section.subheading && <p>{section.subheading}</p>
+            )}
+          </div>
+        )}
         <span className={`interactive-open-state interactive-open-state--${config.status}`}>
           {config.status}
         </span>
       </header>
-      <div className="interactive-tabs" role="tablist" aria-label={`${section.heading} views`}>
+      <div
+        className="interactive-tabs"
+        role="tablist"
+        aria-label={section.heading ? `${section.heading} views` : "Section views"}
+      >
         {tabs.map(item => (
           <button
             key={item.id}

@@ -78,6 +78,29 @@ describe("BlockRenderer family parity", () => {
     expect(screen.getByText("Feature detail")).toBeInTheDocument();
   });
 
+  it("hides legacy builder type labels from viewers", async () => {
+    renderViewerSection(
+      section("feature_grid", "Feature Grid (icon tiles)", "{}", [
+        {
+          id: 2,
+          section_id: 1,
+          display_order: 1,
+          icon: "Star",
+          heading: "Actual feature",
+          subheading: "Rendered content",
+          image_url: "",
+          link_url: "",
+          config: "{}",
+        },
+      ])
+    );
+
+    expect(await screen.findByRole("heading", { name: "Actual feature" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Feature Grid (icon tiles)" })
+    ).not.toBeInTheDocument();
+  });
+
   it("preserves the media-block outer surface and authored heading", async () => {
     const { container } = renderViewerSection(
       section("hero", "Fixture hero", '{"variant":1,"background_image":"/fixture.webp"}')
@@ -101,6 +124,18 @@ describe("BlockRenderer family parity", () => {
       expect(apiRequestMock).toHaveBeenCalledWith("/config/datasources");
       expect(apiRequestMock).toHaveBeenCalledWith("/config/components");
     });
+  });
+
+  it("does not render the data-source type label as a viewer heading", async () => {
+    renderViewerSection({
+      ...section("data_sources", "Data Sources"),
+      subheading: "",
+    });
+
+    expect(
+      await screen.findByText("No data sources yet. Create one to get started.")
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Data Sources" })).not.toBeInTheDocument();
   });
 
   it("preserves the interactive family heading, participation tab, and action", async () => {

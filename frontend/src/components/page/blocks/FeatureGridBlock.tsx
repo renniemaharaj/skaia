@@ -26,27 +26,29 @@ export const FeatureGridBlock = ({
 
   return (
     <section className="features">
-      <div className="section-header">
-        {canEdit ? (
-          <>
-            <EditableText
-              value={section.heading}
-              onSave={v => onUpdate({ ...section, heading: v })}
-              tag="h2"
-            />
-            <EditableText
-              value={section.subheading}
-              onSave={v => onUpdate({ ...section, subheading: v })}
-              tag="p"
-            />
-          </>
-        ) : (
-          <>
-            {section.heading && <h2>{section.heading}</h2>}
-            {section.subheading && <p>{section.subheading}</p>}
-          </>
-        )}
-      </div>
+      {(canEdit || section.heading || section.subheading) && (
+        <div className="section-header">
+          {canEdit ? (
+            <>
+              <EditableText
+                value={section.heading}
+                onSave={v => onUpdate({ ...section, heading: v })}
+                tag="h2"
+              />
+              <EditableText
+                value={section.subheading}
+                onSave={v => onUpdate({ ...section, subheading: v })}
+                tag="p"
+              />
+            </>
+          ) : (
+            <>
+              {section.heading && <h2>{section.heading}</h2>}
+              {section.subheading && <p>{section.subheading}</p>}
+            </>
+          )}
+        </div>
+      )}
       <div className="features-grid">
         {items.map(item => {
           const Icon = ICON_MAP[item.icon];

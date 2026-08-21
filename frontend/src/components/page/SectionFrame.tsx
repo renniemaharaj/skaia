@@ -13,6 +13,7 @@ import {
   SECTION_TYPE_LABELS,
   type SharedSectionShell,
   canonicalSectionType,
+  isGeneratedSectionHeading,
 } from "./types";
 
 interface SectionFrameProps {
@@ -191,6 +192,8 @@ export function SectionFrame({
   const label = canonicalType
     ? (SECTION_TYPE_LABELS[canonicalType] ?? canonicalType)
     : `Unsupported: ${section.section_type || "missing"}`;
+  const collapseLabel =
+    !canEdit && isGeneratedSectionHeading(section) ? "section" : section.heading || label;
   const contentId = `section-content-${section.id}`;
 
   return (
@@ -253,11 +256,7 @@ export function SectionFrame({
             }}
           >
             {collapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-            <span>
-              {collapsed
-                ? `Expand ${section.heading || label}`
-                : `Collapse ${section.heading || label}`}
-            </span>
+            <span>{collapsed ? `Expand ${collapseLabel}` : `Collapse ${collapseLabel}`}</span>
           </button>
         )}
         <div

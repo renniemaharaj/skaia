@@ -25,27 +25,29 @@ export const CardGroupBlock = ({
 
   return (
     <section className="community-legacy">
-      <div className="section-header">
-        {canEdit ? (
-          <>
-            <EditableText
-              value={section.heading}
-              onSave={v => onUpdate({ ...section, heading: v })}
-              tag="h2"
-            />
-            <EditableText
-              value={section.subheading}
-              onSave={v => onUpdate({ ...section, subheading: v })}
-              tag="p"
-            />
-          </>
-        ) : (
-          <>
-            {section.heading && <h2>{section.heading}</h2>}
-            {section.subheading && <p>{section.subheading}</p>}
-          </>
-        )}
-      </div>
+      {(canEdit || section.heading || section.subheading) && (
+        <div className="section-header">
+          {canEdit ? (
+            <>
+              <EditableText
+                value={section.heading}
+                onSave={v => onUpdate({ ...section, heading: v })}
+                tag="h2"
+              />
+              <EditableText
+                value={section.subheading}
+                onSave={v => onUpdate({ ...section, subheading: v })}
+                tag="p"
+              />
+            </>
+          ) : (
+            <>
+              {section.heading && <h2>{section.heading}</h2>}
+              {section.subheading && <p>{section.subheading}</p>}
+            </>
+          )}
+        </div>
+      )}
       <div className="community-info">
         {items.map(item => (
           <ContentFlatCard key={item.id} className="info-card">

@@ -18,5 +18,10 @@
 - [x] 2026-08-20: complete backend suite; all 221 frontend tests; lint,
   TypeScript, media/native-dialog/loading/form policy checks and production
   build passed. Todo/reference/diff checks passed after final trace updates.
+- [x] Stopped section-type labels from becoming viewer content while retaining
+  editor identification and authored headings, covering new and existing pages.
+- [x] 2026-08-21: focused page-renderer tests, all 226 frontend tests, lint,
+  TypeScript/production build, media/native-dialog/loading/form policy checks,
+  spec references, and diff checks passed.
 
 <--/------->

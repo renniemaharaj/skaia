@@ -244,10 +244,12 @@ export const HeroBlock = ({ section, canEdit, onUpdate }: Props) => {
             </>
           ) : (
             <>
-              <h1>
-                <BlurText text={section.heading} delay={150} animateBy="words" direction="top" />
-              </h1>
-              <p>{section.subheading}</p>
+              {section.heading && (
+                <h1>
+                  <BlurText text={section.heading} delay={150} animateBy="words" direction="top" />
+                </h1>
+              )}
+              {section.subheading && <p>{section.subheading}</p>}
             </>
           )}
         </div>

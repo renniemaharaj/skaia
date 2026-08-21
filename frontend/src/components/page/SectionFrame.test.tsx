@@ -138,6 +138,29 @@ describe("SectionFrame", () => {
     expect(screen.getByText("Collapsible content").parentElement).toHaveAttribute("hidden");
   });
 
+  it("uses a generic viewer collapse label for legacy builder headings", () => {
+    render(
+      <SectionFrame
+        section={{
+          ...section,
+          heading: "Rich Text",
+          config: JSON.stringify({ collapsible: true, default_collapsed: true }),
+        }}
+        isFirst
+        isLast
+        canEdit={false}
+        onMove={vi.fn()}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      >
+        <div>Legacy section content</div>
+      </SectionFrame>
+    );
+
+    expect(screen.getByRole("button", { name: "Expand section" })).toBeInTheDocument();
+    expect(screen.queryByText("Expand Rich Text")).not.toBeInTheDocument();
+  });
+
   it("defers child mounting against a supplied preview root while keeping the shell", () => {
     let callback: IntersectionObserverCallback | undefined;
     const previewRoot = document.createElement("div");

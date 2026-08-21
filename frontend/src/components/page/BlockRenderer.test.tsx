@@ -50,6 +50,19 @@ describe("BlockRenderer registry contract", () => {
     expect(screen.getByRole("alert")).not.toHaveTextContent(unsupportedSection.config);
   });
 
+  it("creates sections without turning the builder type label into viewer content", () => {
+    const handlers = callbacks();
+    render(<BlockRenderer sections={[]} canEdit {...handlers} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Add Section" }));
+    fireEvent.click(screen.getByRole("button", { name: /Resource embeds/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Resource Embed" }));
+
+    expect(handlers.onCreateSection).toHaveBeenCalledWith(
+      expect.objectContaining({ section_type: "resource_embed", heading: "" })
+    );
+  });
+
   it("keeps later preview sections unmounted until they intersect the clipped root", () => {
     let callback: IntersectionObserverCallback | undefined;
     const previewRoot = document.createElement("div");

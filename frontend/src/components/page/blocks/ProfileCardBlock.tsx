@@ -99,27 +99,29 @@ export const ProfileCardBlock = ({ section, canEdit, onUpdate }: Props) => {
 
   return (
     <section className="profile-card-section">
-      <div className="section-header">
-        {canEdit ? (
-          <>
-            <EditableText
-              value={section.heading}
-              onSave={v => onUpdate({ ...sectionRef.current, heading: v })}
-              tag="h2"
-            />
-            <EditableText
-              value={section.subheading}
-              onSave={v => onUpdate({ ...sectionRef.current, subheading: v })}
-              tag="p"
-            />
-          </>
-        ) : (
-          <>
-            {section.heading && <h2>{section.heading}</h2>}
-            {section.subheading && <p>{section.subheading}</p>}
-          </>
-        )}
-      </div>
+      {(canEdit || section.heading || section.subheading) && (
+        <div className="section-header">
+          {canEdit ? (
+            <>
+              <EditableText
+                value={section.heading}
+                onSave={v => onUpdate({ ...sectionRef.current, heading: v })}
+                tag="h2"
+              />
+              <EditableText
+                value={section.subheading}
+                onSave={v => onUpdate({ ...sectionRef.current, subheading: v })}
+                tag="p"
+              />
+            </>
+          ) : (
+            <>
+              {section.heading && <h2>{section.heading}</h2>}
+              {section.subheading && <p>{section.subheading}</p>}
+            </>
+          )}
+        </div>
+      )}
 
       <div className="profile-card-layout">
         {/* Profile card */}

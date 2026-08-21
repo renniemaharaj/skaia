@@ -7,7 +7,12 @@ import {
 } from "./interactiveTypes";
 import { SECTION_RENDERER_REGISTRY, SECTION_RENDERER_TYPES } from "./sectionRendererRegistry";
 import type { PageDocumentID, PageItem, PageSection, SectionType } from "./types";
-import { SECTION_TYPE_GROUPS, SECTION_TYPE_LABELS, canonicalSectionType } from "./types";
+import {
+  SECTION_TYPE_GROUPS,
+  SECTION_TYPE_LABELS,
+  canonicalSectionType,
+  isGeneratedSectionHeading,
+} from "./types";
 import "./page-builder-core.css";
 import { Plus } from "lucide-react";
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
@@ -106,6 +111,12 @@ const SectionBlock = memo(function SectionBlock({
     );
   }
 
+  // Older builder-created sections persisted their picker label as if it were
+  // authored copy. Keep it visible to editors, but do not spend viewer space on
+  // implementation metadata. Custom headings still render unchanged.
+  const renderedSection =
+    !canEdit && isGeneratedSectionHeading(section) ? { ...section, heading: "" } : section;
+
   return (
     <SectionFrame
       section={section}
@@ -122,7 +133,7 @@ const SectionBlock = memo(function SectionBlock({
       fallback={<SectionSkeleton section={section} />}
     >
       <Block
-        section={section}
+        section={renderedSection}
         canEdit={canEdit}
         onUpdate={onUpdate}
         onDelete={onDelete}
@@ -155,7 +166,7 @@ export const BlockRenderer = memo(function BlockRenderer({
     onCreateSection({
       display_order: insertIndex + 1,
       section_type: type,
-      heading: SECTION_TYPE_LABELS[type] ?? type,
+      heading: "",
       subheading: "",
       config: configForNewSection(type),
       items: [],

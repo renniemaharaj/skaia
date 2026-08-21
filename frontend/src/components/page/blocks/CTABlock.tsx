@@ -31,8 +31,8 @@ export const CTABlock = ({ section, canEdit, onUpdate }: Props) => {
           </>
         ) : (
           <>
-            <h2>{section.heading}</h2>
-            <p>{section.subheading}</p>
+            {section.heading && <h2>{section.heading}</h2>}
+            {section.subheading && <p>{section.subheading}</p>}
           </>
         )}
       </div>
