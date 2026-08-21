@@ -171,14 +171,14 @@ export function SectionPicker({ clipboardLabel, onClose, onPaste, onSelect }: Se
         aria-describedby={itemDescriptionID}
       >
         <span className="pb-section-picker__item-icon" aria-hidden="true">
-          <Icon size={21} strokeWidth={1.9} />
+          <Icon size={17} strokeWidth={1.9} />
         </span>
         <span className="pb-section-picker__item-copy">
           <strong id={labelID}>{SECTION_TYPE_LABELS[type]}</strong>
           <span id={itemDescriptionID}>{SECTION_TYPE_DESCRIPTIONS[type]}</span>
         </span>
         <span className="pb-section-picker__item-add" aria-hidden="true">
-          <Plus size={17} />
+          <Plus size={15} />
         </span>
       </Button>
     );
@@ -303,7 +303,7 @@ export function SectionPicker({ clipboardLabel, onClose, onPaste, onSelect }: Se
                       aria-describedby={groupDescriptionID}
                     >
                       <span className="pb-section-picker__group-icon" aria-hidden="true">
-                        <GroupIcon size={22} strokeWidth={1.8} />
+                        <GroupIcon size={18} strokeWidth={1.9} />
                       </span>
                       <span className="pb-section-picker__group-copy">
                         <strong id={groupLabelID}>{group.label}</strong>
@@ -312,7 +312,7 @@ export function SectionPicker({ clipboardLabel, onClose, onPaste, onSelect }: Se
                       <ChevronDown
                         className="pb-section-picker__chevron"
                         data-expanded={expanded}
-                        size={21}
+                        size={16}
                         aria-hidden="true"
                       />
                     </Button>
