@@ -1,8 +1,8 @@
 /* Application Layout */
 .upm-app-layout {
   display: flex;
-  height: calc(100vh - 64px); /* assuming some header height */
-  min-height: 500px;
+  flex: 1;
+  min-height: 0;
   background: var(--bg-color);
   border-top: 1px solid var(--border-color);
   overflow: hidden;
@@ -219,8 +219,6 @@
 @media (max-width: 768px) {
   .upm-app-layout {
     flex-direction: column;
-    height: auto;
-    min-height: 100vh;
   }
   .upm-sidebar {
     width: 100%;

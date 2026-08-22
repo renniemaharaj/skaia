@@ -68,7 +68,6 @@ const InboxPage = () => {
   const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth <= 640);
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
 
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const feedRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
   const prevCountRef = useRef(0);
@@ -77,19 +76,6 @@ const InboxPage = () => {
 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showChatMenu, setShowChatMenu] = useState(false);
-
-  // Keep the inbox flush with the remaining viewport height
-  useEffect(() => {
-    const recalcHeight = () => {
-      if (wrapperRef.current) {
-        const top = wrapperRef.current.getBoundingClientRect().top;
-        wrapperRef.current.style.height = `${window.innerHeight - top}px`;
-      }
-    };
-    recalcHeight();
-    window.addEventListener("resize", recalcHeight);
-    return () => window.removeEventListener("resize", recalcHeight);
-  }, []);
 
   // Mobile detection and panel switch state
   useEffect(() => {
@@ -498,7 +484,7 @@ const InboxPage = () => {
   const inboxPageClass = isMobile ? `inbox-page inbox-page--mobile-${mobileView}` : "inbox-page";
 
   return (
-    <div className="inbox-page-wrapper" ref={wrapperRef}>
+    <div className="inbox-page-wrapper">
       <div className={inboxPageClass}>
         {/* Left: Conversation list */}
         <aside className="inbox-sidebar">
