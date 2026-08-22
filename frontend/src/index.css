@@ -224,22 +224,48 @@ div#root {
   overflow-x: hidden !important;
 }
 
-/* Scrollbar Styling */
-::-webkit-scrollbar {
+/* Keep the document scrollbar visible while component scroll regions stay unobtrusive. */
+:root,
+body,
+#root {
+  scrollbar-color: var(--primary-color) var(--bg-secondary);
+  scrollbar-width: auto;
+}
+
+body *:not(#root) {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none;
+}
+
+body *:not(#root)::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+:root::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#root::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-::-webkit-scrollbar-track {
+:root::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+#root::-webkit-scrollbar-track {
   background: var(--bg-secondary);
 }
 
-::-webkit-scrollbar-thumb {
+:root::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+#root::-webkit-scrollbar-thumb {
   background: var(--primary-color);
   border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+:root::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+#root::-webkit-scrollbar-thumb:hover {
   background: var(--primary-dark);
 }
 
