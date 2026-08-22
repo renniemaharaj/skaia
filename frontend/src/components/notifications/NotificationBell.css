@@ -56,6 +56,33 @@
   overflow: hidden;
 }
 
+.notif-bell-wrap--embedded {
+  position: static;
+  width: 100%;
+}
+
+.notif-panel--embedded {
+  position: static;
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.notif-panel--embedded .notif-list {
+  height: min(430px, calc(100vh - 210px));
+}
+
+.notif-panel--embedded .notif-panel-header {
+  justify-content: flex-end;
+  padding-inline: 0;
+}
+
+.notif-panel--embedded .notif-panel-title {
+  display: none;
+}
+
 .notif-panel-header {
   display: flex;
   align-items: center;
@@ -300,5 +327,24 @@
 
   .notif-panel-title {
     font-size: 0.92rem;
+  }
+
+  .notif-bell-wrap--embedded {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    pointer-events: auto;
+  }
+
+  .notif-panel--embedded {
+    position: static;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    z-index: auto;
+  }
+
+  .notif-panel--embedded .notif-list {
+    height: min(430px, calc(100vh - 210px));
   }
 }

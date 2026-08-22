@@ -1,21 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai";
-import {
-  AppWindow,
-  Globe2,
-  LogOut,
-  Menu,
-  Moon,
-  MoreHorizontal,
-  Settings,
-  ShoppingCart,
-  Sun,
-  Volume,
-  Volume1,
-  Volume2,
-  VolumeX,
-  X,
-} from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ChevronDown, LogOut, Settings, UserRound } from "lucide-react";
+import { useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   accessTokenAtom,
@@ -27,21 +12,15 @@ import {
 import { brandingAtom, featuresAtom } from "../../../atoms/config";
 import { useGuestSandboxMode } from "../../../hooks/useGuestSandboxMode";
 import { apiRequest } from "../../../utils/api";
-import NotificationBell from "../../notifications/NotificationBell";
+import { GlassMenu } from "../../ui/GlassMenu";
 import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
-import UserLink from "../../user/UserLink";
+import UserAvatar from "../../user/UserAvatar";
 import { EditableText, ImagePickerButton } from "../EditControls";
 import "./Header.css";
 import { toast } from "sonner";
 import { useThemeContext } from "../../../hooks/theme/useThemeContext";
-import {
-  getSoundVolume,
-  isSoundEnabled,
-  setSoundEnabled,
-  setSoundVolume,
-} from "../../../utils/sound";
-import InboxMail from "../../inbox/InboxMail";
 import type { Branding } from "../types";
+import { Drawer } from "./Drawer";
 
 interface HeaderProps {
   cartCount: number;
@@ -58,7 +37,6 @@ export const Header: React.FC<HeaderProps> = ({
   layoutMode,
   onToggleLayoutMode,
 }) => {
-  const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -109,7 +87,6 @@ export const Header: React.FC<HeaderProps> = ({
 
   const handleNavigation = (path: string) => {
     navigate(path);
-    setMenuOpen(false);
   };
 
   const handleSetTheme = () => {
@@ -127,23 +104,24 @@ export const Header: React.FC<HeaderProps> = ({
       setRefreshToken(null);
       setCurrentUser(null);
       navigate("/");
-      setMenuOpen(false);
     }
   };
 
-  const isActive = (path: string) => {
-    return location.pathname === path || (path !== "/" && location.pathname.startsWith(`${path}/`))
-      ? "active"
-      : "";
-  };
-
   const navItems = [
-    routeAllowed("landing") && { to: "/", label: "Home" },
-    routeAllowed("store") && { to: "/store", label: "Store" },
-    routeAllowed("forum") && { to: "/forum", label: "Forum" },
-    { to: "/pages", label: "Pages" },
-    isAuthenticated && hasPermission("events.view") && { to: "/activity", label: "Activity" },
-  ].filter((item): item is { to: string; label: string; isNew?: boolean } => !!item);
+    routeAllowed("landing") && { to: "/", label: "Home", icon: "home" },
+    routeAllowed("store") && { to: "/store", label: "Store", icon: "store" },
+    routeAllowed("forum") && { to: "/forum", label: "Forum", icon: "forum" },
+    routeAllowed("docs") && { to: "/doc", label: "Documentation", icon: "docs" },
+    { to: "/pages", label: "Pages", icon: "pages" },
+    { to: "/kjv", label: "Bible", icon: "bible" },
+    isAuthenticated && routeAllowed("users") && { to: "/users", label: "People", icon: "users" },
+    isAuthenticated &&
+      hasPermission("events.view") && {
+        to: "/activity",
+        label: "Activity",
+        icon: "activity",
+      },
+  ].filter((item): item is { to: string; label: string; icon: string } => !!item);
 
   const logoContent = loading ? (
     <>
@@ -233,55 +211,32 @@ export const Header: React.FC<HeaderProps> = ({
           </Link>
         )}
 
-        <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
-          {menuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-
-        <nav className={`nav ${menuOpen ? "open" : ""}`}>
-          <div className="nav-section">
-            <HeaderNavLinks allItems={navItems} isActive={isActive} setMenuOpen={setMenuOpen} />
-          </div>
-
+        <nav className="nav">
           <div className="user-section">
-            <button className="theme-toggle" onClick={handleSetTheme} title="Toggle dark mode">
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-            <button
-              className="theme-toggle layout-mode-toggle"
-              onClick={onToggleLayoutMode}
-              title={
-                layoutMode === "application"
-                  ? "Switch to Web Page Mode"
-                  : "Switch to Application Mode"
-              }
-            >
-              {layoutMode === "application" ? <Globe2 size={20} /> : <AppWindow size={20} />}
-            </button>
-            {routeAllowed("store") && (
-              <div
-                className="cart-icon"
-                onClick={() => handleNavigation("/cart")}
-                title="Shopping Cart"
-                style={{ cursor: "pointer" }}
-              >
-                <ShoppingCart size={20} />
-                {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
-              </div>
-            )}
+            <Drawer
+              navigationItems={navItems}
+              cartCount={cartCount}
+              isDarkMode={isDarkMode}
+              layoutMode={layoutMode}
+              isAuthenticated={isAuthenticated}
+              user={user}
+              storeEnabled={routeAllowed("store")}
+              inboxEnabled={routeAllowed("inbox")}
+              canCustomize={canEdit && !!branding}
+              branding={branding}
+              onSetTheme={handleSetTheme}
+              onToggleLayoutMode={onToggleLayoutMode}
+              onNavigate={handleNavigation}
+              onSaveBranding={saveBranding}
+            />
             {isAuthenticated && user ? (
-              <HeaderUserMenu
-                user={user}
-                routeAllowed={routeAllowed}
-                setMenuOpen={setMenuOpen}
-                handleLogout={handleLogout}
-              />
+              <HeaderUserMenu user={user} handleLogout={handleLogout} />
             ) : (
               <div className="auth-buttons">
                 <button
                   className="btn btn-ghost"
                   onClick={() => {
                     navigate("/login", { state: { from: location } });
-                    setMenuOpen(false);
                   }}
                 >
                   Sign in
@@ -295,187 +250,70 @@ export const Header: React.FC<HeaderProps> = ({
   );
 };
 
-// HeaderNavLinks
-const MAX_NAV_VISIBLE = 3;
-
-function HeaderNavLinks({
-  allItems,
-  isActive,
-  setMenuOpen,
-}: {
-  allItems: { to: string; label: string; isNew?: boolean }[];
-  isActive: (path: string) => string;
-  setMenuOpen: (v: boolean) => void;
-}) {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const moreRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!moreOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
-        setMoreOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [moreOpen]);
-
-  const visibleItems = allItems.slice(0, MAX_NAV_VISIBLE);
-  const overflowItems = allItems.slice(MAX_NAV_VISIBLE);
-
-  return (
-    <>
-      {visibleItems.map(item => (
-        <Link
-          key={item.to}
-          to={item.to}
-          className={`${item.isNew ? "header-new-link " : ""}${isActive(item.to)}`}
-          onClick={() => setMenuOpen(false)}
-        >
-          {item.label}
-          {item.isNew && <span className="header-new-badge">New</span>}
-        </Link>
-      ))}
-      <div className="header-more-wrap" ref={moreRef}>
-        <button
-          className="action-btn header-more-btn"
-          title="More"
-          onClick={() => setMoreOpen(v => !v)}
-        >
-          <MoreHorizontal size={18} />
-        </button>
-        {moreOpen && (
-          <div className="header-more-dropdown">
-            {overflowItems.map(item => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`header-more-item${item.isNew ? " header-new-link" : ""}${isActive(item.to) ? " active" : ""}`}
-                onClick={() => {
-                  setMoreOpen(false);
-                  setMenuOpen(false);
-                }}
-              >
-                {item.label}
-                {item.isNew && <span className="header-new-badge">New</span>}
-              </Link>
-            ))}
-            {/* Layout mode toggle removed from More menu */}
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
-
-// SoundControl
-function SoundControl() {
-  const [soundOn, setSoundOn] = useState(() => isSoundEnabled());
-  const [volume, setVolume] = useState(() => getSoundVolume());
-  const [volumeOpen, setVolumeOpen] = useState(false);
-  const volumeRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!volumeOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (volumeRef.current && !volumeRef.current.contains(e.target as Node)) {
-        setVolumeOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [volumeOpen]);
-
-  return (
-    <div className="header-volume-wrap" ref={volumeRef}>
-      <button
-        className="header-sound-toggle"
-        title={soundOn ? "Mute sounds" : "Unmute sounds"}
-        onClick={() => {
-          if (soundOn) {
-            setSoundEnabled(false);
-            setSoundOn(false);
-          } else {
-            const restored = volume > 0 ? volume : 0.7;
-            setSoundVolume(restored);
-            setVolume(restored);
-            setSoundOn(true);
-          }
-        }}
-        onContextMenu={e => {
-          e.preventDefault();
-          setVolumeOpen(v => !v);
-        }}
-      >
-        {!soundOn || volume === 0 ? (
-          <VolumeX size={20} />
-        ) : volume < 0.33 ? (
-          <Volume size={20} />
-        ) : volume < 0.66 ? (
-          <Volume1 size={20} />
-        ) : (
-          <Volume2 size={20} />
-        )}
-      </button>
-      {volumeOpen && (
-        <div className="header-volume-dropdown">
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.01}
-            value={volume}
-            className="header-volume-slider"
-            onChange={e => {
-              const v = Number.parseFloat(e.target.value);
-              setVolume(v);
-              setSoundVolume(v);
-              setSoundOn(v > 0);
-            }}
-          />
-          <span className="header-volume-label">{Math.round(volume * 100)}%</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // HeaderUserMenu
 function HeaderUserMenu({
   user,
-  routeAllowed,
-  setMenuOpen,
   handleLogout,
 }: {
-  user: { id: string; username: string; display_name?: string };
-  routeAllowed: (feature?: string) => boolean;
-  setMenuOpen: (v: boolean) => void;
+  user: { id: string; username: string; display_name?: string; avatar_url?: string };
   handleLogout: () => void;
 }) {
+  const navigate = useNavigate();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
+
+  const toggleAccountMenu = () => {
+    if (menuPosition) {
+      setMenuPosition(null);
+      return;
+    }
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setMenuPosition({ x: rect.right - 200, y: rect.bottom + 8 });
+  };
+
   return (
-    <div className="user-menu">
-      <SoundControl />
-      <NotificationBell />
-      {routeAllowed("inbox") && <InboxMail setMenuOpen={setMenuOpen} />}
-      <Link
-        to={`/form/user/${user.id}/profile`}
-        className="action-btn "
-        title="Settings"
-        onClick={() => setMenuOpen(false)}
+    <div className={`user-menu${menuPosition ? " user-menu--open" : ""}`}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="user-menu__trigger"
+        aria-label="Open account menu"
+        aria-haspopup="menu"
+        aria-expanded={!!menuPosition}
+        onClick={toggleAccountMenu}
       >
-        <Settings size={20} />
-      </Link>
-      <UserLink
-        userId={user.id}
-        username={user.username}
-        displayName={user.display_name}
-        variant="subtle"
-        className="user-link-header"
-      />
-      <button className="btn btn-ghost" onClick={handleLogout} title="Logout">
-        <LogOut size={20} />
+        <span className="user-menu__avatar-shell">
+          <UserAvatar src={user.avatar_url} alt="" size={26} />
+        </span>
+        <span className="user-menu__name">{user.display_name || user.username}</span>
+        <ChevronDown className="user-menu__chevron" size={15} />
       </button>
+      {menuPosition && (
+        <GlassMenu
+          x={menuPosition.x}
+          y={menuPosition.y}
+          anchorRef={triggerRef}
+          onClose={() => setMenuPosition(null)}
+          options={[
+            {
+              title: "Profile",
+              icon: <UserRound size={16} />,
+              onClick: () => navigate(`/users/${user.id}`),
+            },
+            {
+              title: "Account settings",
+              icon: <Settings size={16} />,
+              onClick: () => navigate(`/form/user/${user.id}/profile`),
+            },
+            {
+              title: "Sign out",
+              icon: <LogOut size={16} />,
+              onClick: handleLogout,
+            },
+          ]}
+        />
+      )}
     </div>
   );
 }

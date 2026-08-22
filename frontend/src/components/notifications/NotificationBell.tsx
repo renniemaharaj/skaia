@@ -61,7 +61,7 @@ const typeIcon = (type: NotificationType) => {
   }
 };
 
-const NotificationBell = () => {
+const NotificationBell = ({ embedded = false }: { embedded?: boolean }) => {
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const [notifs, setNotifs] = useAtom(notificationsAtom);
   const unread = useAtomValue(unreadNotifCountAtom);
@@ -73,6 +73,7 @@ const NotificationBell = () => {
   const feedEndRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const visible = open || embedded;
 
   // Load initial page of notifications once per session
   useEffect(() => {
@@ -88,13 +89,13 @@ const NotificationBell = () => {
   // Auto-scroll to bottom (newest) whenever the panel opens or new notifs arrive.
   // Use `scrollTop` on the scroll container to avoid scrolling the page viewport.
   useEffect(() => {
-    if (!open || !feedRef.current) return;
+    if (!visible || !feedRef.current) return;
 
     requestAnimationFrame(() => {
       const list = feedRef.current;
       if (list) list.scrollTop = list.scrollHeight;
     });
-  }, [open, notifs.length]);
+  }, [visible, notifs.length]);
 
   // Load older notifications when the top sentinel becomes visible
   const loadMore = useCallback(async () => {
@@ -124,7 +125,7 @@ const NotificationBell = () => {
   }, [loadingMore, hasMore, notifs.length, setNotifs]);
 
   useEffect(() => {
-    if (!open || !topSentinelRef.current) return;
+    if (!visible || !topSentinelRef.current) return;
     const observer = new IntersectionObserver(
       entries => {
         if (entries[0].isIntersecting) loadMore();
@@ -133,16 +134,16 @@ const NotificationBell = () => {
     );
     observer.observe(topSentinelRef.current);
     return () => observer.disconnect();
-  }, [open, loadMore]);
+  }, [visible, loadMore]);
 
   // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false);
     };
-    if (open) document.addEventListener("mousedown", handler);
+    if (open && !embedded) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+  }, [open, embedded]);
 
   const markRead = async (id: string) => {
     try {
@@ -204,30 +205,37 @@ const NotificationBell = () => {
   const feed = notifs.slice().reverse();
 
   return (
-    <div className="notif-bell-wrap" ref={panelRef}>
-      <button
-        className={`notif-bell-btn${open ? " notif-bell-btn--open" : ""}`}
-        onClick={() => setOpen(v => !v)}
-        title="Notifications"
-        aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ""}`}
-      >
-        <Bell size={20} />
-        {unread > 0 && <span className="notif-badge">{unread > 99 ? "99+" : unread}</span>}
-      </button>
+    <div
+      className={`notif-bell-wrap${embedded ? " notif-bell-wrap--embedded" : ""}`}
+      ref={panelRef}
+    >
+      {!embedded && (
+        <button
+          className={`notif-bell-btn${open ? " notif-bell-btn--open" : ""}`}
+          onClick={() => setOpen(v => !v)}
+          title="Notifications"
+          aria-label={`Notifications${unread > 0 ? `, ${unread} unread` : ""}`}
+        >
+          <Bell size={20} />
+          {unread > 0 && <span className="notif-badge">{unread > 99 ? "99+" : unread}</span>}
+        </button>
+      )}
 
-      {open && (
-        <div className="notif-panel">
+      {visible && (
+        <div className={`notif-panel${embedded ? " notif-panel--embedded" : ""}`}>
           <div className="notif-panel-header">
             <span className="notif-panel-title">Notifications</span>
             <div className="notif-panel-actions">
-              <button
-                className="notif-panel-close"
-                onClick={() => setOpen(false)}
-                title="Close"
-                aria-label="Close notifications"
-              >
-                <X size={16} />
-              </button>
+              {!embedded && (
+                <button
+                  className="notif-panel-close"
+                  onClick={() => setOpen(false)}
+                  title="Close"
+                  aria-label="Close notifications"
+                >
+                  <X size={16} />
+                </button>
+              )}
               {unread > 0 && (
                 <button className="notif-mark-all" onClick={markAllRead} title="Mark all as read">
                   <CheckCheck size={14} />

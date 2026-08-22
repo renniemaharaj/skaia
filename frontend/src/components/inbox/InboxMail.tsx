@@ -9,7 +9,7 @@ import {
 } from "../../atoms/inbox";
 import { apiRequest } from "../../utils/api";
 
-const InboxMail = ({ setMenuOpen }: { setMenuOpen: (v: boolean) => void }) => {
+const InboxMail = () => {
   const setInboxConversations = useSetAtom(inboxConversationsAtom);
   const [inboxUnreadCount, setInboxUnreadCount] = useAtom(inboxUnreadCountAtom);
 
@@ -31,7 +31,6 @@ const InboxMail = ({ setMenuOpen }: { setMenuOpen: (v: boolean) => void }) => {
       to="/inbox"
       className={`header-inbox-btn${inboxUnreadCount > 0 ? " header-inbox-btn--unread" : ""}`}
       title="Messages"
-      onClick={() => setMenuOpen(false)}
     >
       <Mail size={20} />
       {inboxUnreadCount > 0 && (

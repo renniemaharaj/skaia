@@ -99,14 +99,19 @@ type SiteConfig struct {
 
 // Branding holds site identity fetched from site_config.
 type Branding struct {
-	SiteName       string `json:"site_name"`
-	Tagline        string `json:"tagline"`
-	LogoURL        string `json:"logo_url"`
-	FaviconURL     string `json:"favicon_url"`
-	HeaderTitle    string `json:"header_title"`
-	HeaderSubtitle string `json:"header_subtitle"`
-	HeaderVariant  int    `json:"header_variant"`
-	MenuVariant    int    `json:"menu_variant"`
+	SiteName         string   `json:"site_name"`
+	Tagline          string   `json:"tagline"`
+	LogoURL          string   `json:"logo_url"`
+	FaviconURL       string   `json:"favicon_url"`
+	HeaderTitle      string   `json:"header_title"`
+	HeaderSubtitle   string   `json:"header_subtitle"`
+	HeaderVariant    int      `json:"header_variant"`
+	MenuVariant      int      `json:"menu_variant"`
+	DrawerAnimation  string   `json:"drawer_animation,omitempty"`
+	DrawerIconSize   int      `json:"drawer_icon_size,omitempty"`
+	DrawerColumns    int      `json:"drawer_columns,omitempty"`
+	DrawerShowLabels *bool    `json:"drawer_show_labels,omitempty"`
+	DrawerHiddenApps []string `json:"drawer_hidden_apps,omitempty"`
 }
 
 // SEO holds meta tag information from site_config.

@@ -85,6 +85,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
     const selectId =
       id || (label ? `sk-select-${label.replace(/\s+/g, "-").toLowerCase()}` : undefined);
     const nativeSelectId = selectId ? `${selectId}-native` : undefined;
+    const labelId = label && selectId ? `${selectId}-label` : undefined;
     const optionItems = useMemo<SelectOption[]>(() => {
       if (options) return options;
 
@@ -157,9 +158,9 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className={wrapperClasses} style={style}>
         {label && (
-          <label className="sk-select__label" htmlFor={selectId}>
+          <span className="sk-select__label" id={labelId}>
             {label}
-          </label>
+          </span>
         )}
         <div className="sk-select__wrapper">
           <select
@@ -194,7 +195,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             aria-haspopup="menu"
             aria-expanded={!!menuPosition}
             aria-invalid={!!error || undefined}
-            aria-labelledby={label ? selectId : undefined}
+            aria-labelledby={labelId}
             aria-label={ariaLabel}
             onClick={openMenu}
             onKeyDown={event => {

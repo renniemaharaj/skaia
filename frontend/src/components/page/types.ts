@@ -23,7 +23,7 @@ export interface PageSection {
   config: PageSectionConfig; items?: PageItem[]; last_edited_by?: SectionEditor; revision?: number;
 }
 
-export interface Branding { site_name: string; tagline: string; logo_url: string; favicon_url: string; header_title: string; header_subtitle: string; header_variant: number; menu_variant: number; }
+export interface Branding { site_name: string; tagline: string; logo_url: string; favicon_url: string; header_title: string; header_subtitle: string; header_variant: number; menu_variant: number; drawer_animation?: "scale" | "slide" | "fade"; drawer_icon_size?: 32 | 40 | 48; drawer_columns?: 3 | 4 | 5; drawer_show_labels?: boolean; drawer_hidden_apps?: string[]; }
 export interface SEOConfig { title: string; description: string; og_image: string; dom_skin: string; dom_video: string; particle_style: string; }
 export interface FooterLink { label: string; url: string; }
 export interface FooterSocialLink { icon: string; url: string; }

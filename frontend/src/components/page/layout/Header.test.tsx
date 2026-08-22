@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Provider, createStore } from "jotai";
 import { BrowserRouter, MemoryRouter } from "react-router-dom";
@@ -83,6 +83,8 @@ function renderHeader(
             cartCount={opts.cartCount ?? 0}
             isDarkMode={opts.isDarkMode ?? false}
             onDarkModeToggle={() => {}}
+            layoutMode="web"
+            onToggleLayoutMode={() => {}}
           />
         </ThemeProvider>
       </Router>
@@ -114,7 +116,7 @@ describe("Header Component", () => {
     it("does not render user menu when not authenticated", () => {
       renderHeader();
 
-      expect(screen.queryByTitle("Logout")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Open account menu" })).not.toBeInTheDocument();
     });
 
     it("sign-in button is present for unauthenticated users", () => {
@@ -148,10 +150,13 @@ describe("Header Component", () => {
       expect(screen.getByText("testuser")).toBeInTheDocument();
     });
 
-    it("shows logout button when authenticated", () => {
+    it("shows sign out in the account glass menu", async () => {
+      const user = userEvent.setup();
       renderHeader({ authenticated: true });
 
-      expect(screen.getByTitle("Logout")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Open account menu" }));
+
+      expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeInTheDocument();
     });
 
     it("clears auth state on logout", async () => {
@@ -161,7 +166,8 @@ describe("Header Component", () => {
 
       const { store } = renderHeader({ authenticated: true });
 
-      const logoutButton = screen.getByTitle("Logout");
+      await user.click(screen.getByRole("button", { name: "Open account menu" }));
+      const logoutButton = screen.getByRole("menuitem", { name: "Sign out" });
       await user.click(logoutButton);
 
       expect(store.get(isAuthenticatedAtom)).toBe(false);
@@ -173,16 +179,20 @@ describe("Header Component", () => {
 
   // Navigation Links
   describe("Navigation Links", () => {
-    it("renders all navigation links", () => {
+    it("renders all navigation links", async () => {
+      const user = userEvent.setup();
       renderHeader();
+      await user.click(screen.getByRole("button", { name: "Open drawer" }));
 
       expect(screen.getByRole("link", { name: /Home/i })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /Store/i })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /Forum/i })).toBeInTheDocument();
     });
 
-    it("applies active class to current page link", () => {
+    it("applies active class to current page link", async () => {
+      const user = userEvent.setup();
       renderHeader({ route: "/store" });
+      await user.click(screen.getByRole("button", { name: "Open drawer" }));
 
       const storeLink = screen.getByRole("link", { name: /Store/i });
       expect(storeLink).toHaveClass("active");
@@ -220,40 +230,130 @@ describe("Header Component", () => {
     });
   });
 
-  // Mobile Menu
-  describe("Mobile Menu", () => {
-    it("renders menu toggle button", () => {
-      const { container } = renderHeader();
+  describe("Quick Actions Launcher", () => {
+    it("opens its glass action grid on click", async () => {
+      const user = userEvent.setup();
+      renderHeader({ authenticated: true });
 
-      const menuToggle = container.querySelector(".menu-toggle");
-      expect(menuToggle).toBeInTheDocument();
+      const trigger = screen.getByRole("button", { name: "Open drawer" });
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+
+      await user.click(trigger);
+
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByRole("dialog", { name: "App drawer" })).toBeInTheDocument();
+      expect(screen.queryByText("Workspaces and tools")).not.toBeInTheDocument();
+      expect(screen.getByText("Documentation")).toBeInTheDocument();
+      expect(screen.getByTitle("Settings")).toBeInTheDocument();
     });
 
-    it("toggles menu visibility", async () => {
+    it("closes the launcher with Escape", async () => {
       const user = userEvent.setup();
-      const { container } = renderHeader();
+      renderHeader();
 
-      const menuToggle = container.querySelector(".menu-toggle")!;
-      await user.click(menuToggle);
+      const trigger = screen.getByRole("button", { name: "Open drawer" });
+      await user.click(trigger);
+      await user.keyboard("{Escape}");
 
-      const nav = container.querySelector(".nav");
-      expect(nav).toHaveClass("open");
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
     });
 
-    it("closes menu when clicking navigation link", async () => {
+    it("lets home managers customize animation, tile size, labels, and grid layout", async () => {
       const user = userEvent.setup();
-      const { container } = renderHeader();
+      renderHeader({
+        authenticated: true,
+        user: { ...testUser, permissions: ["home.manage"] },
+      });
 
-      // Open menu
-      const menuToggle = container.querySelector(".menu-toggle")!;
-      await user.click(menuToggle);
-      expect(container.querySelector(".nav")).toHaveClass("open");
+      await user.click(screen.getByRole("button", { name: "Open drawer" }));
 
-      // Click a nav link
-      const homeLink = screen.getByRole("link", { name: /Home/i });
-      await user.click(homeLink);
+      const search = screen.getByRole("searchbox", { name: "Search drawer" });
+      const customize = screen.getByRole("button", { name: "Customize drawer" });
+      expect(search.closest(".drawer-search-row")).toContainElement(customize);
+      await user.click(customize);
 
-      expect(container.querySelector(".nav")).not.toHaveClass("open");
+      const animationSelect = screen.getByRole("button", { name: "Animation" });
+      expect(animationSelect).toHaveClass("sk-select__trigger");
+      expect(screen.getByRole("button", { name: "Tile size" })).toHaveClass("sk-select__trigger");
+      expect(screen.getByRole("button", { name: "Grid" })).toHaveClass("sk-select__trigger");
+      expect(screen.getByRole("button", { name: "Labels" })).toHaveClass("sk-select__trigger");
+      expect(screen.getByRole("checkbox", { name: "Home" })).toBeChecked();
+
+      await user.click(animationSelect);
+      expect(screen.getByRole("menu")).toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: "Slide" })).toBeInTheDocument();
+    });
+
+    it("opens tool details inside the drawer and supports back navigation", async () => {
+      const user = userEvent.setup();
+      renderHeader({ authenticated: true });
+
+      await user.click(screen.getByRole("button", { name: "Open drawer" }));
+      await user.click(screen.getByRole("button", { name: "Sound controls" }));
+
+      expect(screen.getByText("Sound", { selector: ".drawer-detail-header span" })).toBeVisible();
+      expect(screen.getByRole("slider", { name: "Sound volume" })).toBeInTheDocument();
+      expect(screen.queryByRole("searchbox", { name: "Search drawer" })).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Back to drawer" }));
+
+      expect(screen.getByRole("searchbox", { name: "Search drawer" })).toBeInTheDocument();
+      expect(screen.queryByRole("slider", { name: "Sound volume" })).not.toBeInTheDocument();
+    });
+
+    it("opens and advances immediately with Alt+ArrowRight", async () => {
+      const user = userEvent.setup();
+      renderHeader({ authenticated: true });
+
+      const trigger = screen.getByRole("button", { name: "Open drawer" });
+      await user.keyboard("{Alt>}{ArrowRight}{/Alt}");
+
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+      await waitFor(() => expect(screen.getByRole("link", { name: "Home" })).toHaveFocus());
+
+      await user.keyboard("{ArrowDown}");
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Toggle dark mode" })).toHaveFocus()
+      );
+
+      await user.keyboard("{ArrowUp}");
+      await waitFor(() => expect(screen.getByRole("link", { name: "Home" })).toHaveFocus());
+
+      await user.keyboard("{ArrowRight}");
+      await waitFor(() => expect(screen.getByRole("link", { name: "Store" })).toHaveFocus());
+
+      await user.keyboard("{ArrowLeft}");
+      await waitFor(() => expect(screen.getByRole("link", { name: "Home" })).toHaveFocus());
+    });
+
+    it("opens and decrements immediately with Alt+ArrowLeft", async () => {
+      const user = userEvent.setup();
+      renderHeader({ authenticated: true });
+
+      await user.keyboard("{Alt>}{ArrowLeft}{/Alt}");
+
+      await waitFor(() => expect(screen.getByRole("link", { name: "Settings" })).toHaveFocus());
+    });
+
+    it("opens directly in tools with Alt+ArrowDown", async () => {
+      const user = userEvent.setup();
+      renderHeader({ authenticated: true });
+
+      await user.keyboard("{Alt>}{ArrowDown}{/Alt}");
+
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Toggle dark mode" })).toHaveFocus()
+      );
+    });
+  });
+
+  describe("Mobile Header", () => {
+    it("does not render the legacy hamburger menu", () => {
+      renderHeader();
+
+      expect(
+        screen.queryByRole("button", { name: /open menu|close menu/i })
+      ).not.toBeInTheDocument();
     });
   });
 
