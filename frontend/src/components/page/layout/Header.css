@@ -608,7 +608,7 @@
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+  transition: color 160ms ease;
 }
 
 .utility-launcher__item:hover,
@@ -616,15 +616,17 @@
 .utility-launcher__item:focus-visible,
 .utility-launcher__embedded:focus-within {
   color: var(--text-primary);
-  border-color: color-mix(in srgb, var(--border-color) 68%, transparent);
-  background: color-mix(in srgb, var(--bg-tertiary) 66%, transparent);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
   outline: none;
 }
 
 .utility-launcher__item.active {
   color: var(--primary-color);
-  border-color: color-mix(in srgb, var(--primary-color) 30%, var(--border-color));
-  background: color-mix(in srgb, var(--primary-color) 8%, transparent);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 
 .utility-launcher[data-labels="hidden"] .utility-launcher__item,
@@ -647,8 +649,14 @@
   border-radius: calc(var(--drawer-icon-size, 40px) * 0.24);
   color: var(--primary-color);
   background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary));
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 48%, transparent), 0 5px 12px
-    color-mix(in srgb, var(--text-primary) 8%, transparent);
+  box-shadow: none;
+  transition: background-color 160ms ease;
+}
+
+.utility-launcher__item:hover .utility-launcher__icon,
+.utility-launcher__item:focus-visible .utility-launcher__icon,
+.utility-launcher__item.active .utility-launcher__icon {
+  background: color-mix(in srgb, currentColor 20%, var(--bg-secondary));
 }
 
 .utility-launcher__icon svg,
@@ -698,8 +706,19 @@
   border-radius: calc(var(--drawer-icon-size, 40px) * 0.24);
   color: var(--primary-color);
   background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-secondary));
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 48%, transparent), 0 5px 12px
-    color-mix(in srgb, var(--text-primary) 8%, transparent);
+  box-shadow: none;
+  transition: background-color 160ms ease;
+}
+
+.utility-launcher__embedded:hover > button,
+.utility-launcher__embedded:hover > a,
+.utility-launcher__embedded:focus-within > button,
+.utility-launcher__embedded:focus-within > a,
+.utility-launcher__embedded:hover .notif-bell-btn,
+.utility-launcher__embedded:focus-within .notif-bell-btn,
+.utility-launcher__embedded:hover .header-sound-toggle,
+.utility-launcher__embedded:focus-within .header-sound-toggle {
+  background: color-mix(in srgb, currentColor 20%, var(--bg-secondary));
 }
 
 .utility-launcher__embedded .notif-bell-wrap {
