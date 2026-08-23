@@ -149,6 +149,7 @@ type CheckoutRequest struct {
 	RememberBilling  bool           `json:"remember_billing,omitempty"`
 	BillingInfo      string         `json:"billing_info,omitempty"`
 	ReferralCode     string         `json:"referral_code,omitempty"`
+	IdempotencyKey   string         `json:"-"`
 }
 
 // CheckoutItem is a single line in a checkout request.
@@ -165,6 +166,37 @@ type CheckoutResponse struct {
 	ClientSecret string   `json:"client_secret,omitempty"`
 	Status       string   `json:"status"`
 	Message      string   `json:"message,omitempty"`
+	Replayed     bool     `json:"replayed,omitempty"`
+}
+
+// CheckoutOperation is the durable server-side identity of one checkout
+// attempt. Only hashes of the caller's opaque key and request payload persist.
+type CheckoutOperation struct {
+	ID          int64
+	UserID      int64
+	PayloadHash string
+	OrderID     *int64
+	Status      string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+// OrderFulfilment is one durable, lease-owned account effect from a purchased
+// order item. It is operator data and is never embedded in public order DTOs.
+type OrderFulfilment struct {
+	ID             int64
+	OrderID        int64
+	OrderItemID    int64
+	UserID         int64
+	ActionIndex    int
+	ActionType     string
+	ActionValue    string
+	Quantity       int
+	PayloadHash    string
+	Status         string
+	Attempts       int
+	LeaseOwner     string
+	LeaseExpiresAt *time.Time
 }
 
 // SubscriptionPlan defines a recurring billing plan. PriceCents is per interval.

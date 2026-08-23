@@ -111,6 +111,13 @@ operational policies.
 
 ## Last Run Remarks
 
+- Reconciled the completed commerce-integrity foundation into backend, frontend,
+  security, migration, and realtime cards. The durable contract now names
+  authenticated hash-only checkout replay, signed provider events, guarded
+  transitions, commit-coupled leased fulfilment, atomic payouts, operator
+  recovery, migration 039, and replay-suppressed client effects. Stage 1 is
+  complete and `production_readiness_and_service_status` is unblocked.
+
 - Documented the `.tip` execution-sequence declaration API and indexed the
   recon-derived platform queue with the `platform_gap_execution_sequence` group
   tag. Index 0 identifies the coordinator; unique contiguous indexes 1-6 are the

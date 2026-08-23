@@ -224,6 +224,7 @@ func TestCheckout_CashOnDeliveryClearsPersistedCart(t *testing.T) {
 		}},
 		PaymentMethodID: "delivery_cash",
 		Currency:        "usd",
+		IdempotencyKey:  testutil.UniqueStr("checkout"),
 	})
 	require.NoError(t, err)
 	require.NotNil(t, resp.Order)
@@ -312,7 +313,7 @@ func TestOrderRepository_UpdateStatus_AllTransitions(t *testing.T) {
 	)
 	require.NoError(t, err)
 	assert.Equal(t, "pending", order.Status)
-	for _, status := range []string{"completed", "cancelled"} {
+	for _, status := range []string{"accepted", "completed"} {
 		updated, err := orderRepo.UpdateStatus(order.ID, status)
 		require.NoError(t, err)
 		assert.Equal(t, status, updated.Status)
@@ -320,6 +321,8 @@ func TestOrderRepository_UpdateStatus_AllTransitions(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, status, fetched.Status)
 	}
+	_, err = orderRepo.UpdateStatus(order.ID, "cancelled")
+	require.ErrorContains(t, err, "invalid order status transition")
 }
 
 func TestOrderRepository_AcceptWithStockCheck_DecrementsStockOnce(t *testing.T) {

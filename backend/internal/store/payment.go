@@ -1,6 +1,8 @@
 package store
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	log "github.com/skaia/backend/internal/syslog"
 	"math/rand"
@@ -15,7 +17,44 @@ import (
 	"github.com/stripe/stripe-go/v82/price"
 	"github.com/stripe/stripe-go/v82/product"
 	sub "github.com/stripe/stripe-go/v82/subscription"
+	"github.com/stripe/stripe-go/v82/webhook"
 )
+
+var ErrUnsupportedPaymentEvent = errors.New("unsupported payment event")
+
+type ProviderPaymentEvent struct {
+	ID          string
+	ProviderRef string
+	Status      string
+}
+
+// ParseStripePaymentEvent verifies the signed Stripe payload and projects only
+// payment-intent lifecycle facts needed by the generic store service.
+func ParseStripePaymentEvent(payload []byte, signature, secret string) (*ProviderPaymentEvent, error) {
+	if len(payload) == 0 || len(payload) > 1<<20 || signature == "" || secret == "" {
+		return nil, errors.New("stripe webhook requires a bounded payload, signature, and secret")
+	}
+	event, err := webhook.ConstructEvent(payload, signature, secret)
+	if err != nil {
+		return nil, fmt.Errorf("verify stripe webhook: %w", err)
+	}
+	status := ""
+	switch event.Type {
+	case "payment_intent.succeeded":
+		status = "succeeded"
+	case "payment_intent.payment_failed", "payment_intent.canceled":
+		status = "failed"
+	case "payment_intent.processing":
+		status = "processing"
+	default:
+		return nil, ErrUnsupportedPaymentEvent
+	}
+	var intent stripe.PaymentIntent
+	if err := json.Unmarshal(event.Data.Raw, &intent); err != nil || intent.ID == "" {
+		return nil, errors.New("invalid stripe payment intent event")
+	}
+	return &ProviderPaymentEvent{ID: event.ID, ProviderRef: intent.ID, Status: status}, nil
+}
 
 // DemoPaymentProvider simulates payment operations without external calls.
 type DemoPaymentProvider struct{}
@@ -23,14 +62,14 @@ type DemoPaymentProvider struct{}
 // NewDemoPaymentProvider returns a demo provider.
 func NewDemoPaymentProvider() PaymentProvider { return &DemoPaymentProvider{} }
 
-func (p *DemoPaymentProvider) Charge(userID, amountCents int64, currency, _ string) (ref, status, clientSecret string, err error) {
+func (p *DemoPaymentProvider) Charge(userID, amountCents int64, currency, _, idempotencyKey string) (ref, status, clientSecret string, err error) {
 	time.Sleep(time.Duration(10+rand.Intn(30)) * time.Millisecond)
 
 	if os.Getenv("DEMO_PAYMENT_FAIL") == "true" {
 		return "", "failed", "", nil
 	}
 
-	ref = fmt.Sprintf("demo_%d_%d", userID, time.Now().UnixNano())
+	ref = fmt.Sprintf("demo_%d_%s", userID, hashOperationValue(idempotencyKey)[:24])
 	log.Printf("payment[demo]: charged %d cents %s for userID=%d ref=%s", amountCents, currency, userID, ref)
 	return ref, "succeeded", "", nil
 }
@@ -82,7 +121,7 @@ func NewStripePaymentProvider(secretKey string) PaymentProvider {
 }
 
 // Charge creates a PaymentIntent and confirms it immediately.
-func (p *StripePaymentProvider) Charge(userID, amountCents int64, currency, paymentMethodID string) (ref, status, clientSecret string, err error) {
+func (p *StripePaymentProvider) Charge(userID, amountCents int64, currency, paymentMethodID, idempotencyKey string) (ref, status, clientSecret string, err error) {
 	params := &stripe.PaymentIntentParams{
 		Amount:   stripe.Int64(amountCents),
 		Currency: stripe.String(currency),
@@ -90,6 +129,7 @@ func (p *StripePaymentProvider) Charge(userID, amountCents int64, currency, paym
 			"user_id": fmt.Sprintf("%d", userID),
 		},
 	}
+	params.SetIdempotencyKey(idempotencyKey)
 	if paymentMethodID != "" {
 		params.PaymentMethod = stripe.String(paymentMethodID)
 		params.Confirm = stripe.Bool(true)

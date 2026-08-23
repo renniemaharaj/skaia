@@ -545,33 +545,121 @@ func combineVendorStatus(current, next string) string {
 
 func (r *sqlOrderRepository) Create(order *models.Order, items []*models.OrderItem) (*models.Order, error) {
 	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
-		err := exec.QueryRow(
-			`INSERT INTO orders (user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, referral_code)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at`,
-			order.UserID, order.IsGuest, order.GuestEmail, order.GuestPhone, order.DeliveryLocation, order.DeliveryDate, order.DeliveryTime, order.ExtraInfo, order.BillingInfo, order.TotalPrice, order.Status, order.ReferralCode,
-		).Scan(&order.ID, &order.UserID, &order.IsGuest, &order.GuestEmail, &order.GuestPhone, &order.DeliveryLocation, &order.DeliveryDate, &order.DeliveryTime, &order.ExtraInfo, &order.BillingInfo, &order.TotalPrice, &order.Status, &order.ReferralCode, &order.CreatedAt, &order.UpdatedAt)
-		if err != nil {
-			return err
-		}
-
-		for _, item := range items {
-			item.OrderID = order.ID
-			_, err := exec.Exec(
-				`INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)`,
-				item.OrderID, item.ProductID, item.Quantity, item.Price,
-			)
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
+		return insertOrder(exec, order, items)
 	})
 	if err != nil {
 		return nil, err
 	}
 	return r.GetByID(order.ID)
+}
+
+func insertOrder(exec database.Executor, order *models.Order, items []*models.OrderItem) error {
+	err := exec.QueryRow(
+		`INSERT INTO orders (user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, referral_code)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at`,
+		order.UserID, order.IsGuest, order.GuestEmail, order.GuestPhone, order.DeliveryLocation, order.DeliveryDate, order.DeliveryTime, order.ExtraInfo, order.BillingInfo, order.TotalPrice, order.Status, order.ReferralCode,
+	).Scan(&order.ID, &order.UserID, &order.IsGuest, &order.GuestEmail, &order.GuestPhone, &order.DeliveryLocation, &order.DeliveryDate, &order.DeliveryTime, &order.ExtraInfo, &order.BillingInfo, &order.TotalPrice, &order.Status, &order.ReferralCode, &order.CreatedAt, &order.UpdatedAt)
+	if err != nil {
+		return err
+	}
+	for _, item := range items {
+		item.OrderID = order.ID
+		if err := exec.QueryRow(
+			`INSERT INTO order_items (order_id, product_id, quantity, price)
+			 VALUES ($1, $2, $3, $4) RETURNING id, created_at`,
+			item.OrderID, item.ProductID, item.Quantity, item.Price,
+		).Scan(&item.ID, &item.CreatedAt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *sqlOrderRepository) BeginCheckout(userID int64, operationKey, payloadHash string) (*models.CheckoutOperation, bool, error) {
+	if userID <= 0 || operationKey == "" || len(operationKey) > 500 || payloadHash == "" {
+		return nil, false, errors.New("checkout requires a user, bounded idempotency key, and payload hash")
+	}
+	keyHash := hashOperationValue(operationKey)
+	op := &models.CheckoutOperation{}
+	created := false
+	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		err := exec.QueryRow(`
+			INSERT INTO store_checkout_operations (user_id, key_hash, payload_hash)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (user_id, key_hash) DO NOTHING
+			RETURNING id, user_id, payload_hash, order_id, status, created_at, updated_at
+		`, userID, keyHash, payloadHash).Scan(
+			&op.ID, &op.UserID, &op.PayloadHash, &op.OrderID, &op.Status, &op.CreatedAt, &op.UpdatedAt,
+		)
+		if err == nil {
+			created = true
+			return nil
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+		if err := exec.QueryRow(`
+			SELECT id, user_id, payload_hash, order_id, status, created_at, updated_at
+			FROM store_checkout_operations WHERE user_id=$1 AND key_hash=$2 FOR UPDATE
+		`, userID, keyHash).Scan(
+			&op.ID, &op.UserID, &op.PayloadHash, &op.OrderID, &op.Status, &op.CreatedAt, &op.UpdatedAt,
+		); err != nil {
+			return err
+		}
+		if op.PayloadHash != payloadHash {
+			return ErrIdempotencyConflict
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return op, created, nil
+}
+
+func (r *sqlOrderRepository) CreateForCheckout(operationID int64, order *models.Order, items []*models.OrderItem) (*models.Order, error) {
+	var orderID int64
+	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		if err := exec.QueryRow(`SELECT COALESCE(order_id, 0) FROM store_checkout_operations WHERE id=$1 FOR UPDATE`, operationID).Scan(&orderID); err != nil {
+			return err
+		}
+		if orderID > 0 {
+			return nil
+		}
+		if err := insertOrder(exec, order, items); err != nil {
+			return err
+		}
+		orderID = order.ID
+		result, err := exec.Exec(`UPDATE store_checkout_operations SET order_id=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2 AND order_id IS NULL`, orderID, operationID)
+		if err != nil {
+			return err
+		}
+		rows, err := result.RowsAffected()
+		if err != nil || rows != 1 {
+			return errors.New("checkout operation order binding failed")
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return r.GetByID(orderID)
+}
+
+func (r *sqlOrderRepository) CompleteCheckout(operationID int64) error {
+	result, err := r.db.Exec(`UPDATE store_checkout_operations SET status='completed', updated_at=CURRENT_TIMESTAMP WHERE id=$1 AND order_id IS NOT NULL`, operationID)
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return errors.New("checkout operation cannot complete without an order")
+	}
+	return nil
 }
 
 func (r *sqlOrderRepository) GetByID(id int64) (*models.Order, error) {
@@ -659,33 +747,48 @@ func (r *sqlOrderRepository) ContainsProductOwnedBy(orderID, ownerID int64) (boo
 }
 
 func (r *sqlOrderRepository) AcceptWithStockCheck(id int64) (*models.Order, error) {
-	o := &models.Order{}
 	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
 		var currentStatus string
+		var userID sql.NullInt64
 		err := exec.QueryRow(
-			`SELECT status FROM orders
+			`SELECT status, user_id FROM orders
 			 WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
 			id,
-		).Scan(&currentStatus)
+		).Scan(&currentStatus, &userID)
 		if errors.Is(err, sql.ErrNoRows) {
 			return errors.New("order not found")
 		}
 		if err != nil {
 			return err
 		}
+		if currentStatus == "accepted" || currentStatus == "paid" || currentStatus == "completed" {
+			return nil
+		}
+		if currentStatus != "pending" && currentStatus != "vendor_review" {
+			return fmt.Errorf("invalid order status transition from %s to accepted", currentStatus)
+		}
 
-		rows, err := exec.Query(`SELECT product_id, quantity FROM order_items WHERE order_id = $1`, id)
+		rows, err := exec.Query(`
+			SELECT oi.id, oi.product_id, oi.quantity, COALESCE(p.special_actions, '[]'::jsonb)::text
+			FROM order_items oi JOIN products p ON p.id=oi.product_id
+			WHERE oi.order_id = $1 ORDER BY oi.id FOR UPDATE OF oi
+		`, id)
 		if err != nil {
 			return err
 		}
-		var items []*models.OrderItem
+		type acceptedItem struct {
+			item    *models.OrderItem
+			actions string
+		}
+		var items []acceptedItem
 		for rows.Next() {
 			item := &models.OrderItem{OrderID: id}
-			if err := rows.Scan(&item.ProductID, &item.Quantity); err != nil {
+			var actions string
+			if err := rows.Scan(&item.ID, &item.ProductID, &item.Quantity, &actions); err != nil {
 				rows.Close()
 				return err
 			}
-			items = append(items, item)
+			items = append(items, acceptedItem{item: item, actions: actions})
 		}
 		if err := rows.Close(); err != nil {
 			return err
@@ -694,39 +797,42 @@ func (r *sqlOrderRepository) AcceptWithStockCheck(id int64) (*models.Order, erro
 			return err
 		}
 
-		shouldReserveStock := currentStatus != "accepted" && currentStatus != "paid" && currentStatus != "completed"
-		if shouldReserveStock {
-			for _, item := range items {
-				var productName string
-				err := exec.QueryRow(
-					`UPDATE products
+		for _, accepted := range items {
+			item := accepted.item
+			var productName string
+			err := exec.QueryRow(
+				`UPDATE products
 				 SET stock = CASE WHEN stock_unlimited THEN stock ELSE stock - $2 END,
 				     updated_at = CURRENT_TIMESTAMP
 				 WHERE id = $1 AND deleted_at IS NULL
 				   AND (stock_unlimited = true OR stock >= $2)
 				 RETURNING name`,
-					item.ProductID, item.Quantity,
-				).Scan(&productName)
-				if errors.Is(err, sql.ErrNoRows) {
-					var name string
-					_ = exec.QueryRow(`SELECT name FROM products WHERE id = $1`, item.ProductID).Scan(&name)
-					if name == "" {
-						name = fmt.Sprintf("%d", item.ProductID)
-					}
-					return fmt.Errorf("insufficient stock for product %q", name)
+				item.ProductID, item.Quantity,
+			).Scan(&productName)
+			if errors.Is(err, sql.ErrNoRows) {
+				var name string
+				_ = exec.QueryRow(`SELECT name FROM products WHERE id = $1`, item.ProductID).Scan(&name)
+				if name == "" {
+					name = fmt.Sprintf("%d", item.ProductID)
 				}
-				if err != nil {
-					return err
-				}
+				return fmt.Errorf("insufficient stock for product %q", name)
+			}
+			if err != nil {
+				return err
 			}
 		}
 
-		err = exec.QueryRow(
+		for _, accepted := range items {
+			if err := enqueueItemFulfilments(exec, id, userID, accepted.item.ID, accepted.item.Quantity, accepted.actions); err != nil {
+				return err
+			}
+		}
+
+		_, err = exec.Exec(
 			`UPDATE orders SET status='accepted', updated_at=CURRENT_TIMESTAMP
-			 WHERE id=$1 AND deleted_at IS NULL
-		 RETURNING id, user_id, is_guest, guest_email, guest_phone, delivery_location, delivery_date, delivery_time, extra_info, billing_info, total_price, status, COALESCE(referral_code, ''), created_at, updated_at`,
+			 WHERE id=$1 AND deleted_at IS NULL`,
 			id,
-		).Scan(&o.ID, &o.UserID, &o.IsGuest, &o.GuestEmail, &o.GuestPhone, &o.DeliveryLocation, &o.DeliveryDate, &o.DeliveryTime, &o.ExtraInfo, &o.BillingInfo, &o.TotalPrice, &o.Status, &o.ReferralCode, &o.CreatedAt, &o.UpdatedAt)
+		)
 		if err != nil {
 			return err
 		}
@@ -737,15 +843,87 @@ func (r *sqlOrderRepository) AcceptWithStockCheck(id int64) (*models.Order, erro
 		return nil, err
 	}
 
-	if err := r.loadItems(o); err != nil {
-		return nil, err
+	return r.GetByID(id)
+}
+
+func enqueueItemFulfilments(exec database.Executor, orderID int64, userID sql.NullInt64, orderItemID int64, quantity int, rawActions string) error {
+	if rawActions == "" || rawActions == "[]" {
+		return nil
 	}
-	return o, nil
+	if !userID.Valid || userID.Int64 <= 0 {
+		return errors.New("special-action fulfilment requires an authenticated order owner")
+	}
+	var actions []struct {
+		Type  string `json:"type"`
+		Value string `json:"value"`
+	}
+	if err := json.Unmarshal([]byte(rawActions), &actions); err != nil {
+		return fmt.Errorf("decode product fulfilment: %w", err)
+	}
+	for actionIndex, action := range actions {
+		if action.Type != "role" && action.Type != "credit" {
+			return fmt.Errorf("unsupported product fulfilment type %q", action.Type)
+		}
+		if action.Value == "" {
+			return errors.New("product fulfilment value is required")
+		}
+		payloadHash := hashOperationValue(fmt.Sprintf("%d:%d:%d:%s:%s:%d", orderID, orderItemID, actionIndex, action.Type, action.Value, quantity))
+		if _, err := exec.Exec(`
+			INSERT INTO store_order_fulfilments
+				(order_id, order_item_id, user_id, action_index, action_type, action_value, quantity, payload_hash)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+			ON CONFLICT (order_item_id, action_index) DO UPDATE SET updated_at=CURRENT_TIMESTAMP
+			WHERE store_order_fulfilments.payload_hash=EXCLUDED.payload_hash
+		`, orderID, orderItemID, userID.Int64, actionIndex, action.Type, action.Value, quantity, payloadHash); err != nil {
+			return err
+		}
+		var storedHash string
+		if err := exec.QueryRow(`SELECT payload_hash FROM store_order_fulfilments WHERE order_item_id=$1 AND action_index=$2`, orderItemID, actionIndex).Scan(&storedHash); err != nil {
+			return err
+		}
+		if storedHash != payloadHash {
+			return ErrIdempotencyConflict
+		}
+	}
+	return nil
 }
 
 func (r *sqlOrderRepository) UpdateStatus(id int64, status string) (*models.Order, error) {
 	o := &models.Order{}
 	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		var current string
+		if err := exec.QueryRow(`SELECT status FROM orders WHERE id=$1 AND deleted_at IS NULL FOR UPDATE`, id).Scan(&current); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return errors.New("order not found")
+			}
+			return err
+		}
+		if !allowedOrderTransition(current, status) {
+			return fmt.Errorf("invalid order status transition from %s to %s", current, status)
+		}
+		if current != status && (status == "cancelled" || status == "failed" || status == "rejected") {
+			var paid bool
+			if err := exec.QueryRow(`SELECT EXISTS(SELECT 1 FROM payments WHERE order_id=$1 AND status='succeeded')`, id).Scan(&paid); err != nil {
+				return err
+			}
+			if paid {
+				return errors.New("paid order requires an explicit refund workflow")
+			}
+			if _, err := exec.Exec(`
+				WITH released AS (
+					SELECT product_id, SUM(quantity)::bigint AS quantity
+					FROM order_items
+					WHERE order_id=$1 AND vendor_status IN ('accepted','completed')
+					GROUP BY product_id
+				)
+				UPDATE products p
+				SET stock=CASE WHEN p.stock_unlimited THEN p.stock ELSE p.stock+released.quantity::int END,
+					updated_at=CURRENT_TIMESTAMP
+				FROM released WHERE p.id=released.product_id
+			`, id); err != nil {
+				return err
+			}
+		}
 		err := exec.QueryRow(
 			`UPDATE orders SET status=$1, updated_at=CURRENT_TIMESTAMP
 			 WHERE id=$2 AND deleted_at IS NULL
@@ -766,21 +944,101 @@ func (r *sqlOrderRepository) UpdateStatus(id int64, status string) (*models.Orde
 	return o, err
 }
 
+func allowedOrderTransition(current, next string) bool {
+	if current == next {
+		return true
+	}
+	switch current {
+	case "pending":
+		return next == "accepted" || next == "failed" || next == "cancelled" || next == "rejected"
+	case "vendor_review":
+		return next == "accepted" || next == "rejected" || next == "cancelled"
+	case "accepted":
+		return next == "paid" || next == "completed" || next == "rejected" || next == "cancelled"
+	case "paid":
+		return next == "completed" || next == "cancelled"
+	case "fulfilment_pending":
+		return next == "completed" || next == "cancelled"
+	default:
+		return false
+	}
+}
+
+func (r *sqlOrderRepository) CompleteWithReferencePayout(id int64) (*models.Order, error) {
+	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		var current string
+		if err := exec.QueryRow(`SELECT status FROM orders WHERE id=$1 AND deleted_at IS NULL FOR UPDATE`, id).Scan(&current); err != nil {
+			return err
+		}
+		if current != "completed" && !allowedOrderTransition(current, "completed") {
+			return fmt.Errorf("invalid order status transition from %s to completed", current)
+		}
+		var pending int
+		if err := exec.QueryRow(`SELECT COUNT(*) FROM store_order_fulfilments WHERE order_id=$1 AND status <> 'succeeded'`, id).Scan(&pending); err != nil {
+			return err
+		}
+		if pending > 0 {
+			return errors.New("order fulfilments are incomplete")
+		}
+
+		var payoutID, payoutUserID, payoutAmount int64
+		var code string
+		err := exec.QueryRow(`
+			INSERT INTO store_reference_code_payouts (reference_code_id, order_id, user_id, amount)
+			SELECT rc.id, o.id, rc.user_id, rc.incentive_amount
+			FROM orders o
+			JOIN store_reference_codes rc ON rc.code=o.referral_code
+			WHERE o.id=$1 AND o.referral_code IS NOT NULL AND o.referral_code <> ''
+			  AND rc.deleted_at IS NULL AND rc.is_active=true AND rc.incentive_amount > 0
+			  AND (o.user_id IS NULL OR o.user_id <> rc.user_id)
+			ON CONFLICT (order_id) DO NOTHING
+			RETURNING id, user_id, amount, (SELECT referral_code FROM orders WHERE id=$1)
+		`, id).Scan(&payoutID, &payoutUserID, &payoutAmount, &code)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+		if err == nil {
+			if _, err := exec.Exec(`
+				INSERT INTO user_wallet_transactions (user_id, amount, type, description)
+				VALUES ($1, $2, 'credit', $3)
+			`, payoutUserID, payoutAmount, fmt.Sprintf("Reference code %s reward for order #%d", code, id)); err != nil {
+				return err
+			}
+		}
+
+		if _, err := exec.Exec(`UPDATE orders SET status='completed', updated_at=CURRENT_TIMESTAMP WHERE id=$1`, id); err != nil {
+			return err
+		}
+		_, err = exec.Exec(`UPDATE order_items SET vendor_status='completed', vendor_updated_at=CURRENT_TIMESTAMP WHERE order_id=$1`, id)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return r.GetByID(id)
+}
+
 func (r *sqlOrderRepository) UpdateVendorStatus(id, ownerID int64, status, note string) (*models.Order, error) {
 	if status != "accepted" && status != "rejected" && status != "completed" && status != "pending" {
 		return nil, fmt.Errorf("invalid vendor status")
 	}
 	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
-		if _, err := exec.Exec(
-			`SELECT id FROM orders
+		var orderStatus string
+		var orderUserID sql.NullInt64
+		if err := exec.QueryRow(
+			`SELECT status, user_id FROM orders
 			 WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
 			id,
-		); err != nil {
+		).Scan(&orderStatus, &orderUserID); err != nil {
 			return err
+		}
+		if (orderStatus == "completed" || orderStatus == "cancelled" || orderStatus == "failed" || orderStatus == "rejected") && orderStatus != status {
+			return fmt.Errorf("order status %s is terminal", orderStatus)
 		}
 
 		rows, err := exec.Query(`
-			SELECT oi.id, oi.product_id, oi.quantity, COALESCE(oi.vendor_status, 'pending')
+			SELECT oi.id, oi.product_id, oi.quantity, COALESCE(oi.vendor_status, 'pending'),
+			       COALESCE(p.special_actions, '[]'::jsonb)::text
 			FROM order_items oi
 			JOIN products p ON p.id = oi.product_id
 			WHERE oi.order_id = $1 AND p.owner_id = $2
@@ -794,11 +1052,12 @@ func (r *sqlOrderRepository) UpdateVendorStatus(id, ownerID int64, status, note 
 			productID int64
 			quantity  int
 			status    string
+			actions   string
 		}
 		items := []vendorItem{}
 		for rows.Next() {
 			var item vendorItem
-			if err := rows.Scan(&item.id, &item.productID, &item.quantity, &item.status); err != nil {
+			if err := rows.Scan(&item.id, &item.productID, &item.quantity, &item.status, &item.actions); err != nil {
 				rows.Close()
 				return err
 			}
@@ -812,6 +1071,20 @@ func (r *sqlOrderRepository) UpdateVendorStatus(id, ownerID int64, status, note 
 		}
 		if len(items) == 0 {
 			return errors.New("vendor has no items in order")
+		}
+		for _, item := range items {
+			if !allowedVendorTransition(item.status, status) {
+				return fmt.Errorf("invalid vendor status transition from %s to %s", item.status, status)
+			}
+		}
+		if status == "rejected" || status == "pending" {
+			var paid bool
+			if err := exec.QueryRow(`SELECT EXISTS(SELECT 1 FROM payments WHERE order_id=$1 AND status='succeeded')`, id).Scan(&paid); err != nil {
+				return err
+			}
+			if paid {
+				return errors.New("paid order requires an explicit refund workflow")
+			}
 		}
 
 		if status == "accepted" {
@@ -838,6 +1111,9 @@ func (r *sqlOrderRepository) UpdateVendorStatus(id, ownerID int64, status, note 
 					return fmt.Errorf("insufficient stock for product %q", name)
 				}
 				if err != nil {
+					return err
+				}
+				if err := enqueueItemFulfilments(exec, id, orderUserID, item.id, item.quantity, item.actions); err != nil {
 					return err
 				}
 			}
@@ -876,6 +1152,15 @@ func (r *sqlOrderRepository) UpdateVendorStatus(id, ownerID int64, status, note 
 		if err != nil {
 			return err
 		}
+		if aggregateStatus == "completed" {
+			var incomplete int
+			if err := exec.QueryRow(`SELECT COUNT(*) FROM store_order_fulfilments WHERE order_id=$1 AND status <> 'succeeded'`, id).Scan(&incomplete); err != nil {
+				return err
+			}
+			if incomplete > 0 {
+				aggregateStatus = "fulfilment_pending"
+			}
+		}
 		_, err = exec.Exec(
 			`UPDATE orders SET status = $1, updated_at = CURRENT_TIMESTAMP
 			 WHERE id = $2 AND deleted_at IS NULL`,
@@ -887,6 +1172,22 @@ func (r *sqlOrderRepository) UpdateVendorStatus(id, ownerID int64, status, note 
 		return nil, err
 	}
 	return r.GetByID(id)
+}
+
+func allowedVendorTransition(current, next string) bool {
+	if current == next {
+		return true
+	}
+	switch current {
+	case "pending":
+		return next == "accepted" || next == "rejected"
+	case "accepted":
+		return next == "completed" || next == "rejected" || next == "pending"
+	case "rejected":
+		return next == "pending"
+	default:
+		return false
+	}
 }
 
 func aggregateOrderStatus(exec database.Executor, orderID int64) (string, error) {
@@ -992,6 +1293,8 @@ func (r *sqlOrderRepository) Delete(id, actorID int64) error {
 // Payment repository
 type sqlPaymentRepository struct{ db database.Executor }
 
+var ErrPaymentNotFound = errors.New("payment not found")
+
 func NewPaymentRepository(db database.Executor) PaymentRepository {
 	return &sqlPaymentRepository{db: db}
 }
@@ -1006,6 +1309,42 @@ func (r *sqlPaymentRepository) Create(p *models.Payment) (*models.Payment, error
 	return p, err
 }
 
+func (r *sqlPaymentRepository) CreateOnce(p *models.Payment) (*models.Payment, bool, error) {
+	created := false
+	result := &models.Payment{}
+	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		err := exec.QueryRow(
+			`INSERT INTO payments (order_id, user_id, provider, provider_ref, amount, currency, status, failure_reason)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			 ON CONFLICT (order_id) DO NOTHING
+			 RETURNING id, order_id, user_id, provider, provider_ref, amount, currency, status, failure_reason, created_at, updated_at`,
+			p.OrderID, p.UserID, p.Provider, p.ProviderRef, p.Amount, p.Currency, p.Status, p.FailureReason,
+		).Scan(&result.ID, &result.OrderID, &result.UserID, &result.Provider, &result.ProviderRef, &result.Amount, &result.Currency, &result.Status, &result.FailureReason, &result.CreatedAt, &result.UpdatedAt)
+		if err == nil {
+			created = true
+			return nil
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+		if err := exec.QueryRow(
+			`SELECT id, order_id, user_id, provider, provider_ref, amount, currency, status, failure_reason, created_at, updated_at
+			 FROM payments WHERE order_id=$1`, p.OrderID,
+		).Scan(&result.ID, &result.OrderID, &result.UserID, &result.Provider, &result.ProviderRef, &result.Amount, &result.Currency, &result.Status, &result.FailureReason, &result.CreatedAt, &result.UpdatedAt); err != nil {
+			return err
+		}
+		if result.UserID != p.UserID || result.Provider != p.Provider || result.ProviderRef != p.ProviderRef ||
+			result.Amount != p.Amount || result.Currency != p.Currency {
+			return ErrIdempotencyConflict
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return result, created, nil
+}
+
 func (r *sqlPaymentRepository) GetByOrderID(orderID int64) (*models.Payment, error) {
 	p := &models.Payment{}
 	err := r.db.QueryRow(
@@ -1013,9 +1352,84 @@ func (r *sqlPaymentRepository) GetByOrderID(orderID int64) (*models.Payment, err
 		 FROM payments WHERE order_id=$1 ORDER BY created_at DESC LIMIT 1`, orderID,
 	).Scan(&p.ID, &p.OrderID, &p.UserID, &p.Provider, &p.ProviderRef, &p.Amount, &p.Currency, &p.Status, &p.FailureReason, &p.CreatedAt, &p.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, errors.New("payment not found")
+		return nil, ErrPaymentNotFound
 	}
 	return p, err
+}
+
+func (r *sqlPaymentRepository) GetByProviderRef(provider, providerRef string) (*models.Payment, error) {
+	p := &models.Payment{}
+	err := r.db.QueryRow(
+		`SELECT id, order_id, user_id, provider, provider_ref, amount, currency, status, failure_reason, created_at, updated_at
+		 FROM payments WHERE provider=$1 AND provider_ref=$2`, provider, providerRef,
+	).Scan(&p.ID, &p.OrderID, &p.UserID, &p.Provider, &p.ProviderRef, &p.Amount, &p.Currency, &p.Status, &p.FailureReason, &p.CreatedAt, &p.UpdatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrPaymentNotFound
+	}
+	return p, err
+}
+
+func (r *sqlPaymentRepository) ApplyProviderEvent(provider, eventID, payloadHash, providerRef, status string) (*models.Payment, bool, error) {
+	if provider == "" || len(provider) > 50 || eventID == "" || len(eventID) > 500 || payloadHash == "" || providerRef == "" || len(providerRef) > 255 || status == "" || len(status) > 50 {
+		return nil, false, errors.New("provider event requires bounded identity and status")
+	}
+	eventIDHash := hashOperationValue(eventID)
+	created := false
+	payment := &models.Payment{}
+	err := database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		var eventRowID int64
+		err := exec.QueryRow(`
+			INSERT INTO store_payment_events (provider, event_id_hash, payload_hash, provider_ref, payment_status)
+			VALUES ($1,$2,$3,$4,$5)
+			ON CONFLICT (provider, event_id_hash) DO NOTHING
+			RETURNING id
+		`, provider, eventIDHash, payloadHash, providerRef, status).Scan(&eventRowID)
+		if err == nil {
+			created = true
+		} else if errors.Is(err, sql.ErrNoRows) {
+			var storedPayload, storedRef, storedStatus string
+			if err := exec.QueryRow(`
+				SELECT payload_hash, provider_ref, payment_status FROM store_payment_events
+				WHERE provider=$1 AND event_id_hash=$2
+			`, provider, eventIDHash).Scan(&storedPayload, &storedRef, &storedStatus); err != nil {
+				return err
+			}
+			if storedPayload != payloadHash || storedRef != providerRef || storedStatus != status {
+				return ErrIdempotencyConflict
+			}
+		} else {
+			return err
+		}
+
+		if err := exec.QueryRow(`
+			SELECT id, order_id, user_id, provider, provider_ref, amount, currency, status, failure_reason, created_at, updated_at
+			FROM payments WHERE provider=$1 AND provider_ref=$2 FOR UPDATE
+		`, provider, providerRef).Scan(
+			&payment.ID, &payment.OrderID, &payment.UserID, &payment.Provider, &payment.ProviderRef,
+			&payment.Amount, &payment.Currency, &payment.Status, &payment.FailureReason,
+			&payment.CreatedAt, &payment.UpdatedAt,
+		); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return ErrPaymentNotFound
+			}
+			return err
+		}
+		if payment.Status == "succeeded" && status != "succeeded" {
+			return nil
+		}
+		return exec.QueryRow(`
+			UPDATE payments SET status=$1, failure_reason='', updated_at=CURRENT_TIMESTAMP WHERE id=$2
+			RETURNING id, order_id, user_id, provider, provider_ref, amount, currency, status, failure_reason, created_at, updated_at
+		`, status, payment.ID).Scan(
+			&payment.ID, &payment.OrderID, &payment.UserID, &payment.Provider, &payment.ProviderRef,
+			&payment.Amount, &payment.Currency, &payment.Status, &payment.FailureReason,
+			&payment.CreatedAt, &payment.UpdatedAt,
+		)
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return payment, created, nil
 }
 
 func (r *sqlPaymentRepository) UpdateStatus(id int64, status, failureReason string) (*models.Payment, error) {

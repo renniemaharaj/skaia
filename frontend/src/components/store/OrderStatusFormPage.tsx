@@ -6,6 +6,28 @@ import { FormSelect, ManagedForm } from "../form";
 
 type OrderResponse = Order | { order: Order };
 
+const statusOptions = (current: string) => {
+	const labels: Record<string, string> = {
+		pending: "Pending",
+		vendor_review: "Vendor review",
+		accepted: "Accepted",
+		paid: "Paid",
+		fulfilment_pending: "Fulfilment pending",
+		completed: "Completed",
+		failed: "Failed",
+		cancelled: "Cancelled",
+		rejected: "Rejected",
+	};
+	const transitions: Record<string, string[]> = {
+		pending: ["pending", "accepted", "cancelled", "rejected"],
+		vendor_review: ["vendor_review", "accepted", "cancelled", "rejected"],
+		accepted: ["accepted", "paid", "completed", "cancelled", "rejected"],
+		paid: ["paid", "completed"],
+		fulfilment_pending: ["fulfilment_pending", "completed", "cancelled"],
+	};
+	return (transitions[current] || [current]).map(value => ({ value, label: labels[value] || value }));
+};
+
 export default function OrderStatusFormPage() {
   const { orderId = "" } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
@@ -49,13 +71,7 @@ export default function OrderStatusFormPage() {
         name="status"
         label="Order status"
         block
-        options={[
-          { value: "pending", label: "Pending" },
-          { value: "accepted", label: "Accepted" },
-          { value: "completed", label: "Completed" },
-          { value: "cancelled", label: "Cancelled" },
-          { value: "rejected", label: "Rejected" },
-        ]}
+		options={statusOptions(order.status || "pending")}
       />
     </ManagedForm>
   );

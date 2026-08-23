@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue } from "jotai";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { isAuthenticatedAtom } from "../../../atoms/auth";
@@ -51,6 +51,7 @@ export const CartPage = () => {
   const [referralCode, setReferralCode] = useState("");
   const [userCards, setUserCards] = useState<WalletCard[]>([]);
   const [savedCheckoutBrief, setSavedCheckoutBrief] = useState<SavedCheckoutInfo | null>(null);
+  const checkoutAttemptRef = useRef<{ fingerprint: string; key: string } | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -169,25 +170,31 @@ export const CartPage = () => {
 
     setLoading(true);
     try {
+	  const checkoutBody = {
+		items: cartItems.map((i: CartItem) => ({
+		  product_id: Number(i.product_id),
+		  quantity: i.quantity,
+		})),
+		payment_method_id: paymentMethod,
+		currency: "usd",
+		is_guest: false,
+		guest_email: guestEmail,
+		guest_phone: guestPhone,
+		delivery_location: deliveryApplicable ? deliveryLocation : "",
+		delivery_date: deliveryApplicable ? deliveryDate : "",
+		delivery_time: deliveryApplicable ? deliveryTime : "",
+		extra_info: deliveryApplicable ? extraInfo : "",
+		billing_info: billingInfo,
+		referral_code: referralCode,
+	  };
+	  const fingerprint = JSON.stringify(checkoutBody);
+	  if (checkoutAttemptRef.current?.fingerprint !== fingerprint) {
+		checkoutAttemptRef.current = { fingerprint, key: crypto.randomUUID() };
+	  }
       const data = await apiRequest<CheckoutResponse>("/store/checkout", {
         method: "POST",
-        body: JSON.stringify({
-          items: cartItems.map((i: CartItem) => ({
-            product_id: Number(i.product_id),
-            quantity: i.quantity,
-          })),
-          payment_method_id: paymentMethod,
-          currency: "usd",
-          is_guest: !isAuthenticated,
-          guest_email: guestEmail,
-          guest_phone: guestPhone,
-          delivery_location: deliveryApplicable ? deliveryLocation : "",
-          delivery_date: deliveryApplicable ? deliveryDate : "",
-          delivery_time: deliveryApplicable ? deliveryTime : "",
-          extra_info: deliveryApplicable ? extraInfo : "",
-          billing_info: billingInfo,
-          referral_code: referralCode,
-        }),
+		headers: { "Idempotency-Key": checkoutAttemptRef.current.key },
+		body: fingerprint,
       });
 
       // Persist saved checkout info as a single object, explicit: do NOT save deliveryTime
@@ -212,6 +219,7 @@ export const CartPage = () => {
       setSuccessCartItems([...cartItems]);
       setSuccessOrder(data.order);
       setCartItems([]);
+	  checkoutAttemptRef.current = null;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Checkout failed. Please try again.");
     } finally {

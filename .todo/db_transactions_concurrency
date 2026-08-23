@@ -2,7 +2,7 @@
 
 ## Context
 
-Skaia's store supports guest/authenticated checkout, wallet/card payments,
+Skaia's store supports authenticated checkout, wallet/card payments,
 vendor-scoped order lines, stock reservation, reference payouts, and product
 special actions. These money- and inventory-bearing workflows need explicit
 transaction, idempotency, locking, and retry contracts. The SkaiaCraft recon

@@ -123,6 +123,15 @@ update specs and .tip with durable facts
 
 ## Last Run Remarks
 
+- Completed `db_transactions_concurrency`: checkout/provider events now use
+  hash-only replay identity, stock/wallet/payment/order transitions are guarded
+  under PostgreSQL races, payouts are transaction-coupled, and special actions
+  use bounded reclaimable leases with fail-closed operator recovery. Migration
+  039, fresh-schema parity, signed callback coverage, and durable specs landed.
+- Verification passed under a non-superuser migration owner: the complete
+  backend suite and hard-delete probe, race-enabled store/migration suites, Go
+  vet, all 236 frontend tests, lint, production build, and UI policy checks.
+
 - Adopted the documented `.tip` `@todo-sequence` API. Workers now resolve the
   declared group and refuse higher indexed work while a lower member remains
   incomplete unless the index-0 coordinator records an explicit exception.

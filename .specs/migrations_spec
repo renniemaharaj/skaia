@@ -33,6 +33,12 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 - Wallet operations that require retry safety persist scoped key and payload
   hashes, never raw idempotency keys. The partial unique index applies only to
   operations that opt into this contract; historical ledger rows remain valid.
+- Commerce checkout operations and provider events persist only SHA-256 identity
+  and payload hashes. One checkout key binds to one user/request/order; payments
+  are unique per order and provider reference.
+- `store_order_fulfilments` is the commit-coupled delivery queue. Status,
+  attempts, availability, lease ownership/expiry, error, and delivery timestamps
+  are durable; unique order-item/action positions prevent duplicate effects.
 
 ## Current Files
 
@@ -72,6 +78,7 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 | `036_documentation_hub.sql` | Multi-documentation sets, ordered sections/guides, permissions, lifecycle, and active-slug indexes |
 | `037_page_seo.sql` | Per-page SEO title, description, and image metadata |
 | `038_wallet_operation_idempotency.sql` | Hashed wallet operation identity, replay uniqueness, and forward-enforced ledger constraints |
+| `039_store_checkout_fulfilment.sql` | Hashed checkout/provider-event replay evidence, payment uniqueness, and leased order fulfilments |
 
 Control-plane migration `002_soft_delete_lifecycle.sql` adds retained
 site/cluster deletion state, inactive API-key permissions, scrubbed passcodes,

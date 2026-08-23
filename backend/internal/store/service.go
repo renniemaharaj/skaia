@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -204,6 +205,10 @@ func (s *Service) GetPaymentForOrder(orderID int64) (*models.Payment, error) {
 	return s.payments.GetByOrderID(orderID)
 }
 
+func (s *Service) GetPaymentByProviderRef(provider, providerRef string) (*models.Payment, error) {
+	return s.payments.GetByProviderRef(provider, providerRef)
+}
+
 func (s *Service) GetUserOrders(userID int64, limit, offset int) ([]*models.Order, error) {
 	return s.orders.GetByUser(userID, limit, offset)
 }
@@ -232,7 +237,12 @@ func (s *Service) UpdateOrderStatus(id int64, status string) (*models.Order, err
 	before, _ := s.orders.GetByID(id)
 	var order *models.Order
 	var err error
-	if status == "accepted" {
+	if status == "completed" {
+		if err := s.ProcessOrderFulfilments(id, fmt.Sprintf("order-status-%d", id)); err != nil {
+			return nil, err
+		}
+		order, err = s.orders.CompleteWithReferencePayout(id)
+	} else if status == "accepted" {
 		order, err = s.orders.AcceptWithStockCheck(id)
 	} else {
 		order, err = s.orders.UpdateStatus(id, status)
@@ -247,9 +257,6 @@ func (s *Service) UpdateOrderStatus(id int64, status string) (*models.Order, err
 			}
 		}
 	}
-	if status == "completed" && before != nil && before.Status != "completed" {
-		_ = s.AwardReferenceCodePayout(order)
-	}
 	return order, nil
 }
 
@@ -257,6 +264,20 @@ func (s *Service) UpdateOrderVendorStatus(id, ownerID int64, status, note string
 	order, err := s.orders.UpdateVendorStatus(id, ownerID, status, note)
 	if err != nil {
 		return nil, err
+	}
+	if order.Status == "fulfilment_pending" {
+		if err := s.ProcessOrderFulfilments(id, fmt.Sprintf("vendor-status-%d-%d", id, ownerID)); err != nil {
+			return nil, err
+		}
+		order, err = s.orders.CompleteWithReferencePayout(id)
+		if err != nil {
+			return nil, err
+		}
+	} else if order.Status == "completed" {
+		order, err = s.orders.CompleteWithReferencePayout(id)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if s.cache != nil {
 		for _, item := range order.Items {
@@ -350,182 +371,177 @@ func (s *Service) AwardReferenceCodePayout(order *models.Order) error {
 // 6. Clear persisted cart for signed-in checkouts
 // 7. Decrement stock on successful immediate payment
 func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.CheckoutResponse, error) {
+	if req == nil || userID <= 0 || req.IsGuest {
+		return nil, fmt.Errorf("checkout requires an authenticated user")
+	}
 	if len(req.Items) == 0 {
 		return nil, fmt.Errorf("no items in checkout request")
 	}
+	if strings.TrimSpace(req.IdempotencyKey) == "" || len(req.IdempotencyKey) > 500 {
+		return nil, fmt.Errorf("a bounded Idempotency-Key header is required")
+	}
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("encode checkout identity: %w", err)
+	}
+	op, created, err := s.orders.BeginCheckout(userID, req.IdempotencyKey, hashOperationValue(string(payload)))
+	if err != nil {
+		return nil, err
+	}
 
-	// resolve authoritative prices and validate stock
+	// Resolve authoritative prices only for the first attempt. Replays use the
+	// already-bound order so later catalog changes cannot alter the operation.
 	var orderItems []*models.OrderItem
 	var total int64
-	for _, item := range req.Items {
-		p, err := s.GetProduct(item.ProductID)
+	var order *models.Order
+	if op.OrderID != nil {
+		order, err = s.orders.GetByID(*op.OrderID)
 		if err != nil {
-			return nil, fmt.Errorf("product %d not found", item.ProductID)
+			return nil, fmt.Errorf("resume checkout order: %w", err)
 		}
-		if !p.IsActive {
-			return nil, fmt.Errorf("product %q is not available", p.Name)
+		total = order.TotalPrice
+	} else {
+		for _, item := range req.Items {
+			p, productErr := s.GetProduct(item.ProductID)
+			if productErr != nil {
+				return nil, fmt.Errorf("product %d not found", item.ProductID)
+			}
+			if !p.IsActive {
+				return nil, fmt.Errorf("product %q is not available", p.Name)
+			}
+			if item.Quantity <= 0 {
+				return nil, fmt.Errorf("quantity must be > 0 for product %d", item.ProductID)
+			}
+			if p.Price < 0 || (p.Price > 0 && int64(item.Quantity) > (1<<63-1)/p.Price) || total > (1<<63-1)-p.Price*int64(item.Quantity) {
+				return nil, fmt.Errorf("invalid checkout total for product %d", item.ProductID)
+			}
+			if !p.StockUnlimited && p.Stock < item.Quantity {
+				return nil, fmt.Errorf("insufficient stock for product %q", p.Name)
+			}
+			total += p.Price * int64(item.Quantity)
+			orderItems = append(orderItems, &models.OrderItem{ProductID: p.ID, Quantity: item.Quantity, Price: p.Price})
 		}
-		qty := item.Quantity
-		if qty <= 0 {
-			return nil, fmt.Errorf("quantity must be > 0 for product %d", item.ProductID)
+
+		var deliveryDate *time.Time
+		if req.DeliveryDate != "" {
+			parsed, parseErr := time.Parse("2006-01-02", req.DeliveryDate)
+			if parseErr != nil {
+				return nil, fmt.Errorf("invalid delivery date")
+			}
+			deliveryDate = &parsed
 		}
-		if !p.StockUnlimited && p.Stock < qty {
-			return nil, fmt.Errorf("insufficient stock for product %q", p.Name)
+		if req.ReferralCode != "" {
+			if s.referenceCodes == nil {
+				return nil, fmt.Errorf("reference codes are unavailable")
+			}
+			refCode, refErr := s.referenceCodes.GetByCode(req.ReferralCode)
+			if refErr != nil || !refCode.IsActive {
+				return nil, fmt.Errorf("invalid reference code")
+			}
+			if refCode.UserID == userID {
+				return nil, fmt.Errorf("cannot use your own reference code")
+			}
+			req.ReferralCode = refCode.Code
 		}
-		total += p.Price * int64(qty)
-		orderItems = append(orderItems, &models.OrderItem{
-			ProductID: p.ID,
-			Quantity:  qty,
-			Price:     p.Price,
-		})
+		order, err = s.orders.CreateForCheckout(op.ID, &models.Order{
+			UserID: &userID, GuestPhone: req.GuestPhone, DeliveryLocation: req.DeliveryLocation,
+			DeliveryDate: deliveryDate, DeliveryTime: req.DeliveryTime, ExtraInfo: req.ExtraInfo,
+			BillingInfo: req.BillingInfo, TotalPrice: total, Status: "pending", ReferralCode: req.ReferralCode,
+		}, orderItems)
+		if err != nil {
+			return nil, fmt.Errorf("create checkout order: %w", err)
+		}
+		total = order.TotalPrice
 	}
 
-	// create order in pending state
-	var deliveryDate *time.Time
-	if req.DeliveryDate != "" {
-		if t, err := time.Parse("2006-01-02", req.DeliveryDate); err == nil {
-			deliveryDate = &t
-		}
-	}
-
-	var parsedUserID *int64
-	if !req.IsGuest {
-		parsedUserID = &userID
-	}
-
-	if req.ReferralCode != "" {
-		refCode, err := s.referenceCodes.GetByCode(req.ReferralCode)
-		if err != nil || !refCode.IsActive {
-			return nil, fmt.Errorf("invalid reference code")
-		}
-		if !req.IsGuest && refCode.UserID == userID {
-			return nil, fmt.Errorf("cannot use your own reference code")
-		}
-		req.ReferralCode = refCode.Code
-	}
-
-	order, err := s.orders.Create(&models.Order{
-		UserID:           parsedUserID,
-		IsGuest:          req.IsGuest,
-		GuestEmail:       req.GuestEmail,
-		GuestPhone:       req.GuestPhone,
-		DeliveryLocation: req.DeliveryLocation,
-		DeliveryDate:     deliveryDate,
-		DeliveryTime:     req.DeliveryTime,
-		ExtraInfo:        req.ExtraInfo,
-		BillingInfo:      req.BillingInfo,
-		TotalPrice:       total,
-		Status:           "pending",
-		ReferralCode:     req.ReferralCode,
-	}, orderItems)
-	if err != nil {
-		return nil, fmt.Errorf("create order: %w", err)
-	}
-
-	// charge via provider or handle cash on delivery
 	var providerRef, payStatus, clientSecret string
 	var failureReason string
-
-	if req.PaymentMethodID == "delivery_cash" {
-		// Cash on delivery: payment is not completed at checkout time.
-		// Leave payment as pending so the order is not auto-marked "paid".
-		payStatus = "pending"
-		providerRef = "cash_" + fmt.Sprint(order.ID)
-	} else if req.PaymentMethodID == "wallet" {
-		if req.IsGuest {
-			payStatus = "failed"
-			failureReason = "Wallet cannot be used by guests"
-		} else {
-			if _, err := s.WalletRepo.DebitIfSufficient(userID, total, fmt.Sprintf("Order #%d", order.ID)); err != nil {
+	payment, paymentErr := s.payments.GetByOrderID(order.ID)
+	if errors.Is(paymentErr, ErrPaymentNotFound) && req.PaymentMethodID != "delivery_cash" {
+		if strings.HasPrefix(req.PaymentMethodID, "card_") {
+			if s.WalletRepo == nil {
+				return nil, errors.New("stored cards are unavailable")
+			}
+			var cardID int64
+			if _, scanErr := fmt.Sscanf(req.PaymentMethodID, "card_%d", &cardID); scanErr != nil || cardID <= 0 {
+				return nil, errors.New("invalid stored card")
+			}
+			cards, cardsErr := s.WalletRepo.GetCards(userID)
+			if cardsErr != nil {
+				return nil, errors.New("stored cards are unavailable")
+			}
+			valid := false
+			for _, card := range cards {
+				if card.ID == cardID {
+					valid = true
+					break
+				}
+			}
+			if !valid {
+				return nil, errors.New("invalid stored card")
+			}
+		}
+		reserved, reserveErr := s.orders.AcceptWithStockCheck(order.ID)
+		if reserveErr != nil {
+			return nil, reserveErr
+		}
+		order = reserved
+	}
+	if paymentErr == nil {
+		providerRef, payStatus, failureReason = payment.ProviderRef, payment.Status, payment.FailureReason
+	} else {
+		if !errors.Is(paymentErr, ErrPaymentNotFound) {
+			return nil, fmt.Errorf("load checkout payment: %w", paymentErr)
+		}
+		if req.PaymentMethodID == "delivery_cash" {
+			payStatus = "pending"
+			providerRef = "cash_" + fmt.Sprint(order.ID)
+		} else if req.PaymentMethodID == "wallet" {
+			if s.WalletRepo == nil {
+				return nil, errors.New("wallet payments are unavailable")
+			}
+			if _, _, debitErr := s.WalletRepo.DebitIfSufficientOnce(userID, total, fmt.Sprintf("Order #%d", order.ID), "store.checkout", req.IdempotencyKey); debitErr != nil {
 				payStatus = "failed"
-				failureReason = err.Error()
+				failureReason = debitErr.Error()
 			} else {
 				payStatus = "succeeded"
 				providerRef = "wallet_" + fmt.Sprint(order.ID)
 			}
-		}
-	} else if strings.HasPrefix(req.PaymentMethodID, "card_") {
-		var cardID int64
-		fmt.Sscanf(req.PaymentMethodID, "card_%d", &cardID)
-		cards, _ := s.WalletRepo.GetCards(userID)
-		valid := false
-		for _, c := range cards {
-			if c.ID == cardID {
-				valid = true
-				break
-			}
-		}
-		if !valid {
-			payStatus = "failed"
-			failureReason = "Invalid or missing card"
 		} else {
-			var chargeErr error
-			providerRef, payStatus, clientSecret, chargeErr = s.provider.Charge(userID, total, req.Currency, req.PaymentMethodID)
-			if chargeErr != nil {
-				payStatus = "failed"
-				failureReason = chargeErr.Error()
+			if s.provider == nil {
+				return nil, errors.New("payment provider is unavailable")
+			}
+			providerRef, payStatus, clientSecret, paymentErr = s.provider.Charge(userID, total, req.Currency, req.PaymentMethodID, req.IdempotencyKey)
+			if paymentErr != nil {
+				return nil, fmt.Errorf("payment provider did not confirm an outcome: %w", paymentErr)
 			}
 		}
-	} else {
-		var chargeErr error
-		providerRef, payStatus, clientSecret, chargeErr = s.provider.Charge(userID, total, req.Currency, req.PaymentMethodID)
-		if chargeErr != nil {
-			payStatus = "failed"
-			failureReason = chargeErr.Error()
+		provider := providerOfEnv()
+		if req.PaymentMethodID == "delivery_cash" {
+			provider = "delivery_cash"
+		} else if req.PaymentMethodID == "wallet" {
+			provider = "wallet"
+		}
+		payment, _, err = s.payments.CreateOnce(&models.Payment{
+			OrderID: order.ID, UserID: userID, Provider: provider, ProviderRef: providerRef,
+			Amount: total, Currency: req.Currency, Status: payStatus, FailureReason: failureReason,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("persist payment: %w", err)
 		}
 	}
 
-	// persist payment record
-	var parsedUserID2 int64
-	if !req.IsGuest {
-		parsedUserID2 = userID
-	}
-	payment, err := s.payments.Create(&models.Payment{
-		OrderID: order.ID,
-		UserID:  parsedUserID2,
-		Provider: func() string {
-			if req.PaymentMethodID == "delivery_cash" {
-				return "delivery_cash"
-			} else {
-				return providerOfEnv()
-			}
-		}(),
-		ProviderRef:   providerRef,
-		Amount:        total,
-		Currency:      req.Currency,
-		Status:        payStatus,
-		FailureReason: failureReason,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("persist payment: %w", err)
-	}
-
-	// update order status to match payment outcome
-	// We use a `paid` intermediate status when payment succeeded. Orders are
-	// only moved to `completed` when a shopkeeper marks them completed or when
-	// a paid order contains special actions (these should be executed immediately).
-	orderStatus := "pending"
 	if payStatus == "failed" {
-		orderStatus = "failed"
-	}
-	if payStatus != "succeeded" {
-		updatedOrder, _ := s.orders.UpdateStatus(order.ID, orderStatus)
-		if updatedOrder != nil {
-			order = updatedOrder
+		updated, statusErr := s.orders.UpdateStatus(order.ID, "failed")
+		if statusErr != nil {
+			return nil, statusErr
 		}
+		order = updated
 	}
 
-	// Once checkout has produced an order response, the cart no longer owns
-	// those items. Guests only have client-side carts.
-	if !req.IsGuest && s.cart != nil {
-		_ = s.cart.ClearCart(userID)
-	}
-
-	// On successful immediate payment, reserve stock through the same
-	// transactional path as manual acceptance, then fulfil account effects.
 	if payStatus == "succeeded" {
-		var hasSpecial bool
-		if accepted, err := s.orders.AcceptWithStockCheck(order.ID); err != nil {
+		accepted, acceptErr := s.orders.AcceptWithStockCheck(order.ID)
+		if acceptErr != nil {
 			if req.PaymentMethodID == "wallet" {
 				_, _, refundErr := s.WalletRepo.CreateTransactionOnce(&models.WalletTransaction{
 					UserID:      userID,
@@ -534,83 +550,42 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 					Description: fmt.Sprintf("Refund for order #%d", order.ID),
 				}, "store.stock_refund", fmt.Sprintf("order:%d", order.ID))
 				if refundErr != nil {
-					return nil, fmt.Errorf("reserve stock: %v; refund wallet: %w", err, refundErr)
+					return nil, fmt.Errorf("reserve stock: %v; refund wallet: %w", acceptErr, refundErr)
 				}
 			}
-			_, _ = s.payments.UpdateStatus(payment.ID, "failed", err.Error())
+			_, _ = s.payments.UpdateStatus(payment.ID, "failed", acceptErr.Error())
 			_, _ = s.orders.UpdateStatus(order.ID, "failed")
-			return nil, err
-		} else if accepted != nil {
-			order = accepted
+			return nil, acceptErr
 		}
-
-		for _, oi := range order.Items {
-			p, err := s.products.GetByID(oi.ProductID)
-			if err != nil {
-				return nil, fmt.Errorf("load product fulfilment: %w", err)
-			}
-			if p.SpecialActions != "" && p.SpecialActions != "[]" {
-				hasSpecial = true
-			}
+		order = accepted
+		for _, item := range order.Items {
 			if s.cache != nil {
-				s.cache.Invalidate(oi.ProductID)
+				s.cache.Invalidate(item.ProductID)
 			}
 		}
-
-		if !hasSpecial {
-			if paid, err := s.orders.UpdateStatus(order.ID, "paid"); err == nil && paid != nil {
-				order = paid
-			}
+		hasFulfilments, err := s.orders.OrderHasFulfilments(order.ID)
+		if err != nil {
+			return nil, err
 		}
-
-		// Special actions are generic account fulfilments. Apply their financial
-		// effects idempotently before declaring the order complete.
-		if hasSpecial && !req.IsGuest {
-			for _, oi := range order.Items {
-				p, err := s.products.GetByID(oi.ProductID)
-				if err != nil {
-					return nil, fmt.Errorf("load product fulfilment: %w", err)
-				}
-				if p.SpecialActions == "" || p.SpecialActions == "[]" {
-					continue
-				}
-				var actions []struct {
-					Type  string `json:"type"`
-					Value string `json:"value"`
-				}
-				if err := json.Unmarshal([]byte(p.SpecialActions), &actions); err != nil {
-					return nil, fmt.Errorf("decode product fulfilment: %w", err)
-				}
-				for actionIndex, act := range actions {
-					switch act.Type {
-					case "role":
-						if err := s.users.AddRoleByName(userID, act.Value); err != nil {
-							return nil, fmt.Errorf("fulfil role action: %w", err)
-						}
-					case "credit":
-						amt, parseErr := strconv.ParseInt(act.Value, 10, 64)
-						if parseErr != nil || amt <= 0 {
-							return nil, fmt.Errorf("invalid credit fulfilment value")
-						}
-						if _, _, err := s.WalletRepo.CreateTransactionOnce(&models.WalletTransaction{
-							UserID:      userID,
-							Amount:      amt * int64(oi.Quantity),
-							Type:        "credit",
-							Description: fmt.Sprintf("Received from order #%d", order.ID),
-						}, "store.product_fulfilment", fmt.Sprintf("order:%d:item:%d:action:%d", order.ID, oi.ID, actionIndex)); err != nil {
-							return nil, fmt.Errorf("fulfil credit action: %w", err)
-						}
-					default:
-						return nil, fmt.Errorf("unsupported product fulfilment type %q", act.Type)
-					}
-				}
+		if hasFulfilments {
+			if err := s.ProcessOrderFulfilments(order.ID, fmt.Sprintf("checkout-%d", op.ID)); err != nil {
+				return nil, err
 			}
-			completed, err := s.UpdateOrderStatus(order.ID, "completed")
-			if err != nil {
-				return nil, fmt.Errorf("complete fulfilled order: %w", err)
-			}
-			order = completed
+			order, err = s.orders.CompleteWithReferencePayout(order.ID)
+		} else {
+			order, err = s.orders.UpdateStatus(order.ID, "paid")
 		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	if s.cart != nil {
+		if err := s.cart.ClearCart(userID); err != nil {
+			return nil, fmt.Errorf("clear checked-out cart: %w", err)
+		}
+	}
+	if err := s.orders.CompleteCheckout(op.ID); err != nil {
+		return nil, err
 	}
 
 	resp := &models.CheckoutResponse{
@@ -618,6 +593,7 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 		Payment:      payment,
 		ClientSecret: clientSecret,
 		Status:       payStatus,
+		Replayed:     !created,
 	}
 	if payStatus == "succeeded" {
 		resp.Message = "Payment successful"
@@ -628,6 +604,167 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 		}
 	}
 	return resp, nil
+}
+
+// ProcessOrderFulfilments drains the currently available durable effects for an
+// order. Every external/local effect is replay-safe before the lease is marked
+// successful, so worker death can only cause a harmless retry.
+func (s *Service) ProcessOrderFulfilments(orderID int64, owner string) error {
+	idleChecks := 0
+	for {
+		jobs, err := s.orders.ClaimFulfilments(orderID, owner, 30*time.Second, 25)
+		if err != nil {
+			return err
+		}
+		if len(jobs) == 0 {
+			succeeded, statusErr := s.orders.OrderFulfilmentsSucceeded(orderID)
+			if statusErr != nil {
+				return statusErr
+			}
+			if succeeded {
+				return nil
+			}
+			if idleChecks >= 10 {
+				return errors.New("order fulfilments are pending retry")
+			}
+			idleChecks++
+			time.Sleep(20 * time.Millisecond)
+			continue
+		}
+		idleChecks = 0
+		for _, job := range jobs {
+			deliveryErr := s.deliverOrderFulfilment(job)
+			if deliveryErr != nil {
+				retry := time.Second << min(job.Attempts-1, 6)
+				if markErr := s.orders.MarkFulfilmentFailed(job.ID, owner, deliveryErr.Error(), retry); markErr != nil {
+					return errors.Join(deliveryErr, markErr)
+				}
+				return deliveryErr
+			}
+			if err := s.orders.MarkFulfilmentSucceeded(job.ID, owner); err != nil {
+				return err
+			}
+		}
+	}
+}
+
+// RetryOrderFulfilments is the fail-closed operator recovery path for jobs that
+// exhausted their automatic attempt budget. The repository reset and every
+// delivered effect remain idempotent, so an operator retry cannot double-grant.
+func (s *Service) RetryOrderFulfilments(orderID, actorID int64) (*models.Order, error) {
+	if s == nil || s.users == nil || actorID <= 0 {
+		return nil, errors.New("fulfilment recovery is forbidden")
+	}
+	allowed, err := s.users.HasPermission(actorID, "store.manageOrders")
+	if err != nil || !allowed {
+		return nil, errors.New("fulfilment recovery is forbidden")
+	}
+	reset, err := s.orders.RetryExhaustedFulfilments(orderID)
+	if err != nil {
+		return nil, err
+	}
+	if reset == 0 {
+		return nil, errors.New("order has no exhausted fulfilments")
+	}
+	if err := s.ProcessOrderFulfilments(orderID, fmt.Sprintf("operator-%d-order-%d", actorID, orderID)); err != nil {
+		return nil, err
+	}
+	order, err := s.orders.GetByID(orderID)
+	if err != nil {
+		return nil, err
+	}
+	if order.Status == "fulfilment_pending" {
+		return s.orders.CompleteWithReferencePayout(orderID)
+	}
+	return order, nil
+}
+
+func (s *Service) deliverOrderFulfilment(job *models.OrderFulfilment) error {
+	if job == nil || job.UserID <= 0 || job.Quantity <= 0 {
+		return errors.New("invalid order fulfilment")
+	}
+	switch job.ActionType {
+	case "role":
+		if s.users == nil {
+			return errors.New("role fulfilment service is unavailable")
+		}
+		return s.users.AddRoleByName(job.UserID, job.ActionValue)
+	case "credit":
+		if s.WalletRepo == nil {
+			return errors.New("wallet fulfilment service is unavailable")
+		}
+		amount, err := strconv.ParseInt(job.ActionValue, 10, 64)
+		if err != nil || amount <= 0 || amount > (1<<63-1)/int64(job.Quantity) {
+			return errors.New("invalid credit fulfilment value")
+		}
+		_, _, err = s.WalletRepo.CreateTransactionOnce(&models.WalletTransaction{
+			UserID: job.UserID, Amount: amount * int64(job.Quantity), Type: "credit",
+			Description: fmt.Sprintf("Received from order #%d", job.OrderID),
+		}, "store.product_fulfilment", fmt.Sprintf("fulfilment:%d:%s", job.ID, job.PayloadHash))
+		return err
+	default:
+		return fmt.Errorf("unsupported product fulfilment type %q", job.ActionType)
+	}
+}
+
+func (s *Service) ApplyProviderPaymentEvent(provider string, event *ProviderPaymentEvent, payloadHash string) (*models.Payment, bool, error) {
+	if event == nil {
+		return nil, false, errors.New("payment event is required")
+	}
+	payment, created, err := s.payments.ApplyProviderEvent(provider, event.ID, payloadHash, event.ProviderRef, event.Status)
+	if err != nil {
+		return nil, false, err
+	}
+	switch payment.Status {
+	case "succeeded":
+		order, err := s.orders.AcceptWithStockCheck(payment.OrderID)
+		if err != nil {
+			return nil, created, err
+		}
+		hasFulfilments, err := s.orders.OrderHasFulfilments(order.ID)
+		if err != nil {
+			return nil, created, err
+		}
+		if hasFulfilments {
+			owner := "payment-event-" + hashOperationValue(event.ID)[:24]
+			if err := s.ProcessOrderFulfilments(order.ID, owner); err != nil {
+				return nil, created, err
+			}
+			_, err = s.orders.CompleteWithReferencePayout(order.ID)
+		} else {
+			_, err = s.orders.UpdateStatus(order.ID, "paid")
+		}
+		if err != nil {
+			return nil, created, err
+		}
+	case "failed":
+		if _, err := s.orders.UpdateStatus(payment.OrderID, "failed"); err != nil {
+			return nil, created, err
+		}
+	}
+	return payment, created, nil
+}
+
+func (s *Service) RefreshProviderPayment(provider, providerRef string) (*models.Payment, error) {
+	if s.provider == nil {
+		return nil, errors.New("payment provider is unavailable")
+	}
+	status, err := s.provider.GetPaymentStatus(providerRef)
+	if err != nil {
+		return nil, err
+	}
+	normalized := "processing"
+	switch status {
+	case "succeeded":
+		normalized = "succeeded"
+	case "failed", "canceled", "requires_payment_method":
+		normalized = "failed"
+	}
+	eventID := fmt.Sprintf("poll:%s:%s", providerRef, normalized)
+	payment, _, err := s.ApplyProviderPaymentEvent(provider, &ProviderPaymentEvent{
+		ID: eventID, ProviderRef: providerRef, Status: normalized,
+	}, hashOperationValue(eventID))
+	return payment, err
 }
 
 // providerOfEnv returns the configured provider name.

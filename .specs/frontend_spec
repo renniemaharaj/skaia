@@ -238,16 +238,20 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   or `$12k`, pending counts include open vendor line status, and loaded user
   orders converge through buyer/manager direct delivery or seller-filtered direct
   delivery. Clients do not create generic order subscriptions.
-- Cart page supports authenticated carts and guest checkout from local cart items.
+- Cart page and checkout require an authenticated account.
 - Empty cart state uses the compact storefront empty-state treatment with
   "No products added" copy, not a large CTA card.
-- Checkout payload includes `items`, `payment_method_id`, `currency`, guest contact,
-  delivery fields, `billing_info`, and `referral_code`.
+- Checkout payload includes `items`, `payment_method_id`, `currency`, delivery
+  fields, `billing_info`, and `referral_code`. The cart creates one opaque
+  `Idempotency-Key` per canonical payload and preserves it across uncertain or
+  failed retries until the payload changes or checkout succeeds.
 - Saved checkout details live in local storage key `checkoutSaved`; do not save
   `deliveryTime`.
 - Authenticated users may load wallet cards from `/store/wallet/cards` and pay with
   `card_{id}` or `wallet`.
-- Successful checkout clears local cart and shows the submitted order view.
+- Successful checkout clears local cart and shows the submitted order view;
+  replayed checkout responses converge on the same view without duplicate
+  realtime/activity dispatch.
 - Order status views surface per-vendor activity in the right summary column with
   compact vendor totals, status, and accept/reject controls for the current
   vendor's own line items.
@@ -338,7 +342,7 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 | `src/components/bible/BibleVerseText.tsx` | Unicode code-point marker segmentation and clean semantic verse rendering |
 | `src/components/bible/location.ts` | query/path parsing, aliases, and canonical URL generation |
 | `src/components/bible/useBibleSpeech.ts` | browser narration lifecycle and continuous advancement |
-| `src/pages/cart/index.tsx` | checkout state and guest/auth cart submission |
+| `src/pages/cart/index.tsx` | checkout route composition |
 | `src/components/store/cart/*` | cart UI panels and delivery picker |
 
 ## Invariants

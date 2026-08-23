@@ -154,20 +154,31 @@ bibliographical certification.
 - Product prices, order totals, wallet amounts, and reference incentives are cents.
 - Products include `original_price`, `stock_unlimited`, `is_active`, and
   `special_actions` JSONB exposed as JSON string.
-- Cart routes are authenticated; guest checkout sends explicit `items` in
-  `/store/checkout` and does not rely on server cart state.
+- Cart and checkout routes are authenticated. `POST /store/checkout` accepts
+  explicit server-priced items and requires an opaque `Idempotency-Key`; exact
+  replays return the same order/result with `replayed=true`, while changed
+  payload reuse fails closed.
 - Checkout supports `delivery_cash`, `wallet`, `card_{id}`, demo provider, and
   Stripe provider depending on configuration.
+- Checkout identity persists only key/payload hashes. An operation binds to one
+  order before charging, reserves stock once, passes the same logical identity
+  to the provider, and remains retryable after an unknown provider outcome.
+- Provider lifecycle changes enter through signed, bounded Stripe callbacks or
+  an owner/manager-authorized status refresh. Provider event IDs and payloads
+  are hash-bound and replay-safe; payment rows are unique per order and provider
+  reference.
 - Wallet routes expose balance, topups, transactions, and user-managed cards.
   Internal financial effects can carry a user-and-scope operation identity;
   only its key hash and payload hash persist. Exact replays return the original
   immutable ledger row, while key reuse with a different payload fails closed.
-- Reference codes pay the code owner once per order through wallet credit; users
-  cannot use their own active code.
+- Reference codes pay the code owner once per order through a transaction-coupled
+  wallet credit; users cannot use their own active code.
 - Special actions are generic account fulfilments. Paid special-action orders
-  apply role and wallet effects before completion; wallet effects are
-  idempotent per order item and action position, malformed effects fail closed,
-  and a failed effect must not be silently reported as a completed order.
+  use commit-coupled durable records before applying role and wallet effects.
+  Workers use bounded attempts and expiring ownership leases; effects are
+  idempotent per order item/action, malformed effects fail closed, and exhausted
+  jobs require a `store.manageOrders` service-authorized retry through
+  `POST /store/orders/{id}/fulfilments/retry` before completion can resume.
 - Store catalog mutations broadcast `store:update`; cart and checkout outcomes
   push directly to the buyer.
 - Store order mutations push `order:update` to buyers, store managers, and
@@ -186,6 +197,10 @@ bibliographical certification.
   own line items' `vendor_status`/`vendor_note`, stock reservation/release follows
   those lines only, and the parent order status is an aggregate such as
   `pending`, `vendor_review`, `accepted`, `rejected`, or `completed`.
+- Order and vendor transitions are row-locked and state-guarded. Terminal states
+  cannot regress; accepted stock is restored at most once on a negative outcome;
+  and an order with a succeeded payment cannot enter a refund-like state through
+  the ordinary status API.
 - The product-owner selling role is named `Vendor`; legacy `store-seller` data
   should be migrated into it while preserving `store.product-seller` and
   `store.product-new` permissions.

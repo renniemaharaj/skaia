@@ -98,7 +98,7 @@ export interface Order {
   extra_info?: string;
   billing_info?: string;
   total_price: number;
-  status: string; // pending | completed | failed | cancelled
+  status: string; // pending | vendor_review | accepted | paid | fulfilment_pending | completed | failed | cancelled | rejected
   created_at: string;
   updated_at: string;
   items?: OrderItem[];
@@ -135,6 +135,7 @@ export interface CheckoutResponse {
   client_secret?: string;
   status: string; // "succeeded" | "failed" | "requires_action"
   message?: string;
+  replayed?: boolean;
 }
 
 // Atoms

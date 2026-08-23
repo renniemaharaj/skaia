@@ -11,8 +11,8 @@
 - **Phase 6: Operator/public UX and specs** - ⬜ Not started
 
 ### Next Steps
-- [ ] Execution stage 2 of `platform_gap_execution_sequence`; begin only after
-  `db_transactions_concurrency` completes its integrity and verification gates.
+- [x] 2026-08-23: `db_transactions_concurrency` completed its integrity and
+  verification gates; execution stage 2 is unblocked.
 - [ ] Build the probe/dependency/telemetry/backup matrix from backend and grengo code.
 - [ ] Define public-versus-operator data boundaries and required dependency SLOs.
 - [ ] Fold old session/Turnstile smoke checks into release verification.

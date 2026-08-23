@@ -163,7 +163,8 @@ BEGIN
         'page_editors','page_likes','page_comment_likes',
         'user_sessions','sessions','email_verification_tokens','password_reset_tokens','auth_backup_codes',
         'auth_credentials','auth_totp_secrets','mfa_challenge_required','payments','order_items',
-        'user_wallet_transactions','store_reference_code_payouts','events','resource_views',
+        'user_wallet_transactions','store_reference_code_payouts','store_checkout_operations',
+        'store_payment_events','store_order_fulfilments','events','resource_views',
         'resource_lifecycle_events'
     ]
     LOOP

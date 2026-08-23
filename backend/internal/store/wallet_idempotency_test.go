@@ -98,6 +98,48 @@ func TestWalletRepositoryCreateTransactionOnceConcurrentReplay(t *testing.T) {
 	assert.Equal(t, 1, count)
 }
 
+func TestWalletRepositoryConcurrentDistinctDebitsCannotOverspend(t *testing.T) {
+	db := testutil.OpenTestDB(t)
+	repo := store.NewWalletRepository(db)
+	userID := createWalletTestUser(t, db)
+	_, err := repo.CreateTransaction(&models.WalletTransaction{
+		UserID: userID, Amount: 100, Type: "credit", Description: "opening balance",
+	})
+	require.NoError(t, err)
+
+	start := make(chan struct{})
+	errs := make(chan error, 2)
+	var wg sync.WaitGroup
+	for _, key := range []string{"purchase-a", "purchase-b"} {
+		wg.Add(1)
+		go func(operationKey string) {
+			defer wg.Done()
+			<-start
+			_, _, debitErr := repo.DebitIfSufficientOnce(userID, 80, "competing purchase", "test.debit", operationKey)
+			errs <- debitErr
+		}(key)
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	succeeded := 0
+	failed := 0
+	for err := range errs {
+		if err == nil {
+			succeeded++
+		} else {
+			assert.ErrorContains(t, err, "insufficient wallet balance")
+			failed++
+		}
+	}
+	assert.Equal(t, 1, succeeded)
+	assert.Equal(t, 1, failed)
+	balance, err := repo.GetBalance(userID)
+	require.NoError(t, err)
+	assert.EqualValues(t, 20, balance)
+}
+
 func createWalletTestUser(t *testing.T, db *sql.DB) int64 {
 	t.Helper()
 	var userID int64

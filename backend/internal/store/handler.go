@@ -2,15 +2,18 @@ package store
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	log "github.com/skaia/backend/internal/syslog"
+	"io"
 	"math"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 	ievents "github.com/skaia/backend/internal/events"
+	log "github.com/skaia/backend/internal/syslog"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
@@ -82,10 +85,10 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 		r.With(jwt).Delete("/reference-codes/{id}", h.deleteReferenceCode)
 
 		// Order routes
-		r.With(jwt).Post("/orders", h.createOrder)
 		r.With(jwt).Get("/orders", h.listOrders)
 		r.With(jwt).Get("/orders/{id}", h.getOrder)
 		r.With(jwt).Put("/orders/{id}/status", h.updateOrderStatus)
+		r.With(jwt).Post("/orders/{id}/fulfilments/retry", h.retryOrderFulfilments)
 		r.With(jwt).Delete("/orders/{id}", h.deleteOrder)
 
 		r.Post("/orders/guest-lookup", h.guestLookupOrder)
@@ -103,6 +106,7 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 		r.With(jwt).Post("/subscriptions/{id}/cancel", h.cancelSubscription)
 
 		// Payment status
+		r.Post("/payments/webhook/stripe", h.stripePaymentWebhook)
 		r.With(jwt).Get("/payments/{ref}/status", h.getPaymentStatus)
 		r.With(jwt).Get("/orders/{id}/payment", h.getOrderPayment)
 	})
@@ -888,91 +892,6 @@ func (h *Handler) clearCart(w http.ResponseWriter, r *http.Request) {
 }
 
 // Order handlers
-func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
-	userID, ok := utils.UserIDFromCtx(r)
-	if !ok {
-		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
-		return
-	}
-
-	var req struct {
-		Items []struct {
-			ProductID int64 `json:"product_id"`
-			Quantity  int   `json:"quantity"`
-		} `json:"items"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || len(req.Items) == 0 {
-		utils.WriteError(w, http.StatusBadRequest, "items required")
-		return
-	}
-
-	var total int64
-	var items []*models.OrderItem
-	for _, i := range req.Items {
-		if i.Quantity <= 0 {
-			utils.WriteError(w, http.StatusBadRequest, "quantity must be > 0")
-			return
-		}
-		p, err := h.svc.GetProduct(i.ProductID)
-		if err != nil {
-			utils.WriteError(w, http.StatusBadRequest, "product not found")
-			return
-		}
-		if !p.IsActive {
-			utils.WriteError(w, http.StatusBadRequest, "product not available")
-			return
-		}
-		if !p.StockUnlimited && p.Stock < i.Quantity {
-			utils.WriteError(w, http.StatusBadRequest, "insufficient stock")
-			return
-		}
-		total += p.Price * int64(i.Quantity)
-		items = append(items, &models.OrderItem{
-			ProductID: p.ID,
-			Quantity:  i.Quantity,
-			Price:     p.Price,
-		})
-	}
-
-	var parsedUserID *int64
-	if ok {
-		parsedUserID = &userID
-	}
-
-	order, err := h.svc.CreateOrder(&models.Order{
-		UserID:     parsedUserID,
-		TotalPrice: total,
-		Status:     "pending",
-	}, items)
-	if err != nil {
-		log.Printf("store.createOrder: %v", err)
-		utils.WriteError(w, http.StatusInternalServerError, "failed to create order")
-		return
-	}
-
-	_ = h.svc.ClearCart(userID)
-	h.dispatcher.Dispatch(ievents.Job{
-		UserID:     userID,
-		Activity:   ievents.ActOrderCreated,
-		Resource:   ievents.ResOrder,
-		ResourceID: order.ID,
-		IP:         ievents.ClientIP(r),
-		Meta:       map[string]interface{}{"total": total, "items": len(items)},
-		Fn: func() {
-			if h.hub != nil {
-				h.notifyOrderChanged(order, "order_created")
-				h.notifyOrderProductsChanged(order)
-				h.hub.PushCartUpdate(userID, []*models.CartItem{})
-			}
-		},
-	})
-
-	if order.UserID != nil {
-		go h.svc.SendOrderInboxMessage(*order.UserID, order, "order_created")
-	}
-	utils.WriteJSON(w, http.StatusCreated, order)
-}
-
 func (h *Handler) listOrders(w http.ResponseWriter, r *http.Request) {
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
@@ -1108,7 +1027,6 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "status required")
 		return
 	}
-	// load current order so we can detect transitions (e.g., to completed)
 	beforeOrder, _ := h.svc.GetOrder(id)
 	canManage, _ := h.authz.HasPermission(userID, "store.manageOrders")
 	ownsProduct := false
@@ -1131,44 +1049,14 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 			utils.WriteError(w, http.StatusConflict, err.Error())
 			return
 		}
+		if strings.Contains(err.Error(), "status transition") || strings.Contains(err.Error(), "terminal") || strings.Contains(err.Error(), "refund workflow") || strings.Contains(err.Error(), "fulfilment") {
+			utils.WriteError(w, http.StatusConflict, err.Error())
+			return
+		}
 		utils.WriteError(w, http.StatusInternalServerError, "failed to update order status")
 		return
 	}
 
-	// If transitioning to completed, execute special actions now (only once)
-	if req.Status == "completed" && beforeOrder != nil && beforeOrder.Status != "completed" && (canManage || !ownsProduct) {
-		// Execute special actions for each order item (if any) and if order has a user
-		if order.UserID != nil {
-			userID := *order.UserID
-			for _, oi := range order.Items {
-				if p, err := h.svc.GetProduct(oi.ProductID); err == nil {
-					if p.SpecialActions != "" && p.SpecialActions != "[]" {
-						var actions []struct {
-							Type  string `json:"type"`
-							Value string `json:"value"`
-						}
-						if err := json.Unmarshal([]byte(p.SpecialActions), &actions); err == nil {
-							for _, act := range actions {
-								if act.Type == "role" {
-									_ = h.svc.users.AddRoleByName(userID, act.Value)
-								} else if act.Type == "credit" {
-									amt, _ := strconv.ParseInt(act.Value, 10, 64)
-									if amt > 0 {
-										_, _ = h.svc.WalletRepo.CreateTransaction(&models.WalletTransaction{
-											UserID:      userID,
-											Amount:      amt * int64(oi.Quantity),
-											Type:        "credit",
-											Description: fmt.Sprintf("Received from order #%d", order.ID),
-										})
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
 	h.dispatcher.Dispatch(ievents.Job{
 		UserID:     userID,
 		Activity:   ievents.ActOrderStatusUpdated,
@@ -1184,6 +1072,41 @@ func (h *Handler) updateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 
+	if order.UserID != nil {
+		go h.svc.SendOrderInboxMessage(*order.UserID, order, "order_status")
+	}
+	utils.WriteJSON(w, http.StatusOK, order)
+}
+
+func (h *Handler) retryOrderFulfilments(w http.ResponseWriter, r *http.Request) {
+	userID, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+		return
+	}
+	id, err := h.parseID(r, "id")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid order ID")
+		return
+	}
+	order, err := h.svc.RetryOrderFulfilments(id, userID)
+	if err != nil {
+		if strings.Contains(err.Error(), "forbidden") {
+			utils.WriteError(w, http.StatusForbidden, "insufficient permissions")
+			return
+		}
+		if strings.Contains(err.Error(), "no exhausted fulfilments") {
+			utils.WriteError(w, http.StatusConflict, err.Error())
+			return
+		}
+		log.Printf("store.retryOrderFulfilments: recovery failed: %v", err)
+		utils.WriteError(w, http.StatusServiceUnavailable, "order fulfilment recovery is pending")
+		return
+	}
+	if h.hub != nil {
+		h.notifyOrderChanged(order, "order_updated")
+		h.notifyOrderProductsChanged(order)
+	}
 	if order.UserID != nil {
 		go h.svc.SendOrderInboxMessage(*order.UserID, order, "order_status")
 	}
@@ -1261,11 +1184,14 @@ func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
 
 	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
-		if !req.IsGuest {
-			utils.WriteError(w, http.StatusUnauthorized, "unauthorized or missing guest info")
-			return
-		}
-		userID = 0 // Represents guest
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	req.IsGuest = false
+	req.IdempotencyKey = strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+	if req.IdempotencyKey == "" || len(req.IdempotencyKey) > 500 {
+		utils.WriteError(w, http.StatusBadRequest, "a bounded Idempotency-Key header is required")
+		return
 	}
 
 	if req.Currency == "" {
@@ -1275,6 +1201,10 @@ func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.svc.Checkout(userID, &req)
 	if err != nil {
 		log.Printf("store.checkout: %v", err)
+		if errors.Is(err, ErrIdempotencyConflict) {
+			utils.WriteError(w, http.StatusConflict, "idempotency key was already used for a different checkout")
+			return
+		}
 		if strings.Contains(err.Error(), "insufficient stock") {
 			utils.WriteError(w, http.StatusConflict, "The order failed because someone else had already checked out and the product is no longer in stock.")
 			return
@@ -1288,31 +1218,31 @@ func (h *Handler) checkout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Notify the purchaser of payment outcome, then fan out order/catalog changes.
-	h.dispatcher.Dispatch(ievents.Job{
-		UserID:   userID,
-		Activity: ievents.ActCheckout,
-		Resource: ievents.ResOrder,
-		IP:       ievents.ClientIP(r),
-		Meta:     map[string]interface{}{"status": resp.Status, "currency": req.Currency},
-		Fn: func() {
-			if h.hub != nil {
-				action := "purchase_success"
-				if resp.Status == "failed" {
-					action = "purchase_failure"
-				}
-				h.hub.SendToUser(userID, buildStoreMsg(action, resp))
-				if resp.Order != nil {
-					h.notifyOrderChanged(resp.Order, "order_created")
-					h.notifyOrderProductsChanged(resp.Order)
-				}
-				if !req.IsGuest {
+	if !resp.Replayed {
+		h.dispatcher.Dispatch(ievents.Job{
+			UserID:   userID,
+			Activity: ievents.ActCheckout,
+			Resource: ievents.ResOrder,
+			IP:       ievents.ClientIP(r),
+			Meta:     map[string]interface{}{"status": resp.Status, "currency": req.Currency},
+			Fn: func() {
+				if h.hub != nil {
+					action := "purchase_success"
+					if resp.Status == "failed" {
+						action = "purchase_failure"
+					}
+					h.hub.SendToUser(userID, buildStoreMsg(action, resp))
+					if resp.Order != nil {
+						h.notifyOrderChanged(resp.Order, "order_created")
+						h.notifyOrderProductsChanged(resp.Order)
+					}
 					h.hub.PushCartUpdate(userID, []*models.CartItem{})
 				}
-			}
-		},
-	})
+			},
+		})
+	}
 
-	if resp.Order != nil && resp.Order.UserID != nil {
+	if !resp.Replayed && resp.Order != nil && resp.Order.UserID != nil {
 		go h.svc.SendOrderInboxMessage(*resp.Order.UserID, resp.Order, "order_created")
 	}
 
@@ -1729,7 +1659,7 @@ func (h *Handler) cancelSubscription(w http.ResponseWriter, r *http.Request) {
 
 // Payment status handler
 func (h *Handler) getPaymentStatus(w http.ResponseWriter, r *http.Request) {
-	_, ok := utils.UserIDFromCtx(r)
+	userID, ok := utils.UserIDFromCtx(r)
 	if !ok {
 		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 		return
@@ -1739,10 +1669,59 @@ func (h *Handler) getPaymentStatus(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "provider ref required")
 		return
 	}
-	status, err := h.svc.GetPaymentStatus(ref)
+	provider := providerOfEnv()
+	payment, err := h.svc.GetPaymentByProviderRef(provider, ref)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		utils.WriteError(w, http.StatusNotFound, "payment not found")
 		return
+	}
+	canManage, _ := h.authz.HasPermission(userID, "store.manageOrders")
+	if payment.UserID != userID && !canManage {
+		utils.WriteError(w, http.StatusNotFound, "payment not found")
+		return
+	}
+	payment, err = h.svc.RefreshProviderPayment(provider, ref)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadGateway, "payment provider status is unavailable")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": payment.Status})
+}
+
+func (h *Handler) stripePaymentWebhook(w http.ResponseWriter, r *http.Request) {
+	secret := os.Getenv("STRIPE_WEBHOOK_SECRET")
+	if secret == "" {
+		utils.WriteError(w, http.StatusServiceUnavailable, "payment webhook is not configured")
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	payload, err := io.ReadAll(r.Body)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid webhook payload")
+		return
+	}
+	event, err := ParseStripePaymentEvent(payload, r.Header.Get("Stripe-Signature"), secret)
+	if errors.Is(err, ErrUnsupportedPaymentEvent) {
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "ignored"})
+		return
+	}
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid webhook signature or payload")
+		return
+	}
+	_, created, err := h.svc.ApplyProviderPaymentEvent("stripe", event, hashOperationValue(string(payload)))
+	if err != nil {
+		if errors.Is(err, ErrIdempotencyConflict) {
+			utils.WriteError(w, http.StatusConflict, "conflicting payment event")
+			return
+		}
+		log.Printf("store.stripePaymentWebhook: event processing failed: %v", err)
+		utils.WriteError(w, http.StatusServiceUnavailable, "payment event is pending recovery")
+		return
+	}
+	status := "processed"
+	if !created {
+		status = "replayed"
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": status})
 }

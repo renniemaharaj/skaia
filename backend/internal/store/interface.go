@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"time"
 
 	"github.com/skaia/backend/models"
 )
@@ -39,6 +40,9 @@ type CartRepository interface {
 // OrderRepository manages orders.
 type OrderRepository interface {
 	Create(order *models.Order, items []*models.OrderItem) (*models.Order, error)
+	BeginCheckout(userID int64, operationKey, payloadHash string) (*models.CheckoutOperation, bool, error)
+	CreateForCheckout(operationID int64, order *models.Order, items []*models.OrderItem) (*models.Order, error)
+	CompleteCheckout(operationID int64) error
 	GetByID(id int64) (*models.Order, error)
 	GetByUser(userID int64, limit, offset int) ([]*models.Order, error)
 	GetByProductOwner(ownerID int64, limit, offset int) ([]*models.Order, error)
@@ -48,7 +52,14 @@ type OrderRepository interface {
 	AcceptWithStockCheck(id int64) (*models.Order, error)
 	UpdateVendorStatus(id, ownerID int64, status, note string) (*models.Order, error)
 	UpdateStatus(id int64, status string) (*models.Order, error)
+	CompleteWithReferencePayout(id int64) (*models.Order, error)
 	Delete(id, actorID int64) error
+	ClaimFulfilments(orderID int64, owner string, lease time.Duration, limit int) ([]*models.OrderFulfilment, error)
+	MarkFulfilmentSucceeded(id int64, owner string) error
+	MarkFulfilmentFailed(id int64, owner, reason string, retryAfter time.Duration) error
+	RetryExhaustedFulfilments(orderID int64) (int64, error)
+	OrderHasFulfilments(orderID int64) (bool, error)
+	OrderFulfilmentsSucceeded(orderID int64) (bool, error)
 }
 
 // ReferenceCodeRepository manages checkout reference codes and their payouts.
@@ -67,7 +78,10 @@ type ReferenceCodeRepository interface {
 // PaymentRepository persists payment records.
 type PaymentRepository interface {
 	Create(p *models.Payment) (*models.Payment, error)
+	CreateOnce(p *models.Payment) (*models.Payment, bool, error)
 	GetByOrderID(orderID int64) (*models.Payment, error)
+	GetByProviderRef(provider, providerRef string) (*models.Payment, error)
+	ApplyProviderEvent(provider, eventID, payloadHash, providerRef, status string) (*models.Payment, bool, error)
 	UpdateStatus(id int64, status, failureReason string) (*models.Payment, error)
 }
 
@@ -92,7 +106,7 @@ type SubscriptionRepository interface {
 
 // PaymentProvider is the abstraction over real/simulated payment gateways.
 type PaymentProvider interface {
-	Charge(userID, amountCents int64, currency, paymentMethodID string) (providerRef, status, clientSecret string, err error)
+	Charge(userID, amountCents int64, currency, paymentMethodID, idempotencyKey string) (providerRef, status, clientSecret string, err error)
 	GetPaymentStatus(providerRef string) (string, error)
 	CreateSubscription(userID int64, plan *models.SubscriptionPlan, email string) (*SubscriptionResult, error)
 	CancelSubscription(providerSubID string, atPeriodEnd bool) error
@@ -105,6 +119,7 @@ type WalletRepository interface {
 	CreateTransaction(tx *models.WalletTransaction) (*models.WalletTransaction, error)
 	CreateTransactionOnce(tx *models.WalletTransaction, operationScope, operationKey string) (*models.WalletTransaction, bool, error)
 	DebitIfSufficient(userID, amount int64, description string) (*models.WalletTransaction, error)
+	DebitIfSufficientOnce(userID, amount int64, description, operationScope, operationKey string) (*models.WalletTransaction, bool, error)
 	GetTransactions(userID int64, limit, offset int) ([]*models.WalletTransaction, error)
 	GetBalance(userID int64) (int64, error)
 	AddCard(card *models.UserCard) (*models.UserCard, error)
@@ -123,4 +138,5 @@ type ReviewRepository interface {
 type UserStore interface {
 	GetByUsername(username string) (*models.User, error)
 	AddRoleByName(userID int64, roleName string) error
+	HasPermission(userID int64, permission string) (bool, error)
 }

@@ -6,7 +6,6 @@ import {
   Loader,
   MapPin,
   Pencil,
-  RotateCcw,
   Trash2,
   X,
 } from "lucide-react";
@@ -291,7 +290,7 @@ export const OrdersPage = () => {
 
   const renderOrderActions = (order: Order) => (
     <div className="order-actions">
-      {order.status === "pending" && (
+      {!["completed", "cancelled", "failed", "rejected"].includes(order.status) && (
         <button
           type="button"
           className="action-btn edit-btn"
@@ -299,22 +298,11 @@ export const OrdersPage = () => {
             event.stopPropagation();
             navigate(`/form/store/order/${order.id}/status`);
           }}
-          title="Accept Order"
+          title="Update order status"
         >
           <CheckCircle size={16} />
         </button>
       )}
-      <button
-        type="button"
-        className={`action-btn ${order.status === "completed" ? "active" : ""}`}
-        onClick={event => {
-          event.stopPropagation();
-          navigate(`/form/store/order/${order.id}/status`);
-        }}
-        title={order.status === "completed" ? "Mark Pending" : "Mark Completed"}
-      >
-        {order.status === "completed" ? <RotateCcw size={16} /> : <CheckCircle size={16} />}
-      </button>
       <button
         type="button"
         className="action-btn danger"
@@ -602,18 +590,16 @@ export const OrdersPage = () => {
   );
 
   const updateOrderStatus = async (id: string, status: string) => {
-    try {
-      await apiRequest(`/store/orders/${id}/status`, {
-        method: "PUT",
-        body: JSON.stringify({
-          status,
-        }),
-      });
-      toast.success("Order status updated");
-      fetchOrders();
-    } catch (err) {
-      toast.error("Failed to update status");
-    }
+	try {
+	  await apiRequest(`/store/orders/${id}/status`, {
+		method: "PUT",
+		body: JSON.stringify({ status }),
+	  });
+	  toast.success("Order status updated");
+	  fetchOrders();
+	} catch (err) {
+	  toast.error(err instanceof Error ? err.message : "Failed to update status");
+	}
   };
 
   const deleteOrder = async (id: string) => {

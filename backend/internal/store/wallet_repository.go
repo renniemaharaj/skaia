@@ -165,6 +165,87 @@ func (r *sqlWalletRepository) DebitIfSufficient(userID, amount int64, descriptio
 	return tx, nil
 }
 
+// DebitIfSufficientOnce atomically serializes a user's balance check with a
+// retry-safe debit. Matching replays return the original debit without checking
+// the now-lower balance again; conflicting payloads fail closed.
+func (r *sqlWalletRepository) DebitIfSufficientOnce(userID, amount int64, description, operationScope, operationKey string) (*models.WalletTransaction, bool, error) {
+	operationScope = strings.TrimSpace(operationScope)
+	operationKey = strings.TrimSpace(operationKey)
+	if userID <= 0 || amount <= 0 {
+		return nil, false, errors.New("wallet debit requires a user and positive amount")
+	}
+	if operationScope == "" || len(operationScope) > 100 || operationKey == "" || len(operationKey) > 500 {
+		return nil, false, errors.New("wallet debit requires a bounded scope and key")
+	}
+
+	keyHash := hashOperationValue(operationKey)
+	payload, err := json.Marshal(struct {
+		UserID      int64  `json:"user_id"`
+		Amount      int64  `json:"amount"`
+		Type        string `json:"type"`
+		Description string `json:"description"`
+	}{userID, amount, "debit", description})
+	if err != nil {
+		return nil, false, err
+	}
+	payloadHash := hashOperationValue(string(payload))
+	result := &models.WalletTransaction{}
+	created := false
+
+	err = database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		if _, err := exec.Exec(`SELECT pg_advisory_xact_lock($1)`, userID); err != nil {
+			return err
+		}
+
+		var storedPayloadHash string
+		err := exec.QueryRow(`
+			SELECT id, user_id, amount, type, description, created_at, operation_payload_hash
+			FROM user_wallet_transactions
+			WHERE user_id = $1 AND operation_scope = $2 AND operation_key_hash = $3
+		`, userID, operationScope, keyHash).Scan(
+			&result.ID, &result.UserID, &result.Amount, &result.Type, &result.Description, &result.CreatedAt, &storedPayloadHash,
+		)
+		if err == nil {
+			if storedPayloadHash != payloadHash {
+				return ErrIdempotencyConflict
+			}
+			return nil
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+
+		var balance int64
+		if err := exec.QueryRow(`
+			SELECT COALESCE(SUM(CASE WHEN type = 'credit' THEN amount ELSE 0 END), 0) -
+			       COALESCE(SUM(CASE WHEN type = 'debit' THEN amount ELSE 0 END), 0)
+			FROM user_wallet_transactions WHERE user_id = $1
+		`, userID).Scan(&balance); err != nil {
+			return err
+		}
+		if balance < amount {
+			return errors.New("insufficient wallet balance")
+		}
+
+		if err := exec.QueryRow(`
+			INSERT INTO user_wallet_transactions
+				(user_id, amount, type, description, operation_scope, operation_key_hash, operation_payload_hash)
+			VALUES ($1, $2, 'debit', $3, $4, $5, $6)
+			RETURNING id, user_id, amount, type, description, created_at
+		`, userID, amount, description, operationScope, keyHash, payloadHash).Scan(
+			&result.ID, &result.UserID, &result.Amount, &result.Type, &result.Description, &result.CreatedAt,
+		); err != nil {
+			return err
+		}
+		created = true
+		return nil
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return result, created, nil
+}
+
 func (r *sqlWalletRepository) GetTransactions(userID int64, limit, offset int) ([]*models.WalletTransaction, error) {
 	query := `
 		SELECT id, user_id, amount, type, description, created_at

@@ -254,7 +254,10 @@ func TestOrderRepository_UpdateStatus(t *testing.T) {
 		{ProductID: prod.ID, Quantity: 1, Price: 500},
 	})
 
-	updated, err := orderRepo.UpdateStatus(order.ID, "completed")
+	updated, err := orderRepo.UpdateStatus(order.ID, "accepted")
+	require.NoError(t, err)
+	assert.Equal(t, "accepted", updated.Status)
+	updated, err = orderRepo.UpdateStatus(order.ID, "completed")
 	require.NoError(t, err)
 	assert.Equal(t, "completed", updated.Status)
 }

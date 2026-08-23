@@ -237,6 +237,14 @@ telemetry API exposes bounded counters and no identities or payloads.
   the opaque operation key and canonical financial payload. Raw keys never enter
   database rows, logs, errors, or public DTOs; a hash match with a payload
   mismatch is an explicit conflict and creates no ledger effect.
+- Commerce checkout and provider callbacks use the same hash-only replay rule.
+  Raw checkout keys, provider event IDs, and callback payloads never persist or
+  enter public DTOs/logs. Stripe callbacks require a valid signature and bounded
+  body; payment polling first authorizes the order owner or `store.manageOrders`.
+- Exhausted commerce fulfilments are operator data. Recovery fails closed inside
+  the store service on a live database permission check, cannot reset active
+  leases or succeeded jobs, and is safe only because each delivered effect is
+  independently replay-safe.
 
 ## Current Baseline (2026-06-19)
 
