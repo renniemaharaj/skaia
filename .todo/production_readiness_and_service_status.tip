@@ -1,5 +1,6 @@
 <--/------->
 ## production_readiness_and_service_status
+@todo-sequence(group=platform_gap_execution_sequence, index=2)
 
 ### Current Progress
 - **Phase 1: Health, telemetry, and backup inventory** - ⬜ Not started
@@ -10,6 +11,8 @@
 - **Phase 6: Operator/public UX and specs** - ⬜ Not started
 
 ### Next Steps
+- [ ] Execution stage 2 of `platform_gap_execution_sequence`; begin only after
+  `db_transactions_concurrency` completes its integrity and verification gates.
 - [ ] Build the probe/dependency/telemetry/backup matrix from backend and grengo code.
 - [ ] Define public-versus-operator data boundaries and required dependency SLOs.
 - [ ] Fold old session/Turnstile smoke checks into release verification.

@@ -50,6 +50,8 @@ operational policies.
 2. Read the smallest relevant todo/spec/routine set.
 3. For todos:
    - Confirm matching `.tip` files exist.
+   - Validate any `@todo-sequence` group has one basename-matching index-0
+     coordinator and unique contiguous positive member indexes.
    - Compare plan/status with current project state when needed.
    - Update, split, merge, or retire with documented verification basis.
 4. For specs:
@@ -64,6 +66,8 @@ operational policies.
 - Confirm every active todo has a matching `.tip`.
 - Confirm new plans do not duplicate existing `.todo` entries.
 - Confirm `.tip` files follow `.todo/README.md`.
+- Confirm execution-sequence declarations have valid group names, one
+  coordinator, and unique contiguous indexes.
 - For retired todos, record verification basis before deletion.
 - For specs, use `rg` to confirm stale names/paths/contracts are gone.
 - Verify linked files exist.
@@ -106,6 +110,18 @@ operational policies.
 - 2026-08-23
 
 ## Last Run Remarks
+
+- Documented the `.tip` execution-sequence declaration API and indexed the
+  recon-derived platform queue with the `platform_gap_execution_sequence` group
+  tag. Index 0 identifies the coordinator; unique contiguous indexes 1-6 are the
+  worker order and are now authoritative over prose ordering.
+
+- Created `platform_gap_execution_sequence` as the authoritative stage-gated
+  queue for the six recon-derived plans. The order is commerce integrity,
+  production readiness, linked identities, external-event rewards, ranked
+  datasets, community workflows, then cross-gap audit/retirement. Each linked
+  tip now records its stage and prerequisite, and every stage requires stable
+  backend policy/tests before shared-primitive UI work.
 
 - Reconciled the public SkaiaCraft recon against current Skaia routes, domains,
   specs, and active plans. Expanded `db_transactions_concurrency` for checkout,

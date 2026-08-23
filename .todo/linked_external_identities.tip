@@ -1,6 +1,7 @@
 <--/------->
 
 ## linked_external_identities
+@todo-sequence(group=platform_gap_execution_sequence, index=3)
 
 ### Current Progress
 - **Phase 1: Provider and privacy contract** - ⬜ Not started
@@ -10,6 +11,8 @@
 - **Phase 5: Adversarial verification and specs** - ⬜ Not started
 
 ### Next Steps
+- [ ] Execution stage 3 of `platform_gap_execution_sequence`; reuse the completed
+  integrity and operational contracts rather than defining local alternatives.
 - [ ] Map public/private projections and tenant/provider uniqueness requirements.
 - [ ] Define adapter and single-use challenge contracts with a fake provider.
 - [ ] Run security review before selecting a real provider.

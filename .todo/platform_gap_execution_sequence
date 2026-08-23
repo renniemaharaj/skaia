@@ -1,0 +1,71 @@
+# Platform Gap Execution Sequence
+
+## Context
+
+The SkaiaCraft reconnaissance produced six relevant Skaia plans spanning
+integrity, operations, identity, fulfilment, rankings, and community workflows.
+Executing them independently would risk building UI on unstable contracts or
+duplicating provider, idempotency, directory, privacy, and worker primitives.
+
+## Goal
+
+- Provide one authoritative dependency order for the recon-derived plans.
+- Require each capability to remain tenant-aware, provider-neutral, and
+  configurable rather than inheriting Minecraft-specific vocabulary or rules.
+- Stabilize backend contracts and failure behavior before exposing management or
+  user UI.
+- Index every member through the `.tip` execution-sequence declaration API using
+  the `platform_gap_execution_sequence` group tag.
+
+## Non-Goals
+
+- Replacing the detailed implementation steps in each linked todo.
+- Reordering unrelated active Skaia plans.
+- Treating visual similarity to another product as an acceptance criterion.
+
+## Steps
+
+1. Complete commerce transaction, idempotency, callback, transition, and durable
+   fulfilment foundations in `db_transactions_concurrency`.
+2. Complete dependency health, diagnostics, status, restore, release, and load
+   gates in `production_readiness_and_service_status` so later adapters and
+   workers have observable operating contracts.
+3. Add verified, privacy-controlled provider-neutral identities through
+   `linked_external_identities`.
+4. Build append-only external event grants, non-financial rewards, redemption,
+   and lease-based adapter delivery through `external_event_reward_fulfilment`,
+   reusing stages 1-3 rather than defining another identity or job system.
+5. Add configurable ranked datasets through `configurable_ranked_datasets`,
+   reusing verified subjects, privacy projections, ingestion idempotency,
+   caching, and realtime invalidation without coupling rankings to wallets.
+6. Add proposals, showcases, and scheduled events through
+   `community_proposals_showcases_and_events`, reusing existing forum, page,
+   media, directory, moderation, lifecycle, and notification primitives.
+7. Run a cross-feature auditor/correctness pass, refresh the gap matrix, document
+   intentional omissions, and retire completed plan pairs only after their
+   verification and durable contracts are recorded.
+
+## Verification
+
+- A stage advances only when its todo phases, tests, specs, migrations, and
+  rollout evidence satisfy that plan's completion rules.
+- Every stage follows repository => service => handler => frontend sequencing;
+  UI does not become the authority for permissions, privacy, idempotency, state
+  transitions, or fulfilment outcomes.
+- New schemas, DTOs, routes, labels, and feature flags remain generic and
+  tenant-configurable; reference-provider concepts live only in adapters.
+- Todo pairing, reference, status-vocabulary, backend, frontend, migration,
+  security, accessibility, and diff gates pass at the affected stages.
+
+## References
+
+- `.todo/db_transactions_concurrency`
+- `.todo/production_readiness_and_service_status`
+- `.todo/linked_external_identities`
+- `.todo/external_event_reward_fulfilment`
+- `.todo/configurable_ranked_datasets`
+- `.todo/community_proposals_showcases_and_events`
+- `.routines/worker`
+- `.routines/auditor`
+- `.routines/correctness`
+- `/home/renniem/Workspace/docker/skaiacraft-recon/README.md`

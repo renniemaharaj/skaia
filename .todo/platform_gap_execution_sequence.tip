@@ -1,0 +1,47 @@
+<--/------->
+
+## platform_gap_execution_sequence
+@todo-sequence(group=platform_gap_execution_sequence, index=0)
+
+### Current Progress
+- **Stage 1: Commerce integrity foundation** - 🟡 In progress
+- **Stage 2: Production readiness and status** - ⬜ Not started
+- **Stage 3: Linked external identities** - ⬜ Not started
+- **Stage 4: External event rewards and fulfilment** - ⬜ Not started
+- **Stage 5: Configurable ranked datasets** - ⬜ Not started
+- **Stage 6: Community workflows** - ⬜ Not started
+- **Stage 7: Cross-gap audit and retirement** - ⬜ Not started
+
+### Execution Order
+1. `db_transactions_concurrency`
+2. `production_readiness_and_service_status`
+3. `linked_external_identities`
+4. `external_event_reward_fulfilment`
+5. `configurable_ranked_datasets`
+6. `community_proposals_showcases_and_events`
+7. Auditor/correctness review, refreshed gap matrix, and verified todo retirement
+
+The `@todo-sequence` declarations in member `.tip` files are authoritative;
+this numbered list is the human-readable projection.
+
+### Stage Gates
+- [ ] Finish every phase and required verification in the current stage before
+  beginning implementation in the next stage.
+- [ ] Within each stage, stabilize migrations/models, repository/service policy,
+  handlers/protocols, and adversarial tests before adding user or operator UI.
+- [ ] Build UI only from shared Skaia primitives and complete loading, empty,
+  denied, stale, error, success, responsive, keyboard, and screen-reader states.
+- [ ] Keep provider-specific language and behavior inside optional adapters;
+  core routes, entities, permissions, feature flags, and UI labels stay generic
+  and tenant-configurable.
+- [ ] After every stage, update affected specs and this tip with verification,
+  newly discovered dependencies, and the next unblocked stage.
+
+### Next Steps
+- [ ] Continue `db_transactions_concurrency` with checkout/provider idempotency,
+  transition guards, durable fulfilment records and leases, recovery behavior,
+  and PostgreSQL-backed concurrency verification.
+- [ ] Do not begin status or product UI merely to demonstrate progress; expose
+  UI only after the corresponding authoritative backend contract passes its gate.
+
+<--/------->

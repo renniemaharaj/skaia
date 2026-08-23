@@ -87,11 +87,48 @@ Use this structure for `.todo/<name>.tip`:
 <--/------->
 ```
 
+## Execution Sequence Declaration API
+
+Plans that belong to an ordered work group declare their index in the matching
+`.tip` file immediately after the `## <name>` heading:
+
+```text
+@todo-sequence(group=<lowercase_snake_case_group>, index=<non_negative_integer>)
+```
+
+Example:
+
+```text
+## db_transactions_concurrency
+@todo-sequence(group=platform_gap_execution_sequence, index=1)
+```
+
+Contract:
+
+- `group` is a stable lowercase snake-case tag. It identifies the sequence; it
+  is not a status, feature flag, permission, or implementation namespace.
+- `index=0` is reserved for the coordinator plan whose basename matches the
+  group. Positive indexes identify executable member plans.
+- Member indexes must be unique and contiguous within a group. Lower indexes
+  execute first and block higher indexes unless the coordinator records an
+  explicit exception.
+- A plan belongs to at most one execution sequence. Dependencies outside the
+  group remain normal todo references and do not change the declared index.
+- Reordering requires updating the declarations, the coordinator `.tip`, and
+  planner remarks in one change. Renaming a group requires updating every member.
+- The declaration is optional for standalone plans. When present, it is the
+  machine-readable authority; headings and prose order are explanatory views.
+
+For the recon-derived platform work, the group tag is
+`platform_gap_execution_sequence`.
+
 Rules:
 
 - The heading must match the basename of the plan file.
 - Use compact phase names.
 - Keep next steps concrete enough for `.routines/worker` to execute.
+- If the tip has an execution sequence declaration, respect lower incomplete
+  indexes before starting the plan.
 - Record verification commands and dates once they pass.
 - Keep durable implementation facts in specs or the plan, not only in `.tip`.
 - The marker lines are optional for legacy files but required for new `.tip` files.

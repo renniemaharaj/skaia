@@ -1,5 +1,6 @@
 <--/------->
 ## configurable_ranked_datasets
+@todo-sequence(group=platform_gap_execution_sequence, index=5)
 
 ### Current Progress
 - **Phase 1: Ranking and privacy contract** - ⬜ Not started
@@ -9,6 +10,8 @@
 - **Phase 5: Scale verification and specs** - ⬜ Not started
 
 ### Next Steps
+- [ ] Execution stage 5 of `platform_gap_execution_sequence`; rankings remain
+  independent of wallet currency and reuse approved subject/privacy contracts.
 - [ ] Define subject, metric, season, tie, visibility, and producer contracts.
 - [ ] Benchmark the proposed cursor/index shape with a deterministic fixture.
 - [ ] Keep wallets and arbitrary datasource SQL outside the ranking model.

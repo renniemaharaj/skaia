@@ -1,5 +1,6 @@
 <--/------->
 ## db_transactions_concurrency
+@todo-sequence(group=platform_gap_execution_sequence, index=1)
 
 ### Current Progress
 - **Phase 1: Mutation and failure-window inventory** - 🟡 In progress
@@ -9,6 +10,8 @@
 - **Phase 5: Concurrency and rollout verification** - ⬜ Not started
 
 ### Next Steps
+- [ ] Execution stage 1 of `platform_gap_execution_sequence`; completion unblocks
+  all later recon-derived platform work.
 - [x] 2026-08-23: Confirmed the shared transaction runner, atomic order/item
   creation, order-row stock locking, conditional stock decrement,
   user-advisory-locked wallet debit, and transaction-coupled reference payout

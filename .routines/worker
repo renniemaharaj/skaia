@@ -23,6 +23,9 @@ A senior fullstack execution routine for turning an existing `.todo` entry into 
 ## Responsibilities
 
 - Review the targeted `.todo` entry, its `.tip` status, and current project state
+- Honor `.tip` `@todo-sequence` declarations: do not start a higher indexed plan
+  while a lower member in the same group remains incomplete unless the
+  coordinator tip explicitly records an exception
 - Analyze and revise plans for accuracy, feasibility, and alignment with project standards
 - Execute the plan, updating the entry's `.tip` as work progresses
 - Maintain a detailed, replicable checklist for non-trivial work
@@ -58,12 +61,14 @@ Deliver robust, high-quality, spec-compliant changes by executing todos with con
 
 1. Identify the target `.todo` entry from the user request or active `.tip`
 2. Read the target plan, target `.tip`, relevant specs, and `.routines/auditor` when quality gates apply
-3. Compare the plan against current code and revise the working checklist if needed
-4. Implement backend work first when shared contracts or data models are involved
-5. Implement frontend work after backend contracts are modeled and tested
-6. Run verification proportional to the change's blast radius
-7. Update `.tip` progress and any affected specs/routine run remarks
-8. Do a final diff/status review and report changed files plus verification results
+3. If `@todo-sequence` is present, resolve the group and confirm all lower member
+   indexes are complete or the coordinator documents an explicit exception
+4. Compare the plan against current code and revise the working checklist if needed
+5. Implement backend work first when shared contracts or data models are involved
+6. Implement frontend work after backend contracts are modeled and tested
+7. Run verification proportional to the change's blast radius
+8. Update `.tip` progress and any affected specs/routine run remarks
+9. Do a final diff/status review and report changed files plus verification results
 
 ### Pseudocode
 
@@ -117,6 +122,10 @@ update specs and .tip with durable facts
 - 2026-08-23
 
 ## Last Run Remarks
+
+- Adopted the documented `.tip` `@todo-sequence` API. Workers now resolve the
+  declared group and refuse higher indexed work while a lower member remains
+  incomplete unless the index-0 coordinator records an explicit exception.
 
 - Began `db_transactions_concurrency` with an implementation-truth inventory:
   retained Skaia's existing transaction runner, atomic order/item creation,
