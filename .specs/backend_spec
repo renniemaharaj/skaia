@@ -73,7 +73,7 @@ auth, store, cache, WebSocket emission, uploads, SSR, or grengo proxy behavior.
 
 ## Route Registry
 
-All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
+All application APIs are under `/api`; `/health`, `/ready`, `/sitemap.xml`, `/ws`, and
 `/uploads/*` also exist at the root where mounted in `backend/main.go`.
 
 | Prefix | Mount | Auth shape |
@@ -94,6 +94,7 @@ All application APIs are under `/api`; `/health`, `/sitemap.xml`, `/ws`, and
 | `/api/events` | `internal/events` | activity listing |
 | `/api/analytics` | `internal/analytics` | `events.view`-protected aggregate resource stats; no individual visitor API |
 | `/api/account-safeguards` | `main.go` + `internal/security` | `admin.general`-protected bounded trust/limiter counters |
+| `/api/status` | `internal/status` | opt-in sanitized public status plus `admin.general`-policy diagnostics/incidents |
 | `/api/mediascraper` | `internal/mediascraper` | scrape/job controls |
 | `/api/grengo` | `internal/grengo` | in-app tenant administration proxy |
 | `/api/bible/kjv` | `internal/bible` | public immutable KJV catalog and per-book reads |
@@ -272,6 +273,8 @@ bibliographical certification.
 - Auth secrets must never be cached in public user models.
 - Landing page is `site_config.landing_page_slug`; there is no `is_index`.
 - WebSocket pushes are part of mutation correctness, not optional decoration.
+- `/health` is dependency-free liveness. `/ready` is bounded required-dependency
+  readiness; operator diagnostics and incident writes use the status service.
 
 ## Verify
 
@@ -287,3 +290,4 @@ bibliographical certification.
 - `.specs/auth_user_separation_spec`
 - `.specs/security_architecture_spec`
 - `.specs/route_resolution_spec`
+- `.specs/operations_readiness_spec`

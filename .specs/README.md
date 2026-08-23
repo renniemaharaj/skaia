@@ -27,6 +27,7 @@ Full rules live in `.specs/PROTOCOL.md`. Short form:
 | Custom pages, landing page, page builder | `route_resolution_spec`, `custom_pages_multiplayer_spec`, `custom_page_section_compatibility_spec`, `custom_page_interactive_sections_spec`, `caching_cdn_spec` |
 | Forms, Q&A, surveys, polls, voting | `custom_page_interactive_sections_spec`, `custom_pages_multiplayer_spec`, `security_architecture_spec`, `realtime_wss_spec`, `migrations_spec` |
 | Deploy, tenancy, grengo, nginx, cache headers | `infrastructure_spec`, `caching_cdn_spec`, `migrations_spec` |
+| Health, incidents, backup, restore, release/load gates | `operations_readiness_spec`, `infrastructure_spec`, `backend_spec`, `security_architecture_spec`, `migrations_spec` |
 
 ## Spec Cards
 
@@ -42,6 +43,7 @@ Full rules live in `.specs/PROTOCOL.md`. Short form:
 - `caching_cdn_spec` - no-store APIs, static caching, CDN-safe flows.
 - `migrations_spec` - idempotent migration policy and current migration list.
 - `infrastructure_spec` - Docker/grengo/nginx tenancy model.
+- `operations_readiness_spec` - liveness/readiness, status/incidents, backup/restore, and release/load gates.
 - `auth_user_separation_spec` - standalone auth module contracts.
 - `security_architecture_spec` - defense-in-depth and mandatory security policy invariants.
 - `voice_chat_architecture.md` - binary audio/media WebSocket plane.

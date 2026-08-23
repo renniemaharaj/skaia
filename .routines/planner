@@ -111,6 +111,11 @@ operational policies.
 
 ## Last Run Remarks
 
+- Reconciled production-readiness implementation into a new compact operations
+  card plus backend, frontend, migration, security, and infrastructure specs.
+  Stage 2 is complete, its restore/release/load evidence is durable, and
+  `linked_external_identities` is the next authoritative sequence member.
+
 - Reconciled the completed commerce-integrity foundation into backend, frontend,
   security, migration, and realtime cards. The durable contract now names
   authenticated hash-only checkout replay, signed provider events, guarded

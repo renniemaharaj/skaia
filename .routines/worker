@@ -123,6 +123,15 @@ update specs and .tip with durable facts
 
 ## Last Run Remarks
 
+- Completed `production_readiness_and_service_status`: bounded dependency
+  readiness, protected telemetry, opt-in public status and audited incidents,
+  backup manifests/restore drills, machine release/load gates, and public plus
+  operator UX now have durable code, tests, specs, and runbook evidence.
+- Verification passed: full backend tests/vet and focused races; root
+  application/CLI tests/vet; 238 frontend tests plus all UI policy/lint/build
+  gates; verified backup; disposable restored-backend readiness and guard probe;
+  final release decision; and zero-error bounded HTTP/WebSocket samples.
+
 - Completed `db_transactions_concurrency`: checkout/provider events now use
   hash-only replay identity, stock/wallet/payment/order transitions are guarded
   under PostgreSQL races, payouts are transaction-coupled, and special actions

@@ -215,8 +215,11 @@ func backupDatabase(name, dbName string) string {
 	}
 	ts := time.Now().Format("20060102-150405")
 	backupFile := filepath.Join(clientDir(name), fmt.Sprintf("%s-backup-%s.sql", dbName, ts))
-	if err := os.WriteFile(backupFile, dump, 0644); err != nil {
+	if err := os.WriteFile(backupFile, dump, 0600); err != nil {
 		die("Cannot write backup file: %v", err)
+	}
+	if err := writeIntegrityManifest(backupFile, "migration-safety", 7*24*time.Hour); err != nil {
+		die("Cannot write backup integrity manifest: %v", err)
 	}
 	pruneBackups(name, dbName, 5)
 	return backupFile
@@ -237,6 +240,9 @@ func pruneBackups(name, dbName string, keep int) {
 			warn("Cannot remove old backup %s: %v", filepath.Base(f), err)
 		} else {
 			log("Pruned old backup: %s", filepath.Base(f))
+			if err := os.Remove(f + ".manifest.json"); err != nil && !os.IsNotExist(err) {
+				warn("Cannot remove old backup manifest %s: %v", filepath.Base(f)+".manifest.json", err)
+			}
 		}
 	}
 }

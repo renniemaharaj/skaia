@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/redis/go-redis/v9"
 	"github.com/skaia/backend/internal/seocache"
+	istatus "github.com/skaia/backend/internal/status"
 	log "github.com/skaia/backend/internal/syslog"
 )
 
@@ -76,6 +77,9 @@ func NewSitemapHandler(db *sql.DB, rdb *redis.Client) http.HandlerFunc {
 
 func buildCachedSitemapXML(ctx context.Context, db *sql.DB, rdb *redis.Client) string {
 	cacheKey := seocache.RouteKey("/sitemap.xml")
+	if istatus.PublicEnabled() {
+		cacheKey += ":status"
+	}
 
 	if rdb != nil {
 		cached, err := rdb.Get(ctx, cacheKey).Result()
@@ -106,12 +110,15 @@ func buildCachedSitemapXML(ctx context.Context, db *sql.DB, rdb *redis.Client) s
 func buildSitemapXML(ctx context.Context, db *sql.DB) (string, error) {
 	baseURL := getSitemapBaseURL()
 
-	entries := make([]sitemapEntry, 0, len(sitemapPaths))
+	entries := make([]sitemapEntry, 0, len(sitemapPaths)+1)
 
 	for _, path := range sitemapPaths {
 		entries = append(entries, sitemapEntry{
 			Path: path,
 		})
+	}
+	if istatus.PublicEnabled() {
+		entries = append(entries, sitemapEntry{Path: "/status"})
 	}
 
 	dynamicEntries, contentErr := contentSitemapEntries(ctx, db)

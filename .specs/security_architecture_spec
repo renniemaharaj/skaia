@@ -221,6 +221,10 @@ telemetry API exposes bounded counters and no identities or payloads.
 - Security events and limiter telemetry use structured logs and bounded metrics.
   Required views include DEFCON state, jailed users, weighted request cost,
   authentication events, superuser activity, and per-tenant activity.
+- Service diagnostics and incident writes use `security.StatusPolicy` with a
+  live `admin.general` lookup. Public status exposes generic component/state and
+  authored incident copy only; operator reason codes are bounded and contain no
+  topology, paths, exception text, or credentials.
 - Audit write failure policy is explicit per action. High-impact mutations fail
   closed or use a durable transactional/outbox mechanism; silent loss is forbidden.
 - Trash listing and restoration are domain-authorized service operations.

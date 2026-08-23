@@ -79,6 +79,7 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 | `037_page_seo.sql` | Per-page SEO title, description, and image metadata |
 | `038_wallet_operation_idempotency.sql` | Hashed wallet operation identity, replay uniqueness, and forward-enforced ledger constraints |
 | `039_store_checkout_fulfilment.sql` | Hashed checkout/provider-event replay evidence, payment uniqueness, and leased order fulfilments |
+| `040_service_status.sql` | Public incident state, transactional immutable incident audit history, and status indexes |
 
 Control-plane migration `002_soft_delete_lifecycle.sql` adds retained
 site/cluster deletion state, inactive API-key permissions, scrubbed passcodes,
@@ -108,6 +109,8 @@ and matching hard-delete protection in `grengo`.
 - The hard-delete bypass is the global NOLOGIN
   `skaia_hard_delete_operator` role. Migrations create but never grant it;
   operator use requires an explicit reviewed grant and revocation.
+- Migration 040 and the fresh schema define `service_incidents` and
+  `service_incident_events`; incident event hard deletion uses the shared guard.
 
 ## Verify
 
@@ -119,3 +122,4 @@ and matching hard-delete protection in `grengo`.
 - `.specs/backend_spec`
 - `.specs/auth_user_separation_spec`
 - `.routines/planner`
+- `.specs/operations_readiness_spec`

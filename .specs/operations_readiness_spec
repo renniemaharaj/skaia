@@ -1,0 +1,107 @@
+# Operations Readiness Spec
+
+## Scope
+
+Service health, public status, incident lifecycle, backup integrity, release
+verification, bounded load samples, and restore-drill evidence.
+
+## Load when
+
+Changing health/readiness routes, status UI, incidents, operational telemetry,
+archives, migrations, deployment gates, or load/restore verification.
+
+## Owns
+
+- Backend domain: `backend/internal/status/`
+- Routes: `/health`, `/ready`, `/api/health`, `/api/ready`, `/api/status/*`
+- Incident tables: `service_incidents`, `service_incident_events`
+- Migration: `backend/internal/migrations/040_service_status.sql`
+- CLI operations: `internal/app/verification.go`, `internal/app/transfer.go`
+- UI: `frontend/src/pages/status/StatusPage.tsx`
+
+## Health Matrix
+
+| Surface | Audience | Dependencies | Budget | Disclosure |
+| --- | --- | --- | --- | --- |
+| `/health` | container/node | none | local/constant | `ok` only |
+| `/ready` and `/api/ready` | orchestrator | database, schema, Redis, SPA entry | 500 ms per check, parallel | generic component/state only |
+| `/api/status/diagnostics` | `admin.general` | readiness set | same bounded fan-out | latency and bounded reason codes |
+| `/api/status/` | public when `status` feature is explicit | readiness + published incidents | no-store | aggregate state, generic components, public incident copy |
+
+Database, schema, Redis, and the SPA entry are required dependencies. Public
+payloads never include hosts, database names, paths, exception strings, pool
+credentials, stack traces, or raw telemetry. Dependency failures use the closed
+reason vocabulary `dependency_unavailable` and `dependency_timeout` only.
+
+## Incident Contracts
+
+- Public states are investigating, monitoring, resolved, and maintenance;
+  drafts are operator-only and never enter public lists.
+- Components are the tenant-safe names `platform`, `web`, `database`, and
+  `cache`; severity is minor, major, critical, or maintenance.
+- Create/update authorization is service-enforced by `security.StatusPolicy`
+  using a live `admin.general` lookup. Missing policy and lookup failure deny.
+- Every write and its immutable before/after audit record commit in one
+  transaction. Runtime hard delete of incident audit events is forbidden.
+- Public status is opt-in through the `status` entry in `FEATURES_ENABLED`.
+- Active minor/major/maintenance incidents degrade the public aggregate; active
+  critical incidents make it unavailable even when dependency probes still pass.
+- When enabled, `/status` is a canonical indexable SPA shell and sitemap entry;
+  disabled tenants return the normal unknown-route 404/noindex response.
+
+## Backup and Restore Contracts
+
+| Class | Default retention | Contents/use |
+| --- | --- | --- |
+| `migration-safety` | 7 days / newest five per tenant | SQL dump before migration/rebuild |
+| `tenant-portable` | 30 days | tenant env, compose, uploads, SQL dump |
+| `node-portable` | 30 days | all tenant portable data |
+
+- Every new archive/dump is mode 0600. Its adjacent mode-0600
+  `.manifest.json` sidecar contains SHA-256, byte size, class, creation time,
+  retention deadline, and an explicit
+  encrypted-at-rest requirement. A sidecar does not encrypt an archive; backup
+  storage must provide encryption and access control before off-node retention.
+- `grengo verify backup <file>` recomputes digest/size, validates archive
+  metadata and required entries, and returns a machine-readable stop/proceed
+  decision without extracting content.
+- Restore drills use an isolated disposable database/tenant, never overwrite an
+  existing tenant, verify schema plus representative row counts and `/ready`,
+  record the archive digest/revision/timestamps, then remove only the named
+  disposable target after evidence is retained.
+
+## Release and Load Gates
+
+- `grengo verify release <tenant> [--url <origin>]` records revision, a hash of
+  config key names (never values), latest migration filename, bounded probe
+  latency, and one `proceed`/`stop` decision.
+- Required configuration, Turnstile pair consistency, liveness, readiness,
+  session/Turnstile config, store reads, sitemap, and SPA checks fail closed.
+- `/api/session/turnstile-config` is the public, content-free smoke probe; the
+  auth-owned `user_sessions` domain remains the login/session authority.
+- `grengo load-check <url>` performs read-only HTTP work with defaults of 50
+  requests and four workers, hard caps of 200 and 16, a three-second request
+  timeout, a 500 ms default average-latency budget, and a zero-error stop budget.
+  `--websocket` caps reconnect samples to 20 attempts and four workers.
+  Non-loopback targets require the
+  explicit `--allow-remote` acknowledgement and must never be production or a
+  third-party service.
+- Load evidence records request/concurrency bounds, failures, average latency,
+  and duration. Environment-specific latency, DB-pool, queue-lag, and WebSocket
+  reconnect budgets must be recorded alongside the run before release.
+
+## Verify
+
+- `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...` from `backend/`
+- `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp go test ./internal/app ./internal/cli`
+- Frontend tests, lint, TypeScript/build, and policy checks from `frontend/`
+- PostgreSQL migration rerun plus an isolated dump/restore/count/readiness drill
+
+## Trace
+
+- `.specs/infrastructure_spec`
+- `.specs/backend_spec`
+- `.specs/security_architecture_spec`
+- `.specs/migrations_spec`
+- `.todo/production_readiness_and_service_status`
+- `.routines/auditor`

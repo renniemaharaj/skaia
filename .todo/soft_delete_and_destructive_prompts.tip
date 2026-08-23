@@ -63,6 +63,11 @@
   environment. No production deployment was authorized in this workspace.
 - [ ] Grant `SET` on the NOLOGIN `skaia_hard_delete_operator` role only to the
   audited maintenance principal; application roles must never receive it.
+- [ ] Replace legacy tenant runtime connections that reuse the PostgreSQL
+  bootstrap superuser (confirmed locally for `home` on 2026-08-23) with a
+  separate least-privilege login before production rollout. Superusers
+  implicitly bypass the hard-delete operator guard even without an explicit
+  grant; direct non-superuser restore-drill coverage proves the intended guard.
 - [ ] Add atomic bulk-restore APIs before exposing bulk undo for domains with
   bulk deletion. The shared route intentionally exposes only reauthorized
   per-item undo today.

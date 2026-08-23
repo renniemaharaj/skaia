@@ -48,6 +48,8 @@ import (
 	iprovisioning "github.com/skaia/backend/internal/provisioning"
 	isecurity "github.com/skaia/backend/internal/security"
 	"github.com/skaia/backend/internal/seo"
+	isession "github.com/skaia/backend/internal/session"
+	istatus "github.com/skaia/backend/internal/status"
 	istore "github.com/skaia/backend/internal/store"
 	istreammeta "github.com/skaia/backend/internal/streammeta"
 	log "github.com/skaia/backend/internal/syslog"
@@ -294,6 +296,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	userRepo := iuser.NewRepository(db)
 	userCache := iuser.NewCacheWithClient(rdb)
 	userSvc := iuser.NewService(userRepo, userCache)
+	statusChecker := istatus.NewChecker(db, rdb, os.Getenv("INDEX_FILE_PATH"))
 
 	authRepo := auth.NewSQLRepository(db)
 	authSvc := auth.NewService(authRepo, userSvc)
@@ -604,6 +607,20 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	}
 	r.Get("/health", healthHandler)
 	r.Head("/health", healthHandler)
+	readinessHandler := func(w http.ResponseWriter, r *http.Request) {
+		readiness := statusChecker.Readiness(r.Context())
+		code := http.StatusOK
+		if readiness.State == istatus.StateUnavailable {
+			code = http.StatusServiceUnavailable
+		}
+		if r.Method == http.MethodHead {
+			w.WriteHeader(code)
+			return
+		}
+		utils.WriteJSON(w, code, readiness)
+	}
+	r.Get("/ready", readinessHandler)
+	r.Head("/ready", readinessHandler)
 
 	sitemapHandler := seo.NewSitemapHandler(db, rdb)
 
@@ -662,13 +679,14 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		if armedDir == "" {
 			armedDir = "armed"
 		}
-		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/site/arm", "/api/site/disarm", "/api/health", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh", "/api/grengo/"}))
+		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/site/arm", "/api/site/disarm", "/api/health", "/api/ready", "/api/status", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh", "/api/grengo/"}))
 		api.Use(defconLimiter, imw.ExtractTokenMiddleware, imw.IPHoppingMiddleware(authSvc), imw.MFARequiredMiddleware(authSvc), imw.AccountTrustBoundary(accountTrustPolicy), imw.MutationBudget(actionBudget))
 
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
 		})
+		api.Get("/ready", readinessHandler)
 
 		api.With(imw.JWTAuthMiddleware).Get("/defcon/telemetry", func(w http.ResponseWriter, r *http.Request) {
 			userID, ok := utils.UserIDFromCtx(r)
@@ -1017,6 +1035,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		hub.OnGuestSessionClosed = authHandler.ExpireRecoveryRequestsForGuestSession
 		authhandler.NewHandler(authHandler).Mount(api, imw.JWTAuthMiddleware)
 		isecurity.NewAccountTrustHandler(accountTrustPolicy).Mount(api, imw.JWTAuthMiddleware)
+		isession.NewHandler(isession.NewService(isession.NewSQLRepository(db))).MountPublic(api)
 		iuser.NewHandler(userSvc, hub, dispatcher, inboxSender, emailSender).Mount(api, imw.JWTAuthMiddleware)
 		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, commentSlowMode)
 		idocumentation.NewHandler(documentationSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware)
@@ -1070,6 +1089,10 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		// Analytics API.
 		ianalytics.NewHandler(analyticsSvc, userSvc).Mount(api, imw.JWTAuthMiddleware)
+
+		statusRepo := istatus.NewRepository(db)
+		statusPolicy := isecurity.NewStatusPolicy(userSvc)
+		istatus.NewHandler(istatus.NewService(statusRepo, statusChecker, statusPolicy)).Mount(api, imw.JWTAuthMiddleware)
 
 		// Grengo multi-tenant management API.
 		grengoAPI := os.Getenv("GRENGO_API_URL")

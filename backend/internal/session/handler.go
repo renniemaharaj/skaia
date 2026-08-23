@@ -31,6 +31,14 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 	})
 }
 
+// MountPublic exposes only the content-free Turnstile configuration probe. The
+// auth-owned user_sessions domain remains authoritative for login sessions.
+func (h *Handler) MountPublic(r chi.Router) {
+	r.Route("/session", func(r chi.Router) {
+		r.Get("/turnstile-config", h.GetTurnstileConfig)
+	})
+}
+
 // GetTurnstileConfig returns the public Turnstile site_key.
 func (h *Handler) GetTurnstileConfig(w http.ResponseWriter, r *http.Request) {
 	cfg := h.svc.GetTurnstileConfig()

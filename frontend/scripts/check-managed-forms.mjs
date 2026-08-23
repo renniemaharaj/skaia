@@ -7,6 +7,8 @@ const knownRawForms = new Set([
   "components/page/layout/voice/MediaSection.tsx",
   "components/ui/Console.tsx",
   "components/ui/Prompt.tsx",
+  // Inline operator command; the status page remains visible while publishing.
+  "pages/status/StatusPage.tsx",
 ]);
 
 function filesUnder(directory) {

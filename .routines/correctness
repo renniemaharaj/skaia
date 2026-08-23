@@ -80,9 +80,15 @@ docs disagree.
 
 ## Last Ran
 
-- 2026-08-16
+- 2026-08-23
 
 ## Last Run Remarks
+
+- Reconciled health/status routes, migration 040 and fresh-schema parity,
+  feature/SEO behavior, backup/release/load CLI contracts, operations evidence,
+  and sequence state. The restored deployment and documented counts/readiness
+  agree; the only remaining environment drift is the legacy superuser runtime
+  login, now recorded in its owning soft-delete rollout handoff.
 
 - Reconciled implementation with the proven custom-page authority. Runtime code
   now has no typed/shadow/palette branches or flags; `pages.content` owns page

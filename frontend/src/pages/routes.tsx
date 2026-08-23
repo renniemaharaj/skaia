@@ -99,6 +99,7 @@ const DocumentationSettingsPage = lazy(
 const DocumentationGuideEditorPage = lazy(
   () => import("./documentation/DocumentationGuideEditorPage.tsx")
 );
+const StatusPage = lazy(() => import("./status/StatusPage.tsx"));
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "form/page/:slug/manage", element: <PageManageFormPage /> },
@@ -187,6 +188,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "inbox", element: <InboxPage />, conditional: "inbox" },
   { path: "admin/meta/*", element: <AdminMetaSettings /> },
   { path: "admin/roles", element: <RolesManagementPage /> },
+  { path: "admin/status", element: <StatusPage operator />, conditional: "status" },
   { path: "deployments", element: <DeploymentsPage /> },
   { path: "datasources", element: <DataSourcesPage /> },
   { path: "datasources/:id", element: <DataSourceEditorPage /> },
@@ -227,6 +229,7 @@ export const guestRoutes: (CustomRoute | IndexRoute)[] = [
 export const publicRoutes: (CustomRoute | IndexRoute)[] = [
   { index: true, element: <Index />, conditional: "landing" },
   { path: "kjv", element: <KJVPage /> },
+  { path: "status", element: <StatusPage />, conditional: "status" },
   { path: "kjv/:book/:chapter/:verse/:readerState", element: <KJVPage /> },
   { path: "doc", element: <DocumentationCatalogPage />, conditional: "docs" },
   { path: "doc/:documentationSlug", element: <DocumentationViewPage />, conditional: "docs" },

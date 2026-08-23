@@ -3,6 +3,7 @@ package app
 import (
 	"archive/tar"
 	"compress/gzip"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,15 +16,29 @@ import (
 	"time"
 )
 
-const archiveVersion = 1
+const archiveVersion = 2
 
 // archiveMeta is the manifest stored as meta.json in every export archive.
 type archiveMeta struct {
-	Version    int      `json:"version"`
-	Type       string   `json:"type"`              // "client" or "node"
-	Name       string   `json:"name,omitempty"`    // single-client archives only
-	Clients    []string `json:"clients,omitempty"` // node archives only
-	ExportedAt string   `json:"exported_at"`
+	Version                  int      `json:"version"`
+	Type                     string   `json:"type"`              // "client" or "node"
+	Name                     string   `json:"name,omitempty"`    // single-client archives only
+	Clients                  []string `json:"clients,omitempty"` // node archives only
+	ExportedAt               string   `json:"exported_at"`
+	BackupClass              string   `json:"backup_class"`
+	RetainUntil              string   `json:"retain_until"`
+	EncryptionRequiredAtRest bool     `json:"encryption_required_at_rest"`
+}
+
+type archiveIntegrityManifest struct {
+	Version                  int    `json:"version"`
+	Archive                  string `json:"archive"`
+	SHA256                   string `json:"sha256"`
+	SizeBytes                int64  `json:"size_bytes"`
+	BackupClass              string `json:"backup_class"`
+	CreatedAt                string `json:"created_at"`
+	RetainUntil              string `json:"retain_until"`
+	EncryptionRequiredAtRest bool   `json:"encryption_required_at_rest"`
 }
 
 // Client Export
@@ -37,22 +52,25 @@ func cmdExportClient(name, outFile string) {
 		outFile = fmt.Sprintf("grengo-client-%s-%s.tar.gz", name, time.Now().Format("20060102-150405"))
 	}
 
-	f, err := os.Create(outFile)
+	f, err := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		die("Cannot create archive: %v", err)
 	}
-	defer f.Close()
-
+	if err := f.Chmod(0600); err != nil {
+		die("Cannot secure archive permissions: %v", err)
+	}
 	gw := gzip.NewWriter(f)
-	defer gw.Close()
 	tw := tar.NewWriter(gw)
-	defer tw.Close()
+	exportedAt := time.Now().UTC()
 
 	writeMeta(tw, archiveMeta{
-		Version:    archiveVersion,
-		Type:       "client",
-		Name:       name,
-		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		Version:                  archiveVersion,
+		Type:                     "client",
+		Name:                     name,
+		ExportedAt:               exportedAt.Format(time.RFC3339),
+		BackupClass:              "tenant-portable",
+		RetainUntil:              exportedAt.Add(30 * 24 * time.Hour).Format(time.RFC3339),
+		EncryptionRequiredAtRest: true,
 	})
 
 	addFileToArchive(tw, clientEnvFile(name), "env", nil)
@@ -76,6 +94,7 @@ func cmdExportClient(name, outFile string) {
 		warn("PostgreSQL is not running - archive will not include DB data")
 	}
 
+	finalizeArchive(f, gw, tw, outFile, "tenant-portable", 30*24*time.Hour)
 	log("Client '%s' exported => %s", name, outFile)
 }
 
@@ -141,22 +160,25 @@ func cmdExportNode(outFile string) {
 		outFile = fmt.Sprintf("grengo-node-%s.tar.gz", time.Now().Format("20060102-150405"))
 	}
 
-	f, err := os.Create(outFile)
+	f, err := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		die("Cannot create archive: %v", err)
 	}
-	defer f.Close()
-
+	if err := f.Chmod(0600); err != nil {
+		die("Cannot secure archive permissions: %v", err)
+	}
 	gw := gzip.NewWriter(f)
-	defer gw.Close()
 	tw := tar.NewWriter(gw)
-	defer tw.Close()
+	exportedAt := time.Now().UTC()
 
 	writeMeta(tw, archiveMeta{
-		Version:    archiveVersion,
-		Type:       "node",
-		Clients:    names,
-		ExportedAt: time.Now().UTC().Format(time.RFC3339),
+		Version:                  archiveVersion,
+		Type:                     "node",
+		Clients:                  names,
+		ExportedAt:               exportedAt.Format(time.RFC3339),
+		BackupClass:              "node-portable",
+		RetainUntil:              exportedAt.Add(30 * 24 * time.Hour).Format(time.RFC3339),
+		EncryptionRequiredAtRest: true,
 	})
 
 	pgUp := pgRunning()
@@ -186,7 +208,74 @@ func cmdExportNode(outFile string) {
 		}
 	}
 
+	finalizeArchive(f, gw, tw, outFile, "node-portable", 30*24*time.Hour)
 	log("Node exported => %s  (%d client(s))", outFile, len(names))
+}
+
+func finalizeArchive(f *os.File, gw *gzip.Writer, tw *tar.Writer, path, backupClass string, retention time.Duration) {
+	if err := tw.Close(); err != nil {
+		die("Cannot finalize archive: %v", err)
+	}
+	if err := gw.Close(); err != nil {
+		die("Cannot finalize archive compression: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		die("Cannot close archive: %v", err)
+	}
+	if err := writeIntegrityManifest(path, backupClass, retention); err != nil {
+		die("Cannot write archive integrity manifest: %v", err)
+	}
+}
+
+func writeIntegrityManifest(path, backupClass string, retention time.Duration) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	hash := sha256.New()
+	size, err := io.Copy(hash, f)
+	closeErr := f.Close()
+	if err != nil {
+		return err
+	}
+	if closeErr != nil {
+		return closeErr
+	}
+	now := time.Now().UTC()
+	manifest := archiveIntegrityManifest{
+		Version: 1, Archive: filepath.Base(path), SHA256: fmt.Sprintf("%x", hash.Sum(nil)), SizeBytes: size,
+		BackupClass: backupClass, CreatedAt: now.Format(time.RFC3339), RetainUntil: now.Add(retention).Format(time.RFC3339), EncryptionRequiredAtRest: true,
+	}
+	data, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path+".manifest.json", append(data, '\n'), 0600)
+}
+
+func verifyIntegrityManifest(path string) (archiveIntegrityManifest, error) {
+	var manifest archiveIntegrityManifest
+	data, err := os.ReadFile(path + ".manifest.json")
+	if err != nil {
+		return manifest, err
+	}
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return manifest, err
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return manifest, err
+	}
+	defer f.Close()
+	hash := sha256.New()
+	size, err := io.Copy(hash, f)
+	if err != nil {
+		return manifest, err
+	}
+	if size != manifest.SizeBytes || fmt.Sprintf("%x", hash.Sum(nil)) != manifest.SHA256 || filepath.Base(path) != manifest.Archive {
+		return manifest, fmt.Errorf("archive integrity mismatch")
+	}
+	return manifest, nil
 }
 
 // Node Import
@@ -332,18 +421,24 @@ func resolvePort(archived, override string) string {
 // readArchive opens a .tar.gz file and returns all regular-file contents
 // keyed by their path inside the archive.
 func readArchive(path string) map[string][]byte {
+	files, err := readArchiveSafe(path)
+	if err != nil {
+		die("Cannot read archive: %v", err)
+	}
+	return files
+}
+
+func readArchiveSafe(path string) (map[string][]byte, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		die("Cannot open archive: %v", err)
+		return nil, err
 	}
 	defer f.Close()
-
 	gr, err := gzip.NewReader(f)
 	if err != nil {
-		die("Not a valid gzip archive: %v", err)
+		return nil, err
 	}
 	defer gr.Close()
-
 	files := map[string][]byte{}
 	tr := tar.NewReader(gr)
 	for {
@@ -352,18 +447,24 @@ func readArchive(path string) map[string][]byte {
 			break
 		}
 		if err != nil {
-			die("Corrupt archive: %v", err)
+			return nil, err
 		}
 		if hdr.Typeflag != tar.TypeReg {
 			continue
 		}
-		data, err := io.ReadAll(tr)
+		if hdr.Size < 0 || hdr.Size > 1<<30 {
+			return nil, fmt.Errorf("archive entry %s exceeds the verification bound", hdr.Name)
+		}
+		data, err := io.ReadAll(io.LimitReader(tr, hdr.Size+1))
 		if err != nil {
-			die("Error reading %s from archive: %v", hdr.Name, err)
+			return nil, fmt.Errorf("read archive entry %s: %w", hdr.Name, err)
+		}
+		if int64(len(data)) != hdr.Size {
+			return nil, fmt.Errorf("archive entry %s has an invalid size", hdr.Name)
 		}
 		files[hdr.Name] = data
 	}
-	return files
+	return files, nil
 }
 
 // parseMeta extracts and validates the meta.json entry from the file map.

@@ -18,6 +18,7 @@ import (
 
 // feature spec: list keys of modules that can be toggled via env
 var defaultFeatureSet = []string{"landing", "store", "forum", "docs", "cart", "users", "inbox", "presence"}
+var optionalFeatureSet = []string{"status"}
 
 func getFeaturesStatus() map[string]bool {
 	raw := os.Getenv("FEATURES_ENABLED")
@@ -27,6 +28,9 @@ func getFeaturesStatus() map[string]bool {
 		// no explicit list => all default features enabled for backwards compatibility
 		for _, f := range defaultFeatureSet {
 			features[f] = true
+		}
+		for _, f := range optionalFeatureSet {
+			features[f] = false
 		}
 		return features
 	}
@@ -44,6 +48,11 @@ func getFeaturesStatus() map[string]bool {
 			features[f] = false
 		}
 	}
+	for _, f := range optionalFeatureSet {
+		if _, ok := features[f]; !ok {
+			features[f] = false
+		}
+	}
 
 	return features
 }
@@ -52,6 +61,11 @@ func getEnabledFeatures() []string {
 	status := getFeaturesStatus()
 	enabled := []string{}
 	for _, f := range defaultFeatureSet {
+		if status[f] {
+			enabled = append(enabled, f)
+		}
+	}
+	for _, f := range optionalFeatureSet {
 		if status[f] {
 			enabled = append(enabled, f)
 		}

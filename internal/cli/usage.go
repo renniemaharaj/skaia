@@ -31,6 +31,10 @@ Commands:
   import <file.tar.gz> [--name <n>] [--port <p>]  Import a client archive onto this node
   export-node [-o <file.tar.gz>]             Export ALL clients as a single node archive
   import-node <file.tar.gz>                  Restore a full node archive onto this node
+  verify backup <file>                       Validate archive digest, size, retention metadata, and structure
+  verify release <name> [--url <origin>]     Run fail-closed config and deployment probes; emit JSON
+  load-check <url> [--requests N] [--concurrency N] [--max-average-ms N] [--websocket] [--allow-remote]
+                                             Run a capped read-only readiness load sample
 
   api start [--port <p>]                     Start the internal API server (default: 9100)
   api stop                                   Stop the internal API server

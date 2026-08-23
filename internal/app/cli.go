@@ -47,5 +47,7 @@ func CLICommands() cli.Commands {
 		FrappeRebuild: func() {
 			cmdFrappeRebuild()
 		},
+		Verify:    cmdVerify,
+		LoadCheck: cmdLoadCheck,
 	}
 }

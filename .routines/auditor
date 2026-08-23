@@ -89,9 +89,18 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Ran
 
-- 2026-08-20
+- 2026-08-23
 
 ## Last Run Remarks
+
+- Audited production readiness across health amplification/disclosure, incident
+  policy/audit integrity, backup handling, release/load safety, session smoke,
+  status UX, migrations, and specs. Public probes were separated from
+  operator-only pool/queue queries and the WebSocket origin regression was fixed.
+- No Critical, High, or Medium affected-code issue remains. Full Go/frontend
+  gates, live release/load probes, and an isolated restored-backend drill pass.
+  The legacy bootstrap-superuser runtime login remains explicitly assigned to
+  the existing soft-delete deployment handoff.
 
 - Audited direct `MediaPlaceholder` preview activation and the generic resource
   embed across viewer/editor gallery overlay hit-testing, nested preview ownership, source

@@ -53,8 +53,24 @@ func commandRegistry() []commandEntry {
 		{names: []string{"passcode"}, run: runPasscode},
 		{names: []string{"frappe-provision"}, run: runFrappeProvision},
 		{names: []string{"frappe-rebuild"}, run: runFrappeRebuild},
+		{names: []string{"verify"}, run: runVerify},
+		{names: []string{"load-check"}, run: runLoadCheck},
 		{names: []string{"help", "--help", "-h"}, run: runHelp},
 	}
+}
+
+func runVerify(rest []string, c Commands) {
+	if c.Verify == nil {
+		c.Die("verify command unavailable")
+	}
+	c.Verify(rest)
+}
+
+func runLoadCheck(rest []string, c Commands) {
+	if c.LoadCheck == nil {
+		c.Die("load-check command unavailable")
+	}
+	c.LoadCheck(rest)
 }
 
 func matchesCommand(name string, aliases []string) bool {

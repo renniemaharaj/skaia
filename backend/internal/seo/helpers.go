@@ -17,6 +17,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	ictx "github.com/skaia/backend/internal/ctx"
 	ijwt "github.com/skaia/backend/internal/jwt"
+	istatus "github.com/skaia/backend/internal/status"
 	"github.com/skaia/backend/internal/streammeta"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/models"
@@ -581,6 +582,9 @@ func buildMeta(branding models.Branding, seo models.SEO, route routeSEO) CachedM
 }
 
 func routeIsPublicShell(path string) bool {
+	if path == "/status" {
+		return istatus.PublicEnabled()
+	}
 	switch path {
 	case "/", "/store", "/forum", "/forum/docs", "/doc", "/kjv", "/pages", "/visualizer":
 		return true

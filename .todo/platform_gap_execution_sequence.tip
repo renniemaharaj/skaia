@@ -5,7 +5,7 @@
 
 ### Current Progress
 - **Stage 1: Commerce integrity foundation** - ✅ Complete
-- **Stage 2: Production readiness and status** - ⬜ Not started
+- **Stage 2: Production readiness and status** - ✅ Complete
 - **Stage 3: Linked external identities** - ⬜ Not started
 - **Stage 4: External event rewards and fulfilment** - ⬜ Not started
 - **Stage 5: Configurable ranked datasets** - ⬜ Not started
@@ -39,13 +39,22 @@ this numbered list is the human-readable projection.
 
 Reset and re-verify these gates for each subsequent stage before advancing.
 
+### Stage 2 Gate (verified 2026-08-23)
+- [x] Completed backend health/status/incident authority before operator/public UI.
+- [x] Kept public disclosure generic and operator telemetry policy-protected.
+- [x] Passed backup integrity, isolated restore/readiness, release, bounded HTTP,
+  WebSocket reconnect, backend race, frontend state/accessibility, and spec gates.
+- [x] Recorded the legacy superuser application-login deployment dependency in
+  the existing soft-delete rollout handoff; it is not hidden by readiness.
+
 ### Next Steps
 - [x] 2026-08-23: Completed `db_transactions_concurrency` with checkout/provider
   idempotency, transition guards, durable fulfilment leases and recovery,
   atomic payouts, and PostgreSQL/race-backed concurrency verification.
-- [ ] Begin `production_readiness_and_service_status` with its health,
-  telemetry, backup, and public/operator boundary inventory.
-- [ ] Do not begin status or product UI merely to demonstrate progress; expose
-  UI only after the corresponding authoritative backend contract passes its gate.
+- [x] 2026-08-23: Completed `production_readiness_and_service_status` with
+  bounded health contracts, protected diagnostics, public incidents/status,
+  backup/restore evidence, release/load gates, and status UX.
+- [ ] Begin `linked_external_identities` with its provider-neutral identity,
+  authorization, privacy, and lifecycle inventory.
 
 <--/------->

@@ -34,6 +34,27 @@ func TestBuildSitemapXMLIncludesIndexableStaticRoutes(t *testing.T) {
 	}
 }
 
+func TestStatusRouteAndSitemapRequireExplicitFeature(t *testing.T) {
+	t.Setenv("DOMAINS", "example.com")
+	t.Setenv("PUBLIC_BASE_URL", "https://example.com")
+	t.Setenv("FEATURES_ENABLED", "landing")
+	without, err := buildSitemapXML(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(without, "https://example.com/status") || routeIsPublicShell("/status") {
+		t.Fatal("status route was public without feature opt-in")
+	}
+	t.Setenv("FEATURES_ENABLED", "landing,status")
+	with, err := buildSitemapXML(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(with, "<loc>https://example.com/status</loc>") || !routeIsPublicShell("/status") {
+		t.Fatal("enabled status route missing from public SEO contract")
+	}
+}
+
 func TestSitemapHandlerValidatesNamedTenantAndContentType(t *testing.T) {
 	t.Setenv("CLIENT_NAME", "writer")
 	t.Setenv("DOMAINS", "example.com")

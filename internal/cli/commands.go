@@ -41,4 +41,6 @@ type Commands struct {
 	PasscodeStatus  func()
 	FrappeProvision func(siteName, version string)
 	FrappeRebuild   func()
+	Verify          func([]string)
+	LoadCheck       func([]string)
 }

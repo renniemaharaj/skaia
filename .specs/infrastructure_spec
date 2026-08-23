@@ -49,6 +49,8 @@ go build -o grengo .
 | `grengo migrate <name|all> [--rebuild]` | Re-run idempotent migrations |
 | `grengo export|import` | Single-tenant archive transfer |
 | `grengo export-node|import-node` | Full-node transfer |
+| `grengo verify backup|release` | Integrity and fail-closed release decisions |
+| `grengo load-check` | Capped read-only, local-by-default load sample |
 
 ## Management API
 
@@ -111,6 +113,8 @@ Per-tenant env:
   warm tenant SSR metadata.
 - Armed mode blocks API traffic except explicit allowlist routes.
 - Containers run as non-root app user where the image supports it.
+- Portable archives and migration dumps carry SHA-256/size/class/retention
+  manifests and require encrypted-at-rest storage; see `operations_readiness_spec`.
 - Control-plane sites and clusters retain deletion/failure lifecycle state;
   external teardown is not represented as restorable infrastructure.
 - Grengo passcode clearing nulls secret material and records `cleared_at`.
@@ -131,3 +135,4 @@ Per-tenant env:
 - `.specs/caching_cdn_spec`
 - `.specs/migrations_spec`
 - `.specs/backend_spec`
+- `.specs/operations_readiness_spec`
