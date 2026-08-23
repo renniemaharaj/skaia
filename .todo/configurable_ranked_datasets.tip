@@ -1,0 +1,16 @@
+<--/------->
+## configurable_ranked_datasets
+
+### Current Progress
+- **Phase 1: Ranking and privacy contract** - ⬜ Not started
+- **Phase 2: Indexed persistence and ingestion** - ⬜ Not started
+- **Phase 3: Read APIs, cache, and realtime** - ⬜ Not started
+- **Phase 4: Directory leaderboard UX** - ⬜ Not started
+- **Phase 5: Scale verification and specs** - ⬜ Not started
+
+### Next Steps
+- [ ] Define subject, metric, season, tie, visibility, and producer contracts.
+- [ ] Benchmark the proposed cursor/index shape with a deterministic fixture.
+- [ ] Keep wallets and arbitrary datasource SQL outside the ranking model.
+
+<--/------->

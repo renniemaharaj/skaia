@@ -2,6 +2,10 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"strings"
 	"unicode"
@@ -13,6 +17,9 @@ import (
 type sqlWalletRepository struct {
 	db database.Executor
 }
+
+// ErrIdempotencyConflict means a key was reused for a different operation.
+var ErrIdempotencyConflict = errors.New("idempotency key reused with a different payload")
 
 func NewWalletRepository(db database.Executor) WalletRepository {
 	return &sqlWalletRepository{db: db}
@@ -36,6 +43,82 @@ func (r *sqlWalletRepository) CreateTransaction(tx *models.WalletTransaction) (*
 		return nil, err
 	}
 	return tx, nil
+}
+
+// CreateTransactionOnce creates one immutable wallet entry per user, scope, and
+// opaque operation key. Only hashes of the key and financial payload are stored.
+// A matching replay returns the original row; a mismatched replay fails closed.
+func (r *sqlWalletRepository) CreateTransactionOnce(tx *models.WalletTransaction, operationScope, operationKey string) (*models.WalletTransaction, bool, error) {
+	operationScope = strings.TrimSpace(operationScope)
+	operationKey = strings.TrimSpace(operationKey)
+	if tx == nil || tx.UserID <= 0 || tx.Amount <= 0 {
+		return nil, false, errors.New("wallet operation requires a user and positive amount")
+	}
+	if tx.Type != "credit" && tx.Type != "debit" {
+		return nil, false, errors.New("wallet operation type must be credit or debit")
+	}
+	if operationScope == "" || len(operationScope) > 100 || operationKey == "" || len(operationKey) > 500 {
+		return nil, false, errors.New("wallet operation requires a bounded scope and key")
+	}
+
+	keyHash := hashOperationValue(operationKey)
+	payload, err := json.Marshal(struct {
+		UserID      int64  `json:"user_id"`
+		Amount      int64  `json:"amount"`
+		Type        string `json:"type"`
+		Description string `json:"description"`
+	}{tx.UserID, tx.Amount, tx.Type, tx.Description})
+	if err != nil {
+		return nil, false, err
+	}
+	payloadHash := hashOperationValue(string(payload))
+	created := false
+	result := &models.WalletTransaction{}
+
+	err = database.TransactionalExecutor(context.Background(), r.db, func(exec database.Executor) error {
+		err := exec.QueryRow(`
+			INSERT INTO user_wallet_transactions
+				(user_id, amount, type, description, operation_scope, operation_key_hash, operation_payload_hash)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			ON CONFLICT (user_id, operation_scope, operation_key_hash)
+				WHERE operation_scope IS NOT NULL AND operation_key_hash IS NOT NULL
+			DO NOTHING
+			RETURNING id, user_id, amount, type, description, created_at
+		`, tx.UserID, tx.Amount, tx.Type, tx.Description, operationScope, keyHash, payloadHash).Scan(
+			&result.ID, &result.UserID, &result.Amount, &result.Type, &result.Description, &result.CreatedAt,
+		)
+		if err == nil {
+			created = true
+			return nil
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+
+		var storedPayloadHash string
+		if err := exec.QueryRow(`
+			SELECT id, user_id, amount, type, description, created_at, operation_payload_hash
+			FROM user_wallet_transactions
+			WHERE user_id = $1 AND operation_scope = $2 AND operation_key_hash = $3
+		`, tx.UserID, operationScope, keyHash).Scan(
+			&result.ID, &result.UserID, &result.Amount, &result.Type, &result.Description, &result.CreatedAt, &storedPayloadHash,
+		); err != nil {
+			return err
+		}
+		if storedPayloadHash != payloadHash {
+			return ErrIdempotencyConflict
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return result, created, nil
+}
+
+func hashOperationValue(value string) string {
+	sum := sha256.Sum256([]byte(value))
+	return hex.EncodeToString(sum[:])
 }
 
 func (r *sqlWalletRepository) DebitIfSufficient(userID, amount int64, description string) (*models.WalletTransaction, error) {

@@ -227,8 +227,8 @@ color.
 
 ## References
 
-- `.todo/interactive_sections_audit_remediation`
-- `.todo/ui_component_refactor_plan`
+- `.specs/custom_page_interactive_sections_spec`
+- `.specs/custom_page_section_compatibility_spec`
 - `.todo/soft_delete_and_destructive_prompts`
 - `.specs/custom_page_section_compatibility_spec`
 - `.specs/custom_page_interactive_sections_spec`

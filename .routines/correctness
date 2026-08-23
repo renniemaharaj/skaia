@@ -201,8 +201,8 @@ docs disagree.
 
 - Re-audited the post-reset interactive implementation and confirmed the governing
   architecture stores definitions and records in `pages.content`; retired the
-  contradictory table/domain todo and routed behavioral gaps to
-  `.todo/interactive_sections_audit_remediation`.
+  contradictory table/domain todo and routed behavioral gaps through the
+  interactive-section remediation that is now preserved in durable specs.
 
 ## Next Steps
 

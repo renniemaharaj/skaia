@@ -233,6 +233,10 @@ telemetry API exposes bounded counters and no identities or payloads.
   ledger, audit, and migration-evidence rows from application connections.
   The bypass role is NOLOGIN and SET access is granted only for reviewed
   operator work.
+- Retry-safe wallet effects store a bounded public scope plus SHA-256 hashes of
+  the opaque operation key and canonical financial payload. Raw keys never enter
+  database rows, logs, errors, or public DTOs; a hash match with a payload
+  mismatch is an explicit conflict and creates no ledger effect.
 
 ## Current Baseline (2026-06-19)
 
@@ -284,7 +288,6 @@ telemetry API exposes bounded counters and no identities or payloads.
 - `.specs/backend_spec`
 - `.specs/infrastructure_spec`
 - `.todo/security_invariants_hardening`
-- `.todo/guest_and_provisional_account_containment`
 - `.routines/auditor`
 - `.routines/correctness`
 - `.routines/worker`

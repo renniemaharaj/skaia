@@ -1,0 +1,69 @@
+# Production Readiness and Service Status
+
+## Context
+
+Skaia has root/API health checks, nginx health routing, grengo telemetry and job
+streams, tenant export/import, migration-time backups, structured security
+events, and deployment tooling. It lacks one explicit dependency-health model,
+sanitized public status surface, incident lifecycle, restore-verification policy,
+and release/load gate. This supersedes the stale narrow `live_testing` plan and
+preserves its session/Turnstile and responsive smoke checks.
+
+## Goal
+
+- Separate liveness, readiness, operator diagnostics, and public status.
+- Make restore drills, retention, release verification, and bounded load tests
+  repeatable per tenant.
+- Publish useful degradation without exposing secrets or internal topology.
+
+## Non-Goals
+
+- Implementing blue-green deployment; `.todo/blue_green_deployments` owns that.
+- Publishing database names, internal hosts, stack traces, queue payloads, or
+  tenant-private metrics.
+- Replacing current grengo telemetry and export/import commands.
+
+## Steps
+
+1. Inventory backend/nginx/grengo probes, dependency timeouts, telemetry,
+   backup/export/import paths, logs, alerts, and deployment commands. Define
+   tenant-safe service names, criticality, freshness, owners, and SLOs.
+2. Keep liveness cheap/local. Add bounded readiness checks for required
+   dependencies and permission-gated diagnostics with per-check timeouts,
+   stale markers, structured reasons, and bounded fan-out.
+3. Add a sanitized public status model and optional feature-gated route with
+   aggregate components, incidents/maintenance, last update, and delayed-data
+   state. Incident writes require central policy and audit coverage.
+4. Define backup classes/retention, encrypted storage expectations, manifest
+   integrity, isolated scheduled restore drills, and restored-tenant verification.
+5. Add a release-verification command recording revision/config/migration state,
+   preflight/post-deploy probes, session/Turnstile, realtime reconnect, store
+   reads, sitemap/SSR, and a machine-readable stop decision.
+6. Add capped representative load scenarios and thresholds for latency, errors,
+   pool pressure, queue lag, and WebSocket reconnects. Never target production
+   or third parties by default.
+7. Build operator/public UX for healthy, degraded, unavailable, stale, loading,
+   empty-incident, and error states; reconcile affected specs.
+
+## Verification
+
+- Failure injection covers SQL, Redis, filesystem/index, optional dependencies,
+  timeouts, stale data, and diagnostic non-disclosure.
+- One disposable tenant archive passes a documented end-to-end restore drill.
+- Release verification fails closed on required config/migration/dependency errors.
+- Load scenarios are capped, reproducible, and record baselines and budgets.
+- Backend/root tests, frontend tests/lint/build, and auditor review pass.
+
+## References
+
+- `.specs/infrastructure_spec`
+- `.specs/backend_spec`
+- `.specs/security_architecture_spec`
+- `.specs/caching_cdn_spec`
+- `.todo/blue_green_deployments`
+- `.todo/session_cookie_ip_val`
+- `.routines/worker`
+- `.routines/auditor`
+- `/home/renniem/Workspace/docker/skaiacraft-recon/output/skaiacraft-feature-map.md`
+- `backend/main.go`
+- `internal/app/`

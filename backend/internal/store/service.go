@@ -521,18 +521,21 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 		_ = s.cart.ClearCart(userID)
 	}
 
-	// On successful immediate payment: reserve stock using the same transactional
-	// path as manual acceptance. Special actions still execute only on completion.
+	// On successful immediate payment, reserve stock through the same
+	// transactional path as manual acceptance, then fulfil account effects.
 	if payStatus == "succeeded" {
 		var hasSpecial bool
 		if accepted, err := s.orders.AcceptWithStockCheck(order.ID); err != nil {
 			if req.PaymentMethodID == "wallet" {
-				_, _ = s.WalletRepo.CreateTransaction(&models.WalletTransaction{
+				_, _, refundErr := s.WalletRepo.CreateTransactionOnce(&models.WalletTransaction{
 					UserID:      userID,
 					Amount:      total,
 					Type:        "credit",
-					Description: fmt.Sprintf("Refund for order #%d: %v", order.ID, err),
-				})
+					Description: fmt.Sprintf("Refund for order #%d", order.ID),
+				}, "store.stock_refund", fmt.Sprintf("order:%d", order.ID))
+				if refundErr != nil {
+					return nil, fmt.Errorf("reserve stock: %v; refund wallet: %w", err, refundErr)
+				}
 			}
 			_, _ = s.payments.UpdateStatus(payment.ID, "failed", err.Error())
 			_, _ = s.orders.UpdateStatus(order.ID, "failed")
@@ -542,13 +545,15 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 		}
 
 		for _, oi := range order.Items {
-			if p, err := s.products.GetByID(oi.ProductID); err == nil {
-				if p.SpecialActions != "" && p.SpecialActions != "[]" {
-					hasSpecial = true
-				}
-				if s.cache != nil {
-					s.cache.Invalidate(oi.ProductID)
-				}
+			p, err := s.products.GetByID(oi.ProductID)
+			if err != nil {
+				return nil, fmt.Errorf("load product fulfilment: %w", err)
+			}
+			if p.SpecialActions != "" && p.SpecialActions != "[]" {
+				hasSpecial = true
+			}
+			if s.cache != nil {
+				s.cache.Invalidate(oi.ProductID)
 			}
 		}
 
@@ -558,39 +563,53 @@ func (s *Service) Checkout(userID int64, req *models.CheckoutRequest) (*models.C
 			}
 		}
 
-		// If there are special actions, complete the order and execute them now.
+		// Special actions are generic account fulfilments. Apply their financial
+		// effects idempotently before declaring the order complete.
 		if hasSpecial && !req.IsGuest {
-			if co, _ := s.UpdateOrderStatus(order.ID, "completed"); co != nil {
-				order = co
-			}
-			// execute special actions now (mirror previous behavior)
-			for _, oi := range orderItems {
-				if p, err := s.products.GetByID(oi.ProductID); err == nil {
-					if p.SpecialActions != "" && p.SpecialActions != "[]" {
-						var actions []struct {
-							Type  string `json:"type"`
-							Value string `json:"value"`
+			for _, oi := range order.Items {
+				p, err := s.products.GetByID(oi.ProductID)
+				if err != nil {
+					return nil, fmt.Errorf("load product fulfilment: %w", err)
+				}
+				if p.SpecialActions == "" || p.SpecialActions == "[]" {
+					continue
+				}
+				var actions []struct {
+					Type  string `json:"type"`
+					Value string `json:"value"`
+				}
+				if err := json.Unmarshal([]byte(p.SpecialActions), &actions); err != nil {
+					return nil, fmt.Errorf("decode product fulfilment: %w", err)
+				}
+				for actionIndex, act := range actions {
+					switch act.Type {
+					case "role":
+						if err := s.users.AddRoleByName(userID, act.Value); err != nil {
+							return nil, fmt.Errorf("fulfil role action: %w", err)
 						}
-						if err := json.Unmarshal([]byte(p.SpecialActions), &actions); err == nil {
-							for _, act := range actions {
-								if act.Type == "role" {
-									_ = s.users.AddRoleByName(userID, act.Value)
-								} else if act.Type == "credit" {
-									amt, _ := strconv.ParseInt(act.Value, 10, 64)
-									if amt > 0 {
-										_, _ = s.WalletRepo.CreateTransaction(&models.WalletTransaction{
-											UserID:      userID,
-											Amount:      amt * int64(oi.Quantity),
-											Type:        "credit",
-											Description: fmt.Sprintf("Received from order #%d", order.ID),
-										})
-									}
-								}
-							}
+					case "credit":
+						amt, parseErr := strconv.ParseInt(act.Value, 10, 64)
+						if parseErr != nil || amt <= 0 {
+							return nil, fmt.Errorf("invalid credit fulfilment value")
 						}
+						if _, _, err := s.WalletRepo.CreateTransactionOnce(&models.WalletTransaction{
+							UserID:      userID,
+							Amount:      amt * int64(oi.Quantity),
+							Type:        "credit",
+							Description: fmt.Sprintf("Received from order #%d", order.ID),
+						}, "store.product_fulfilment", fmt.Sprintf("order:%d:item:%d:action:%d", order.ID, oi.ID, actionIndex)); err != nil {
+							return nil, fmt.Errorf("fulfil credit action: %w", err)
+						}
+					default:
+						return nil, fmt.Errorf("unsupported product fulfilment type %q", act.Type)
 					}
 				}
 			}
+			completed, err := s.UpdateOrderStatus(order.ID, "completed")
+			if err != nil {
+				return nil, fmt.Errorf("complete fulfilled order: %w", err)
+			}
+			order = completed
 		}
 	}
 

@@ -7,6 +7,7 @@
 - **Phase 2: General Fixes** - ✅ Complete
 - **Phase 3: UI Stabilization** - ✅ Complete
 - **Phase 4: Project Audit & Todo Cleanup** - ✅ Complete
+- **Phase 5: Final verification and spec closure** - 🟡 In progress
 
 ### Completed Work (2026-06-11)
 - [x] Added `validateScrapeURL` SSRF protection: scheme whitelist, private/loopback IP blocking
@@ -25,7 +26,7 @@
 
 ### Next Steps
 - [ ] Run full backend test suite: `JWT_SECRET=test-secret go test ./...`
-- [ ] Run `tsc --noEmit` from `backend/frontend/`
+- [ ] Run `npm run build` from `frontend/`.
 - [ ] Update `backend_spec` with mediascraper API endpoints
 
 <--/------->

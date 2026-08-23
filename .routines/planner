@@ -103,9 +103,55 @@ operational policies.
 
 ## Last Ran
 
-- 2026-08-21
+- 2026-08-23
 
 ## Last Run Remarks
+
+- Reconciled the public SkaiaCraft recon against current Skaia routes, domains,
+  specs, and active plans. Expanded `db_transactions_concurrency` for checkout,
+  wallet, callback, payout, special-action idempotency, durable dispatch, leases,
+  and database-backed race verification instead of creating overlapping P0 work.
+
+- Created five generic platform handoffs: `production_readiness_and_service_status`,
+  `linked_external_identities`, `configurable_ranked_datasets`,
+  `external_event_reward_fulfilment`, and
+  `community_proposals_showcases_and_events`. They preserve Skaia's tenant,
+  privacy, lifecycle, directory, realtime, form, and security contracts and do
+  not encode Minecraft-specific routes or entities.
+
+- Prioritization is P0 `db_transactions_concurrency`; P1
+  `production_readiness_and_service_status`; then P2
+  `linked_external_identities`, `configurable_ranked_datasets`,
+  `external_event_reward_fulfilment`, and
+  `community_proposals_showcases_and_events`. External-event fulfilment depends
+  on the P0 transaction/idempotency foundation. No recon-only P3 polish plan was
+  created because Skaia's existing loading, form, media, directory, responsive,
+  and accessibility contracts are already stronger and should be audited in
+  each affected feature instead of duplicated.
+
+- Retired 21 old pairs. Seventeen implementation plans had complete phases,
+  recorded verification, and durable contracts already in specs or enforcement
+  checks: audit follow-up, Bible reader, clipmaker reliability, form migration,
+  forum mobile layout, guest containment, interactive remediation,
+  documentation hub, NAT jail bypass, page-builder responsiveness, resource
+  embeds, repository hygiene, section picker, shared media, store orders,
+  component registry/refactor, and viewport deferral. The component plan's
+  remaining all-route conversion was no longer a desired architecture after
+  JSON document consolidation.
+
+- Retired `legacy_data_migration` because its only source tree and old frontend
+  path are absent, and retired `project_normalization` because the remaining
+  landing names are intentional root-page/config/realtime contracts documented
+  by `route_resolution_spec`. Replaced the stale narrow `live_testing` pair with
+  the production-readiness plan, preserving its session/Turnstile smoke scope.
+  Folded the overlapping Grengo backend-refactor remainder into the normalized
+  root-module `grengo_cli_refactor` handoff.
+
+- Kept rollout-gated and incompletely verified plans active, added explicit open
+  phases to `critical_fixes_stabilization` and
+  `custom_page_document_model_consolidation`, normalized both Grengo plan pairs
+  to current root-module paths/status vocabulary, and removed stale references
+  to retired todo files from active plans, specs, and routines.
 
 - Created and completed `section_picker_menu_revamp` after confirming the old
   insertion dropdown had incomplete metadata and no scalable discovery surface.

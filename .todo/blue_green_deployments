@@ -28,5 +28,5 @@ The application currently deploys new frontend and backend changes using the `gr
 
 ## References
 - `.specs/PROTOCOL.md`
-- `grengo/internal/app/nginx.go`
+- `internal/app/nginx.go`
 - `docker-compose.yml`

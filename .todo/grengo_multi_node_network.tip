@@ -1,7 +1,17 @@
-Phase: Planned
-Status: PENDING
+<--/------->
 
-# Next Steps
-1. [ ] Finalize the protocol for inter-node communication.
-2. [ ] Set up the internal networking packages in the grengo daemon.
-3. [ ] Design the UI switcher/aggregation approach for the dashboard.
+## grengo_multi_node_network
+
+### Current Progress
+- **Phase 1: Node identity and protocol** - ⬜ Not started
+- **Phase 2: Peer registry and health** - ⬜ Not started
+- **Phase 3: Bounded global telemetry** - ⬜ Not started
+- **Phase 4: Recoverable tenant transfer** - ⬜ Not started
+- **Phase 5: Dashboard and verification** - ⬜ Not started
+
+### Next Steps
+- [ ] Complete the remaining Grengo service/repository refactor first.
+- [ ] Write the enrollment, revocation, replay, and version-negotiation contract.
+- [ ] Design the transfer state machine and rollback evidence before implementation.
+
+<--/------->

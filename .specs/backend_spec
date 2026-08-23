@@ -159,10 +159,15 @@ bibliographical certification.
 - Checkout supports `delivery_cash`, `wallet`, `card_{id}`, demo provider, and
   Stripe provider depending on configuration.
 - Wallet routes expose balance, topups, transactions, and user-managed cards.
+  Internal financial effects can carry a user-and-scope operation identity;
+  only its key hash and payload hash persist. Exact replays return the original
+  immutable ledger row, while key reuse with a different payload fails closed.
 - Reference codes pay the code owner once per order through wallet credit; users
   cannot use their own active code.
-- Special actions execute when an order is completed, and paid special-action
-  orders can auto-complete after successful payment.
+- Special actions are generic account fulfilments. Paid special-action orders
+  apply role and wallet effects before completion; wallet effects are
+  idempotent per order item and action position, malformed effects fail closed,
+  and a failed effect must not be silently reported as a completed order.
 - Store catalog mutations broadcast `store:update`; cart and checkout outcomes
   push directly to the buyer.
 - Store order mutations push `order:update` to buyers, store managers, and

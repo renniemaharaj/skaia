@@ -103,6 +103,7 @@ type PaymentProvider interface {
 // WalletRepository manages user wallet transactions and balances.
 type WalletRepository interface {
 	CreateTransaction(tx *models.WalletTransaction) (*models.WalletTransaction, error)
+	CreateTransactionOnce(tx *models.WalletTransaction, operationScope, operationKey string) (*models.WalletTransaction, bool, error)
 	DebitIfSufficient(userID, amount int64, description string) (*models.WalletTransaction, error)
 	GetTransactions(userID int64, limit, offset int) ([]*models.WalletTransaction, error)
 	GetBalance(userID int64) (int64, error)

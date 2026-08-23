@@ -29,4 +29,4 @@ The inbox currently supports direct messages. It needs to be extended to support
 
 ## References
 - `backend/internal/inbox/`
-- `backend/frontend/src/pages/inbox/`
+- `frontend/src/components/inbox/`

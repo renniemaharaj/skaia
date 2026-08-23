@@ -1,0 +1,62 @@
+# Configurable Ranked Datasets
+
+## Context
+
+SkaiaCraft exposes game leaderboards. Skaia has datasource execution,
+tables/directories, profiles, permissions, caching, and realtime delivery but no
+durable generic ranking domain. A ranked-dataset module can serve games,
+communities, commerce, learning, or operations without treating wallet balance
+or arbitrary datasource output as a public score.
+
+## Goal
+
+- Let tenants define bounded ranked datasets with typed subjects, metrics,
+  ordering, seasons, visibility, and tie rules.
+- Accept idempotent score snapshots/deltas from authorized producers and expose
+  privacy-safe paginated standings.
+- Reuse directories, profiles, feature gates, caching, and realtime invalidation.
+
+## Non-Goals
+
+- Reusing financial wallet cents as points.
+- Running arbitrary user SQL for public rankings.
+- Building rewards or fulfilment; the external-event reward plan owns those.
+
+## Steps
+
+1. Inventory datasource, profile, feature, cache, realtime, lifecycle, and
+   tenant boundaries. Define dataset/season/metric/subject and producer contracts.
+2. Add tenant-scoped dataset, season, entry, and ingestion-idempotency persistence
+   with bounded ordering, subject lookup, and cursor indexes. Define deterministic
+   ties and immutable closed-season snapshots.
+3. Implement management, ingestion, standings, subject-rank, and season APIs.
+   Visibility/privacy are service-enforced; DTOs omit hidden identities and
+   ingestion metadata.
+4. Add bounded caching and compact realtime invalidation. Writes are
+   transactional, idempotent, audited, rate-limited, and concurrency-safe.
+5. Build a feature-gated DirectoryLayout/TableView leaderboard with metric/
+   season filters, rank lookup, pagination, complete data states, and permitted
+   subject-profile links.
+6. Add scale, privacy, race, and index-plan tests; update durable specs after implementation.
+
+## Verification
+
+- Large fixtures prove stable cursors, deterministic ties, bounded queries,
+  indexed ordering, and capped responses.
+- Tests cover duplicate events, concurrent deltas, closed seasons, private and
+  deleted subjects, tenant crossover, cache invalidation, and reconnect.
+- Backend suite and focused frontend tests/lint/build pass.
+
+## References
+
+- `.specs/backend_spec`
+- `.specs/frontend_spec`
+- `.specs/security_architecture_spec`
+- `.specs/caching_cdn_spec`
+- `.specs/realtime_wss_spec`
+- `.specs/migrations_spec`
+- `.todo/external_event_reward_fulfilment`
+- `.routines/worker`
+- `/home/renniem/Workspace/docker/skaiacraft-recon/output/skaiacraft-feature-map.md`
+- `backend/internal/datasource/`
+- `frontend/src/components/page/layout/templates/DirectoryLayout.tsx`

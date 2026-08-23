@@ -1,0 +1,17 @@
+<--/------->
+
+## community_proposals_showcases_and_events
+
+### Current Progress
+- **Phase 1: Reuse and ownership inventory** - ⬜ Not started
+- **Phase 2: Domain and workflow contracts** - ⬜ Not started
+- **Phase 3: Backend modules and lifecycle** - ⬜ Not started
+- **Phase 4: Directory and form UX** - ⬜ Not started
+- **Phase 5: Moderation, scale, and specs** - ⬜ Not started
+
+### Next Steps
+- [ ] Produce a reuse matrix for forum, pages, votes, media, profiles, and Trash.
+- [ ] Define proposal, showcase, and event state machines before tables.
+- [ ] Confirm tenant demand and feature-gate defaults before implementation.
+
+<--/------->

@@ -56,8 +56,8 @@ navigation/narration, WebSocket consumers, or page-builder UX.
 - `npm run check:media-placeholders` rejects unreviewed raw media and dynamic
   image backgrounds. The exact-count allowlist distinguishes migration debt from
   intentional shared primitive, `UserAvatar`, bundled-art, `MediaStream.srcObject`,
-  and read-only Markdown-adapter ownership. The completed rollout verification is
-  recorded in `.todo/shared_media_placeholder_adoption.tip`.
+  and read-only Markdown-adapter ownership. The enforcement script and focused
+  media tests are the continuing verification authority for the completed rollout.
 - `MediaPreviewLightbox` owns URL-backed preview portals across uploads, scraped
   media, and commerce. It uses a native modal lifecycle, restores prior focus,
   supports Escape and arrow-key navigation, and keeps controls independent of
@@ -374,7 +374,6 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 
 ## Trace
 
-- `.todo/shared_media_placeholder_adoption`
 - `.specs/realtime_wss_spec`
 - `.specs/route_resolution_spec`
 - `.specs/custom_pages_multiplayer_spec`

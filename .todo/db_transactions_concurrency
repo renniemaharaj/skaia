@@ -1,23 +1,68 @@
-# Database Transactions & Concurrency Control Plan
+# Database Transactions and Concurrency Control
 
-## 1. Enforcing Database Transactions for Repositories
-Currently, many repositories in the backend (`WalletRepository`, `OrderRepository`, `ProductRepository`) execute multi-step database mutations sequentially. If one step fails (e.g., creating an order succeeds but clearing the cart fails), it creates an inconsistent database state.
+## Context
 
-### Action Plan
-- **Implement a Transaction Wrapper:** Create a generic `WithTransaction(ctx, func(tx *sql.Tx) error)` helper in the `database` package.
-- **Refactor Repositories:** Ensure all repository interfaces (e.g., `CreateOrder`, `ClearCart`, `DeductBalance`) can operate within an ongoing `*sql.Tx`.
-- **Wrap Service Methods:** Ensure critical services like `Checkout()` are fully wrapped in a single SQL transaction. It must be an "all-or-nothing" execution.
+Skaia's store supports guest/authenticated checkout, wallet/card payments,
+vendor-scoped order lines, stock reservation, reference payouts, and product
+special actions. These money- and inventory-bearing workflows need explicit
+transaction, idempotency, locking, and retry contracts. The SkaiaCraft recon
+reinforces the value of duplicate-delivery protection, leases, race tests, and
+production verification, but this plan applies those ideas to Skaia's existing
+commerce domain rather than copying a Minecraft store.
 
-## 2. Preventing Race Conditions & Blocking Financial Transactions
-When multiple requests hit the `/checkout` or wallet routes simultaneously, race conditions can occur, leading to double-spending or over-selling stock.
+## Goal
 
-### Action Plan
-- **Atomic Operations:** Instead of `SELECT stock` followed by `UPDATE stock`, we must strictly use atomic updates:
-  `UPDATE products SET stock = stock - $1 WHERE id = $2 AND stock >= $1`. If `RowsAffected == 0`, we abort the transaction due to insufficient stock.
-- **Row-Level Locking:** Use `SELECT ... FOR UPDATE` when querying user balances during a transaction to block other concurrent deductions from executing until the current transaction commits.
-- **Strict Database Constraints:** Add `CHECK (amount >= 0)` constraints where applicable to rely on the database engine to reject negative balances.
-- **Idempotency Keys:** Ensure that payment and order requests use an idempotency key to prevent double-charging users during network retries.
+- Make checkout, stock, wallet, payment callbacks, reference payouts, order
+  transitions, and special-action fulfilment correct under retries and races.
+- Establish one transaction boundary and idempotency contract per externally
+  observable commerce operation.
+- Prevent duplicate financial effects and duplicate special-action delivery.
 
-### Priority Targets
-1. `service.Checkout()`: Needs to deduct stock, charge the wallet/card, create the order, create order items, and clear the cart in **one synchronized atomic lock/transaction**.
-2. `service.TopUpWallet()` & `WalletRepo.GetBalance()`: Must be fortified to completely eliminate concurrent double-spending logic.
+## Non-Goals
+
+- Adding points, leaderboards, or external-event rewards; those have separate plans.
+- Replacing PostgreSQL, payment providers, or the current store UX.
+- Treating in-memory mutexes as cross-process correctness.
+
+## Steps
+
+1. Inventory every multi-write store service path, payment callback, wallet
+   mutation, vendor transition, reference payout, and special action. Record
+   transaction ownership, uniqueness constraints, retry behavior, and failure windows.
+2. Add a database transaction runner and repository executor boundary that lets
+   services compose SQL atomically without leaking business rules into handlers.
+3. Make stock reservation/release conditional and atomic; lock wallet/order rows
+   in a deterministic order and add constraints forbidding impossible balances,
+   quantities, and terminal-state regressions.
+4. Define scoped idempotency keys for checkout, provider callbacks, wallet
+   credits/debits, reference payouts, order transitions, and special actions.
+   Persist request identity, payload hash, terminal result, and conflict outcome;
+   never expose raw keys through logs or public DTOs.
+5. Put non-local special actions behind durable fulfilment records with bounded
+   attempts, ownership leases, expiry/reclaim, terminal outcomes, and an outbox
+   or equivalent commit-coupled dispatch. Replays return the stored result.
+6. Add PostgreSQL-backed concurrent tests for idempotency conflicts, stock
+   exhaustion, wallet races, callback replay, worker death, lease expiry,
+   multi-vendor isolation, and audit/outbox failure.
+7. Reconcile store, security, migration, realtime, and operational specs after
+   final contracts are implemented.
+
+## Verification
+
+- Parallel repository/service/handler tests use at least two worker instances.
+- Provider/fulfilment fakes prove one external effect per logical operation.
+- `env GOCACHE=/tmp/skaia-go-cache GOTMPDIR=/tmp JWT_SECRET=test-secret go test ./...`
+- Frontend store tests/build pass if retry UX changes.
+- Migration tests prove idempotence, constraints, and safe existing-row rollout.
+
+## References
+
+- `.specs/backend_spec`
+- `.specs/security_architecture_spec`
+- `.specs/migrations_spec`
+- `.specs/realtime_wss_spec`
+- `.todo/external_event_reward_fulfilment`
+- `.routines/worker`
+- `.routines/auditor`
+- `backend/internal/store/`
+- `backend/models/commerce.go`

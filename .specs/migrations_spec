@@ -30,6 +30,9 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
   `CREATE INDEX IF NOT EXISTS`, `ON CONFLICT`, guarded `DO $$` blocks, and
   `IF EXISTS` where needed.
 - Prices and monetary rewards are stored as integer cents.
+- Wallet operations that require retry safety persist scoped key and payload
+  hashes, never raw idempotency keys. The partial unique index applies only to
+  operations that opt into this contract; historical ledger rows remain valid.
 
 ## Current Files
 
@@ -67,6 +70,8 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 | `034_soft_delete_lifecycle.sql` | Entity tombstones, reversible relationships, secret/session lifecycle, audit events, and the runtime hard-delete guard |
 | `035_retire_normalized_page_sections.sql` | Guarded retirement of the unused normalized custom-page experiment |
 | `036_documentation_hub.sql` | Multi-documentation sets, ordered sections/guides, permissions, lifecycle, and active-slug indexes |
+| `037_page_seo.sql` | Per-page SEO title, description, and image metadata |
+| `038_wallet_operation_idempotency.sql` | Hashed wallet operation identity, replay uniqueness, and forward-enforced ledger constraints |
 
 Control-plane migration `002_soft_delete_lifecycle.sql` adds retained
 site/cluster deletion state, inactive API-key permissions, scrubbed passcodes,

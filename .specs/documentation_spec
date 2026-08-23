@@ -138,7 +138,6 @@ forum documentation projection, documentation SEO/cache/realtime, or migration
 
 ## Trace
 
-- `.todo/multi_documentation_hub_and_forum_view`
 - `.specs/backend_spec`, `.specs/frontend_spec`, `.specs/realtime_wss_spec`
 - `.specs/route_resolution_spec`, `.specs/caching_cdn_spec`
 - `.specs/security_architecture_spec`, `.specs/migrations_spec`

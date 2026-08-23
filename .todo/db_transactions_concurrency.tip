@@ -1,16 +1,32 @@
 <--/------->
-
 ## db_transactions_concurrency
 
 ### Current Progress
-- **Phase 1: Transaction wrapper** - ⬜ Not started
-- **Phase 2: Atomic checkout and stock** - ⬜ Not started
-- **Phase 3: Wallet locking and constraints** - ⬜ Not started
-- **Phase 4: Idempotency and concurrency tests** - ⬜ Not started
+- **Phase 1: Mutation and failure-window inventory** - 🟡 In progress
+- **Phase 2: Transaction and locking foundation** - 🟡 In progress
+- **Phase 3: Idempotent commerce operations** - 🟡 In progress
+- **Phase 4: Durable fulfilment leases** - ⬜ Not started
+- **Phase 5: Concurrency and rollout verification** - ⬜ Not started
 
 ### Next Steps
-- [ ] Audit current checkout and wallet transaction boundaries before implementation.
-- [ ] Update the plan to the standard `.todo/README.md` structure and link affected store/security specs.
-- [ ] Implement through `.routines/worker` with DB-backed concurrent request tests.
+- [x] 2026-08-23: Confirmed the shared transaction runner, atomic order/item
+  creation, order-row stock locking, conditional stock decrement,
+  user-advisory-locked wallet debit, and transaction-coupled reference payout
+  credit already exist.
+- [x] 2026-08-23: Added hashed, scoped wallet-operation identity with exact
+  replay, payload-conflict rejection, and forward-enforced amount/type
+  constraints in fresh schema and migration 038.
+- [x] 2026-08-23: Moved stock refunds and product wallet fulfilments onto the
+  idempotent ledger path; financial effects now precede order completion and
+  fulfilment errors are surfaced.
+- [x] 2026-08-23: Focused store/migration tests and the full backend suite pass;
+  PostgreSQL integration cases are present and skip when `TEST_DATABASE_URL`
+  is unavailable.
+- [ ] Finish the matrix for provider charges/callbacks, order transitions,
+  cart clearing, reference payout completion, and role fulfilment.
+- [ ] Add checkout/provider idempotency and commit-coupled durable fulfilment
+  leases before exposing retry controls or operational UI.
+- [ ] Run the PostgreSQL-backed replay/conflict/concurrency tests, then reconcile
+  the remaining operations specs after the provider/lease contracts settle.
 
 <--/------->

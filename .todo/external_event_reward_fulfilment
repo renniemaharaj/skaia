@@ -1,0 +1,65 @@
+# External Event Rewards and Fulfilment
+
+## Context
+
+Skaia has store products, wallets, special actions, notifications, jobs, and
+integration/datasource infrastructure. SkaiaCraft's vote rewards reveal a useful
+general pattern: a verified external event grants a non-financial reward which
+is redeemed and delivered to another service exactly once. Skaia needs this as
+an adapter-driven domain, not Minecraft voting logic.
+
+## Goal
+
+- Ingest authenticated external events idempotently and translate tenant rules
+  into an append-only grant ledger.
+- Support non-financial points, reward catalogs, redemption, and durable
+  fulfilment adapters with leases and replay-safe outcomes.
+- Expose clear grant/redemption/delivery history without provider secrets.
+
+## Non-Goals
+
+- Mixing reward points with wallet currency or payment accounting.
+- Trusting browser claims that an external event occurred.
+- Shipping provider-specific UI or a Minecraft plugin in core.
+
+## Steps
+
+1. Inventory store special actions, wallet/reference rewards, workers,
+   notifications, integrations, security, and transaction boundaries. Define
+   provider, event, rule version, grant, ledger, reward, redemption, and outcome contracts.
+2. Add tenant-scoped provider/rule/catalog and append-only event/grant/ledger/
+   redemption/fulfilment persistence. Provider IDs and payload hashes enforce
+   replay semantics; balances derive from immutable entries.
+3. Implement signed webhook/poll adapters with secret rotation, timestamp/replay
+   windows, bounded payloads, rate limits, audit, and non-disclosing errors.
+   Include only a fake/reference adapter initially.
+4. Make grants/redemptions transactional using `.todo/db_transactions_concurrency`.
+   Fulfilment uses owner leases, bounded attempts/backoff, expiry/reclaim,
+   terminal results, and dead-letter/operator recovery without redelivery.
+5. Build feature-gated user history/catalog/redemption and protected operator
+   rule/delivery views using shared forms, tables, notifications, and realtime.
+6. Add provider, ledger, concurrency, lease, privacy, and scale tests; update specs.
+
+## Verification
+
+- Replayed/reordered events, payload conflicts, concurrent redemptions, worker
+  death, expired leases, timeouts, failures, and retries never double-grant,
+  overspend points, or redeliver.
+- Ledger invariants reconcile every balance from immutable entries.
+- Provider secrets/signatures stay out of DTOs, logs, events, caches, and WS.
+- Backend suite, frontend tests/lint/build, and security auditor review pass.
+
+## References
+
+- `.todo/db_transactions_concurrency`
+- `.todo/production_readiness_and_service_status`
+- `.specs/backend_spec`
+- `.specs/security_architecture_spec`
+- `.specs/migrations_spec`
+- `.specs/realtime_wss_spec`
+- `.routines/worker`
+- `.routines/auditor`
+- `/home/renniem/Workspace/docker/skaiacraft-recon/output/skaiacraft-feature-map.md`
+- `backend/internal/store/`
+- `backend/internal/workers/`
+- `backend/internal/integration/`

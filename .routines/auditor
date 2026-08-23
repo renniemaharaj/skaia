@@ -118,8 +118,8 @@ truth and implementation meet the highest maintainability and product-quality ba
   teleport, unrestricted visitor IP/identity analytics, private full-page listing,
   spoofable realtime identity, ungoverned guest expensive actions, and absence of
   any account-age/TOTP mutation tier.
-  Recorded the implementation handoff in
-  `.todo/guest_and_provisional_account_containment`; no application code changed.
+  Recorded the implementation handoff in the since-completed guest/provisional
+  containment plan; no application code changed during that audit.
 
 - Audited `viewport_deferred_rendering_and_suspense` across browse/preview
   authorization and bounds, section mount ownership, preview/view renderer
@@ -203,7 +203,7 @@ truth and implementation meet the highest maintainability and product-quality ba
 - Audited `b3867355..a33fc6c9` across JSON persistence, HTTP/WS privacy,
   authorization, idempotency, validation, copy/duplicate safety, realtime state,
   Formik UI, tests, CSS, and todo/spec drift; recorded prioritized remediation in
-  `.todo/interactive_sections_audit_remediation`.
+  the since-completed interactive-section remediation plan.
 
 ## Next Steps
 

@@ -49,8 +49,8 @@ The target contracts are authoritative in `.specs/security_architecture_spec`.
 - `.specs/auth_user_separation_spec`
 - `.specs/backend_spec`
 - `.todo/session_cookie_ip_val`
-- `.todo/nat_jail_bypass`
-- `.todo/guest_and_provisional_account_containment`
+- `.specs/auth_user_separation_spec`
+- `.todo/production_readiness_and_service_status`
 - `.routines/worker`
 - `.routines/auditor`
 - `.routines/correctness`

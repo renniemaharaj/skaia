@@ -1,33 +1,57 @@
 # Grengo Multi-Node Network
 
 ## Context
-Currently, each Grengo daemon operates as a standalone orchestrator for a single physical node and its local backends. To scale horizontally, we need to connect multiple Grengo daemons into a clustered network. This allows them to act as a single logical orchestration layer, making it possible to query global limits, shift sites between physical nodes, and aggregate metrics across the entire network.
+
+Each Grengo process currently orchestrates one node and its local tenants. A
+multi-node control plane could aggregate capacity and move tenants, but it must
+build on the root CLI/service/repository boundaries and preserve tenant secrets,
+backup integrity, routing safety, and explicit operator authority.
 
 ## Goal
-- Connect multiple Grengo nodes into a seamless cluster network.
-- Allow any node in the network to query global data across all other backends/nodes.
-- Act as a single logical entity.
-- Support moving clients/sites seamlessly from one physical node to another.
-- Build a multi-node dashboard that either aggregates results from all nodes in a single view or adds a node-switcher to the header alongside the 'Grengo Dashboard' title.
+
+- Authenticated node registration and bounded global inventory/telemetry.
+- Recoverable tenant transfer with manifests, verification, and routing cutover.
+- A dashboard node selector or aggregate view backed by explicit node identity.
 
 ## Non-Goals
-- Real-time synchronous database clustering (nodes will orchestrate services, but DB syncing/replication should be handled by the services themselves or a separate protocol).
-- Complex leader-election algorithms if simple peer-to-peer or mesh approaches suffice initially.
+
+- Synchronous database clustering or transparent cross-node storage.
+- Assuming peer connectivity proves operator authorization.
+- Claiming zero downtime without measured routing and state-transfer evidence.
 
 ## Steps
-1. Define the internal inter-node communication protocol (e.g., shared secrets, mTLS, or VPN mesh).
-2. Implement peer discovery and registration so Grengo nodes know about each other.
-3. Update the `gatherStorage` and metrics endpoints to optionally broadcast and aggregate from peers.
-4. Implement the logic for moving a client/site: freeze site, export data, transfer to peer node, import, unfreeze, and route traffic.
-5. Update the Grengo UI dashboard to support multi-node visualization (decide on aggregation vs. switcher).
+
+1. Define node identity, enrollment/revocation, mTLS or equivalent transport,
+   authorization, replay protection, version negotiation, and audit contracts.
+2. Add a bounded peer registry and health/capability protocol; keep credentials
+   outside tenant-visible APIs and never broadcast raw env/config secrets.
+3. Aggregate sanitized capacity, site, job, and health summaries with timeouts,
+   partial-result markers, and per-node freshness.
+4. Implement a transfer state machine: preflight, source freeze, integrity
+   manifest, encrypted export, transfer, isolated import/verify, routing cutover,
+   acceptance, and recoverable rollback.
+5. Add dashboard node selection/aggregation plus transfer progress and explicit
+   partial/degraded/error states.
+6. Test two-node failure/replay/version/rollback scenarios and reconcile
+   infrastructure, security, realtime, and caching specs.
 
 ## Verification
-- Spin up two Grengo nodes on different ports/servers.
-- Connect them and verify that metrics reflect both nodes.
-- Execute a site transfer from Node A to Node B and verify zero data loss and correct traffic routing.
-- Access the dashboard and verify both nodes are visible and manageable.
+
+- Two isolated nodes prove enrollment/revocation, partial outage handling,
+  bounded aggregation, and tenant non-disclosure.
+- Transfer tests cover interruption at every state, checksum mismatch, import
+  failure, route failure, rollback, and no source deletion before acceptance.
+- Root build/tests and focused frontend tests/lint/build pass.
 
 ## References
-- `grengo/api_metrics.go`
-- `grengo/commands.go`
-- `grengo/ui/`
+
+- `.specs/infrastructure_spec`
+- `.specs/security_architecture_spec`
+- `.todo/grengo_cli_refactor`
+- `.todo/production_readiness_and_service_status`
+- `.routines/worker`
+- `.routines/auditor`
+- `main.go`
+- `router.go`
+- `internal/app/transfer.go`
+- `internal/app/grpc_server.go`

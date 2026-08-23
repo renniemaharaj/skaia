@@ -253,14 +253,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_provider_ref
     ON subscriptions(provider_subscription_id) WHERE provider_subscription_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS user_wallet_transactions (
-    id          BIGSERIAL PRIMARY KEY,
-    user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    amount      BIGINT NOT NULL,
-    type        TEXT NOT NULL,
-    description TEXT NOT NULL,
-    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    id                     BIGSERIAL PRIMARY KEY,
+    user_id                BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount                 BIGINT NOT NULL CHECK (amount > 0),
+    type                   TEXT NOT NULL CHECK (type IN ('credit', 'debit')),
+    description            TEXT NOT NULL,
+    operation_scope        TEXT,
+    operation_key_hash     TEXT,
+    operation_payload_hash TEXT,
+    created_at             TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_user_wallet_user_id ON user_wallet_transactions(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_wallet_operation_once
+    ON user_wallet_transactions (user_id, operation_scope, operation_key_hash)
+    WHERE operation_scope IS NOT NULL AND operation_key_hash IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS user_cards (
     id               BIGSERIAL PRIMARY KEY,

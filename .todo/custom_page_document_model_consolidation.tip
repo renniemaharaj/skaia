@@ -10,6 +10,7 @@
 - **Phase 4: Registry and shared-UI simplification** - ✅ Complete
 - **Phase 5: Normalized schema and command retirement** - ✅ Complete
 - **Phase 6: Regression, spec, and lifecycle closure** - ✅ Complete
+- **Phase 7: Tenant deployment gate** - ⬜ Not started
 
 ### Completed - 2026-08-16
 

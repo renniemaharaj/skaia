@@ -114,9 +114,23 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-08-21
+- 2026-08-23
 
 ## Last Run Remarks
+
+- Began `db_transactions_concurrency` with an implementation-truth inventory:
+  retained Skaia's existing transaction runner, atomic order/item creation,
+  row-locked conditional stock reservation, advisory-locked wallet debits, and
+  transaction-coupled reference payout credits.
+- Added migration 038 and the fresh-schema equivalent for scoped hashed wallet
+  operation identity, payload-conflict rejection, replay uniqueness, and
+  forward-enforced positive amount/known type constraints. Raw operation keys
+  do not persist or enter public models.
+- Routed stock refunds and product wallet fulfilments through the idempotent
+  ledger path, made malformed/unsupported fulfilments fail closed, and moved
+  order completion after successful effects. Focused tests, race compilation,
+  vet, migration parity, diff checks, and the complete backend suite pass;
+  PostgreSQL concurrency execution remains pending a configured test database.
 
 - Completed `section_picker_menu_revamp`: replaced the narrow absolute section
   dropdown with a responsive accessible dialog, complete category/type

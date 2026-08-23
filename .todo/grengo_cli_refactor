@@ -1,31 +1,50 @@
 # Grengo CLI Internal Refactor
 
 ## Context
-As the `grengo` CLI daemon has grown, all files (`api.go`, `api_metrics.go`, `commands.go`, etc.) have been placed in the root of the `grengo/` directory. This flat structure makes the codebase harder to navigate and maintain, especially as we plan to introduce complex networking features (like multi-node support).
+
+Grengo was promoted from a nested module to the repository root. Root `main.go`
+and `router.go` now wire focused `internal/app`, `internal/api`,
+`internal/services`, and `internal/repo` packages, and root build/test/help checks
+have passed. Remaining orchestration and filesystem ownership is still
+concentrated in `internal/app` and should move only where the boundary is clear.
 
 ## Goal
-- Refactor the `grengo/` directory into a standard Go application structure.
-- Move API routing and handlers into `internal/api/`.
-- Move business logic and orchestration into `internal/services/`.
-- Move data access and file-system interactions into `internal/repo/`.
-- Keep `main.go` and core command definitions at the root or `cmd/`.
+
+- Finish narrow service/repository extraction without changing CLI/API behavior.
+- Keep root wiring explicit and make infrastructure operations testable.
 
 ## Non-Goals
-- Adding new features or altering existing logic. This is strictly a structural refactoring for maintainability.
+
+- Recreating the removed nested `grengo/` module.
+- Adding multi-node or blue-green features in this refactor.
+- Moving code solely to satisfy a directory aesthetic.
 
 ## Steps
-1. Create `internal/api`, `internal/services`, and `internal/repo` directories inside `grengo/`.
-2. Extract the file-system and configuration operations from `api_metrics.go` and `api_exec.go` into `repo/`.
-3. Extract core orchestration logic (e.g., managing sites, docker compose commands) into `services/`.
-4. Move all HTTP handlers, middleware, and the mux router setup into `api/`.
-5. Update `main.go` to wire dependencies (repo -> service -> api) and start the daemon.
-6. Run full verification tests to ensure no regressions.
+
+1. Inventory remaining direct filesystem, Docker/process, env, and self-command
+   operations in `internal/app`; identify only repeated or independently testable boundaries.
+2. Move reusable filesystem/config state to `internal/repo` and orchestration to
+   `internal/services` with injected runners and characterization tests.
+3. Remove remaining self-command execution where a narrower internal call
+   preserves output, cancellation, streaming, and error semantics.
+4. Verify root CLI commands, API routes, Frappe provisioning, transfer, nginx,
+   and frontend shipping; reconcile `.specs/infrastructure_spec` if ownership changes.
 
 ## Verification
-- Run `go build .` inside `grengo/` and ensure it compiles without cyclic dependencies.
-- Start the API daemon and verify endpoints like `/storage` and `/jobs` return identical results to before the refactor.
-- Run `grengo compose build` and verify orchestration still works.
+
+- `env GOCACHE=/tmp/skaia-go-cache GOMODCACHE=/tmp/skaia-go-mod-cache GOTMPDIR=/tmp go build -o /tmp/grengo-check .`
+- `env GOCACHE=/tmp/skaia-go-cache GOMODCACHE=/tmp/skaia-go-mod-cache GOTMPDIR=/tmp go test . ./internal/...`
+- `env GOCACHE=/tmp/skaia-go-cache GOMODCACHE=/tmp/skaia-go-mod-cache GOTMPDIR=/tmp go run . help`
+- Focused command/API tests prove unchanged output and cancellation behavior.
 
 ## References
-- `.todo/grengo_cli_improvements` (related prior work on CLI dx)
-- `.todo/grengo_multi_node_network` (future work benefiting from this refactor)
+
+- `.specs/infrastructure_spec`
+- `.todo/grengo_multi_node_network`
+- `.todo/blue_green_deployments`
+- `.routines/worker`
+- `main.go`
+- `router.go`
+- `internal/app/`
+- `internal/services/`
+- `internal/repo/`

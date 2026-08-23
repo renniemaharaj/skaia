@@ -37,15 +37,14 @@ Post 2026-06-11 audit of recent commits (a956df0..660ab84) covering media scrape
 
 ## Verification
 - Backend: `JWT_SECRET=test-secret go test ./...` from `backend/`
-- Frontend: `tsc --noEmit` from `backend/frontend/`
+- Frontend: `npm run build` from `frontend/`
 - Git: `git status` confirms `tmp_build` untracked and `.gitignore` updated
 
 ## References
 - `.routines/correctness`
 - `.routines/worker`
 - `.routines/auditor`
-- `.todo/hotfix_reconciliation`
-- `.todo/ui_component_refactor_plan`
+- `.specs/frontend_spec`
 - `backend/internal/mediascraper/handler.go`
 - `backend/internal/mediascraper/scraper.go`
 - `backend/main.go`

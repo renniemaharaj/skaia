@@ -1,0 +1,17 @@
+<--/------->
+## production_readiness_and_service_status
+
+### Current Progress
+- **Phase 1: Health, telemetry, and backup inventory** - ⬜ Not started
+- **Phase 2: Readiness and protected diagnostics** - ⬜ Not started
+- **Phase 3: Public status and incidents** - ⬜ Not started
+- **Phase 4: Restore and retention verification** - ⬜ Not started
+- **Phase 5: Release and load gates** - ⬜ Not started
+- **Phase 6: Operator/public UX and specs** - ⬜ Not started
+
+### Next Steps
+- [ ] Build the probe/dependency/telemetry/backup matrix from backend and grengo code.
+- [ ] Define public-versus-operator data boundaries and required dependency SLOs.
+- [ ] Fold old session/Turnstile smoke checks into release verification.
+
+<--/------->

@@ -33,9 +33,9 @@ Currently, the codebase contains extensive duplication of native HTML elements l
 - Verify typescript checks pass completely after refactor.
 
 ## References
-- `backend/frontend/src/components/input/`
-- `backend/frontend/src/pages/datasources/DataSourceEditorPage.tsx`
-- `backend/frontend/src/components/admin/GrengoDashboard.tsx`
+- `frontend/src/components/input/`
+- `frontend/src/components/page/datasources/DataSourceEditorPage.tsx`
+- `frontend/src/components/admin/GrengoDashboard.tsx`
 
 ## History / Notes
 **Phase 1 Completion:**

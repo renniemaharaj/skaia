@@ -1,0 +1,17 @@
+<--/------->
+
+## linked_external_identities
+
+### Current Progress
+- **Phase 1: Provider and privacy contract** - ⬜ Not started
+- **Phase 2: Persistence and adapter boundary** - ⬜ Not started
+- **Phase 3: Verification and lifecycle flows** - ⬜ Not started
+- **Phase 4: Profile and settings integration** - ⬜ Not started
+- **Phase 5: Adversarial verification and specs** - ⬜ Not started
+
+### Next Steps
+- [ ] Map public/private projections and tenant/provider uniqueness requirements.
+- [ ] Define adapter and single-use challenge contracts with a fake provider.
+- [ ] Run security review before selecting a real provider.
+
+<--/------->
