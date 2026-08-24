@@ -12,5 +12,6 @@
 - [x] Added focused binding, ordering, width interaction, and stat icon-position coverage.
 - [x] Passed all 266 frontend tests; lint, TypeScript/build, and all four frontend policy gates pass (2026-08-24).
 - [x] Updated frontend/custom-page contracts and completed affected-scope correctness and quality review with no material issue remaining.
+- [x] Follow-up replaced modal expansion with a left-pane Code/Components workspace while preserving the right-side preview and issue tabs.
 
 <--/------->

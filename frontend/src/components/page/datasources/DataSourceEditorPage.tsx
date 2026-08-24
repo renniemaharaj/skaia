@@ -152,6 +152,7 @@ export default function DataSourceEditorPage() {
     max_width: 800,
   });
   const [componentHooks, setComponentHooks] = useState<EventHook[]>([]);
+  const [componentWorkspace, setComponentWorkspace] = useState(false);
 
   useEffect(() => {
     apiRequest<ComponentDefinition[]>("/config/components")
@@ -646,22 +647,64 @@ export default function DataSourceEditorPage() {
       {/* Main split view: Editor + Results */}
       <div className="ds-editor__split">
         {/* Left: Code editor */}
-        <div className="ds-editor__code-panel">
+        <div
+          className={`ds-editor__code-panel${componentWorkspace ? " ds-editor__code-panel--components" : ""}`}
+        >
           <div className="ds-editor__panel-header">
-            <Code2 size={14} />
-            <span>TypeScript</span>
-            <span className="ds-editor__line-count">{codeLineCount} lines</span>
+            <div className="ds-editor__workspace-tabs" role="tablist" aria-label="Editor workspace">
+              <Button
+                unstyled
+                type="button"
+                role="tab"
+                aria-selected={!componentWorkspace}
+                className={`ds-editor__workspace-tab${!componentWorkspace ? " active" : ""}`}
+                onClick={() => setComponentWorkspace(false)}
+              >
+                <Code2 size={14} /> Code
+              </Button>
+              <Button
+                unstyled
+                type="button"
+                role="tab"
+                aria-selected={componentWorkspace}
+                className={`ds-editor__workspace-tab${componentWorkspace ? " active" : ""}`}
+                onClick={() => setComponentWorkspace(true)}
+                disabled={previewItems.length === 0}
+              >
+                <LayoutGrid size={14} /> Components
+              </Button>
+            </div>
+            {!componentWorkspace && (
+              <span className="ds-editor__line-count">{codeLineCount} lines</span>
+            )}
           </div>
-          <div className="ds-editor__code-area">
-            <TabbedEditor
-              files={files}
-              onFilesChange={setFiles}
-              envData={envData}
-              onEnvDataChange={setEnvData}
-              datasourceId={isNew ? 0 : Number(id)}
-              height={editorHeight}
-            />
-          </div>
+          {componentWorkspace ? (
+            <div className="ds-editor__component-workspace" role="tabpanel">
+              <ComponentGroupEditor
+                group={componentGroup}
+                components={componentsList}
+                availableColumns={tableColumns}
+                firstRow={previewItems[0] || null}
+                onChange={setComponentGroup}
+                workspaceMode
+                showPreview={false}
+              />
+              <div className="ds-component-picker__hooks">
+                <EventHookEditor hooks={componentHooks} onChange={setComponentHooks} />
+              </div>
+            </div>
+          ) : (
+            <div className="ds-editor__code-area" role="tabpanel">
+              <TabbedEditor
+                files={files}
+                onFilesChange={setFiles}
+                envData={envData}
+                onEnvDataChange={setEnvData}
+                datasourceId={isNew ? 0 : Number(id)}
+                height={editorHeight}
+              />
+            </div>
+          )}
         </div>
 
         {/* Right: Results panel */}
@@ -806,7 +849,7 @@ export default function DataSourceEditorPage() {
                   </div>
                 )}
 
-                {previewItems.length > 0 && (
+                {previewItems.length > 0 && !componentWorkspace && (
                   <div className="ds-component-picker">
                     <ComponentGroupEditor
                       group={componentGroup}
@@ -814,6 +857,7 @@ export default function DataSourceEditorPage() {
                       availableColumns={tableColumns}
                       firstRow={previewItems[0] || null}
                       onChange={setComponentGroup}
+                      onWorkspaceModeChange={setComponentWorkspace}
                     />
                     <div className="ds-component-picker__hooks">
                       <EventHookEditor hooks={componentHooks} onChange={setComponentHooks} />

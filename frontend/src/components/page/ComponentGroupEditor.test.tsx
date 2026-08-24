@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ComponentGroupEditor } from "./ComponentGroupEditor";
 import type { ComponentDefinition, ComponentGroup } from "./types";
 
@@ -75,5 +75,24 @@ describe("ComponentGroupEditor", () => {
     const widths = screen.getAllByLabelText("Component width percentage");
     expect(widths[0]).toHaveValue(40);
     expect(widths[1]).toHaveValue(100);
+  });
+
+  it("requests the datasource split-pane workspace from Expand", async () => {
+    const user = userEvent.setup();
+    const onWorkspaceModeChange = vi.fn();
+    render(
+      <ComponentGroupEditor
+        group={{ items: [], gap: 16, max_width: 800 }}
+        components={components}
+        availableColumns={[]}
+        firstRow={null}
+        onChange={() => {}}
+        onWorkspaceModeChange={onWorkspaceModeChange}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Open component workspace" }));
+
+    expect(onWorkspaceModeChange).toHaveBeenCalledWith(true);
   });
 });

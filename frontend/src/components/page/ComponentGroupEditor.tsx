@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Maximize2, Minimize2, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Maximize2, Plus, Trash2 } from "lucide-react";
 /**
  * ComponentGroupEditor - manages a group of components rendered together per row.
  *
@@ -8,7 +8,6 @@ import { ChevronDown, ChevronUp, Maximize2, Minimize2, Plus, Trash2 } from "luci
  * percentage of the total.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import Button from "../input/Button";
 import Select from "../input/Select";
 import { CardDesigner } from "./CardDesigner";
@@ -30,6 +29,9 @@ interface ComponentGroupEditorProps {
   availableColumns: string[];
   firstRow: Record<string, unknown> | null;
   onChange: (group: ComponentGroup) => void;
+  workspaceMode?: boolean;
+  onWorkspaceModeChange?: (expanded: boolean) => void;
+  showPreview?: boolean;
 }
 
 let nextId = 1;
@@ -81,11 +83,12 @@ export function ComponentGroupEditor({
   availableColumns,
   firstRow,
   onChange,
+  workspaceMode = false,
+  onWorkspaceModeChange,
+  showPreview = true,
 }: ComponentGroupEditorProps) {
   const previewRef = useRef<HTMLDivElement>(null);
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const [activeTab, setActiveTab] = useState<"components" | "styles">("components");
-  const [expanded, setExpanded] = useState(false);
   const [resizing, setResizing] = useState<{
     itemId: string;
     startX: number;
@@ -93,13 +96,6 @@ export function ComponentGroupEditor({
   } | null>(null);
 
   const sorted = useMemo(() => orderedComponentItems(group.items), [group.items]);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!expanded || !dialog) return;
-    dialog.showModal();
-    return () => dialog.close();
-  }, [expanded]);
 
   const update = useCallback(
     (items: ComponentGroupItem[]) => onChange({ ...group, items }),
@@ -154,8 +150,8 @@ export function ComponentGroupEditor({
     window.addEventListener("mouseup", handleUp);
   };
 
-  const editor = (
-    <div className={`cge${expanded ? " cge--expanded" : ""}`}>
+  return (
+    <div className={`cge${workspaceMode ? " cge--workspace" : ""}`}>
       <div className="cge__tabs">
         <Button
           unstyled
@@ -171,19 +167,19 @@ export function ComponentGroupEditor({
         >
           Styles
         </Button>
-        <Button
-          unstyled
-          type="button"
-          className="cge__expand-btn"
-          onClick={() => setExpanded(value => !value)}
-          title={expanded ? "Close expanded editor" : "Open expanded editor"}
-          aria-label={
-            expanded ? "Close expanded component editor" : "Open expanded component editor"
-          }
-        >
-          {expanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-          {expanded ? "Close" : "Expand"}
-        </Button>
+        {onWorkspaceModeChange && (
+          <Button
+            unstyled
+            type="button"
+            className="cge__expand-btn"
+            onClick={() => onWorkspaceModeChange(!workspaceMode)}
+            title={workspaceMode ? "Return to code editor" : "Edit components in the left pane"}
+            aria-label={workspaceMode ? "Return to code editor" : "Open component workspace"}
+          >
+            <Maximize2 size={15} />
+            {workspaceMode ? "Code" : "Expand"}
+          </Button>
+        )}
       </div>
 
       {activeTab === "components" && (
@@ -331,7 +327,7 @@ export function ComponentGroupEditor({
       )}
 
       {/*  live preview  */}
-      {firstRow && sorted.length > 0 && (
+      {showPreview && firstRow && sorted.length > 0 && (
         <>
           <div className="cge__preview-label">Preview (first row)</div>
           <DesignedCardWrapper template={group.wrapper}>
@@ -371,25 +367,6 @@ export function ComponentGroupEditor({
         </>
       )}
     </div>
-  );
-
-  if (!expanded) return editor;
-  return createPortal(
-    <dialog
-      ref={dialogRef}
-      className="cge-dialog"
-      aria-label="Expanded component group editor"
-      onCancel={event => {
-        event.preventDefault();
-        setExpanded(false);
-      }}
-      onClick={event => {
-        if (event.target === event.currentTarget) setExpanded(false);
-      }}
-    >
-      {editor}
-    </dialog>,
-    document.body
   );
 }
 

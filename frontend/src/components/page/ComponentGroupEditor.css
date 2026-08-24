@@ -237,30 +237,14 @@
   border-color: var(--primary-color);
 }
 
-.cge-dialog {
-  width: min(1500px, calc(100vw - 32px));
-  max-width: none;
-  height: calc(100vh - 32px);
-  max-height: none;
-  padding: 0;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--bg-color);
-  color: var(--text-primary);
-  box-shadow: var(--shadow);
-}
-.cge-dialog::backdrop {
-  background: color-mix(in srgb, var(--bg-color) 72%, transparent);
-}
-.cge--expanded {
-  min-height: 100%;
+.cge--workspace {
   margin: 0;
   border: 0;
   border-radius: 0;
-  overflow: auto;
+  background: transparent;
 }
-.cge--expanded .column-mapper-targets {
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+.cge--workspace .column-mapper-targets {
+  grid-template-columns: 1fr;
 }
 
 @media (max-width: 700px) {
@@ -274,11 +258,6 @@
     width: auto;
     flex: 1 1 180px;
     margin-left: 28px;
-  }
-  .cge-dialog {
-    width: 100vw;
-    height: 100vh;
-    border-radius: 0;
   }
 }
 .cge__tab {
