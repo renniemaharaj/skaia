@@ -168,7 +168,13 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   from the normal article endpoint rather than reconstructing a summary card.
 - Datasource-backed reusable designs use the `SectionPreset` type and
   `/config/section-presets`; `CustomSection` remains a deprecated type alias and
-  the backend retains the old route during the compatibility window.
+  the backend retains the old route during the compatibility window. The
+  datasource editor can reopen and update presets for its datasource through
+  that same API. Component groups use explicit up/down ordering, commit typed
+  percentage widths after editing, offer an expanded editor workspace, and may
+  bind escaped literal text. Stat components render curated named icons and
+  persist a per-item top-left, top-right, left-of-value, or right-of-value icon
+  position.
 - Datasource editor Run sends the current `.ts` file map and transient env input
   to protected `/config/datasources/preview`. Compilation, environment injection,
   outbound fetches, and execution occur in the backend runner; the browser only

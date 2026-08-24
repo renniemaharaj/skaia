@@ -105,6 +105,11 @@ Its config helper:
 
 Reusable datasource-backed section presets remain in the existing
 `custom_sections` feature and `/config/section-presets` compatibility alias.
+Their component-group configuration remains inside the preset JSON: the
+datasource editor can reopen and update that record without copying it into the
+page document, while custom-section blocks link back to the owning preset editor.
+Component order, percentage width, literal text bindings, and stat icon position
+are presentation fields within that existing configuration.
 
 Domain-owned workflows may project an `InteractiveConfig` through the shared
 `InteractiveActionSection` binding. The binding reuses the interactive field,

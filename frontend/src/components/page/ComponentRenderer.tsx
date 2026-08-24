@@ -5,13 +5,14 @@ import { type MediaScrapeJob, MediaViewer } from "../mediascraper/MediaViewer";
 import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import UserAvatar from "../user/UserAvatar";
 import { inputTextValue, isInputTextBinding } from "./componentBindings";
+import { ICON_MAP } from "./iconMap";
 /**
  * ComponentRenderer - renders a single registered component using bound row data.
  *
  * Given a ComponentDefinition, a bindings map, and a raw data row, it resolves
  * each bind-point value and renders the correct visual for the component type.
  */
-import type { ComponentDefinition } from "./types";
+import type { ComponentDefinition, ComponentIconPosition } from "./types";
 import "./ComponentRenderer.css";
 
 /*  helpers  */
@@ -166,9 +167,12 @@ function PrimitiveLink({ data, styles }: { data: Resolved; styles: StyleMap }) {
 function PrimitiveIcon({ data, styles }: { data: Resolved; styles: StyleMap }) {
   const icon = str(data.icon);
   const isUrl = /^https?:\/\//i.test(icon);
+  const Icon = ICON_MAP[icon];
   return (
     <span className="cr-icon" style={styles.root} aria-label={str(data.aria_label)}>
-      {isUrl ? (
+      {Icon ? (
+        <Icon size={28} aria-hidden="true" />
+      ) : isUrl ? (
         <MediaPlaceholder
           alt={str(data.aria_label) || "Icon"}
           href={icon}
@@ -235,16 +239,33 @@ function CompoundCard({
   );
 }
 
-function CompoundStat({ data, styles }: { data: Resolved; styles: StyleMap }) {
+function CompoundStat({
+  data,
+  styles,
+  iconPosition = "top-left",
+}: {
+  data: Resolved;
+  styles: StyleMap;
+  iconPosition?: ComponentIconPosition;
+}) {
+  const icon = str(data.icon);
+  const Icon = ICON_MAP[icon];
+  const renderedIcon = icon ? (
+    <span className="cr-stat__icon" style={styles.icon}>
+      {Icon ? <Icon size={22} aria-hidden="true" /> : icon}
+    </span>
+  ) : null;
+  const inlineIcon = iconPosition === "left" || iconPosition === "right";
+
   return (
-    <div className="cr-stat" style={styles.root}>
-      {!!data.icon && (
-        <span className="cr-stat__icon" style={styles.icon}>
-          {str(data.icon)}
+    <div className={`cr-stat cr-stat--icon-${iconPosition}`} style={styles.root}>
+      {!inlineIcon && renderedIcon}
+      <span className="cr-stat__value-row">
+        {iconPosition === "left" && renderedIcon}
+        <span className="cr-stat__value" style={styles.value}>
+          {str(data.title)}
         </span>
-      )}
-      <span className="cr-stat__value" style={styles.value}>
-        {str(data.title)}
+        {iconPosition === "right" && renderedIcon}
       </span>
       {!!data.body && (
         <span className="cr-stat__label" style={styles.label}>
@@ -443,6 +464,7 @@ export interface ComponentRendererProps {
   bindings: Record<string, string>;
   row: Record<string, unknown>;
   styleOverrides?: Record<string, Record<string, string>>;
+  iconPosition?: ComponentIconPosition;
   onEvent?: (event: string, data: unknown) => void;
 }
 
@@ -451,6 +473,7 @@ export function ComponentRenderer({
   bindings,
   row,
   styleOverrides,
+  iconPosition,
   onEvent,
 }: ComponentRendererProps) {
   const data = resolveBindings(component, bindings, row);
@@ -474,7 +497,7 @@ export function ComponentRenderer({
     case "compound.card":
       return <CompoundCard data={data} styles={styles} onEvent={onEvent} />;
     case "compound.stat":
-      return <CompoundStat data={data} styles={styles} />;
+      return <CompoundStat data={data} styles={styles} iconPosition={iconPosition} />;
     case "compound.media_card":
       return <CompoundMediaCard data={data} styles={styles} onEvent={onEvent} />;
     case "compound.profile":

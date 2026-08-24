@@ -170,6 +170,10 @@
   font-size: 0.8rem;
 }
 
+.column-mapper-text-input::placeholder {
+  color: var(--text-secondary);
+}
+
 .column-mapper-text-input:focus {
   border-color: var(--primary-color);
   outline: none;

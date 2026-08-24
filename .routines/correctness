@@ -84,6 +84,11 @@ docs disagree.
 
 ## Last Run Remarks
 
+- Reconciled component-group editing with existing authority: presets continue
+  to live in `custom_sections` and update through `/config/section-presets`, while
+  ordering, widths, literal bindings, and icon positions remain config-only
+  presentation state. No second datasource or page-document authority was added.
+
 - Reconciled the public datasource cache contract with worker behavior: compile
   and execute now use one conveyor manager, deterministic ID/input flights, and
   a cache recheck by the winner rather than separately queued lock waiters.

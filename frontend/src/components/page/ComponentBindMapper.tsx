@@ -9,6 +9,7 @@ import {
   isInputTextBinding,
 } from "./componentBindings";
 import type { BindPoint, ComponentDefinition } from "./types";
+import { ICON_NAMES } from "./iconMap";
 import "./ColumnMapper.css"; // Reuse the same styles
 
 interface ComponentBindMapperProps {
@@ -138,14 +139,16 @@ export const ComponentBindMapper = ({
                   block
                 >
                   <option value="">- none -</option>
-                  <option value={INPUT_TEXT_OPTION}>Input Text</option>
+                  <option value={INPUT_TEXT_OPTION}>
+                    {bp.key === "icon" ? "Choose Icon" : "Input Text"}
+                  </option>
                   {availableColumns.map(col => (
                     <option key={col} value={col}>
                       {col}
                     </option>
                   ))}
                 </Select>
-                {usesInputText && (
+                {usesInputText && bp.key !== "icon" && (
                   <input
                     className="column-mapper-text-input"
                     type="text"
@@ -156,6 +159,25 @@ export const ComponentBindMapper = ({
                     placeholder="Enter text"
                     aria-label={`${bp.label} input text`}
                   />
+                )}
+                {usesInputText && bp.key === "icon" && (
+                  <Select
+                    value={inputTextValue(mapped)}
+                    onChange={event =>
+                      onChange({ ...bindings, [bp.key]: inputTextBinding(event.target.value) })
+                    }
+                    size="sm"
+                    variant="minimal"
+                    block
+                    aria-label={`${bp.label} icon`}
+                  >
+                    <option value="">- choose icon -</option>
+                    {ICON_NAMES.map(name => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </Select>
                 )}
               </span>
               {mapped && (

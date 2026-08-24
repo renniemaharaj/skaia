@@ -216,14 +216,32 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   transition: box-shadow 0.2s ease;
+  position: relative;
 }
 .cr-stat:hover {
   box-shadow: var(--shadow-hover);
 }
 .cr-stat__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1.3rem;
   line-height: 1;
   opacity: 0.8;
+}
+.cr-stat--icon-top-right {
+  padding-right: 56px;
+}
+.cr-stat--icon-top-right > .cr-stat__icon {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+.cr-stat__value-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 .cr-stat__value {
   font-size: 1.5rem;

@@ -1,0 +1,16 @@
+<--/------->
+
+## component_group_editor_polish
+
+### Current Progress
+- **Phase 1: Contract and UI inventory** - ✅ Complete
+- **Phase 2: Component controls and stat icons** - ✅ Complete
+- **Phase 3: Preset editing and expanded workspace** - ✅ Complete
+- **Phase 4: Verification and reconciliation** - ✅ Complete
+
+### Next Steps
+- [x] Added focused binding, ordering, width interaction, and stat icon-position coverage.
+- [x] Passed all 266 frontend tests; lint, TypeScript/build, and all four frontend policy gates pass (2026-08-24).
+- [x] Updated frontend/custom-page contracts and completed affected-scope correctness and quality review with no material issue remaining.
+
+<--/------->

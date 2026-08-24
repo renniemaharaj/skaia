@@ -169,7 +169,9 @@ export const BIND_POINT_KINDS = ["text","rich_text","number","boolean","url","me
 export type BindPointKind = (typeof BIND_POINT_KINDS)[number];
 export interface BindPoint { key:string; label:string; description:string; kind:BindPointKind; required:boolean; fallback?:unknown; }
 export interface ComponentDefinition { type:string; label:string; group:string; description:string; repeatable:boolean; props_schema:Record<string,unknown>; style_targets:string[]; bind_points:BindPoint[]; version:number; }
-export interface ComponentGroupItem { id:string; component_type:string; bindings:Record<string,string>; width:number; order:number; event_hooks?:EventHook[]; }
+export const COMPONENT_ICON_POSITIONS = ["top-left","top-right","left","right"] as const;
+export type ComponentIconPosition = (typeof COMPONENT_ICON_POSITIONS)[number];
+export interface ComponentGroupItem { id:string; component_type:string; bindings:Record<string,string>; width:number; order:number; icon_position?:ComponentIconPosition; event_hooks?:EventHook[]; }
 export interface ComponentGroup { items:ComponentGroupItem[]; gap:number; max_width:number; wrapper?:CardTemplate; }
 export interface EventHook { event:ComponentEvent; code:string; }
 export const COMPONENT_EVENTS = ["onClick","onDoubleClick","onHover","onMouseEnter","onMouseLeave"] as const;

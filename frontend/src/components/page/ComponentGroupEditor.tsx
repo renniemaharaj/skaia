@@ -1,4 +1,4 @@
-import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Maximize2, Minimize2, Plus, Trash2 } from "lucide-react";
 /**
  * ComponentGroupEditor - manages a group of components rendered together per row.
  *
@@ -7,15 +7,21 @@ import { GripVertical, Plus, Trash2 } from "lucide-react";
  * group renders in a flex-wrap container where each component's width is a
  * percentage of the total.
  */
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Button from "../input/Button";
 import Select from "../input/Select";
 import { CardDesigner } from "./CardDesigner";
 import { ComponentBindMapper } from "./ComponentBindMapper";
 import { ComponentRenderer } from "./ComponentRenderer";
 import { DesignedCardWrapper } from "./blocks/DesignedCardWrapper";
+import {
+  moveComponentItem,
+  normalizeComponentWidth,
+  orderedComponentItems,
+} from "./componentGroup";
 import type { ComponentDefinition, ComponentGroup, ComponentGroupItem } from "./types";
-import { DEFAULT_CARD_TEMPLATE } from "./types";
+import { COMPONENT_ICON_POSITIONS, DEFAULT_CARD_TEMPLATE } from "./types";
 import "./ComponentGroupEditor.css";
 
 interface ComponentGroupEditorProps {
@@ -31,6 +37,44 @@ function uid() {
   return `cg-${Date.now()}-${nextId++}`;
 }
 
+const ICON_POSITION_LABELS = {
+  "top-left": "Icon: Top left",
+  "top-right": "Icon: Top right",
+  left: "Icon: Left of value",
+  right: "Icon: Right of value",
+} as const;
+
+function WidthInput({ value, onCommit }: { value: number; onCommit: (value: number) => void }) {
+  const [draft, setDraft] = useState(String(value));
+
+  useEffect(() => setDraft(String(value)), [value]);
+
+  const commit = () => {
+    const normalized = normalizeComponentWidth(draft, value);
+    setDraft(String(normalized));
+    if (normalized !== value) onCommit(normalized);
+  };
+
+  return (
+    <input
+      type="number"
+      min={10}
+      max={100}
+      value={draft}
+      onChange={event => setDraft(event.target.value)}
+      onBlur={commit}
+      onKeyDown={event => {
+        if (event.key === "Enter") event.currentTarget.blur();
+        if (event.key === "Escape") {
+          setDraft(String(value));
+          event.currentTarget.blur();
+        }
+      }}
+      aria-label="Component width percentage"
+    />
+  );
+}
+
 export function ComponentGroupEditor({
   group,
   components,
@@ -39,14 +83,23 @@ export function ComponentGroupEditor({
   onChange,
 }: ComponentGroupEditorProps) {
   const previewRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [activeTab, setActiveTab] = useState<"components" | "styles">("components");
+  const [expanded, setExpanded] = useState(false);
   const [resizing, setResizing] = useState<{
     itemId: string;
     startX: number;
     startWidth: number;
   } | null>(null);
 
-  const sorted = useMemo(() => [...group.items].sort((a, b) => a.order - b.order), [group.items]);
+  const sorted = useMemo(() => orderedComponentItems(group.items), [group.items]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!expanded || !dialog) return;
+    dialog.showModal();
+    return () => dialog.close();
+  }, [expanded]);
 
   const update = useCallback(
     (items: ComponentGroupItem[]) => onChange({ ...group, items }),
@@ -63,10 +116,16 @@ export function ComponentGroupEditor({
       width: Math.max(10, Math.floor(100 / (sorted.length + 1))),
       order: sorted.length,
     };
-    update([...group.items, item]);
+    update([...sorted, item].map((entry, index) => ({ ...entry, order: index })));
   };
 
-  const removeComponent = (id: string) => update(group.items.filter(i => i.id !== id));
+  const removeComponent = (id: string) =>
+    update(
+      sorted.filter(item => item.id !== id).map((item, index) => ({ ...item, order: index }))
+    );
+
+  const moveComponent = (id: string, direction: "up" | "down") =>
+    update(moveComponentItem(group.items, id, direction));
 
   const updateItem = (id: string, patch: Partial<ComponentGroupItem>) =>
     update(group.items.map(i => (i.id === id ? { ...i, ...patch } : i)));
@@ -95,8 +154,8 @@ export function ComponentGroupEditor({
     window.addEventListener("mouseup", handleUp);
   };
 
-  return (
-    <div className="cge">
+  const editor = (
+    <div className={`cge${expanded ? " cge--expanded" : ""}`}>
       <div className="cge__tabs">
         <Button
           unstyled
@@ -112,6 +171,19 @@ export function ComponentGroupEditor({
         >
           Styles
         </Button>
+        <Button
+          unstyled
+          type="button"
+          className="cge__expand-btn"
+          onClick={() => setExpanded(value => !value)}
+          title={expanded ? "Close expanded editor" : "Open expanded editor"}
+          aria-label={
+            expanded ? "Close expanded component editor" : "Open expanded component editor"
+          }
+        >
+          {expanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+          {expanded ? "Close" : "Expand"}
+        </Button>
       </div>
 
       {activeTab === "components" && (
@@ -125,10 +197,31 @@ export function ComponentGroupEditor({
           </div>
 
           <div className="cge__items">
-            {sorted.map(item => {
+            {sorted.map((item, index) => {
               return (
                 <div key={item.id} className="cge__item">
-                  <GripVertical size={14} className="cge__item-grip" />
+                  <span className="cge__item-move" aria-label="Component position controls">
+                    <Button
+                      unstyled
+                      type="button"
+                      onClick={() => moveComponent(item.id, "up")}
+                      disabled={index === 0}
+                      title="Move component up"
+                      aria-label="Move component up"
+                    >
+                      <ChevronUp size={13} />
+                    </Button>
+                    <Button
+                      unstyled
+                      type="button"
+                      onClick={() => moveComponent(item.id, "down")}
+                      disabled={index === sorted.length - 1}
+                      title="Move component down"
+                      aria-label="Move component down"
+                    >
+                      <ChevronDown size={13} />
+                    </Button>
+                  </span>
                   <Select
                     className="cge__item-select"
                     value={item.component_type}
@@ -146,17 +239,29 @@ export function ComponentGroupEditor({
                       </option>
                     ))}
                   </Select>
-                  <label className="cge__item-width">
-                    <input
-                      type="number"
-                      min={10}
-                      max={100}
-                      value={item.width}
-                      onChange={e =>
+                  {item.component_type === "compound.stat" && (
+                    <Select
+                      className="cge__icon-position"
+                      value={item.icon_position ?? "top-left"}
+                      onChange={event =>
                         updateItem(item.id, {
-                          width: Math.max(10, Math.min(100, Number(e.target.value))),
+                          icon_position: event.target.value as ComponentGroupItem["icon_position"],
                         })
                       }
+                      size="sm"
+                      aria-label="Stat card icon position"
+                    >
+                      {COMPONENT_ICON_POSITIONS.map(position => (
+                        <option key={position} value={position}>
+                          {ICON_POSITION_LABELS[position]}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                  <label className="cge__item-width">
+                    <WidthInput
+                      value={item.width}
+                      onCommit={width => updateItem(item.id, { width })}
                     />
                     <span>%</span>
                   </label>
@@ -247,7 +352,12 @@ export function ComponentGroupEditor({
                     className={`cge__preview-item${resizing?.itemId === item.id ? " cge__preview-item--resizing" : ""}`}
                     style={{ width: `${item.width}%` }}
                   >
-                    <ComponentRenderer component={comp} bindings={item.bindings} row={firstRow} />
+                    <ComponentRenderer
+                      component={comp}
+                      bindings={item.bindings}
+                      row={firstRow}
+                      iconPosition={item.icon_position}
+                    />
                     <div
                       className="cge__resize-handle"
                       onMouseDown={e => startResize(item.id, e)}
@@ -262,6 +372,25 @@ export function ComponentGroupEditor({
       )}
     </div>
   );
+
+  if (!expanded) return editor;
+  return createPortal(
+    <dialog
+      ref={dialogRef}
+      className="cge-dialog"
+      aria-label="Expanded component group editor"
+      onCancel={event => {
+        event.preventDefault();
+        setExpanded(false);
+      }}
+      onClick={event => {
+        if (event.target === event.currentTarget) setExpanded(false);
+      }}
+    >
+      {editor}
+    </dialog>,
+    document.body
+  );
 }
 
 /** Renders a full group for one data row (used at display-time). */
@@ -274,7 +403,7 @@ export function ComponentGroupRenderer({
   row: Record<string, unknown>;
   components: ComponentDefinition[];
 }) {
-  const sorted = [...group.items].sort((a, b) => a.order - b.order);
+  const sorted = orderedComponentItems(group.items);
   return (
     <DesignedCardWrapper template={group.wrapper}>
       <div className="cge__preview" style={{ maxWidth: group.max_width, gap: group.gap }}>
@@ -283,7 +412,12 @@ export function ComponentGroupRenderer({
           if (!comp) return null;
           return (
             <div key={item.id} style={{ width: `${item.width}%` }} className="cge__preview-item">
-              <ComponentRenderer component={comp} bindings={item.bindings} row={row} />
+              <ComponentRenderer
+                component={comp}
+                bindings={item.bindings}
+                row={row}
+                iconPosition={item.icon_position}
+              />
             </div>
           );
         })}

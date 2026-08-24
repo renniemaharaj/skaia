@@ -1,0 +1,32 @@
+# Component Group Editor Polish
+
+## Context
+Datasource-backed component groups cannot currently reorder components, reliably type widths, position stat icons, reopen saved presets for editing, or expand the dense editor workspace.
+
+## Goal
+- Make component-group composition practical for dashboard-style saved sections.
+- Preserve the existing `pages.content`, datasource, and section-preset authorities.
+
+## Non-Goals
+- Replace the component registry or datasource result contract.
+- Add a second saved-section model or page-builder persistence path.
+
+## Steps
+1. Add accessible component move controls and stable commit-based numeric sizing.
+2. Add stat-card icon rendering and position controls.
+3. Add an expanded component-group editor workspace.
+4. Load and update existing datasource section presets through the current API.
+5. Add focused regression coverage and update durable frontend contracts.
+
+## Verification
+- Focused frontend tests for component ordering, widths, literal bindings, icon rendering/position, and preset configuration.
+- Frontend lint, TypeScript production build, UI policy checks, and diff checks.
+- Focused backend registry/custom-section tests if shared validation changes.
+
+## References
+- `.specs/frontend_spec`
+- `.specs/custom_page_section_compatibility_spec`
+- `.routines/worker`
+- `.routines/auditor`
+- `frontend/src/components/page/ComponentGroupEditor.tsx`
+- `frontend/src/components/page/datasources/DataSourceEditorPage.tsx`

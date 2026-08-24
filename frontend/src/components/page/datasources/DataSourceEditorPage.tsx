@@ -16,13 +16,14 @@ import {
   Loader2,
   Maximize2,
   MoveVertical,
+  Pencil,
   Play,
   Save,
   Trash2,
   X,
 } from "lucide-react";
 import { type CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { apiRequest } from "../../../utils/api";
 import Button from "../../input/Button";
@@ -94,6 +95,7 @@ const DATASOURCE_PREVIEW_TYPE_LABELS: Record<DataSourcePreviewType, string> = {
 export default function DataSourceEditorPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isNew = id === "new";
 
   const [name, setName] = useState("");
@@ -140,6 +142,8 @@ export default function DataSourceEditorPage() {
   const [sectionName, setSectionName] = useState("");
   const [sectionDesc, setSectionDesc] = useState("");
   const [savingSection, setSavingSection] = useState(false);
+  const [savedSections, setSavedSections] = useState<CustomSection[]>([]);
+  const [editingSectionId, setEditingSectionId] = useState<number | null>(null);
 
   const [componentsList, setComponentsList] = useState<ComponentDefinition[]>([]);
   const [componentGroup, setComponentGroup] = useState<ComponentGroup>({
@@ -154,6 +158,76 @@ export default function DataSourceEditorPage() {
       .then(setComponentsList)
       .catch(console.error);
   }, []);
+
+  const applySavedSection = useCallback(
+    (section: CustomSection) => {
+      let config: { component_group?: ComponentGroup; event_hooks?: EventHook[] } = {};
+      try {
+        config = JSON.parse(section.config || "{}");
+      } catch {
+        toast.error(`Section "${section.name}" has invalid configuration`);
+        return;
+      }
+      if (!config.component_group || !Array.isArray(config.component_group.items)) {
+        toast.error(`Section "${section.name}" does not contain a component group`);
+        return;
+      }
+      setComponentGroup(config.component_group);
+      setComponentHooks(Array.isArray(config.event_hooks) ? config.event_hooks : []);
+      setSectionName(section.name);
+      setSectionDesc(section.description ?? "");
+      setEditingSectionId(section.id);
+      setShowSaveSection(false);
+      setSearchParams(
+        current => {
+          const next = new URLSearchParams(current);
+          next.set("preset", String(section.id));
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
+
+  const fetchSavedSections = useCallback(async () => {
+    if (isNew || !id) return;
+    try {
+      const list = await apiRequest<CustomSection[]>(
+        `/config/section-presets?datasource_id=${encodeURIComponent(id)}`
+      );
+      const sections = list ?? [];
+      setSavedSections(sections);
+      const requestedId = Number(searchParams.get("preset"));
+      if (requestedId && requestedId !== editingSectionId) {
+        const requested = sections.find(section => section.id === requestedId);
+        if (requested) applySavedSection(requested);
+      }
+    } catch {
+      toast.error("Failed to load saved sections");
+    }
+  }, [applySavedSection, editingSectionId, id, isNew, searchParams]);
+
+  useEffect(() => {
+    fetchSavedSections();
+  }, [fetchSavedSections]);
+
+  const startNewSectionDesign = () => {
+    setEditingSectionId(null);
+    setSectionName("");
+    setSectionDesc("");
+    setComponentGroup({ items: [], gap: 16, max_width: 800 });
+    setComponentHooks([]);
+    setShowSaveSection(false);
+    setSearchParams(
+      current => {
+        const next = new URLSearchParams(current);
+        next.delete("preset");
+        return next;
+      },
+      { replace: true }
+    );
+  };
 
   const fetchDS = useCallback(async () => {
     if (isNew) return;
@@ -416,24 +490,32 @@ export default function DataSourceEditorPage() {
     }
     setSavingSection(true);
     try {
-      await apiRequest<CustomSection>("/config/section-presets", {
-        method: "POST",
-        body: JSON.stringify({
-          name: sectionName,
-          description: sectionDesc,
-          datasource_id: Number(id),
-          section_type: "component",
-          config: JSON.stringify({
-            columns: 1,
-            component_group: componentGroup,
-            event_hooks: componentHooks,
-          }),
+      const payload = {
+        name: sectionName,
+        description: sectionDesc,
+        datasource_id: Number(id),
+        section_type: "component",
+        config: JSON.stringify({
+          columns: 1,
+          component_group: componentGroup,
+          event_hooks: componentHooks,
         }),
-      });
-      toast.success(`Section "${sectionName}" saved`);
+      };
+      const saved = await apiRequest<CustomSection>(
+        editingSectionId
+          ? `/config/section-presets/${editingSectionId}`
+          : "/config/section-presets",
+        {
+          method: editingSectionId ? "PUT" : "POST",
+          body: JSON.stringify({
+            ...payload,
+          }),
+        }
+      );
+      toast.success(`Section "${sectionName}" ${editingSectionId ? "updated" : "saved"}`);
+      setEditingSectionId(saved.id);
       setShowSaveSection(false);
-      setSectionName("");
-      setSectionDesc("");
+      await fetchSavedSections();
     } catch {
       toast.error("Failed to save section");
     } finally {
@@ -642,12 +724,37 @@ export default function DataSourceEditorPage() {
                       </Button>
                     </div>
                     {!isNew && (
+                      <Select
+                        className="ds-preview__saved-section-select"
+                        value={editingSectionId ?? ""}
+                        onChange={event => {
+                          const sectionId = Number(event.target.value);
+                          if (!sectionId) {
+                            startNewSectionDesign();
+                            return;
+                          }
+                          const section = savedSections.find(item => item.id === sectionId);
+                          if (section) applySavedSection(section);
+                        }}
+                        size="sm"
+                        aria-label="Saved section design"
+                      >
+                        <option value="">New section design</option>
+                        {savedSections.map(section => (
+                          <option key={section.id} value={section.id}>
+                            {section.name}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                    {!isNew && (
                       <Button
                         unstyled
                         className="ds-preview__save-section-btn"
                         onClick={() => setShowSaveSection(v => !v)}
                       >
-                        <Bookmark size={13} /> Save as Section
+                        {editingSectionId ? <Pencil size={13} /> : <Bookmark size={13} />}
+                        {editingSectionId ? "Edit Section" : "Save as Section"}
                       </Button>
                     )}
                   </div>
@@ -665,6 +772,7 @@ export default function DataSourceEditorPage() {
                     onSubmit={handleSaveSection}
                     saving={savingSection}
                     isNew={isNew}
+                    editing={editingSectionId !== null}
                   />
                 )}
 
@@ -927,6 +1035,7 @@ function SaveAsSectionForm({
   onSubmit,
   saving,
   isNew: _isNew,
+  editing,
 }: {
   sectionName: string;
   sectionDesc: string;
@@ -937,11 +1046,12 @@ function SaveAsSectionForm({
   onSubmit: () => void;
   saving: boolean;
   isNew: boolean;
+  editing: boolean;
 }) {
   return (
     <div className="ds-save-section">
       <div className="ds-save-section__header">
-        <span>Save as Custom Section</span>
+        <span>{editing ? "Edit Custom Section" : "Save as Custom Section"}</span>
         <Button unstyled className="action-btn " onClick={onClose} title="Close">
           <X size={14} />
         </Button>
@@ -979,7 +1089,7 @@ function SaveAsSectionForm({
             disabled={saving || !sectionName.trim()}
           >
             {saving ? <Loader2 size={13} className="spin" /> : <Save size={13} />}
-            {saving ? "Saving…" : "Save Section"}
+            {saving ? "Saving…" : editing ? "Update Section" : "Save Section"}
           </Button>
         </div>
       </div>

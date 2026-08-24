@@ -93,6 +93,10 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Run Remarks
 
+- Audited component-group polish across preset authority, update policy, literal
+  rendering safety, ordering/width state, dialog accessibility, responsive token
+  CSS, stat icon output, and tests. No material affected-scope issue remains.
+
 - Audited datasource cache-flight concurrency across shared worker ownership,
   cache ordering, deterministic saved/transient keys, async snapshots, waiter
   fan-out, panic release, and races. No waiter occupies a conveyor worker and

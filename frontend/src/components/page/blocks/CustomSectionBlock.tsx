@@ -1,7 +1,7 @@
 import { type CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "./CustomSectionBlock.css";
-import { AlertTriangle, ExternalLink, Loader2, RefreshCw, Zap } from "lucide-react";
+import { AlertTriangle, ExternalLink, Loader2, Pencil, RefreshCw, Zap } from "lucide-react";
 import { Clock } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "../../../utils/api";
@@ -471,12 +471,21 @@ export const CustomSectionBlock = ({ section, canEdit, onUpdate }: Props) => {
             <span className="custom-section-cs-info">
               <Zap size={14} /> {selectedCS.name}
               <Link
-                to={`/admin/datasources/${selectedCS.datasource_id}`}
+                to={`/datasources/${selectedCS.datasource_id}`}
                 target="_blank"
                 title="Edit Data Source"
                 className="custom-section-cs-link"
               >
                 <ExternalLink size={14} />
+              </Link>
+              <Link
+                to={`/datasources/${selectedCS.datasource_id}?preset=${selectedCS.id}`}
+                target="_blank"
+                title="Edit saved section"
+                aria-label={`Edit saved section ${selectedCS.name}`}
+                className="custom-section-cs-link"
+              >
+                <Pencil size={14} />
               </Link>
             </span>
           )}

@@ -123,6 +123,12 @@ update specs and .tip with durable facts
 
 ## Last Run Remarks
 
+- Completed `component_group_editor_polish`: component groups now have explicit
+  move controls, stable commit-based widths, selectable named stat icons with
+  four positions, literal text bindings, an expanded editor, and existing-preset
+  load/update support through the established API. Full frontend tests and gates
+  pass.
+
 - Consolidated datasource compile and execute onto one conveyor pool. Identical
   saved requests now share deterministic ID flights, the winner rechecks cache
   before Node execution, followers wait outside the pool, and panic-safe fan-out

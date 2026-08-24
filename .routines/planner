@@ -111,6 +111,10 @@ operational policies.
 
 ## Last Run Remarks
 
+- Created and completed `component_group_editor_polish`; frontend and custom-page
+  specs now record editable datasource presets and component-group presentation
+  controls without introducing a second persistence contract.
+
 - Extended and completed the datasource sandbox handoff with shared conveyor
   ownership and cache-flight concurrency; backend and security specs now record
   deterministic coalescing, worker-side cache rechecks, and waiter fan-out.

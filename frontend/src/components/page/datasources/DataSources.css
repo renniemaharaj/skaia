@@ -993,6 +993,11 @@
   padding: 2px;
 }
 
+.ds-preview__saved-section-select {
+  width: min(240px, 35%);
+  margin-left: auto;
+}
+
 .ds-preview__type-tab {
   display: inline-flex;
   align-items: center;
