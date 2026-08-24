@@ -8,6 +8,7 @@ func CLICommands() cli.Commands {
 		Die:            die,
 		New:            cmdNew,
 		List:           cmdList,
+		SetCurrent:     cmdSetCurrent,
 		Enable:         cmdEnable,
 		Disable:        cmdDisable,
 		Start:          cmdStart,

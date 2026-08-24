@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "archive": "grengo-node-s78-20260824.tar.gz",
+  "sha256": "b7b7ff6f39cfeedcd93f9d751b2699f3f6796a6bad04429544759b2259f04eb6",
+  "size_bytes": 710053736,
+  "backup_class": "node-portable",
+  "created_at": "2026-08-24T09:06:05Z",
+  "retain_until": "2026-09-23T09:06:05Z",
+  "encryption_required_at_rest": true
+}

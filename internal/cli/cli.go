@@ -28,6 +28,7 @@ func commandRegistry() []commandEntry {
 	return []commandEntry{
 		{names: []string{"new"}, run: runNew},
 		{names: []string{"list", "ls"}, run: runList},
+		{names: []string{"set-current"}, run: runSetCurrent},
 		{names: []string{"enable"}, run: runEnable},
 		{names: []string{"disable"}, run: runDisable},
 		{names: []string{"start"}, run: runStart},
@@ -88,6 +89,10 @@ func runNew(rest []string, c Commands) {
 
 func runList(_ []string, c Commands) {
 	c.List()
+}
+
+func runSetCurrent(rest []string, c Commands) {
+	c.SetCurrent(requireArg(rest, "set-current <name>", c))
 }
 
 func runEnable(rest []string, c Commands) {

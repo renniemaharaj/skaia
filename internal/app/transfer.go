@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -342,10 +344,14 @@ func setupClientFromFiles(
 		die("Cannot create directory for '%s': %v", name, err)
 	}
 
-	// Patch CLIENT_NAME and PORT; leave everything else (POSTGRES_DB,
-	// DATABASE_URL, secrets, …) exactly as archived.
+	// Preserve tenant secrets, but bind database access to this node's shared
+	// PostgreSQL credentials. Source-node database users are not portable.
 	envMap["CLIENT_NAME"] = name
 	envMap["PORT"] = port
+	if strings.TrimSpace(envMap["POSTGRES_DB"]) == "" {
+		envMap["POSTGRES_DB"] = name
+	}
+	envMap["DATABASE_URL"] = destinationDatabaseURL(loadSharedEnv(), envMap["POSTGRES_DB"])
 	writeEnvPatched(clientEnvFile(name), envData, envMap)
 	syncCanonicalURLDefaults(clientEnvFile(name))
 
@@ -392,6 +398,19 @@ func setupClientFromFiles(
 	} else {
 		info("  No DB dump in archive - run 'grengo db init %s' to initialise", name)
 	}
+}
+
+func destinationDatabaseURL(env SharedEnv, dbName string) string {
+	u := &url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(env.PostgresUser, env.PostgresPassword),
+		Host:   net.JoinHostPort("postgres", env.PGPort),
+		Path:   "/" + dbName,
+	}
+	query := u.Query()
+	query.Set("sslmode", "disable")
+	u.RawQuery = query.Encode()
+	return u.String()
 }
 
 // Port helper

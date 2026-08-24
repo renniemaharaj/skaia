@@ -6,6 +6,7 @@ type Commands struct {
 
 	New             func([]string)
 	List            func()
+	SetCurrent      func(string)
 	Enable          func(string)
 	Disable         func(string)
 	Start           func(string)

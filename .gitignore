@@ -29,6 +29,7 @@ scratch/
 backends/
 nginx/default.conf
 .grengo-api.pid
+.grengo-current
 exports/
 .pcode
 
@@ -41,3 +42,6 @@ exports/
 
 # Deferred implementation archives (kept outside build and migration discovery)
 /.deferred/
+
+# Generated Grengo node transfer archives stay local or in release storage.
+/grengo-node-*.tar.gz

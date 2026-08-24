@@ -80,6 +80,7 @@ Access: `http://localhost` · Admin dashboard: `Ctrl+G` in browser · Management
 | ------------------------------ | ---------------------------------------- | -------------- |
 | `grengo new [name]`            | Create tenant (interactive wizard)       |
 | `grengo list`                  | List all tenants with status             |
+| `grengo set-current <name>`    | Route localhost to one enabled tenant    |
 | `grengo compose up`            | Start all infra + tenants                |
 | `grengo compose down`          | Stop everything                          |
 | `grengo build`                 | Rebuild the backend Docker image         |

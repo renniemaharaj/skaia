@@ -59,6 +59,35 @@ func TestExpandDomainsNormalizesConfiguredOrigins(t *testing.T) {
 	}
 }
 
+func TestRouteLocalhostToCurrentClient(t *testing.T) {
+	clients := []clientInfo{
+		{Name: "home", Port: "1080", Domains: []string{"localhost"}},
+		{Name: "writer", Port: "1081", Domains: []string{"thewriterco.com"}},
+	}
+
+	got, ok := routeLocalhostToCurrent(clients, "writer")
+	if !ok {
+		t.Fatal("expected enabled current client to be selected")
+	}
+	if want := []string{}; !reflect.DeepEqual(got[0].Domains, want) {
+		t.Fatalf("home domains = %#v, want %#v", got[0].Domains, want)
+	}
+	if want := []string{"thewriterco.com", "localhost"}; !reflect.DeepEqual(got[1].Domains, want) {
+		t.Fatalf("writer domains = %#v, want %#v", got[1].Domains, want)
+	}
+}
+
+func TestRouteLocalhostRejectsUnknownCurrentClient(t *testing.T) {
+	clients := []clientInfo{{Name: "home", Domains: []string{"localhost"}}}
+	got, ok := routeLocalhostToCurrent(clients, "missing")
+	if ok {
+		t.Fatal("expected unknown current client to be rejected")
+	}
+	if !reflect.DeepEqual(got, clients) {
+		t.Fatalf("unknown selection changed routes: %#v", got)
+	}
+}
+
 func TestNginxDefaultServerIsTenantIndependent(t *testing.T) {
 	block := nginxDefaultServerBlock()
 	for _, expected := range []string{"listen 80 default_server", "location = /healthz", `return 200 "ok\n"`, "location /", "return 444"} {
@@ -101,7 +130,7 @@ func TestGenerateNginxConfigKeepsTenantRoutingIsolated(t *testing.T) {
 
 	for name, env := range map[string]string{
 		"writer": "CLIENT_NAME=writer\r\nPORT=1080\r\nDOMAINS=thewriterco.com\r\n",
-		"skaia":  "CLIENT_NAME=skaia\nPORT=1081\nDOMAINS=skaiacraft.com\n",
+		"skaia":  "CLIENT_NAME=skaia\nPORT=1081\nDOMAINS=skaiacraft.com localhost\n",
 	} {
 		dir := filepath.Join(root, "backends", name)
 		if err := os.MkdirAll(dir, 0755); err != nil {
@@ -110,6 +139,9 @@ func TestGenerateNginxConfigKeepsTenantRoutingIsolated(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(dir, ".env"), []byte(env), 0600); err != nil {
 			t.Fatal(err)
 		}
+	}
+	if err := os.WriteFile(filepath.Join(root, currentClientFileName), []byte("writer\n"), 0600); err != nil {
+		t.Fatal(err)
 	}
 	indexDir := filepath.Join(root, "frontend", "dist")
 	if err := os.MkdirAll(indexDir, 0755); err != nil {
@@ -134,6 +166,7 @@ func TestGenerateNginxConfigKeepsTenantRoutingIsolated(t *testing.T) {
 		`"~^site[0-9]+\\.thewriterco\\.com$" "writer-backend";`,
 		`"skaiacraft.com" "skaia-backend";`,
 		`"~^site[0-9]+\\.skaiacraft\\.com$" "skaia-backend";`,
+		`"localhost" "writer-backend";`,
 		nginxUnknownBackendMap,
 		"listen 80 default_server",
 		"location = /healthz",
@@ -146,5 +179,8 @@ func TestGenerateNginxConfigKeepsTenantRoutingIsolated(t *testing.T) {
 	if strings.Contains(config, "default                 writer-backend") ||
 		strings.Contains(config, "default                 skaia-backend") {
 		t.Fatalf("unknown host still falls through to a tenant:\n%s", config)
+	}
+	if strings.Contains(config, `"localhost" "skaia-backend";`) {
+		t.Fatalf("localhost still routes to the previously configured client:\n%s", config)
 	}
 }

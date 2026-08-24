@@ -151,6 +151,12 @@ func enabledClients() []clientInfo {
 		}
 		clients = append(clients, clientInfo{Name: name, Port: port, Domains: domains})
 	}
+	current := readCurrentClient()
+	if routed, ok := routeLocalhostToCurrent(clients, current); ok {
+		clients = routed
+	} else {
+		warn("Current client '%s' is not enabled; preserving configured localhost routing", current)
+	}
 	return clients
 }
 

@@ -7,6 +7,7 @@ const usageText = `grengo - Multi-tenant management CLI for Skaia
 Commands:
   new [<name>] [--domain <d>]… [--port <p>] Create a new client (interactive)
   list                                       List all clients
+  set-current <name>                         Route http://localhost to one enabled client
   enable <name>                              Enable a client
   disable <name>                             Disable a client
   start [<name>]                             Start all node services (or a specific client)
@@ -52,6 +53,7 @@ Examples:
   grengo compose up
   grengo compose up --build --force-recreate
   grengo livekit
+  grengo set-current skaiacraft
   grengo disable writers
   grengo start
   grengo stop
