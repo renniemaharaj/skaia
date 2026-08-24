@@ -1,4 +1,4 @@
-import { ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { Link2, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import type { ProfileUser } from "../types";
 import { useProfileEdit } from "../useProfileEdit";
 import "../UserProfile.css";
@@ -93,6 +93,17 @@ export default function ProfileSettings({
       active: false,
       to: `${basePath}/security`,
     },
+    ...(isOwnProfile
+      ? [
+          {
+            id: "identities",
+            label: "Linked identities",
+            icon: <Link2 size={15} />,
+            active: false,
+            to: `${basePath}/identities`,
+          },
+        ]
+      : []),
   ];
 
   return (

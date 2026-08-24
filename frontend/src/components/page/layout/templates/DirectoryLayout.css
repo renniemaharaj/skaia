@@ -1,5 +1,7 @@
 .directory-layout {
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
   margin: 0 auto;
   padding: 40px 0;
   --directory-content-max-width: 1400px;
@@ -12,6 +14,8 @@
   justify-content: space-between;
   gap: 1rem;
   max-width: var(--directory-content-max-width);
+  width: 100%;
+  box-sizing: border-box;
   margin: 0 auto 18px;
   padding: 0 var(--directory-inline-padding);
 }
@@ -45,6 +49,8 @@
 
 .directory-layout__toolbar-container {
   max-width: var(--directory-content-max-width);
+  width: 100%;
+  box-sizing: border-box;
   margin: 0 auto 24px;
   padding: 0 var(--directory-inline-padding);
 }
@@ -120,6 +126,9 @@
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 24px;
   max-width: var(--directory-content-max-width);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: 0 var(--directory-inline-padding);
 }
@@ -127,6 +136,8 @@
 .directory-layout__list {
   width: 100%;
   max-width: var(--directory-content-max-width);
+  min-width: 0;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: 0 var(--directory-inline-padding);
 }
@@ -143,6 +154,8 @@
 
 .directory-layout__empty-container {
   max-width: var(--directory-content-max-width);
+  width: 100%;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: 0 var(--directory-inline-padding);
 }

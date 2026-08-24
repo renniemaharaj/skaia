@@ -28,6 +28,7 @@ var (
 	imageSrcRx           = regexp.MustCompile(`(?i)<img[^>]+src=["']([^"']+)["']`)
 	youtubeRx            = regexp.MustCompile(`(?i)(?:youtube\.com/(?:watch\?v=|embed/|shorts/)|youtu\.be/)([A-Za-z0-9_-]{6,})`)
 	categoryRouteRx      = regexp.MustCompile(`^/threads/categories/\d+$`)
+	communityRouteRx     = regexp.MustCompile(`^/community(?:/(?:proposal|showcase|event)(?:/\d+)?)?$`)
 	kjvRouteRx           = regexp.MustCompile(`^/kjv/[^/]+/\d+/\d+/(?:open|closed)$`)
 	privateRoutePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`^/edit-thread/\d+$`),
@@ -38,6 +39,7 @@ var (
 		regexp.MustCompile(`^/datasources/\d+$`),
 		regexp.MustCompile(`^/tmp/[^/]+$`),
 		regexp.MustCompile(`^/settings(?:/.*)?$`),
+		regexp.MustCompile(`^/form/user/[^/]+/(?:profile|security|identities)$`),
 	}
 )
 
@@ -586,7 +588,10 @@ func routeIsPublicShell(path string) bool {
 		return istatus.PublicEnabled()
 	}
 	switch path {
-	case "/", "/store", "/forum", "/forum/docs", "/doc", "/kjv", "/pages", "/visualizer":
+	case "/", "/store", "/forum", "/forum/docs", "/doc", "/kjv", "/pages", "/visualizer", "/leaderboards":
+		return true
+	}
+	if communityRouteRx.MatchString(path) {
 		return true
 	}
 	if forumDocumentationCategoryRx.MatchString(path) {
@@ -603,7 +608,8 @@ func routeNoIndex(path string) bool {
 	case "/new-thread", "/forum/new-category", "/store/new-product", "/doc/new",
 		"/store/new-category", "/cart", "/store/orders", "/inbox", "/deployments",
 		"/datasources", "/activity", "/trash", "/flow", "/stream", "/clipmaker",
-		"/login", "/register", "/verify-email", "/forgot-password", "/reset-password":
+		"/login", "/register", "/verify-email", "/forgot-password", "/reset-password",
+		"/rewards", "/admin/rewards", "/admin/status":
 		return true
 	}
 	for _, pattern := range privateRoutePatterns {

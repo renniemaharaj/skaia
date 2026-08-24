@@ -6,6 +6,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/jaypipes/ghw v0.24.0
 	github.com/shirou/gopsutil/v3 v3.24.5
+	github.com/skaia/features v0.0.0
 	github.com/skaia/grpc v0.0.0
 	google.golang.org/grpc v1.81.1
 )
@@ -29,3 +30,5 @@ require (
 )
 
 replace github.com/skaia/grpc => ./backend/pkg/grpc
+
+replace github.com/skaia/features => ./backend/pkg/features

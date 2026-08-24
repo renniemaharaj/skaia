@@ -1,0 +1,70 @@
+.rewards-page {
+  display: grid;
+  gap: var(--app-section-gap);
+}
+.rewards-page .directory-layout {
+  --directory-content-max-width: 87.5rem;
+  --directory-inline-padding: 0;
+  padding: 0;
+}
+.reward-card,
+.rewards-history {
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background: var(--card-bg);
+  padding: var(--card-padding);
+}
+.reward-card {
+  min-height: 10rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: .75rem;
+}
+.reward-card h2,
+.rewards-history h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+.reward-card p,
+.rewards-history p {
+  color: var(--text-secondary);
+}
+.reward-card footer,
+.rewards-message,
+.rewards-history li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+.rewards-history ul {
+  list-style: none;
+  margin: .75rem 0 0;
+  padding: 0;
+}
+.rewards-history li {
+  padding: .65rem 0;
+  border-top: 1px solid var(--border-color);
+}
+.rewards-message {
+  padding: .75rem;
+  border-radius: var(--radius-sm);
+}
+.rewards-message--error {
+  color: var(--error-color);
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+}
+@media (max-width: 600px) {
+  .reward-card footer,
+  .rewards-message {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .reward-card footer button,
+  .rewards-message button {
+    width: 100%;
+  }
+}

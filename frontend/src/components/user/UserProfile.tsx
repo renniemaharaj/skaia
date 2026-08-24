@@ -13,6 +13,7 @@ import { useUserData } from "./useUserData";
 import SuspendDialog from "./SuspendDialog";
 import UserManagePanel from "./UserManagePanel";
 import UserProfileCard from "./UserProfileCard";
+import PublicExternalIdentities from "./PublicExternalIdentities";
 import UserThreadsFeed from "./UserThreadsFeed";
 import UserUploads from "./UserUploads";
 
@@ -167,6 +168,8 @@ const UserProfile: React.FC<UserProfileProps> = ({
         onUnsuspend={handleUnsuspend}
         onResetPassword={handleResetPassword}
       />
+
+      <PublicExternalIdentities userId={String(user.id)} />
 
       {handlePermissions ? handlePermissions(permissionPanel) : canManage ? permissionPanel : null}
 

@@ -1,14 +1,4 @@
-import { useSetAtom } from "jotai";
-import { useEffect } from "react";
-import { layoutModeAtom } from "../../atoms/layoutMode";
-
 export default function VisualizerPage() {
-  const setLayoutMode = useSetAtom(layoutModeAtom);
-
-  useEffect(() => {
-    setLayoutMode("application");
-  }, [setLayoutMode]);
-
   return (
     <style>{`
       .layout-main, .app, #root {

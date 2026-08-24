@@ -1,0 +1,54 @@
+.leaderboards-page {
+  display: grid;
+  gap: var(--app-section-gap);
+}
+.leaderboards-page .directory-layout {
+  --directory-content-max-width: 87.5rem;
+  --directory-inline-padding: 0;
+  padding: 0;
+}
+.leaderboard-filters {
+  display: flex;
+  gap: .5rem;
+}
+.leaderboard-filters label {
+  display: grid;
+  gap: .2rem;
+  color: var(--text-secondary);
+  font-size: .75rem;
+}
+.leaderboard-filters select {
+  min-height: 2.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-color);
+  color: var(--text-primary);
+  padding: 0 .5rem;
+}
+.leaderboard-card {
+  display: grid;
+  grid-template-columns: 4rem 1fr auto;
+  gap: .75rem;
+  padding: var(--card-padding);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+}
+.leaderboard-error {
+  color: var(--error-color);
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  padding: .75rem;
+  border-radius: var(--radius-sm);
+}
+@media (max-width: 600px) {
+  .leaderboard-filters {
+    width: 100%;
+    flex-direction: column;
+  }
+  .leaderboard-card {
+    grid-template-columns: 3rem 1fr;
+  }
+  .leaderboard-card b {
+    grid-column: 2;
+  }
+}

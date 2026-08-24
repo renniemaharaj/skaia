@@ -2,13 +2,18 @@ import { useAtomValue } from "jotai";
 import {
   Activity,
   AppWindow,
+  CalendarDays,
   Bell,
   BookOpen,
   ChevronDown,
   ChevronLeft,
   FileText,
+  Gift,
   Globe2,
   Home,
+  Images,
+  Link2,
+  Lightbulb,
   LayoutGrid,
   Moon,
   Search,
@@ -16,6 +21,7 @@ import {
   ShoppingCart,
   SlidersHorizontal,
   Store,
+  Trophy,
   Sun,
   Users,
   Volume,
@@ -110,22 +116,20 @@ export function Drawer({
     ...(storeEnabled ? [{ id: "cart", label: "Cart" }] : []),
     { id: "sound", label: "Sound" },
     ...(isAuthenticated ? [{ id: "alerts", label: "Alerts" }] : []),
-    ...(isAuthenticated && inboxEnabled
-      ? [{ id: "messages", label: "Messages" }]
-      : []),
+    ...(isAuthenticated && inboxEnabled ? [{ id: "messages", label: "Messages" }] : []),
     ...(isAuthenticated && user ? [{ id: "settings", label: "Settings" }] : []),
   ];
   const allApps: DrawerAppOption[] = [
-    ...navigationItems.map((item) => ({
+    ...navigationItems.map(item => ({
       id: navigationAppId(item),
       label: item.label,
     })),
     ...availableTools,
   ];
   const filteredNavigationItems = navigationItems.filter(
-    (item) =>
+    item =>
       !hiddenApps.has(navigationAppId(item)) &&
-      item.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
+      item.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
   );
   const drawerStyle = {
     "--drawer-columns": columns,
@@ -133,19 +137,17 @@ export function Drawer({
   } as CSSProperties;
 
   const cancelClose = () => window.clearTimeout(closeTimer.current);
-  const focusApp = (
-    direction: "next" | "previous" | "vertical-forward" | "vertical-back",
-  ) => {
+  const focusApp = (direction: "next" | "previous" | "vertical-forward" | "vertical-back") => {
     window.requestAnimationFrame(() => {
       const workspaceItems = Array.from(
         drawerRef.current?.querySelectorAll<HTMLElement>(
-          ".drawer-workspaces .utility-launcher__item",
-        ) ?? [],
+          ".drawer-workspaces .utility-launcher__item"
+        ) ?? []
       );
       const toolItems = Array.from(
         drawerRef.current?.querySelectorAll<HTMLElement>(
-          ".drawer-tools .utility-launcher__item, .drawer-tools .utility-launcher__embedded > a",
-        ) ?? [],
+          ".drawer-tools .utility-launcher__item, .drawer-tools .utility-launcher__embedded > a"
+        ) ?? []
       );
       const items = [...workspaceItems, ...toolItems];
       if (items.length === 0) return;
@@ -172,8 +174,7 @@ export function Drawer({
       }
 
       const delta = direction === "next" ? 1 : -1;
-      const currentIndex =
-        activeIndex >= 0 ? activeIndex : keyboardIndex.current;
+      const currentIndex = activeIndex >= 0 ? activeIndex : keyboardIndex.current;
       const nextIndex =
         currentIndex < 0
           ? delta > 0
@@ -192,10 +193,7 @@ export function Drawer({
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
-      if (
-        drawerRef.current &&
-        !drawerRef.current.contains(event.target as Node)
-      ) {
+      if (drawerRef.current && !drawerRef.current.contains(event.target as Node)) {
         setOpen(false);
         setPinned(false);
         setView("root");
@@ -229,9 +227,7 @@ export function Drawer({
         return;
       }
       const target = event.target as HTMLElement | null;
-      const isTextControl = target?.matches(
-        "input, textarea, select, [contenteditable='true']",
-      );
+      const isTextControl = target?.matches("input, textarea, select, [contenteditable='true']");
       if (open && view === "root" && arrowDelta !== 0 && !isTextControl) {
         event.preventDefault();
         if (arrowDirection) focusApp(arrowDirection);
@@ -321,19 +317,11 @@ export function Drawer({
       >
         {view !== "root" && (
           <div className="drawer-detail-header">
-            <button
-              type="button"
-              onClick={() => setView("root")}
-              aria-label="Back to drawer"
-            >
+            <button type="button" onClick={() => setView("root")} aria-label="Back to drawer">
               <ChevronLeft size={18} />
             </button>
             <span>
-              {view === "customize"
-                ? "Customize drawer"
-                : view === "sound"
-                  ? "Sound"
-                  : "Alerts"}
+              {view === "customize" ? "Customize drawer" : view === "sound" ? "Sound" : "Alerts"}
             </span>
           </div>
         )}
@@ -346,7 +334,7 @@ export function Drawer({
                 value={query}
                 placeholder="Search features"
                 aria-label="Search drawer"
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={event => setQuery(event.target.value)}
               />
             </label>
             {canCustomize && (
@@ -379,10 +367,9 @@ export function Drawer({
                   { value: "slide", label: "Slide" },
                   { value: "fade", label: "Fade" },
                 ]}
-                onChange={(event) =>
+                onChange={event =>
                   onSaveBranding({
-                    drawer_animation: event.target
-                      .value as Branding["drawer_animation"],
+                    drawer_animation: event.target.value as Branding["drawer_animation"],
                   })
                 }
               />
@@ -396,11 +383,9 @@ export function Drawer({
                   { value: "40", label: "Comfortable" },
                   { value: "48", label: "Large" },
                 ]}
-                onChange={(event) =>
+                onChange={event =>
                   onSaveBranding({
-                    drawer_icon_size: Number(
-                      event.target.value,
-                    ) as Branding["drawer_icon_size"],
+                    drawer_icon_size: Number(event.target.value) as Branding["drawer_icon_size"],
                   })
                 }
               />
@@ -414,11 +399,9 @@ export function Drawer({
                   { value: "4", label: "4 columns" },
                   { value: "5", label: "5 columns" },
                 ]}
-                onChange={(event) =>
+                onChange={event =>
                   onSaveBranding({
-                    drawer_columns: Number(
-                      event.target.value,
-                    ) as Branding["drawer_columns"],
+                    drawer_columns: Number(event.target.value) as Branding["drawer_columns"],
                   })
                 }
               />
@@ -431,7 +414,7 @@ export function Drawer({
                   { value: "show", label: "Show labels" },
                   { value: "hide", label: "Hide labels" },
                 ]}
-                onChange={(event) =>
+                onChange={event =>
                   onSaveBranding({
                     drawer_show_labels: event.target.value === "show",
                   })
@@ -441,14 +424,12 @@ export function Drawer({
             <fieldset className="drawer-visibility">
               <legend>Visible apps</legend>
               <div>
-                {allApps.map((app) => (
+                {allApps.map(app => (
                   <label key={app.id}>
                     <input
                       type="checkbox"
                       checked={!hiddenApps.has(app.id)}
-                      onChange={(event) =>
-                        setAppVisible(app.id, event.target.checked)
-                      }
+                      onChange={event => setAppVisible(app.id, event.target.checked)}
                     />
                     <span>{app.label}</span>
                   </label>
@@ -463,7 +444,7 @@ export function Drawer({
           <>
             <div className="drawer-section-title">Workspaces</div>
             <div className="utility-launcher__grid drawer-workspaces">
-              {filteredNavigationItems.map((item) => (
+              {filteredNavigationItems.map(item => (
                 <Link
                   key={item.to}
                   to={item.to}
@@ -471,8 +452,7 @@ export function Drawer({
                   title={item.label}
                   className={`utility-launcher__item${
                     drawerLocation.pathname === item.to ||
-                    (item.to !== "/" &&
-                      drawerLocation.pathname.startsWith(`${item.to}/`))
+                    (item.to !== "/" && drawerLocation.pathname.startsWith(`${item.to}/`))
                       ? " active"
                       : ""
                   }`}
@@ -487,9 +467,7 @@ export function Drawer({
             </div>
           </>
         )}
-        {view === "root" && !query && (
-          <div className="drawer-section-title">Tools</div>
-        )}
+        {view === "root" && !query && <div className="drawer-section-title">Tools</div>}
         {view === "root" && (
           <div
             className={`utility-launcher__grid drawer-tools${query ? " drawer-tools--hidden" : ""}`}
@@ -521,9 +499,7 @@ export function Drawer({
                     : "Switch to Application Mode"
                 }
                 aria-label={
-                  layoutMode === "application"
-                    ? "Switch to web mode"
-                    : "Switch to app mode"
+                  layoutMode === "application" ? "Switch to web mode" : "Switch to app mode"
                 }
                 onClick={() => {
                   onToggleLayoutMode();
@@ -549,9 +525,7 @@ export function Drawer({
               >
                 <span className="utility-launcher__icon utility-launcher__icon--amber">
                   <ShoppingCart />
-                  {cartCount > 0 && (
-                    <span className="cart-count">{cartCount}</span>
-                  )}
+                  {cartCount > 0 && <span className="cart-count">{cartCount}</span>}
                 </span>
                 {label("Cart")}
               </button>
@@ -596,11 +570,7 @@ export function Drawer({
               </button>
             )}
             {isAuthenticated && inboxEnabled && !hiddenApps.has("messages") && (
-              <div
-                className="utility-launcher__embedded"
-                role="none"
-                title="Messages"
-              >
+              <div className="utility-launcher__embedded" role="none" title="Messages">
                 <InboxMail />
                 {label("Messages")}
               </div>
@@ -633,6 +603,14 @@ function DrawerIcon({ name }: { name: string }) {
   if (name === "docs" || name === "bible") return <BookOpen />;
   if (name === "pages") return <FileText />;
   if (name === "activity") return <Activity />;
+  if (name === "community") return <Globe2 />;
+  if (name === "rankings") return <Trophy />;
+  if (name === "rewards") return <Gift />;
+  if (name === "proposals") return <Lightbulb />;
+  if (name === "showcases") return <Images />;
+  if (name === "events") return <CalendarDays />;
+  if (name === "identities") return <Link2 />;
+  if (name === "status") return <Activity />;
   return <AppWindow />;
 }
 
@@ -677,7 +655,7 @@ function SoundPanel() {
           step={0.01}
           value={volume}
           aria-label="Sound volume"
-          onChange={(event) => {
+          onChange={event => {
             const nextVolume = Number.parseFloat(event.target.value);
             setVolume(nextVolume);
             setSoundVolume(nextVolume);

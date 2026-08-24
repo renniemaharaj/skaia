@@ -1,0 +1,33 @@
+# Module and Submodule Shell Consolidation
+
+## Context
+Conventional child routes can override outer width, padding, or global layout mode, causing their back links and content to drift from the Store Orders reference layout.
+
+## Goal
+- Give conventional module-depth routes one stable outer navigation rail and one inset content rail.
+- Keep route chrome ownership centralized and make module adapters reusable across child routes.
+- Record route-family shell ownership so specialized canvases, documents, and side-navigation pages remain intentional.
+
+## Non-Goals
+- Redesign immersive editors, document readers, or page-builder canvases.
+- Change backend domain behavior.
+
+## Steps
+1. Inventory registered routes and classify their shell owner.
+2. Consolidate Store child routes on `ModulePageShell` through `StorePageShell`.
+3. Remove routed-component layout-mode mutations and centralize pathname policy.
+4. Align side-navigation shell rails and document the route-family contract.
+5. Add focused tests and run frontend policy, test, lint, and build checks.
+
+## Verification
+- Focused shell and route-policy tests.
+- Frontend test suite, lint, build, and policy checks.
+- Correctness scan for remaining routed-component layout-mode mutations and shell geometry overrides.
+
+## References
+- `.specs/frontend_spec`
+- `.routines/worker`
+- `.routines/auditor`
+- `.routines/correctness`
+- `frontend/src/pages/routes.tsx`
+- `frontend/src/components/layout/ModulePageShell.tsx`

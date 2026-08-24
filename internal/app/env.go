@@ -40,7 +40,7 @@ var envDefaults = []envDefaultEntry{
 	// Frontend SSR
 	{"INDEX_FILE_PATH", "/app/frontend/dist/index.html", "Frontend SSR", false, nil},
 	// Features
-	{"FEATURES_ENABLED", "landing,store,forum,docs,cart,users,inbox,presence", "Features", false, nil},
+	{"FEATURES_ENABLED", allFeaturesCSV(), "Features", false, nil},
 	// Payments
 	{"PAYMENT_PROVIDER", "demo", "Payments", false, nil},
 	{"STRIPE_SECRET_KEY", "", "", false, nil},

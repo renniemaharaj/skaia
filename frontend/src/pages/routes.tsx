@@ -100,8 +100,16 @@ const DocumentationGuideEditorPage = lazy(
   () => import("./documentation/DocumentationGuideEditorPage.tsx")
 );
 const StatusPage = lazy(() => import("./status/StatusPage.tsx"));
+const RewardsPage = lazy(() => import("./rewards/RewardsPage.tsx"));
+const LeaderboardsPage = lazy(() => import("./leaderboards/LeaderboardsPage.tsx"));
+const CommunityDirectoryPage = lazy(() => import("./community/CommunityDirectoryPage.tsx"));
+const CommunityHubPage = lazy(() => import("./community/CommunityHubPage.tsx"));
+const CommunityDetailPage = lazy(() => import("./community/CommunityDetailPage.tsx"));
+const CommunityFormPage = lazy(() => import("./community/CommunityFormPage.tsx"));
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
+  { path: "form/community/:kind/new", element: <CommunityFormPage />, conditional: "community" },
+  { path: "form/community/:kind/:id/edit", element: <CommunityFormPage />, conditional: "community" },
   { path: "form/page/:slug/manage", element: <PageManageFormPage /> },
   { path: "form/user/:userId/*", element: <SettingsPage /> },
   { path: "form/user/*", element: <SettingsPage /> },
@@ -189,6 +197,8 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "admin/meta/*", element: <AdminMetaSettings /> },
   { path: "admin/roles", element: <RolesManagementPage /> },
   { path: "admin/status", element: <StatusPage operator />, conditional: "status" },
+  { path: "admin/rewards", element: <RewardsPage operator />, conditional: "rewards" },
+  { path: "rewards", element: <RewardsPage />, conditional: "rewards" },
   { path: "deployments", element: <DeploymentsPage /> },
   { path: "datasources", element: <DataSourcesPage /> },
   { path: "datasources/:id", element: <DataSourceEditorPage /> },
@@ -204,6 +214,10 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
 
 /** Routes accessible to both guests and authenticated users. */
 export const guestRoutes: (CustomRoute | IndexRoute)[] = [
+  { path: "community", element: <CommunityHubPage />, conditional: "community" },
+  { path: "community/:kind", element: <CommunityDirectoryPage />, conditional: "community" },
+  { path: "community/:kind/:id", element: <CommunityDetailPage />, conditional: "community" },
+  { path: "leaderboards", element: <LeaderboardsPage />, conditional: "rankings" },
   { path: "forum/docs", element: <ForumDocumentationPage />, conditional: "forum" },
   { path: "forum/docs/:categoryId", element: <ForumDocumentationPage />, conditional: "forum" },
   {

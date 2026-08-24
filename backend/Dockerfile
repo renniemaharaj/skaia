@@ -33,6 +33,7 @@ COPY go.mod go.sum* ./
 COPY pkg/conveyor/ ./pkg/conveyor/
 COPY pkg/grouplogs/ ./pkg/grouplogs/
 COPY pkg/grpc/ ./pkg/grpc/
+COPY pkg/features/ ./pkg/features/
 
 RUN go mod download
 

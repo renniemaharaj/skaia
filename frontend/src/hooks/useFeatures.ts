@@ -12,6 +12,10 @@ const defaultFeatures = {
   users: true,
   inbox: true,
   presence: true,
+  rewards: false,
+  rankings: false,
+  community: false,
+  status: false,
 };
 
 export function useFeatures() {
@@ -40,6 +44,10 @@ export function useFeatures() {
           users: false,
           inbox: false,
           presence: false,
+          rewards: false,
+          rankings: false,
+          community: false,
+          status: false,
         };
 
         Object.keys(mergedFeatures).forEach(name => {

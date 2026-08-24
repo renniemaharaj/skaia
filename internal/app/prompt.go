@@ -82,11 +82,15 @@ func promptChoice(label, defaultVal string, options []string) string {
 
 // confirmPrompt asks the user to type a specific string to confirm.
 func confirmPrompt(expected string) bool {
+	return confirmPromptWithLabel("Type the client name to confirm: ", expected)
+}
+
+func confirmPromptWithLabel(label, expected string) bool {
 	if nonInteractive() {
 		return true
 	}
 	initScanner()
-	fmt.Print("Type the client name to confirm: ")
+	fmt.Print(label)
 	scanner.Scan()
 	return strings.TrimSpace(scanner.Text()) == expected
 }

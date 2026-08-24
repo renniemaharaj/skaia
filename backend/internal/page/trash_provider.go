@@ -104,6 +104,16 @@ func (p *trashProvider) Restore(ctx context.Context, actorID int64, includeManag
 		if err != nil {
 			return err
 		}
+		if p.resource == "page" {
+			if _, err := exec.ExecContext(ctx, `WITH changed AS (
+			    UPDATE community_publications SET deleted_at=NULL,deleted_by=NULL,updated_at=NOW()
+			    WHERE page_id=$1 AND deleted_at IS NOT NULL RETURNING id
+			 )
+			 INSERT INTO resource_lifecycle_events(actor_id,resource_type,resource_id,action)
+			 SELECT $2,'community_publication',id::text,'restore' FROM changed`, id, actorID); err != nil {
+				return err
+			}
+		}
 		if ownerID.Valid {
 			if _, err := exec.ExecContext(ctx, `UPDATE user_page_allocations SET used_pages=(SELECT COUNT(*) FROM pages
 			 WHERE owner_id=$1 AND deleted_at IS NULL),updated_at=NOW() WHERE user_id=$1 AND deleted_at IS NULL`, ownerID.Int64); err != nil {

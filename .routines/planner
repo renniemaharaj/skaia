@@ -107,9 +107,51 @@ operational policies.
 
 ## Last Ran
 
-- 2026-08-23
+- 2026-08-24
 
 ## Last Run Remarks
+
+- Recorded the destructive node-wipe contract: exact confirmation, bounded
+  targets, best-effort service shutdown, ownership-aware deletion, exhaustive
+  attempts, and verified failure whenever client or shared data remains.
+
+- Recorded the shared tenant-feature registry contract: grengo new/update and
+  backend feature projection now consume one ordered source, preventing newly
+  added modules from being omitted by stale CLI literals.
+
+- Extended and completed `community_publication_custom_pages` with required,
+  unique author-owned forum discussions. Backend, frontend, migration, route,
+  page-document, and security contracts now agree that discussion remains in the
+  forum domain and callers cannot substitute unrelated threads.
+
+- Extended and completed the second community polish phases covering typography,
+  compact route controls, external-domain interactive bindings, embedded page
+  participation, and proposal/event mutation race hardening. Durable frontend,
+  backend, custom-page, and security contracts now match implementation.
+
+- Extended and completed `community_publication_custom_pages` with migration 046,
+  owner/granular control contracts, capability-driven frontend actions, linked-
+  page invalidation, and shared comfortable-shell centering; backend, frontend,
+  security, migration, and route specs now reflect the implemented authority.
+
+- Created and completed `community_publication_custom_pages` after the community
+  follow-up exposed a duplicate pseudo-page body. Migration 045 and the durable
+  contracts now make `pages.content`, ownership, routes, sanitization, and
+  lifecycle authoritative without replacing the community workflow submodule.
+
+- Reconciled and retired `community_hub_and_app_discovery` after its drawer,
+  onboarding hub, feature/auth/permission filtering, responsive UI, tests, and
+  frontend contract were verified. Durable behavior remains in the frontend
+  spec and worker/auditor/correctness records.
+
+- Reconciled and retired the seven-member `platform_gap_execution_sequence`
+  after all stages and the cross-gap audit completed. Durable commerce,
+  readiness, identity, rewards, rankings, and community contracts remain in
+  specs, migrations, implementation, tests, and routine verification history.
+
+- Reconciled the completed linked-identity domain into backend, frontend,
+  security, and migration specs. Stage 3 is complete and the sequence now
+  advances to external-event rewards without duplicating identity authority.
 
 - Reconciled production-readiness implementation into a new compact operations
   card plus backend, frontend, migration, security, and infrastructure specs.

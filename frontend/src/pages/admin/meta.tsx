@@ -1,21 +1,16 @@
-import { useSetAtom } from "jotai";
-import { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { layoutModeAtom } from "../../atoms/layoutMode";
 import MetaControlPanel from "../../components/admin/MetaControlPanel";
+import { ModulePageShell } from "../../components/layout/ModulePageShell";
 import { useSiteConfig } from "../../hooks/useSiteConfig";
 
 export function AdminMetaSettings() {
   const { branding, seo } = useSiteConfig();
-  const setLayoutMode = useSetAtom(layoutModeAtom);
-
-  useEffect(() => {
-    setLayoutMode("application");
-    return () => setLayoutMode("web");
-  }, [setLayoutMode]);
-
   if (!branding || !seo) {
-    return <div className="managed-form modal">Loading settings...</div>;
+    return (
+      <ModulePageShell backTo="/" backLabel="Exit Settings" width="comfortable">
+        <div className="managed-form modal">Loading settings...</div>
+      </ModulePageShell>
+    );
   }
 
   const initialConfig = {
@@ -27,7 +22,7 @@ export function AdminMetaSettings() {
   };
 
   return (
-    <>
+    <ModulePageShell backTo="/" backLabel="Exit Settings" width="comfortable">
       <Routes>
         <Route
           path="seo"
@@ -51,6 +46,6 @@ export function AdminMetaSettings() {
         />
         <Route path="*" element={<Navigate to="seo" replace />} />
       </Routes>
-    </>
+    </ModulePageShell>
   );
 }

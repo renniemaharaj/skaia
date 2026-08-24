@@ -130,11 +130,8 @@ func cmdNew(args []string) {
 	paymentProvider := promptChoice("Payment provider", "demo", []string{"demo", "stripe"})
 
 	// Feature toggles
-	allFeatures := []string{"landing", "store", "forum", "docs", "cart", "users", "inbox", "presence"}
-	defaultFeatures := strings.Join(allFeatures, ",")
-	featurePrompt := fmt.Sprintf("Enabled features (comma-separated) - available: %s", strings.Join(allFeatures, ","))
-	features := prompt(featurePrompt, defaultFeatures, false)
-	features = normalizeFeatures(features, allFeatures)
+	features := prompt(featurePromptLabel(), allFeaturesCSV(), false)
+	features = normalizeFeatures(features, supportedFeatures())
 
 	var stripeKey, stripeWebhook string
 	if paymentProvider == "stripe" {

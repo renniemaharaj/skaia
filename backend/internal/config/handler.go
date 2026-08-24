@@ -14,11 +14,12 @@ import (
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/internal/ws"
 	"github.com/skaia/backend/models"
+	"github.com/skaia/features"
 )
 
 // feature spec: list keys of modules that can be toggled via env
-var defaultFeatureSet = []string{"landing", "store", "forum", "docs", "cart", "users", "inbox", "presence"}
-var optionalFeatureSet = []string{"status"}
+var defaultFeatureSet = features.DefaultNames()
+var optionalFeatureSet = features.OptionalNames()
 
 func getFeaturesStatus() map[string]bool {
 	raw := os.Getenv("FEATURES_ENABLED")

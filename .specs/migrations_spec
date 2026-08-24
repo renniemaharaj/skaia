@@ -39,6 +39,10 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 - `store_order_fulfilments` is the commit-coupled delivery queue. Status,
   attempts, availability, lease ownership/expiry, error, and delivery timestamps
   are durable; unique order-item/action positions prevent duplicate effects.
+- External identity challenges persist only SHA-256 token/access-session
+  bindings. Active user/provider and provider/subject partial unique indexes
+  prevent duplicate ownership, while append-only link events retain lifecycle
+  evidence without storing provider credentials.
 
 ## Current Files
 
@@ -80,6 +84,13 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 | `038_wallet_operation_idempotency.sql` | Hashed wallet operation identity, replay uniqueness, and forward-enforced ledger constraints |
 | `039_store_checkout_fulfilment.sql` | Hashed checkout/provider-event replay evidence, payment uniqueness, and leased order fulfilments |
 | `040_service_status.sql` | Public incident state, transactional immutable incident audit history, and status indexes |
+| `041_external_identities.sql` | Provider-neutral definitions, session-bound verification challenges, privacy-controlled links, active uniqueness, and immutable lifecycle events |
+| `042_external_event_rewards.sql` | Hash-only provider replay, immutable grants/ledger, catalog/redemptions, and leased delivery |
+| `043_ranked_datasets.sql` | Dataset/season/entry persistence, producer idempotency, cursor indexes, and typed permissions |
+| `044_community_workflows.sql` | Publications plus proposal, showcase, event, attendance, lifecycle, and moderation records |
+| `045_community_custom_pages.sql` | Owned custom-page authority and guarded legacy community-body backfill |
+| `046_community_publication_permissions.sql` | Granular manage-others edit/delete permissions for community publications |
+| `047_community_publication_threads.sql` | Required unique author-owned publication discussions with guarded legacy-link backfill |
 
 Control-plane migration `002_soft_delete_lifecycle.sql` adds retained
 site/cluster deletion state, inactive API-key permissions, scrubbed passcodes,
@@ -111,6 +122,21 @@ and matching hard-delete protection in `grengo`.
   operator use requires an explicit reviewed grant and revocation.
 - Migration 040 and the fresh schema define `service_incidents` and
   `service_incident_events`; incident event hard deletion uses the shared guard.
+- Migration 041 and the fresh schema define external identity providers,
+  challenges, links, and events. The incremental migration installs the shared
+  hard-delete guard on append-only identity events.
+- Migrations 042-044 and the fresh schema define reward, ranking, and community
+  tables. Immutable event/ledger/ingestion/workflow evidence uses the shared
+  hard-delete guard; typed permissions seed idempotently for operators.
+- Migration 045 gives every community publication one unique owned `pages` row,
+  converts legacy rich text to a `rich_text` section when needed, fails closed on
+  slug/backfill conflicts, and retires the duplicate publication `body` column.
+- Migration 046 adds `community.publication-edit` and
+  `community.publication-delete` independently of workflow-level
+  `community.manage`; admin and superuser receive all three by default.
+- Migration 047 retains unique active owner-matched legacy discussion links,
+  provisions owned replacements otherwise, constrains thread/publication owner
+  identity, and makes the discussion reference required and unique.
 
 ## Verify
 

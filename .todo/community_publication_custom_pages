@@ -1,0 +1,71 @@
+# Community Publication Custom Pages
+
+## Context
+
+Proposal, showcase, and event bodies currently store a page-section JSON array in
+`community_publications.body`, but they are not real custom pages. Authors cannot
+open the regular custom-page route, use the natural page builder after creation,
+or manage the page through the standard ownership UI. Detail routes also constrain
+the document to the comfortable submodule measure.
+
+## Goal
+
+- Create one owned custom page transactionally for every community publication.
+- Create one author-owned forum thread in the same transaction and retain it as
+  the publication's required, unique discussion reference.
+- Make that page's `pages.content` document the only authored body authority.
+- Render the linked document at the full community module width while retaining
+  proposal/showcase/event workflow, media, schedule, and attendance UI around it.
+- Give authorized users direct View page and Manage page paths using the existing
+  `/page/:slug` builder and `/form/page/:slug/manage` routes.
+- Give every visible publication a View discussion path and give the thread owner
+  or a forum editor the existing `/edit-thread/:threadId` path.
+- Preserve visibility, lifecycle, migration parity, and existing publication data.
+- Match Skaia's owner-or-granular-permission control model for publication edit,
+  delete, workflow moderation, participation, and linked-page management.
+- Keep comfortable submodule forms centered within the shared shell on every
+  viewport without route-specific alignment overrides.
+
+## Non-Goals
+
+- Replacing community detail routes with redirects.
+- Copying workflow records into page content.
+- Building a second page editor or ownership system.
+
+## Steps
+
+1. Add a forward migration and fresh-schema parity for the publication-to-page
+   relationship, including deterministic backfill of existing bodies and owners.
+2. Create publication and custom-page rows atomically; project the linked page
+   identity/content through visibility-aware community reads.
+3. Render the linked document full-width inside community detail and expose the
+   canonical view/manage actions only where appropriate.
+4. Add backend/frontend regression coverage and reconcile durable specs.
+5. Add service-owned edit/delete capability projection, granular manage-others
+   permissions, authenticated controls, and centered comfortable-shell geometry.
+6. Reconcile community typography and compact actions with forum/page surfaces;
+   bind workflow voting, moderation, and attendance to the shared interactive
+   section renderer while retaining community tables as the sole domain state.
+7. Replace optional external discussion references with transactionally created,
+   author-owned threads; backfill safe existing ownership, couple lifecycle, and
+   expose canonical view/edit-thread actions.
+
+## Verification
+
+- Backend community and page tests, then `JWT_SECRET=test-secret go test ./...`.
+- Frontend focused community tests, full tests, lint, TypeScript, and build.
+- Migration ordering/parity, todo pairing, spec references, and `git diff --check`.
+
+## References
+
+- `.specs/backend_spec`
+- `.specs/frontend_spec`
+- `.specs/route_resolution_spec`
+- `.specs/security_architecture_spec`
+- `.specs/custom_page_section_compatibility_spec`
+- `.routines/worker`
+- `.routines/auditor`
+- `.routines/correctness`
+- `backend/internal/community/`
+- `backend/internal/page/`
+- `frontend/src/pages/community/`

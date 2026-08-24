@@ -48,7 +48,7 @@ backup integrity, routing safety, and explicit operator authority.
 - `.specs/infrastructure_spec`
 - `.specs/security_architecture_spec`
 - `.todo/grengo_cli_refactor`
-- `.todo/production_readiness_and_service_status`
+- `.specs/operations_readiness_spec`
 - `.routines/worker`
 - `.routines/auditor`
 - `main.go`

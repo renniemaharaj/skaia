@@ -1,6 +1,8 @@
 package app
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -114,23 +116,36 @@ func cmdComposeUp(follow bool, build bool, forceRecreate bool) {
 
 // cmdComposeDown stops all client backends and shared infrastructure.
 func cmdComposeDown() {
+	if err := composeDown(); err != nil {
+		die("Failed to stop all services: %v", err)
+	}
+	log("All services stopped")
+}
+
+func composeDown() error {
+	var failures []error
 	// Stop all client backends
-	entries, _ := os.ReadDir(backendsDir())
+	entries, err := os.ReadDir(backendsDir())
+	if err != nil && !os.IsNotExist(err) {
+		failures = append(failures, fmt.Errorf("read clients: %w", err))
+	}
 	for _, e := range entries {
 		if !e.IsDir() {
 			continue
 		}
 		cf := filepath.Join(backendsDir(), e.Name(), "compose.yml")
 		if _, err := os.Stat(cf); err == nil {
-			dockerComposeSilent(cf, "down")
+			if err := dockerComposeSilent(cf, "down"); err != nil {
+				failures = append(failures, fmt.Errorf("stop client %s: %w", e.Name(), err))
+			}
 		}
 	}
 
 	// Stop shared infra
 	if err := dockerCompose(composeFile(), "down"); err != nil {
-		die("Failed to stop shared infrastructure: %v", err)
+		failures = append(failures, fmt.Errorf("stop shared infrastructure: %w", err))
 	}
-	log("All services stopped")
+	return errors.Join(failures...)
 }
 
 func cmdGlobalStart() {

@@ -184,6 +184,20 @@ func (r *sqlRepository) Delete(id, actorID int64) error {
 		); err != nil {
 			return err
 		}
+		if _, err := exec.Exec(
+			`WITH changed AS (
+			    UPDATE community_publications
+			    SET deleted_at=COALESCE(deleted_at,NOW()),
+			        deleted_by=COALESCE(deleted_by,$2),updated_at=NOW()
+			    WHERE page_id=$1 AND deleted_at IS NULL
+			    RETURNING id
+			 )
+			 INSERT INTO resource_lifecycle_events(actor_id,resource_type,resource_id,action)
+			 SELECT $2,'community_publication',id::text,'delete' FROM changed`,
+			id, actorID,
+		); err != nil {
+			return err
+		}
 		_, err := exec.Exec(
 			`INSERT INTO resource_lifecycle_events(actor_id, resource_type, resource_id, action)
 			 VALUES ($1, 'page', $2, 'delete')`,

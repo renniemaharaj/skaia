@@ -15,6 +15,7 @@ require (
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/renniemaharaj/conveyor v0.0.0-20250821123734-2de0e1bcadc1
 	github.com/renniemaharaj/grouplogs v1.6.2
+	github.com/skaia/features v0.0.0
 	github.com/skaia/grpc v0.0.0
 	github.com/stretchr/testify v1.11.1
 	github.com/stripe/stripe-go/v82 v82.5.1
@@ -52,3 +53,5 @@ replace github.com/renniemaharaj/conveyor => ./pkg/conveyor
 replace github.com/renniemaharaj/grouplogs => ./pkg/grouplogs
 
 replace github.com/skaia/grpc => ./pkg/grpc
+
+replace github.com/skaia/features => ./pkg/features

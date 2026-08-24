@@ -14,7 +14,7 @@ auth, store, cache, WebSocket emission, uploads, SSR, or grengo proxy behavior.
 
 - Entry/router: `backend/main.go`
 - Models: `backend/models/*.go`
-- Domains: `backend/internal/{auth,user,forum,documentation,store,inbox,notification,config,page,datasource,customsection,events,upload,ws,ssr,grengo,bible}`
+- Domains: `backend/internal/{auth,user,externalidentity,forum,documentation,store,inbox,notification,config,page,datasource,customsection,events,upload,ws,ssr,grengo,bible}`
 - DB/Redis: `backend/database/db.go`
 - Migrations: `backend/internal/migrations/*.sql`
 
@@ -81,6 +81,7 @@ All application APIs are under `/api`; `/health`, `/ready`, `/sitemap.xml`, `/ws
 | `/api/auth` | `internal/authhandler` | public/login/refresh plus protected auth flows |
 | `/api/session` | `internal/session` | session/security helpers |
 | `/api/users` | `internal/user` | mix of protected profile, admin, role, permission routes |
+| `/api/external-identities` | `internal/externalidentity` | public provider/profile projections plus established-account link lifecycle |
 | `/api/forum` | `internal/forum` | forum categories, threads, comments, likes |
 | `/api/docs` | `internal/documentation` | visibility-aware documentation reads and owner/`docs.manage` writes |
 | `/api/store` | `internal/store` | catalog, cart, checkout, orders, wallet, reviews, subscriptions |
@@ -214,6 +215,17 @@ bibliographical certification.
   suspension/security state, permissions, and auth metadata.
 - The authenticated `/users/profile` route remains authoritative for the
   caller's complete account/profile state.
+- External identity providers are tenant-local, provider-neutral definitions.
+  Link challenges are ten-minute, single-use, user/provider/access-session
+  bound, and store only SHA-256 token/session bindings. Active provider subjects
+  are unique per provider and never appear in public profile projections.
+- `GET /api/external-identities/public/users/{userID}` returns only links the
+  user made public and the provider permits publicly. It exposes provider key,
+  provider label, display name, and verification time, not opaque subjects,
+  internal link IDs, challenge state, adapter keys, or credentials.
+- Link/reverify/unlink and visibility writes enforce established-account trust
+  in the service. Provider registration requires service-level `home.manage`;
+  unsupported or disabled adapters fail closed.
 
 ## Persistence Contracts
 
@@ -261,6 +273,43 @@ bibliographical certification.
 - Branding/SEO and route-resource mutations invalidate the versioned tenant SEO
   namespace. Legacy rendered `ssr:meta:` keys are removed by exact tenant prefix
   during handler startup. Live stream metadata is deliberately not cached.
+
+## Rewards, Rankings, and Community Workflows
+
+- `/rewards` is non-financial. Signed provider events resolve verified external
+  subjects, persist hash-only replay evidence, and atomically append one grant
+  and ledger credit. Redemptions use hashed idempotency, serialized immutable
+  debits, and reclaimable adapter leases with operator recovery.
+- `/rankings` owns typed datasets, seasons, subjects, metric direction, tie
+  rules, visibility, and producer idempotency. Closed seasons reject writes;
+  standings use indexed score/id cursors and omit external subject identifiers.
+- `/community` shares only publication discovery fields. Proposal decisions and
+  votes, showcase media/credits, and event schedules/capacity/attendance remain
+  explicit records. Services own visibility, transitions, capacity, deletion,
+  and Trash restoration.
+- Every community publication references one unique author-owned custom page.
+  Creation is transactional, `pages.content` is the sole authored body, detail
+  reads pass through the page service's caller-specific interactive sanitizer,
+  and page/publication deletion and restoration move together.
+- Every community publication also references one unique forum thread whose
+  `user_id` is the publication author. The repository creates the page, thread,
+  publication, workflow evidence, and kind record in one transaction; callers
+  cannot substitute an unrelated thread, and publication lifecycle carries both
+  owned resources.
+- Authors may edit/delete their own publications. The granular
+  `community.publication-edit` and `community.publication-delete` permissions
+  independently extend those actions to other users' private/draft records;
+  `community.manage` owns proposal transitions and managed event creation.
+  Community Trash manage-others/restore authority follows
+  `community.publication-delete`. `home.manage` affects the linked page only and
+  grants no community mutation.
+- Proposal voting is replaceable while a published proposal is `submitted` or
+  `under_review`; both service policy and the SQL mutation close voting after an
+  accepted, rejected, or completed transition.
+- Event attendance requires a visibility-authorized published event before work
+  and repeats public/member-or-owner visibility inside the capacity transaction.
+- Community mutation handlers reject malformed IDs and bounded JSON explicitly;
+  missing visible publications return 404 rather than a generic internal error.
 
 ## Invariants
 

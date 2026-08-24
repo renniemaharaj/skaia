@@ -1,5 +1,5 @@
 import { useAtomValue } from "jotai";
-import { ChevronDown, ChevronUp, MessageSquare, X } from "lucide-react";
+import { ChevronDown, ChevronUp, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -141,13 +141,6 @@ const CategoryThreadsPage = () => {
                   <Trash2 size={16} />
                 </button>
               )}
-              <button
-                className="action-btn btn-close"
-                onClick={() => navigate("/forum")}
-                title="Back to Forum"
-              >
-                <X size={20} />
-              </button>
             </FilterBar>
           </div>
         </div>

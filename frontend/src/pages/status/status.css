@@ -15,7 +15,11 @@
 }
 
 .service-status__header { justify-content: space-between; gap: 1rem; }
-.service-status__header h1 { margin: 0.2rem 0; }
+.service-status__header h1 {
+  margin: 0.2rem 0;
+  font-size: clamp(1.55rem, 2.2vw, 2.2rem);
+  line-height: 1.08;
+}
 .service-status__header p { margin: 0; color: var(--text-secondary); }
 .service-status__eyebrow { text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; font-weight: 700; }
 

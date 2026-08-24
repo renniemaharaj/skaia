@@ -1,8 +1,5 @@
 .product-page-container {
-  margin: 0 auto;
   min-width: 520px;
-  max-width: 100%;
-  padding: 2rem 1.5rem;
 }
 
 .product-page-layout {

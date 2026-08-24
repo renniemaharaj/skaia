@@ -129,17 +129,22 @@ INSERT INTO permissions (name, category, description) VALUES
     ('home.page-delete', 'home', 'Delete custom pages'),
     ('docs.create', 'docs', 'Create documentation sets'),
     ('docs.manage', 'docs', 'Manage any documentation set'),
-    ('events.view', 'events', 'View the events audit log')
+    ('events.view', 'events', 'View the events audit log'),
+    ('rankings.manage', 'rankings', 'Manage ranked datasets and seasons'),
+    ('rankings.produce', 'rankings', 'Submit idempotent ranked dataset updates'),
+    ('community.manage', 'community', 'Moderate proposal decisions and managed community workflows'),
+    ('community.publication-edit', 'community', 'Edit community publications owned by other users'),
+    ('community.publication-delete', 'community', 'Delete community publications owned by other users')
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r, permissions p
-WHERE r.name = 'admin' AND p.name IN ('home.manage', 'home.page-delete', 'docs.create', 'docs.manage', 'events.view')
+WHERE r.name = 'admin' AND p.name IN ('home.manage', 'home.page-delete', 'docs.create', 'docs.manage', 'events.view', 'rankings.manage', 'rankings.produce', 'community.manage', 'community.publication-edit', 'community.publication-delete')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r, permissions p
-WHERE r.name = 'superuser' AND p.name IN ('docs.create', 'docs.manage')
+WHERE r.name = 'superuser' AND p.name IN ('docs.create', 'docs.manage', 'rankings.manage', 'rankings.produce', 'community.manage', 'community.publication-edit', 'community.publication-delete')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO site_config (key, value) VALUES

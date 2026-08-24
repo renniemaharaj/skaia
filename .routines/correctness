@@ -80,9 +80,58 @@ docs disagree.
 
 ## Last Ran
 
-- 2026-08-23
+- 2026-08-24
 
 ## Last Run Remarks
+
+- Reconciled `wipe all` with its advertised destructive contract. Compose-down
+  errors were incorrectly terminating before client removal and per-client
+  deletion lacked the established ownership fallback; both paths now converge
+  on verified cleanup and cannot emit false completion.
+
+- Reconciled CLI tenant defaults with backend feature truth. The former repeated
+  eight-feature lists now derive from the same registry as the backend's default
+  and optional projection; new/reset clients receive all twelve current modules.
+
+- Reconciled publication discussions with existing forum authority: each
+  proposal, showcase, and event now references one thread owned by its author;
+  viewing/editing reuse canonical forum routes and policies, while community
+  creation and lifecycle retain the cross-resource invariant.
+
+- Reconciled interactive reuse with domain authority: `pages.content` remains the
+  authority only for authored page responses, while proposal votes/transitions
+  and event attendance reuse the interactive UI through a mutation binding and
+  remain authoritative in community tables/services. No duplicate state remains.
+
+- Reconciled community owner controls with the forum/store permission pattern:
+  edit and delete-other authority use named extended permissions, workflow
+  moderation remains `community.manage`, and `home.manage` applies only to the
+  linked page. Shared comfortable-shell centering now has one CSS authority.
+
+- Reconciled community publication content with custom-page authority: every
+  publication now references one owned page, community reads use caller-safe page
+  projections, and custom-page plus publication lifecycle moves together. No
+  duplicate community document authority remains.
+
+- Reconciled the new community/rewards/rankings route implementations with the
+  established store depth-shell and custom-page document authorities. Shared
+  module geometry now owns navigation and content width; community bodies reuse
+  `pages.content` section semantics; legacy rich text remains readable; and
+  empty reward provider collections are stable arrays. No material drift remains.
+
+- Reconciled app discovery with the implemented route and feature contracts:
+  `/community` is the unified public onboarding surface, while the shared drawer
+  includes status, identities, rewards, rankings, proposals, showcases, and
+  events under their existing visibility boundaries. No material drift remains.
+
+- Reconciled migrations 042-044 and the fresh schema with rewards, rankings,
+  community services/routes/UI, typed permissions, lifecycle providers, and
+  durable specs. The full platform-gap sequence is complete and its verified
+  todo pairs were retired; no material implementation/spec contradiction remains.
+
+- Reconciled linked-identity migration 041, service routes, public DTO privacy,
+  settings/profile UI, and sequence state. Opaque subjects remain private and
+  Stage 4 is now the first incomplete platform-gap member.
 
 - Reconciled health/status routes, migration 040 and fresh-schema parity,
   feature/SEO behavior, backup/release/load CLI contracts, operations evidence,

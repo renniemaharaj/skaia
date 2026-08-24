@@ -163,6 +163,33 @@ func TestAuthenticationRoutesAreNoIndexWithout404(t *testing.T) {
 	}
 }
 
+func TestPlatformDiscoveryRoutesResolveAsShells(t *testing.T) {
+	for _, path := range []string{
+		"/community",
+		"/community/proposal",
+		"/community/showcase/12",
+		"/community/event",
+		"/leaderboards",
+	} {
+		resolution := resolveRouteSEO(context.Background(), nil, httptest.NewRequest("GET", "https://example.com"+path, nil))
+		if resolution.State != resolutionSuccess || resolution.Route.Miss {
+			t.Errorf("%s route = %#v, want public shell", path, resolution)
+		}
+	}
+
+	for _, path := range []string{
+		"/rewards",
+		"/admin/rewards",
+		"/admin/status",
+		"/form/user/7/identities",
+	} {
+		resolution := resolveRouteSEO(context.Background(), nil, httptest.NewRequest("GET", "https://example.com"+path, nil))
+		if resolution.State != resolutionSuccess || resolution.Route.Miss || !resolution.Route.NoIndex {
+			t.Errorf("%s route = %#v, want private noindex shell", path, resolution)
+		}
+	}
+}
+
 func TestSnipPreservesUTF8AndMaximumLength(t *testing.T) {
 	got := snip(strings.Repeat("é", 20), 10)
 	if got != strings.Repeat("é", 7)+"..." {

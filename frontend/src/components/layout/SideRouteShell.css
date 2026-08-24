@@ -1,8 +1,11 @@
 .side-route-shell {
+  --side-route-shell-edge: 2.5rem;
+  --side-route-content-inset: 2.5rem;
   width: 100%;
-  max-width: 1280px;
+  max-width: 87.5rem;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: var(--side-route-shell-edge) var(--side-route-shell-edge) 4rem;
+  box-sizing: border-box;
 }
 
 .side-route-shell__bar {
@@ -47,6 +50,7 @@
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  padding-inline: var(--side-route-content-inset);
 }
 
 .side-route-shell__heading {
@@ -76,6 +80,7 @@
 
 .side-route-shell__body {
   min-width: 0;
+  padding-inline: var(--side-route-content-inset);
 }
 
 .side-route-shell__body--tabs {
@@ -141,7 +146,9 @@
 
 @media (max-width: 760px) {
   .side-route-shell {
-    padding: 1.25rem 1rem;
+    --side-route-shell-edge: 1rem;
+    --side-route-content-inset: 1rem;
+    padding-top: 1.25rem;
   }
 
   .side-route-shell__bar,

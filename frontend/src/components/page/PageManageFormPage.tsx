@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { usePageData } from "../../hooks/usePageData";
+import { ModulePageShell } from "../layout/ModulePageShell";
 import { SkeletonContent } from "../ui/Skeleton";
 import PageManagePanel from "./PageManagePanel";
 
@@ -16,29 +17,37 @@ export default function PageManageFormPage() {
   if (!slug) return <Navigate to="/" replace />;
   if (loading) {
     return (
-      <SkeletonContent
-        className="managed-form modal"
-        variant="form"
-        label="Loading page settings"
-      />
+      <ModulePageShell backTo={`/page/${slug}`} backLabel="Back to Page" width="comfortable">
+        <SkeletonContent
+          className="managed-form modal"
+          variant="form"
+          label="Loading page settings"
+        />
+      </ModulePageShell>
     );
   }
   if (error || !page) {
-    return <main className="managed-form modal">{error || "Page not found"}</main>;
+    return (
+      <ModulePageShell backTo={`/page/${slug}`} backLabel="Back to Page" width="comfortable">
+        <main className="managed-form modal">{error || "Page not found"}</main>
+      </ModulePageShell>
+    );
   }
   if (!isEditable) return <Navigate to={`/page/${slug}`} replace />;
 
   return (
-    <PageManagePanel
-      page={page}
-      owner={page.owner ?? null}
-      editors={page.editors ?? []}
-      cancelTo={`/page/${slug}`}
-      onClose={() => navigate(`/page/${slug}`)}
-      onSaveSEO={async seo => {
-        await updatePageSEO(page.id, seo);
-      }}
-      onOwnershipUpdate={() => void refresh(slug)}
-    />
+    <ModulePageShell backTo={`/page/${slug}`} backLabel="Back to Page" width="comfortable">
+      <PageManagePanel
+        page={page}
+        owner={page.owner ?? null}
+        editors={page.editors ?? []}
+        cancelTo={`/page/${slug}`}
+        onClose={() => navigate(`/page/${slug}`)}
+        onSaveSEO={async seo => {
+          await updatePageSEO(page.id, seo);
+        }}
+        onOwnershipUpdate={() => void refresh(slug)}
+      />
+    </ModulePageShell>
   );
 }

@@ -29,11 +29,22 @@ import {
 import type { PageSection } from "../types";
 import "./InteractiveSectionBlock.css";
 
+export interface InteractiveSubmissionBinding {
+  mode?: "append" | "replace";
+  initialAnswers?: Record<string, unknown>;
+  submit: (
+    answers: Record<string, unknown>,
+    idempotencyKey: string
+  ) => Promise<{ config?: string } | void>;
+}
+
 interface Props {
   section: PageSection;
   canEdit: boolean;
   onUpdate: (section: PageSection) => void;
   onDelete: (id: number) => void;
+  submission?: InteractiveSubmissionBinding;
+  presentation?: "section" | "action";
 }
 
 type Tab = "preview" | "responses" | "results" | "design";
@@ -425,7 +436,13 @@ function DesignView({
   );
 }
 
-export function InteractiveSectionBlock({ section, canEdit, onUpdate }: Props) {
+export function InteractiveSectionBlock({
+  section,
+  canEdit,
+  onUpdate,
+  submission,
+  presentation = "section",
+}: Props) {
   const type = section.section_type as InteractiveSectionType;
   const initialConfig = useMemo(
     () => parseInteractiveConfig(section.config, type),
@@ -441,13 +458,24 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate }: Props) {
 
   useEffect(() => setConfig(initialConfig), [initialConfig]);
 
-  const ownRecords = config.records.filter(
-    record => String(record.user_id) === String(currentUser?.id)
+  const ownRecords = useMemo(
+    () =>
+      config.records.filter(record => String(record.user_id) === String(currentUser?.id)),
+    [config.records, currentUser?.id]
   );
   const alreadyParticipated = ownRecords.length > 0;
   const participationLocked =
     config.status === "closed" ||
-    interactiveResponseLimitReached(type, config.response_limit, ownRecords.length);
+    (submission?.mode !== "replace" &&
+      interactiveResponseLimitReached(type, config.response_limit, ownRecords.length));
+  const initialValues = useMemo(
+    () => ({
+      ...initialInteractiveValues(config.fields),
+      ...(submission?.initialAnswers ??
+        (submission?.mode === "replace" ? ownRecords.at(-1)?.answers : undefined)),
+    }),
+    [config.fields, ownRecords, submission?.initialAnswers, submission?.mode]
+  );
 
   const replaceRuntimeConfig = (raw: string) => setConfig(parseInteractiveConfig(raw, type));
   const persistDesign = (next: InteractiveConfig) => {
@@ -460,7 +488,7 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate }: Props) {
     values: Record<string, unknown>,
     helpers: FormikHelpers<Record<string, unknown>>
   ) => {
-    if (!pageId || !isAuthenticated) {
+    if ((!pageId && !submission) || !isAuthenticated) {
       toast.error("Sign in to participate");
       helpers.setSubmitting(false);
       return;
@@ -471,18 +499,20 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate }: Props) {
       submissionRef.current = { fingerprint, key: crypto.randomUUID() };
     }
     try {
-      const response = await apiRequest<{ config: string }>(
-        `/pages/${pageId}/sections/${section.id}/responses`,
-        {
-          method: "POST",
-          body: JSON.stringify({ answers, idempotency_key: submissionRef.current.key }),
-        }
-      );
-      replaceRuntimeConfig(response.config);
+      const response = submission
+        ? await submission.submit(answers, submissionRef.current.key)
+        : await apiRequest<{ config: string }>(
+            `/pages/${pageId}/sections/${section.id}/responses`,
+            {
+              method: "POST",
+              body: JSON.stringify({ answers, idempotency_key: submissionRef.current.key }),
+            }
+          );
+      if (response?.config) replaceRuntimeConfig(response.config);
       submissionRef.current = null;
-      helpers.resetForm();
+      if (!submission || submission.mode === "append") helpers.resetForm();
       toast.success(config.success_text);
-      if (type === "poll" || type === "vote") setTab("results");
+      if ((type === "poll" || type === "vote") && config.result_summary) setTab("results");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not submit response");
     } finally {
@@ -624,7 +654,7 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate }: Props) {
         ];
 
   return (
-    <section className="interactive-section">
+    <section className={`interactive-section interactive-section--${presentation}`}>
       <header className="interactive-heading">
         {(canEdit || section.heading || section.subheading) && (
           <div>
@@ -650,28 +680,32 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate }: Props) {
             )}
           </div>
         )}
-        <span className={`interactive-open-state interactive-open-state--${config.status}`}>
-          {config.status}
-        </span>
+        {presentation === "section" && (
+          <span className={`interactive-open-state interactive-open-state--${config.status}`}>
+            {config.status}
+          </span>
+        )}
       </header>
-      <div
-        className="interactive-tabs"
-        role="tablist"
-        aria-label={section.heading ? `${section.heading} views` : "Section views"}
-      >
-        {tabs.map(item => (
-          <button
-            key={item.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === item.id}
-            className={tab === item.id ? "active" : ""}
-            onClick={() => setTab(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      {(presentation === "section" || tabs.length > 1) && (
+        <div
+          className="interactive-tabs"
+          role="tablist"
+          aria-label={section.heading ? `${section.heading} views` : "Section views"}
+        >
+          {tabs.map(item => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === item.id}
+              className={tab === item.id ? "active" : ""}
+              onClick={() => setTab(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {tab === "preview" && (
         <div className="interactive-preview">
@@ -684,7 +718,8 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate }: Props) {
           )}
           {!participationLocked && (
             <Formik
-              initialValues={initialInteractiveValues(config.fields)}
+              initialValues={initialValues}
+              enableReinitialize
               validate={values => validateInteractiveValues(config.fields, values)}
               onSubmit={submit}
             >
@@ -700,7 +735,7 @@ export function InteractiveSectionBlock({ section, canEdit, onUpdate }: Props) {
                       </div>
                     ))}
                   </div>
-                  {type === "vote" && (
+                  {type === "vote" && submission?.mode !== "replace" && (
                     <div className="interactive-ballot-note">
                       Review your selection carefully. A submitted ballot cannot be edited.
                     </div>

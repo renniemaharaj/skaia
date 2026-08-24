@@ -58,6 +58,16 @@ is not an architectural invariant and must not be treated as one.
   atomically deduplicated by tenant database, resource and account/IP for 15
   minutes; public view requests also consume distributed mutation budget before
   reaching the repository.
+- External identity mutation is restricted to established accounts. Verification
+  challenges are cryptographically random, ten-minute, single-use, and bound to
+  the user, provider, and SHA-256 fingerprint of the exact access session token.
+  Completion rechecks every binding under a row lock before creating or
+  reverifying an active link; reference verification is disabled unless
+  `IDENTITY_REFERENCE_ADAPTER_ENABLED=true`.
+- Provider subjects and challenge/session hashes remain private. Public identity
+  DTOs are a separate allowlist projection controlled by both link visibility
+  and provider policy; adapter keys, credentials, internal IDs, and opaque
+  subjects do not enter public JSON, cache, events, or WebSocket payloads.
 
 The implemented boundary is `security.AccountTrustPolicy` plus the closed HTTP
 exception registry in `middleware.AccountTrustBoundary`. Mutations fail closed
@@ -249,6 +259,38 @@ telemetry API exposes bounded counters and no identities or payloads.
   the store service on a live database permission check, cannot reset active
   leases or succeeded jobs, and is safe only because each delivered effect is
   independently replay-safe.
+
+## External Events and Community Producers
+
+- Reward webhooks require a configured adapter, HMAC-SHA256 over timestamp and
+  body, a bounded clock window/payload, and hash-only replay persistence.
+  Conflicting replay, unknown subject, disabled adapter, and missing secrets
+  fail closed without provider-detail disclosure.
+- Ranking and community operator actions use centralized typed permissions
+  (`rankings.manage`, `rankings.produce`, `community.manage`,
+  `community.publication-edit`, `community.publication-delete`). Community
+  publication ownership and granular permissions are checked in the service;
+  unrelated `home.manage` authority never expands community mutations. Public
+  DTOs omit private/deleted and opaque subjects.
+- Community mutations remain behind the established-account mutation boundary.
+  Event attendance performs a visibility-aware service read and repeats the
+  publication visibility predicate inside its serialized capacity transaction.
+  Event capacity and reward balances serialize in PostgreSQL; feature flags are
+  presentation/discovery controls, never authorization.
+- Reusing the interactive-section renderer for domain-bound community actions is
+  presentation reuse only. Proposal and event services remain the authorization,
+  transition, vote, and capacity authorities; client configs and capability
+  visibility never authorize or persist those mutations.
+- Proposal voting likewise repeats public/member-or-owner visibility and open
+  workflow state in its SQL mutation, closing authorization races after the
+  visibility-aware service read.
+- Community detail never projects raw linked `pages.content`. It delegates to
+  the page service's owner/editor-aware interactive sanitizer, and new community
+  documents clear caller-supplied interactive records before atomic persistence.
+- Community discussion references are server-owned: creation inserts a forum
+  thread with the publication author as `user_id`, and a composite foreign key
+  prevents reassignment to another user's thread. Clients cannot submit or
+  replace this reference; edit-thread capability follows forum ownership/policy.
 
 ## Current Baseline (2026-06-19)
 

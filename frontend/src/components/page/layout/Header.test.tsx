@@ -187,6 +187,23 @@ describe("Header Component", () => {
       expect(screen.getByRole("link", { name: /Home/i })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /Store/i })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /Forum/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Community" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Service status" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Leaderboards" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Proposals" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Showcases" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Events" })).toBeInTheDocument();
+    });
+
+    it("adds signed-in reward discovery to the app drawer", async () => {
+      const user = userEvent.setup();
+      renderHeader({ authenticated: true });
+      await user.click(screen.getByRole("button", { name: "Open drawer" }));
+      expect(screen.getByRole("link", { name: "Rewards" })).toHaveAttribute("href", "/rewards");
+      expect(screen.getByRole("link", { name: "Linked identities" })).toHaveAttribute(
+        "href",
+        "/form/user/123/identities"
+      );
     });
 
     it("applies active class to current page link", async () => {
@@ -320,7 +337,7 @@ describe("Header Component", () => {
       await waitFor(() => expect(screen.getByRole("link", { name: "Home" })).toHaveFocus());
 
       await user.keyboard("{ArrowRight}");
-      await waitFor(() => expect(screen.getByRole("link", { name: "Store" })).toHaveFocus());
+      await waitFor(() => expect(screen.getByRole("link", { name: "Community" })).toHaveFocus());
 
       await user.keyboard("{ArrowLeft}");
       await waitFor(() => expect(screen.getByRole("link", { name: "Home" })).toHaveFocus());

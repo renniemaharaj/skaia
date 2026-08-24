@@ -109,11 +109,45 @@ export const Header: React.FC<HeaderProps> = ({
 
   const navItems = [
     routeAllowed("landing") && { to: "/", label: "Home", icon: "home" },
+    routeAllowed("community") && { to: "/community", label: "Community", icon: "community" },
+    routeAllowed("status") && { to: "/status", label: "Service status", icon: "status" },
     routeAllowed("store") && { to: "/store", label: "Store", icon: "store" },
     routeAllowed("forum") && { to: "/forum", label: "Forum", icon: "forum" },
     routeAllowed("docs") && { to: "/doc", label: "Documentation", icon: "docs" },
     { to: "/pages", label: "Pages", icon: "pages" },
     { to: "/kjv", label: "Bible", icon: "bible" },
+    routeAllowed("rankings") && {
+      to: "/leaderboards",
+      label: "Leaderboards",
+      icon: "rankings",
+    },
+    isAuthenticated &&
+      routeAllowed("rewards") && {
+        to: "/rewards",
+        label: "Rewards",
+        icon: "rewards",
+      },
+    isAuthenticated &&
+      user && {
+        to: `/form/user/${user.id}/identities`,
+        label: "Linked identities",
+        icon: "identities",
+      },
+    routeAllowed("community") && {
+      to: "/community/proposal",
+      label: "Proposals",
+      icon: "proposals",
+    },
+    routeAllowed("community") && {
+      to: "/community/showcase",
+      label: "Showcases",
+      icon: "showcases",
+    },
+    routeAllowed("community") && {
+      to: "/community/event",
+      label: "Events",
+      icon: "events",
+    },
     isAuthenticated && routeAllowed("users") && { to: "/users", label: "People", icon: "users" },
     isAuthenticated &&
       hasPermission("events.view") && {

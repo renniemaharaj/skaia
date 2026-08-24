@@ -1,5 +1,10 @@
 import NewThread from "../../components/forum/NewThread";
+import { ForumPageShell } from "../../components/forum/ForumPageShell";
 
 export const NewThreadPage = ({}) => {
-  return <NewThread />;
+  return (
+    <ForumPageShell>
+      <NewThread />
+    </ForumPageShell>
+  );
 };

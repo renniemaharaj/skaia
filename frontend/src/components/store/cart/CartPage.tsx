@@ -28,7 +28,7 @@ type SavedCheckoutInfo = {
 };
 
 export const CartPage = () => {
-	const navigate = useNavigate();
+  const navigate = useNavigate();
   const [cartItems, setCartItems] = useAtom(storeCartItemsAtom);
   const products = useAtomValue(productsAtom);
   const cartTotal = useAtomValue(cartTotalAtom);
@@ -154,9 +154,9 @@ export const CartPage = () => {
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
 
-	if (!isAuthenticated) {
-		toast.info("Sign in before placing an order. Your cart will stay here.");
-		navigate("/login", { state: { from: { pathname: "/store/cart" } } });
+    if (!isAuthenticated) {
+      toast.info("Sign in before placing an order. Your cart will stay here.");
+      navigate("/login", { state: { from: { pathname: "/store/cart" } } });
       return;
     }
     if (!guestPhone) {
@@ -170,31 +170,31 @@ export const CartPage = () => {
 
     setLoading(true);
     try {
-	  const checkoutBody = {
-		items: cartItems.map((i: CartItem) => ({
-		  product_id: Number(i.product_id),
-		  quantity: i.quantity,
-		})),
-		payment_method_id: paymentMethod,
-		currency: "usd",
-		is_guest: false,
-		guest_email: guestEmail,
-		guest_phone: guestPhone,
-		delivery_location: deliveryApplicable ? deliveryLocation : "",
-		delivery_date: deliveryApplicable ? deliveryDate : "",
-		delivery_time: deliveryApplicable ? deliveryTime : "",
-		extra_info: deliveryApplicable ? extraInfo : "",
-		billing_info: billingInfo,
-		referral_code: referralCode,
-	  };
-	  const fingerprint = JSON.stringify(checkoutBody);
-	  if (checkoutAttemptRef.current?.fingerprint !== fingerprint) {
-		checkoutAttemptRef.current = { fingerprint, key: crypto.randomUUID() };
-	  }
+      const checkoutBody = {
+        items: cartItems.map((i: CartItem) => ({
+          product_id: Number(i.product_id),
+          quantity: i.quantity,
+        })),
+        payment_method_id: paymentMethod,
+        currency: "usd",
+        is_guest: false,
+        guest_email: guestEmail,
+        guest_phone: guestPhone,
+        delivery_location: deliveryApplicable ? deliveryLocation : "",
+        delivery_date: deliveryApplicable ? deliveryDate : "",
+        delivery_time: deliveryApplicable ? deliveryTime : "",
+        extra_info: deliveryApplicable ? extraInfo : "",
+        billing_info: billingInfo,
+        referral_code: referralCode,
+      };
+      const fingerprint = JSON.stringify(checkoutBody);
+      if (checkoutAttemptRef.current?.fingerprint !== fingerprint) {
+        checkoutAttemptRef.current = { fingerprint, key: crypto.randomUUID() };
+      }
       const data = await apiRequest<CheckoutResponse>("/store/checkout", {
         method: "POST",
-		headers: { "Idempotency-Key": checkoutAttemptRef.current.key },
-		body: fingerprint,
+        headers: { "Idempotency-Key": checkoutAttemptRef.current.key },
+        body: fingerprint,
       });
 
       // Persist saved checkout info as a single object, explicit: do NOT save deliveryTime
@@ -219,7 +219,7 @@ export const CartPage = () => {
       setSuccessCartItems([...cartItems]);
       setSuccessOrder(data.order);
       setCartItems([]);
-	  checkoutAttemptRef.current = null;
+      checkoutAttemptRef.current = null;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Checkout failed. Please try again.");
     } finally {

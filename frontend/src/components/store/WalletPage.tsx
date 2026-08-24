@@ -1,10 +1,9 @@
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue } from "jotai";
 import { CreditCard, DollarSign, Edit, LayoutDashboard, PlusCircle, Trash } from "lucide-react";
 import React, { useCallback, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { currentUserAtom, hasPermissionAtom } from "../../atoms/auth";
-import { layoutModeAtom } from "../../atoms/layoutMode";
 import { apiRequest } from "../../utils/api";
 import { formatCents } from "../../utils/money";
 import { getServerNow } from "../../utils/serverTime";
@@ -90,13 +89,6 @@ export const WalletPage = () => {
     expiry_month: new Date().getMonth() + 1,
     expiry_year: new Date().getFullYear() + 1,
   });
-
-  const setLayoutMode = useSetAtom(layoutModeAtom);
-
-  useEffect(() => {
-    setLayoutMode("application");
-    return () => setLayoutMode("web");
-  }, [setLayoutMode]);
 
   const hasFetched = React.useRef(false);
 

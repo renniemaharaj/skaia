@@ -1,0 +1,119 @@
+<--/------->
+
+## community_publication_custom_pages
+
+### Current Progress
+
+- **Phase 1: Contract and migration** - ✅ Complete
+- **Phase 2: Atomic backend ownership** - ✅ Complete
+- **Phase 3: Full-width linked-page UI** - ✅ Complete
+- **Phase 4: Verification and documentation** - ✅ Complete
+- **Phase 5: Permission-aware publication controls** - ✅ Complete
+- **Phase 6: Comfortable-shell alignment audit** - ✅ Complete
+- **Phase 7: Follow-up verification** - ✅ Complete
+- **Phase 8: Typography and compact route actions** - ✅ Complete
+- **Phase 9: Domain-bound interactive primitives** - ✅ Complete
+- **Phase 10: Second audit and verification** - ✅ Complete
+- **Phase 11: Owned publication discussions** - ✅ Complete
+- **Phase 12: Thread follow-up verification** - ✅ Complete
+
+### Next Steps
+
+- [x] Added migration 045 and fresh-schema parity. Existing page documents move
+      without rewriting; legacy rich text becomes one compatible rich-text block.
+- [x] Community creation now atomically creates an author-owned custom page,
+      clears imported interactive records, and keeps list responses content-free.
+- [x] Detail hydration delegates to the page service's caller-specific sanitizer;
+      linked page/publication delete and restore transitions are coupled.
+- [x] Community detail uses the wide module shell, retains workflow/media UI, and
+      links the canonical full-page builder and management routes.
+
+### Verification - 2026-08-23
+
+- [x] Backend full suite: `JWT_SECRET=test-secret go test ./...`.
+- [x] Frontend: 77 files / 253 tests, lint, production build, and all four UI
+      policy gates passed.
+- [x] Focused community/page/trash tests, spec reference scan, and
+      `git diff --check` passed.
+- [x] PostgreSQL-backed migration execution was unavailable because
+      `TEST_DATABASE_URL` is not configured; migration 045 is guarded for both
+      legacy-body and fresh-schema reruns.
+
+### Follow-up Next Steps
+
+- [x] Added owner-or-granular-permission edit/delete service gates and DTO flags;
+      `home.manage` remains limited to the linked custom page.
+- [x] Added edit, delete, moderation, discussion, and authenticated participation
+      controls driven by server-projected capabilities.
+- [x] Centered comfortable shell headings/content through the shared shell contract
+      and found no route-specific community form offset.
+- [x] Added linked-page create/update/delete cache and content-free realtime
+      invalidation for community-owned page mutations.
+- [x] Reran full backend/frontend/spec verification.
+
+### Follow-up Verification - 2026-08-23
+
+- [x] Backend: focused community tests, `go test ./...`, and `go vet ./...`.
+- [x] Frontend: 78 files / 254 tests, lint, production build, and all four UI
+      policy gates.
+- [x] Migration order, todo/spec references, permission isolation, and diff
+      whitespace checks passed.
+- [x] PostgreSQL-backed migration execution remains unavailable because
+      `TEST_DATABASE_URL` is not configured; migration 046 is idempotent SQL and
+      fresh-schema permission parity is present in migration 002.
+
+### Second-polish Next Steps
+
+- [x] Matched recent route heading/subtext proportions to the forum/product scale.
+- [x] Replaced community text action bars with shared compact icon actions.
+- [x] Added a reusable external-domain binding to the interactive section renderer.
+- [x] Rendered proposal votes/transitions and event attendance through that binding
+      without copying authoritative workflow/participation state into page content.
+- [x] Restored the real page interaction context to linked-page sections embedded
+      inside community detail.
+- [x] Closed voting after proposal decisions and repeated proposal/event visibility
+      policy inside their mutation SQL to prevent authorization races.
+- [x] Normalized malformed community action IDs and JSON to explicit HTTP 400
+      responses instead of empty success or misleading authorization failures.
+- [x] Reran the affected-system audit and full verification set.
+
+### Second-polish Verification - 2026-08-23
+
+- [x] Backend: focused community policy tests, `go test ./...`, and `go vet ./...`.
+- [x] Frontend: 78 files / 256 tests, lint, TypeScript production build, and all
+      four UI policy gates.
+- [x] Audited recent route heading scales; community detail/cards, community hub,
+      and status now have explicit proportional scales. Purpose-built authored
+      page heroes and error-code displays remain intentionally exempt.
+- [x] Bespoke community participation/moderation control scan, spec references,
+      todo pairing, and diff whitespace checks passed.
+- [x] PostgreSQL-backed SQL execution remains unavailable because
+      `TEST_DATABASE_URL` is not configured; service tests cover the matching
+      fail-closed proposal/event state decisions.
+
+### Owned-discussion Next Steps
+
+- [x] Added migration 047 and fresh-schema parity for a required unique thread
+      whose forum owner is constrained to the publication author.
+- [x] Preserved unique active owner-matched legacy discussions and created owned
+      replacements for missing, shared, deleted-state-mismatched, or foreign links.
+- [x] Creation now provisions the page, forum thread, publication, workflow row,
+      and kind-specific row atomically; publication delete/restore carries both
+      owned resources.
+- [x] Removed caller-selected discussion IDs and exposed canonical view plus
+      owner/forum-editor edit-thread actions from community detail.
+- [x] Run the complete backend/frontend, migration, spec, and diff gates.
+
+### Owned-discussion Verification - 2026-08-24
+
+- [x] Backend focused community/migration tests, complete `go test ./...`, and
+      `go vet ./...` passed.
+- [x] Frontend focused tests, all 78 files / 257 tests, lint, TypeScript and
+      production build, plus all four UI policy gates passed.
+- [x] Migration order/parity, removed caller-selected thread references, spec
+      references, todo pairing, and `git diff --check` passed.
+- [x] PostgreSQL-backed execution remains unavailable because
+      `TEST_DATABASE_URL` is not configured; migration 047 includes a guarded
+      ownership/state backfill and a fresh-schema parity test.
+
+<--/------->

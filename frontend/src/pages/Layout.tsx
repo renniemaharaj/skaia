@@ -9,6 +9,7 @@ import { type User, accessTokenAtom, currentUserAtom, refreshTokenAtom } from ".
 import { featuresAtom, seoAtom } from "../atoms/config";
 import { contextUserAtom } from "../atoms/contextUser";
 import { layoutModeAtom } from "../atoms/layoutMode";
+import { isApplicationRoute } from "./routeLayoutPolicy";
 import {
   cursorPositionsAtom,
   layoutChildrenAtom,
@@ -362,22 +363,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, [setAccessToken, setRefreshToken, setCurrentUser]);
 
   const location = useLocation();
-  const isAppModeRoute = (pathname: string) => {
-    if (pathname.startsWith("/inbox")) return true;
-    if (pathname === "/users") return true;
-    if (pathname.startsWith("/activity")) return true;
-    if (pathname.startsWith("/trash")) return true;
-    if (pathname.startsWith("/deployments")) return true;
-    if (pathname.startsWith("/datasources")) return true;
-    if (pathname.startsWith("/settings")) return true;
-    if (pathname.startsWith("/admin")) return true;
-    if (pathname.startsWith("/tmp/")) return true;
-    if (pathname.startsWith("/flow")) return true;
-    if (pathname.startsWith("/stream/")) return true;
-    if (pathname.startsWith("/clipmaker")) return true;
-    return false;
-  };
-  const effectiveLayoutMode = isAppModeRoute(location.pathname) ? "application" : layoutMode;
+  const effectiveLayoutMode = isApplicationRoute(location.pathname) ? "application" : layoutMode;
 
   // Normal navigation and hash scrolling
   // Normal navigation and hash scrolling

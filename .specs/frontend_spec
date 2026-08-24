@@ -86,6 +86,25 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   canvas route families. Primary data surfaces use shared domain-shaped initial
   skeletons while pagination, mutations, empty results, stale refreshes, and
   errors retain separate feedback.
+- Route chrome mode is owned by `pages/routeLayoutPolicy.ts` and selected by
+  `Layout.tsx`. Routed components must not mutate `layoutModeAtom` during mount
+  or cleanup; the atom remains a user preference only for routes outside the
+  pathname-owned application set.
+- Registered routes use one of these intentional shell families:
+  - root browse surfaces use `DirectoryLayout` for their header, toolbar,
+    bounded results, and empty state;
+  - conventional module child routes use `ModulePageShell`, optionally through
+    a domain adapter such as `StorePageShell` or `CommunityModuleShell`;
+  - settings and operator routes with persistent section navigation use
+    `SideRouteShell`;
+  - documentation readers use `DocumentationShell`, while page-builder,
+    datasource, flow, stream, clipmaker, visualizer, and temporary-session
+    routes retain their purpose-built canvas/editor boundary.
+- Conventional module shells expose an outer navigation/meta rail and a stable
+  inset content rail. Titles, tabs, directories, detail content, empty/error
+  states, and managed forms use the content rail; page-specific classes never
+  own the outer shell width or padding. Domain child routes must reuse their
+  module adapter so back-link placement cannot drift between siblings.
 - Page and thread analytics import only after the analytics action opens. Its
   Suspense fallback mirrors the modal header, stat row, and chart and
   keeps the close action usable. Recharts remains owned by that lazy module;
@@ -184,6 +203,54 @@ navigation/narration, WebSocket consumers, or page-builder UX.
 - The operator view adds permission-backed diagnostics and bounded incident
   publication. Backend policy remains authoritative for every write.
 
+## Rewards, Rankings, and Community UI
+
+- Optional `rewards`, `rankings`, and `community` features use lazy routes,
+  `DirectoryLayout`, `TableView`, shared media/buttons, sanitized rich text, and
+  `ManagedForm`, with separate loading, empty, denied, error, and success states.
+- `ModulePageShell` owns the stable content measure, back navigation, and module
+  tabs for these route families. Directory headers, toolbars, results, empty
+  states, and submodule content align to that same measure rather than inheriting
+  an incidental parent width.
+- Reward points are never presented as wallet money. Leaderboards render server
+  ranks/cursors. Community detail keeps proposal, showcase, and event workflow
+  semantics separate and links canonical forum discussion instead of copying it.
+- Every community publication owns a real custom page. The community detail
+  keeps workflow/media/actions as its submodule chrome, renders the sanitized
+  linked `pages.content` document at the full module width, and exposes canonical
+  `/page/:slug` and management links to authorized owners/managers. Authoring
+  happens in the regular custom-page builder rather than a parallel form editor.
+- Every publication owns its canonical forum discussion. Detail always exposes
+  the existing thread viewer; the thread owner or `forum.thread-edit` holder also
+  receives the existing thread editor route. Community forms do not accept an
+  arbitrary discussion ID because the server creates and owns that relationship.
+- Community directories and details render server-projected edit/delete controls;
+  proposal moderation and vote/event attendance controls appear only when their
+  matching capabilities are true. Route-level actions use the same compact
+  icon-action controls as forum threads and custom-page directories. Community
+  titles use the proportional forum/product detail scale rather than inheriting
+  global display typography. The shared create/edit form owns metadata,
+  visibility, publication status, kind-specific fields, and canonical discussion.
+- `InteractiveActionSection` binds domain-owned actions to the existing
+  interactive-section schema, field renderer, validation, submission lifecycle,
+  and feedback surface. Proposal votes/transitions and event attendance use this
+  adapter; their community endpoints and normalized tables remain authoritative,
+  and no response copy is written to `pages.content`. Authored interactive
+  sections inside the linked document receive the real page ID and continue to
+  use the ordinary page-response API from the embedded community detail view.
+- Comfortable `ModulePageShell` content is width-bounded and centered with
+  `margin-inline:auto`; wide module content retains the common module measure.
+- Reward account boundaries normalize absent provider collections to empty
+  arrays. The UI remains functional when a compatible external provider returns
+  `null` for an empty grant or redemption collection.
+- The public, feature-gated `/community` hub is the compact onboarding and app
+  discovery surface. It groups enabled public destinations, signed-in account
+  destinations, and permission-derived operator tools without introducing a
+  second route registry or treating client visibility as authorization.
+- The shared app drawer exposes enabled community workflows, rankings, public
+  status, rewards for signed-in users, and the signed-in user's linked-identity
+  settings. Disabled features and authenticated-only destinations remain hidden.
+
 ## State Ownership
 
 | Domain | Atoms | Primary writer |
@@ -269,6 +336,14 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   the role catalog colors when only role names are embedded in the message user.
   Inline user cards and profile overlays must share in-flight user/role catalog
   requests so dense chat/message views do not stampede `/users/roles`.
+- Own-account settings use the existing routed `ManagedForm` surface for
+  profile, security, and linked identities. Identity rows reuse shared buttons
+  and Prompt confirmation, expose loading/empty/error/privacy/reverification
+  states, and remain responsive without one-off color or action styling.
+- Public profiles request the deliberate public identity projection separately;
+  an empty or unavailable projection renders nothing and never blocks the core
+  profile. The browser never receives provider adapter keys, challenge hashes,
+  opaque provider subjects, or provider credentials on this route.
 - System inbox messages containing JSON payloads, especially order cards, render
   as compact inline interactive cards that route to the canonical destination
   such as `/store/orders/{id}` and do not echo raw JSON as a caption.

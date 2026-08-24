@@ -1,7 +1,9 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { Provider, createStore } from "jotai";
 import { toast } from "sonner";
 import { describe, expect, it, vi } from "vitest";
 import { apiRequest } from "../../../utils/api";
+import { accessTokenAtom } from "../../../atoms/auth";
 import { PageBuilderContext } from "../PageBuilderContext";
 import type { InteractiveConfig } from "../interactiveTypes";
 import type { PageSection } from "../types";
@@ -129,5 +131,70 @@ describe("InteractiveSectionBlock", () => {
     fireEvent.click(screen.getByRole("button", { name: "Toggle response details" }));
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("moderation denied"));
+  });
+
+  it("binds the shared interactive form to an external domain mutation", async () => {
+    vi.mocked(apiRequest).mockClear();
+    const store = createStore();
+    store.set(accessTokenAtom, "test-token");
+    const submit = vi.fn().mockResolvedValue(undefined);
+    const boundConfig: InteractiveConfig = {
+      status: "open",
+      submit_label: "Update attendance",
+      success_text: "Attendance updated.",
+      result_visibility: "never",
+      response_limit: 0,
+      fields: [
+        {
+          key: "attendance",
+          type: "radio",
+          label: "Response",
+          required: true,
+          options: [
+            { key: "going", label: "Going" },
+            { key: "interested", label: "Interested" },
+          ],
+        },
+      ],
+      records: [],
+    };
+
+    render(
+      <Provider store={store}>
+        <InteractiveSectionBlock
+          section={{
+            id: "event-attendance-3",
+            display_order: 1,
+            section_type: "poll",
+            heading: "Attendance",
+            subheading: "Choose one response.",
+            config: JSON.stringify(boundConfig),
+          }}
+          canEdit={false}
+          onUpdate={vi.fn()}
+          onDelete={vi.fn()}
+          submission={{
+            mode: "replace",
+            initialAnswers: { attendance: "interested" },
+            submit,
+          }}
+          presentation="action"
+        />
+      </Provider>
+    );
+
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Interested" })).toBeChecked();
+    fireEvent.click(screen.getByRole("radio", { name: "Going" }));
+    fireEvent.click(screen.getByRole("button", { name: "Update attendance" }));
+
+    await waitFor(() =>
+      expect(submit).toHaveBeenCalledWith(
+        { attendance: "going" },
+        expect.any(String)
+      )
+    );
+    expect(screen.getByRole("button", { name: "Update attendance" })).toBeInTheDocument();
+    expect(apiRequest).not.toHaveBeenCalled();
   });
 });

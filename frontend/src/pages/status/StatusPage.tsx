@@ -1,7 +1,12 @@
-import { Activity, AlertTriangle, CheckCircle2, Clock3, RefreshCw, ShieldAlert } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  RefreshCw,
+  ShieldAlert,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { useSetAtom } from "jotai";
-import { layoutModeAtom } from "../../atoms/layoutMode";
 import Button from "../../components/input/Button";
 import Select from "../../components/input/Select";
 import { apiRequest } from "../../utils/api";
@@ -66,18 +71,12 @@ const iconFor = (state: ServiceState) => {
 };
 
 export default function StatusPage({ operator = false }: { operator?: boolean }) {
-  const setLayoutMode = useSetAtom(layoutModeAtom);
   const [snapshot, setSnapshot] = useState<StatusSnapshot | null>(null);
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
-
-  useEffect(() => {
-    setLayoutMode("application");
-    return () => setLayoutMode("web");
-  }, [setLayoutMode]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -147,54 +146,104 @@ export default function StatusPage({ operator = false }: { operator?: boolean })
     <main className="service-status" aria-busy={loading}>
       <header className="service-status__header">
         <div>
-          <p className="service-status__eyebrow">{operator ? "Operator diagnostics" : "Service status"}</p>
+          <p className="service-status__eyebrow">
+            {operator ? "Operator diagnostics" : "Service status"}
+          </p>
           <h1>{operator ? "Platform health" : "Current availability"}</h1>
           <p>Dependency health and customer-facing incident updates.</p>
         </div>
-        <Button type="button" onClick={() => void load()} loading={loading} iconLeft={<RefreshCw size={15} aria-hidden="true" />}>Refresh</Button>
+        <Button
+          type="button"
+          onClick={() => void load()}
+          loading={loading}
+          iconLeft={<RefreshCw size={15} aria-hidden="true" />}
+        >
+          Refresh
+        </Button>
       </header>
 
       {loading && !snapshot ? (
-        <div className="card service-status__notice" role="status">Checking current service health…</div>
+        <div className="card service-status__notice" role="status">
+          Checking current service health…
+        </div>
       ) : error ? (
         <div className="card service-status__notice service-status__notice--error" role="alert">
           <ShieldAlert aria-hidden="true" />
-          <div><strong>Status unavailable</strong><p>{error}</p></div>
+          <div>
+            <strong>Status unavailable</strong>
+            <p>{error}</p>
+          </div>
         </div>
       ) : snapshot && effectiveState ? (
         <>
-          <section className={`card service-status__summary service-status--${effectiveState}`} aria-live="polite">
+          <section
+            className={`card service-status__summary service-status--${effectiveState}`}
+            aria-live="polite"
+          >
             {iconFor(effectiveState)}
-            <div><h2>{stateLabel[effectiveState]}</h2><p>Updated {new Date(snapshot.updated_at).toLocaleString()}</p></div>
+            <div>
+              <h2>{stateLabel[effectiveState]}</h2>
+              <p>Updated {new Date(snapshot.updated_at).toLocaleString()}</p>
+            </div>
           </section>
 
           <section aria-labelledby="components-heading">
             <h2 id="components-heading">Components</h2>
             <div className="service-status__components">
-              {(operator && diagnostics ? diagnostics.components : snapshot.components).map(component => (
-                <article className="card service-status__component" key={component.name}>
-                  <div>{iconFor(component.state)}<strong>{component.name}</strong></div>
-                  <span className={`service-status__badge service-status--${component.state}`}>{component.state}</span>
-                  {operator && component.latency_ms !== undefined && (
-                    <p>{component.latency_ms} ms{component.reason_code ? ` · ${component.reason_code.replaceAll("_", " ")}` : ""}</p>
-                  )}
-                </article>
-              ))}
+              {(operator && diagnostics ? diagnostics.components : snapshot.components).map(
+                component => (
+                  <article className="card service-status__component" key={component.name}>
+                    <div>
+                      {iconFor(component.state)}
+                      <strong>{component.name}</strong>
+                    </div>
+                    <span className={`service-status__badge service-status--${component.state}`}>
+                      {component.state}
+                    </span>
+                    {operator && component.latency_ms !== undefined && (
+                      <p>
+                        {component.latency_ms} ms
+                        {component.reason_code
+                          ? ` · ${component.reason_code.replaceAll("_", " ")}`
+                          : ""}
+                      </p>
+                    )}
+                  </article>
+                )
+              )}
             </div>
           </section>
 
           <section aria-labelledby="incidents-heading">
             <h2 id="incidents-heading">Incidents and maintenance</h2>
             {snapshot.incidents.length === 0 ? (
-              <div className="card service-status__empty"><Activity aria-hidden="true" /><p>No incidents have been published.</p></div>
+              <div className="card service-status__empty">
+                <Activity aria-hidden="true" />
+                <p>No incidents have been published.</p>
+              </div>
             ) : (
               <div className="service-status__incidents">
                 {snapshot.incidents.map(incident => (
                   <article className="card" key={incident.id}>
-                    <div><h3>{incident.title}</h3><span>{incident.state}</span></div>
+                    <div>
+                      <h3>{incident.title}</h3>
+                      <span>{incident.state}</span>
+                    </div>
                     <p>{incident.summary || "No additional details."}</p>
-                    <small>{incident.component} · Updated {new Date(incident.updated_at).toLocaleString()}</small>
-                    {operator && incident.state !== "resolved" && <Button type="button" size="sm" onClick={() => void resolveIncident(incident)} disabled={saving}>Mark resolved</Button>}
+                    <small>
+                      {incident.component} · Updated{" "}
+                      {new Date(incident.updated_at).toLocaleString()}
+                    </small>
+                    {operator && incident.state !== "resolved" && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => void resolveIncident(incident)}
+                        disabled={saving}
+                      >
+                        Mark resolved
+                      </Button>
+                    )}
                   </article>
                 ))}
               </div>
@@ -205,9 +254,25 @@ export default function StatusPage({ operator = false }: { operator?: boolean })
             <section aria-labelledby="runtime-heading">
               <h2 id="runtime-heading">Capacity and queue</h2>
               <div className="service-status__components">
-                <article className="card service-status__component"><strong>Database pool</strong><p>{diagnostics.runtime.db_in_use_connections} in use · {diagnostics.runtime.db_open_connections} open · {diagnostics.runtime.db_max_open_connections} max</p></article>
-                <article className="card service-status__component"><strong>Pool waits</strong><p>{diagnostics.runtime.db_wait_count} waits since process start</p></article>
-                <article className="card service-status__component"><strong>Fulfilment queue</strong><p>{diagnostics.runtime.fulfilment_queue_ready} ready · oldest {diagnostics.runtime.fulfilment_queue_oldest_seconds}s</p></article>
+                <article className="card service-status__component">
+                  <strong>Database pool</strong>
+                  <p>
+                    {diagnostics.runtime.db_in_use_connections} in use ·{" "}
+                    {diagnostics.runtime.db_open_connections} open ·{" "}
+                    {diagnostics.runtime.db_max_open_connections} max
+                  </p>
+                </article>
+                <article className="card service-status__component">
+                  <strong>Pool waits</strong>
+                  <p>{diagnostics.runtime.db_wait_count} waits since process start</p>
+                </article>
+                <article className="card service-status__component">
+                  <strong>Fulfilment queue</strong>
+                  <p>
+                    {diagnostics.runtime.fulfilment_queue_ready} ready · oldest{" "}
+                    {diagnostics.runtime.fulfilment_queue_oldest_seconds}s
+                  </p>
+                </article>
               </div>
             </section>
           )}
@@ -219,20 +284,74 @@ export default function StatusPage({ operator = false }: { operator?: boolean })
   );
 }
 
-function IncidentForm({ saving, error, onSubmit }: { saving: boolean; error: string; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void }) {
+function IncidentForm({
+  saving,
+  error,
+  onSubmit,
+}: {
+  saving: boolean;
+  error: string;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+}) {
   return (
     <section className="card service-status__operator" aria-labelledby="publish-incident-heading">
       <h2 id="publish-incident-heading">Publish an update</h2>
       <form onSubmit={onSubmit}>
-        <label>Title<input name="title" minLength={3} maxLength={120} required /></label>
-        <label>Summary<textarea name="summary" maxLength={1000} rows={4} /></label>
+        <label>
+          Title
+          <input name="title" minLength={3} maxLength={120} required />
+        </label>
+        <label>
+          Summary
+          <textarea name="summary" maxLength={1000} rows={4} />
+        </label>
         <div className="service-status__form-grid">
-          <Select name="state" label="State" defaultValue="investigating" block options={[{ value: "investigating", label: "Investigating" }, { value: "monitoring", label: "Monitoring" }, { value: "maintenance", label: "Maintenance" }, { value: "resolved", label: "Resolved" }, { value: "draft", label: "Draft" }]} />
-          <Select name="severity" label="Severity" defaultValue="minor" block options={[{ value: "minor", label: "Minor" }, { value: "major", label: "Major" }, { value: "critical", label: "Critical" }, { value: "maintenance", label: "Maintenance" }]} />
-          <Select name="component" label="Component" defaultValue="platform" block options={[{ value: "platform", label: "Platform" }, { value: "web", label: "Web" }, { value: "database", label: "Database" }, { value: "cache", label: "Cache" }]} />
+          <Select
+            name="state"
+            label="State"
+            defaultValue="investigating"
+            block
+            options={[
+              { value: "investigating", label: "Investigating" },
+              { value: "monitoring", label: "Monitoring" },
+              { value: "maintenance", label: "Maintenance" },
+              { value: "resolved", label: "Resolved" },
+              { value: "draft", label: "Draft" },
+            ]}
+          />
+          <Select
+            name="severity"
+            label="Severity"
+            defaultValue="minor"
+            block
+            options={[
+              { value: "minor", label: "Minor" },
+              { value: "major", label: "Major" },
+              { value: "critical", label: "Critical" },
+              { value: "maintenance", label: "Maintenance" },
+            ]}
+          />
+          <Select
+            name="component"
+            label="Component"
+            defaultValue="platform"
+            block
+            options={[
+              { value: "platform", label: "Platform" },
+              { value: "web", label: "Web" },
+              { value: "database", label: "Database" },
+              { value: "cache", label: "Cache" },
+            ]}
+          />
         </div>
-        {error && <p className="service-status__form-error" role="alert">{error}</p>}
-        <Button type="submit" loading={saving}>Publish update</Button>
+        {error && (
+          <p className="service-status__form-error" role="alert">
+            {error}
+          </p>
+        )}
+        <Button type="submit" loading={saving}>
+          Publish update
+        </Button>
       </form>
     </section>
   );

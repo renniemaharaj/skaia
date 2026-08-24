@@ -2,6 +2,23 @@
   width: 100%;
   color: var(--text-primary);
 }
+.interactive-section--action {
+  padding: var(--card-padding);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background: var(--card-bg);
+}
+.interactive-section--action .interactive-heading {
+  margin-top: 0;
+}
+.interactive-section--action .interactive-heading h2 {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+.interactive-section--action .interactive-heading p {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
 .interactive-heading {
   display: flex;
   align-items: flex-start;

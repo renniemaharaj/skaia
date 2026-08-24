@@ -103,5 +103,5 @@ reason vocabulary `dependency_unavailable` and `dependency_timeout` only.
 - `.specs/backend_spec`
 - `.specs/security_architecture_spec`
 - `.specs/migrations_spec`
-- `.todo/production_readiness_and_service_status`
+- `.specs/backend_spec`
 - `.routines/auditor`

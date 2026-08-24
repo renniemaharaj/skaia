@@ -1,6 +1,5 @@
-import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { ModulePageShell } from "../layout/ModulePageShell";
 import "./StorePageShell.css";
 
 interface StorePageShellProps {
@@ -24,36 +23,19 @@ export function StorePageShell({
   actions,
   className = "",
 }: StorePageShellProps) {
-  const hasHeader = title || subtitle || actions;
-  const hasBar = backTo || meta;
-
   return (
-    <div className={`store-page-shell ${className}`}>
-      {hasBar && (
-        <div className="store-page-shell__bar">
-          {backTo ? (
-            <Link to={backTo} className="store-page-shell__back-link">
-              <ArrowLeft size={14} />
-              <span>{backLabel}</span>
-            </Link>
-          ) : (
-            <span />
-          )}
-          {meta && <div className="store-page-shell__meta">{meta}</div>}
-        </div>
-      )}
-
-      {hasHeader && (
-        <header className="store-page-shell__header">
-          <div className="store-page-shell__heading">
-            {title && <h1 className="store-page-shell__title">{title}</h1>}
-            {subtitle && <p className="store-page-shell__subtitle">{subtitle}</p>}
-          </div>
-          {actions && <div className="store-page-shell__actions">{actions}</div>}
-        </header>
-      )}
-
+    <ModulePageShell
+      className="store-page-shell"
+      contentClassName={`store-page-shell__content ${className}`.trim()}
+      title={title}
+      subtitle={subtitle}
+      backTo={backTo}
+      backLabel={backLabel}
+      meta={meta}
+      actions={actions}
+      width="wide"
+    >
       {children}
-    </div>
+    </ModulePageShell>
   );
 }

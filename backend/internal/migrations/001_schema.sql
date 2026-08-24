@@ -392,6 +392,7 @@ ALTER TABLE forum_threads ADD COLUMN IF NOT EXISTS last_edited_by BIGINT REFEREN
 CREATE INDEX IF NOT EXISTS idx_forum_threads_category_id ON forum_threads(category_id);
 CREATE INDEX IF NOT EXISTS idx_forum_threads_user_id     ON forum_threads(user_id);
 CREATE INDEX IF NOT EXISTS idx_forum_threads_created_at  ON forum_threads(created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_forum_threads_id_user_id ON forum_threads(id,user_id);
 
 CREATE TABLE IF NOT EXISTS thread_comments (
     id         BIGSERIAL PRIMARY KEY,
@@ -968,3 +969,101 @@ CREATE TABLE IF NOT EXISTS service_incident_events (
 );
 CREATE INDEX IF NOT EXISTS idx_service_incident_events_incident
     ON service_incident_events (incident_id, created_at DESC, id DESC);
+
+-- Provider-neutral verified identities. Migration 041 remains the idempotent
+-- bridge for existing tenants and installs the immutable event trigger.
+CREATE TABLE IF NOT EXISTS external_identity_providers (
+    id BIGSERIAL PRIMARY KEY,
+    key VARCHAR(64) NOT NULL UNIQUE CHECK (key ~ '^[a-z][a-z0-9_-]{1,63}$'),
+    name VARCHAR(80) NOT NULL CHECK (char_length(trim(name)) BETWEEN 2 AND 80),
+    adapter_key VARCHAR(64) NOT NULL CHECK (adapter_key ~ '^[a-z][a-z0-9_-]{1,63}$'),
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    public_display_allowed BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ,
+    deleted_by BIGINT REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_external_identity_providers_active
+    ON external_identity_providers (name, id) WHERE deleted_at IS NULL AND enabled;
+
+CREATE TABLE IF NOT EXISTS external_identity_challenges (
+    id BIGSERIAL PRIMARY KEY,
+    provider_id BIGINT NOT NULL REFERENCES external_identity_providers(id) ON DELETE RESTRICT,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    token_hash BYTEA NOT NULL UNIQUE CHECK (octet_length(token_hash) = 32),
+    session_hash BYTEA NOT NULL CHECK (octet_length(session_hash) = 32),
+    subject VARCHAR(255) NOT NULL CHECK (char_length(trim(subject)) BETWEEN 1 AND 255),
+    display_name VARCHAR(120) NOT NULL CHECK (char_length(trim(display_name)) BETWEEN 1 AND 120),
+    expires_at TIMESTAMPTZ NOT NULL,
+    consumed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_external_identity_challenges_owner
+    ON external_identity_challenges (user_id, provider_id, session_hash, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS external_identity_links (
+    id BIGSERIAL PRIMARY KEY,
+    provider_id BIGINT NOT NULL REFERENCES external_identity_providers(id) ON DELETE RESTRICT,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    subject VARCHAR(255) NOT NULL,
+    display_name VARCHAR(120) NOT NULL,
+    public BOOLEAN NOT NULL DEFAULT FALSE,
+    verified_at TIMESTAMPTZ NOT NULL,
+    reverified_at TIMESTAMPTZ,
+    unlinked_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_external_identity_links_user_provider_active
+    ON external_identity_links (user_id, provider_id) WHERE unlinked_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_external_identity_links_provider_subject_active
+    ON external_identity_links (provider_id, subject) WHERE unlinked_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_external_identity_links_public_user
+    ON external_identity_links (user_id, provider_id, id) WHERE unlinked_at IS NULL AND public;
+
+CREATE TABLE IF NOT EXISTS external_identity_events (
+    id BIGSERIAL PRIMARY KEY,
+    link_id BIGINT REFERENCES external_identity_links(id) ON DELETE RESTRICT,
+    provider_id BIGINT NOT NULL REFERENCES external_identity_providers(id) ON DELETE RESTRICT,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    actor_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    action VARCHAR(24) NOT NULL CHECK (action IN ('linked', 'reverified', 'visibility_changed', 'unlinked')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_external_identity_events_user
+    ON external_identity_events (user_id, created_at DESC, id DESC);
+
+-- Non-financial reward grants, redemption ledger, and leased delivery.
+CREATE TABLE IF NOT EXISTS reward_event_providers (id BIGSERIAL PRIMARY KEY,key VARCHAR(64) NOT NULL UNIQUE,name VARCHAR(80) NOT NULL,adapter_key VARCHAR(64) NOT NULL,enabled BOOLEAN NOT NULL DEFAULT TRUE,created_by BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS reward_rules (id BIGSERIAL PRIMARY KEY,provider_id BIGINT NOT NULL REFERENCES reward_event_providers(id) ON DELETE RESTRICT,event_type VARCHAR(64) NOT NULL,version INTEGER NOT NULL CHECK(version>0),points BIGINT NOT NULL CHECK(points>0),enabled BOOLEAN NOT NULL DEFAULT TRUE,created_by BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),UNIQUE(provider_id,event_type,version));
+CREATE UNIQUE INDEX IF NOT EXISTS uq_reward_rules_active ON reward_rules(provider_id,event_type) WHERE enabled;
+CREATE TABLE IF NOT EXISTS reward_provider_events (id BIGSERIAL PRIMARY KEY,provider_id BIGINT NOT NULL REFERENCES reward_event_providers(id) ON DELETE RESTRICT,provider_event_hash BYTEA NOT NULL CHECK(octet_length(provider_event_hash)=32),payload_hash BYTEA NOT NULL CHECK(octet_length(payload_hash)=32),event_type VARCHAR(64) NOT NULL,subject_hash BYTEA NOT NULL CHECK(octet_length(subject_hash)=32),occurred_at TIMESTAMPTZ NOT NULL,received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),UNIQUE(provider_id,provider_event_hash));
+CREATE TABLE IF NOT EXISTS reward_grants (id BIGSERIAL PRIMARY KEY,event_id BIGINT NOT NULL UNIQUE REFERENCES reward_provider_events(id) ON DELETE RESTRICT,rule_id BIGINT NOT NULL REFERENCES reward_rules(id) ON DELETE RESTRICT,rule_version INTEGER NOT NULL,user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,points BIGINT NOT NULL CHECK(points>0),created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS reward_catalog (id BIGSERIAL PRIMARY KEY,key VARCHAR(64) NOT NULL UNIQUE,name VARCHAR(100) NOT NULL,description VARCHAR(500) NOT NULL DEFAULT '',cost BIGINT NOT NULL CHECK(cost>0),delivery_adapter VARCHAR(64) NOT NULL,delivery_payload JSONB NOT NULL DEFAULT '{}'::jsonb,enabled BOOLEAN NOT NULL DEFAULT TRUE,created_by BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS reward_redemptions (id BIGSERIAL PRIMARY KEY,user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,reward_id BIGINT NOT NULL REFERENCES reward_catalog(id) ON DELETE RESTRICT,idempotency_hash BYTEA NOT NULL CHECK(octet_length(idempotency_hash)=32),request_hash BYTEA NOT NULL CHECK(octet_length(request_hash)=32),cost BIGINT NOT NULL CHECK(cost>0),status VARCHAR(24) NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','delivering','succeeded','failed')),created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),UNIQUE(user_id,idempotency_hash));
+CREATE TABLE IF NOT EXISTS reward_ledger_entries (id BIGSERIAL PRIMARY KEY,user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,grant_id BIGINT UNIQUE REFERENCES reward_grants(id) ON DELETE RESTRICT,redemption_id BIGINT UNIQUE REFERENCES reward_redemptions(id) ON DELETE RESTRICT,delta BIGINT NOT NULL CHECK(delta<>0),created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),CHECK((grant_id IS NOT NULL)::int+(redemption_id IS NOT NULL)::int=1));
+CREATE INDEX IF NOT EXISTS idx_reward_ledger_user ON reward_ledger_entries(user_id,id);
+CREATE TABLE IF NOT EXISTS reward_fulfilments (id BIGSERIAL PRIMARY KEY,redemption_id BIGINT NOT NULL UNIQUE REFERENCES reward_redemptions(id) ON DELETE RESTRICT,adapter_key VARCHAR(64) NOT NULL,payload JSONB NOT NULL,payload_hash BYTEA NOT NULL CHECK(octet_length(payload_hash)=32),status VARCHAR(24) NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','leased','succeeded','failed')),attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts>=0),available_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),lease_owner VARCHAR(120),lease_expires_at TIMESTAMPTZ,last_error VARCHAR(500),delivered_at TIMESTAMPTZ,updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+CREATE INDEX IF NOT EXISTS idx_reward_fulfilments_claim ON reward_fulfilments(available_at,id) WHERE status IN ('pending','leased') AND attempts<8;
+
+-- Configurable, privacy-safe ranked datasets.
+CREATE TABLE IF NOT EXISTS ranked_datasets (id BIGSERIAL PRIMARY KEY,key VARCHAR(64) NOT NULL UNIQUE,name VARCHAR(100) NOT NULL,description VARCHAR(500) NOT NULL DEFAULT '',metric_label VARCHAR(60) NOT NULL,direction VARCHAR(8) NOT NULL CHECK(direction IN ('asc','desc')),tie_rule VARCHAR(16) NOT NULL CHECK(tie_rule IN ('competition','dense','ordinal')),visibility VARCHAR(16) NOT NULL CHECK(visibility IN ('public','members','private')),enabled BOOLEAN NOT NULL DEFAULT TRUE,created_by BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS ranked_seasons (id BIGSERIAL PRIMARY KEY,dataset_id BIGINT NOT NULL REFERENCES ranked_datasets(id) ON DELETE RESTRICT,key VARCHAR(64) NOT NULL,name VARCHAR(100) NOT NULL,starts_at TIMESTAMPTZ NOT NULL,ends_at TIMESTAMPTZ,closed_at TIMESTAMPTZ,created_by BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),UNIQUE(dataset_id,key),CHECK(ends_at IS NULL OR ends_at>starts_at));
+CREATE TABLE IF NOT EXISTS ranked_entries (id BIGSERIAL PRIMARY KEY,dataset_id BIGINT NOT NULL REFERENCES ranked_datasets(id) ON DELETE RESTRICT,season_id BIGINT NOT NULL REFERENCES ranked_seasons(id) ON DELETE RESTRICT,subject_type VARCHAR(16) NOT NULL CHECK(subject_type IN ('user','external','team')),subject_key VARCHAR(255) NOT NULL,display_name VARCHAR(120) NOT NULL,public BOOLEAN NOT NULL DEFAULT TRUE,score NUMERIC(20,4) NOT NULL DEFAULT 0,updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),UNIQUE(season_id,subject_type,subject_key));
+CREATE INDEX IF NOT EXISTS idx_ranked_entries_desc ON ranked_entries(season_id,score DESC,id);
+CREATE INDEX IF NOT EXISTS idx_ranked_entries_asc ON ranked_entries(season_id,score ASC,id);
+CREATE TABLE IF NOT EXISTS ranked_ingestions (id BIGSERIAL PRIMARY KEY,dataset_id BIGINT NOT NULL REFERENCES ranked_datasets(id) ON DELETE RESTRICT,season_id BIGINT NOT NULL REFERENCES ranked_seasons(id) ON DELETE RESTRICT,producer_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,event_hash BYTEA NOT NULL CHECK(octet_length(event_hash)=32),payload_hash BYTEA NOT NULL CHECK(octet_length(payload_hash)=32),entry_id BIGINT NOT NULL REFERENCES ranked_entries(id) ON DELETE RESTRICT,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),UNIQUE(dataset_id,event_hash));
+
+-- Shared discovery fields with explicit proposal, showcase, and event workflows.
+INSERT INTO forum_categories(name,description,display_order,is_pinned,is_locked) VALUES('Community Discussions','Discussion threads owned by community proposals, showcases, and events.',0,FALSE,FALSE) ON CONFLICT(name) DO UPDATE SET deleted_at=NULL,deleted_by=NULL;
+CREATE TABLE IF NOT EXISTS community_publications (id BIGSERIAL PRIMARY KEY,kind VARCHAR(16) NOT NULL CHECK(kind IN ('proposal','showcase','event')),slug VARCHAR(100) NOT NULL,title VARCHAR(160) NOT NULL,summary VARCHAR(500) NOT NULL DEFAULT '',page_id BIGINT NOT NULL UNIQUE REFERENCES pages(id) ON DELETE RESTRICT,visibility VARCHAR(16) NOT NULL DEFAULT 'public' CHECK(visibility IN ('public','members','private')),publication_status VARCHAR(16) NOT NULL DEFAULT 'draft' CHECK(publication_status IN ('draft','published','archived')),author_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,canonical_thread_id BIGINT NOT NULL UNIQUE,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),deleted_at TIMESTAMPTZ,deleted_by BIGINT REFERENCES users(id) ON DELETE SET NULL,UNIQUE(kind,slug),FOREIGN KEY(canonical_thread_id,author_id) REFERENCES forum_threads(id,user_id) ON DELETE RESTRICT);
+CREATE INDEX IF NOT EXISTS idx_community_publications_directory ON community_publications(kind,id DESC) WHERE deleted_at IS NULL AND publication_status='published';
+CREATE TABLE IF NOT EXISTS community_proposals (publication_id BIGINT PRIMARY KEY REFERENCES community_publications(id) ON DELETE RESTRICT,state VARCHAR(20) NOT NULL DEFAULT 'submitted' CHECK(state IN ('submitted','under_review','accepted','rejected','completed')),decision TEXT NOT NULL DEFAULT '',decided_by BIGINT REFERENCES users(id) ON DELETE RESTRICT,decided_at TIMESTAMPTZ);
+CREATE TABLE IF NOT EXISTS community_proposal_votes (proposal_id BIGINT NOT NULL REFERENCES community_proposals(publication_id) ON DELETE RESTRICT,user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,value SMALLINT NOT NULL CHECK(value IN (-1,1)),created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),PRIMARY KEY(proposal_id,user_id));
+CREATE TABLE IF NOT EXISTS community_showcases (publication_id BIGINT PRIMARY KEY REFERENCES community_publications(id) ON DELETE RESTRICT,media JSONB NOT NULL DEFAULT '[]'::jsonb,credits VARCHAR(500) NOT NULL DEFAULT '');
+CREATE TABLE IF NOT EXISTS community_events (publication_id BIGINT PRIMARY KEY REFERENCES community_publications(id) ON DELETE RESTRICT,starts_at TIMESTAMPTZ NOT NULL,ends_at TIMESTAMPTZ,location VARCHAR(200) NOT NULL DEFAULT '',capacity INTEGER CHECK(capacity IS NULL OR capacity>0),CHECK(ends_at IS NULL OR ends_at>starts_at));
+CREATE TABLE IF NOT EXISTS community_event_attendance (event_id BIGINT NOT NULL REFERENCES community_events(publication_id) ON DELETE RESTRICT,user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,status VARCHAR(12) NOT NULL CHECK(status IN ('going','interested')),created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),PRIMARY KEY(event_id,user_id));
+CREATE TABLE IF NOT EXISTS community_workflow_events (id BIGSERIAL PRIMARY KEY,publication_id BIGINT NOT NULL REFERENCES community_publications(id) ON DELETE RESTRICT,actor_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,action VARCHAR(32) NOT NULL,before_state VARCHAR(24),after_state VARCHAR(24),created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());
+CREATE INDEX IF NOT EXISTS idx_community_workflow_events_publication ON community_workflow_events(publication_id,id DESC);

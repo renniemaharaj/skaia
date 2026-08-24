@@ -14,7 +14,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { currentUserAtom, isAuthenticatedAtom } from "../../atoms/auth";
-import { layoutModeAtom } from "../../atoms/layoutMode";
 import {
   type Product,
   productCategoriesAtom,
@@ -90,7 +89,6 @@ export const ProductPage = () => {
   const currentUser = useAtomValue(currentUserAtom);
   const setCartItems = useSetAtom(storeCartItemsAtom);
   const categories = useAtomValue(productCategoriesAtom);
-  const setLayoutMode = useSetAtom(layoutModeAtom);
   const [guestSandboxMode] = useGuestSandboxMode();
   const { subscribe, unsubscribe } = useWebSocketSync();
 
@@ -108,11 +106,6 @@ export const ProductPage = () => {
       product?.owner_id &&
       String(product.owner_id) === String(currentUser.id)) ||
     guestSandboxMode;
-
-  useEffect(() => {
-    setLayoutMode("application");
-    return () => setLayoutMode("web");
-  }, [setLayoutMode]);
 
   useEffect(() => {
     if (!id) return;
@@ -563,7 +556,6 @@ export const ProductPage = () => {
           </div>
         </div>
       </div>
-
     </StorePageShell>
   );
 };

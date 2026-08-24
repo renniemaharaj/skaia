@@ -25,7 +25,7 @@ import { customPrompt } from "../ui/Prompt";
 import "./SecuritySettings.css";
 import Button from "../input/Button";
 import { FormField, FormSectionIntro, ManagedForm } from "../form";
-import { UserRound } from "lucide-react";
+import { Link2, UserRound } from "lucide-react";
 
 interface SecuritySettingsProps {
   emailVerified: boolean;
@@ -639,6 +639,13 @@ export default function SecuritySettings({
                 icon: <ShieldCheck size={15} />,
                 active: true,
                 to: `${basePath}/security`,
+              },
+              {
+                id: "identities",
+                label: "Linked identities",
+                icon: <Link2 size={15} />,
+                active: false,
+                to: `${basePath}/identities`,
               },
             ]
           : []

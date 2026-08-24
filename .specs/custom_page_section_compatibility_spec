@@ -14,6 +14,15 @@
 - `/pages/browse` exposes bounded content-free summaries. The intent-only
   `/pages/browse/{id}/preview` read returns a service-authorized and
   caller-sanitized copy without creating a second content authority.
+- Proposal, showcase, and event publications reference owned `pages` rows rather
+  than storing a second document. Community detail uses the same validation and
+  caller-specific interactive sanitization boundary as the canonical page route.
+  Embedded community documents receive their linked page ID, so authored form,
+  Q&A, survey, poll, and vote sections submit through the ordinary page-response
+  API without granting embedded design or manager controls.
+- The same publication transaction creates its separate author-owned forum
+  thread. Discussion stays authoritative in the forum domain and is linked from
+  community detail; it is never copied into the page document.
 
 ## Stored envelope
 
@@ -96,6 +105,13 @@ Its config helper:
 
 Reusable datasource-backed section presets remain in the existing
 `custom_sections` feature and `/config/section-presets` compatibility alias.
+
+Domain-owned workflows may project an `InteractiveConfig` through the shared
+`InteractiveActionSection` binding. The binding reuses the interactive field,
+validation, idempotency-intent, loading, and feedback UI but delegates mutation
+to the domain endpoint. It must not append domain responses to page JSON or turn
+`pages.content` into a second workflow, attendance, commerce, or moderation
+authority.
 
 ## Validation and security
 

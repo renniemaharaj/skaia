@@ -2,8 +2,9 @@
 
 ## Scope
 
-Frontend/backend resolution for `/`, custom pages, documentation/forum-doc deep
-links, public KJV deep links, landing-page swaps, and CDN-safe page fetching.
+Frontend/backend resolution for `/`, custom pages, module SPA shells,
+documentation/forum-doc deep links, public KJV deep links, landing-page swaps,
+and CDN-safe page fetching.
 
 ## Load when
 
@@ -77,6 +78,25 @@ with `Psalm` retained as an alias for canonical `Psalms`. UI navigation preserve
 the URL form used to enter the reader. Canonicalization uses history replacement;
 user navigation pushes history, while automatic narration replaces the current
 coordinate.
+
+## Platform Module Shells
+
+- `/community`, its proposal/showcase/event directory and numeric detail paths,
+  and `/leaderboards` resolve as public SPA shells on direct navigation.
+- Community directory, detail, and creation routes share one module-owned tab and
+  back-navigation shell. `/rewards` and `/leaderboards` use the same stable shell
+  geometry, aligned with the store depth shell used by cart, wallet, and orders.
+- Community detail embeds its linked custom-page document without redirecting;
+  the page's canonical `/page/:slug` route remains available for full-page viewing
+  and inline building, while `/form/page/:slug/manage` owns page management.
+- `/form/community/:kind/:id/edit` is the protected publication metadata editor;
+  discussion viewing and editing continue through `/view-thread/:threadId` and
+  `/edit-thread/:threadId` rather than introducing community-owned forum routes.
+  Server-projected capabilities and service policy remain authoritative.
+- `/rewards`, `/admin/rewards`, `/admin/status`, and canonical user settings
+  paths resolve as noindex SPA shells; API authorization remains authoritative.
+- The feature projection recognizes `status`, `rewards`, `rankings`, and
+  `community` as explicit opt-in `FEATURES_ENABLED` values.
 
 ## Page Mutations
 

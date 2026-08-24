@@ -119,9 +119,84 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-08-23
+- 2026-08-24
 
 ## Last Run Remarks
+
+- Repaired `wipe all`: Compose failures no longer short-circuit confirmed local
+  cleanup, client directories receive the same ownership fallback as single-site
+  removal, the confirmation prompt is unambiguous, and residual paths turn the
+  operation into an explicit failure instead of a false success.
+
+- Consolidated backend and grengo feature names into one shared registry. New
+  clients and feature-update defaults now offer every registered module,
+  including status, rewards, rankings, and community; focused root/backend tests
+  and builds pass.
+
+- Completed the owned-discussion extension for community publications. Creation
+  now atomically provisions author-owned page and thread resources, migration 047
+  safely reconciles existing references, lifecycle is coupled, and community
+  detail exposes canonical thread view/edit actions. Full gates pass; PostgreSQL
+  execution remains unavailable locally.
+
+- Completed the community second-polish pass: forum-proportional route headings,
+  compact shared icon actions, reusable domain-bound interactive sections for
+  proposal voting/moderation and event attendance, and working linked-page
+  interactive submissions inside community detail. Full gates pass.
+
+- Extended `community_publication_custom_pages` with service-owned capability
+  projection, owner/granular edit and delete controls, proposal moderation,
+  authenticated participation, linked-page cache/realtime invalidation, and a
+  centered comfortable-shell contract. Full backend/frontend and UI policy
+  gates pass; PostgreSQL migration execution remains unavailable locally.
+
+- Completed `community_publication_custom_pages`: proposals, showcases, and
+  events now atomically own real custom pages, hydrate through the page privacy
+  boundary, render full-width in their submodule, expose canonical builder/manage
+  routes, and share deletion/restoration lifecycle. Full backend and frontend
+  gates pass; DB-backed migration execution remains unavailable locally.
+
+- Consolidated the platform-gap UI follow-up around a shared module-depth shell:
+  community directories/details/forms, rewards, and leaderboards now align
+  navigation and child content to one stable measure; directory internals no
+  longer inherit an incidental parent width, and the forum reply editor expands
+  into a bottom-centered composer.
+- Community publication bodies now use the existing custom-page section-array
+  editor/renderer contract with legacy rich-text compatibility. Reward account
+  projections normalize empty provider collections at both service and browser
+  boundaries, resolving the `/rewards` null-length failure.
+- Verification passed: complete backend tests; all 248 frontend tests in a
+  single-worker deterministic run; frontend lint/build; and native-dialog,
+  managed-form, loading-boundary, and media-placeholder gates.
+
+- Enabled `rewards`, `rankings`, and `community` for the active `home` client,
+  repaired the backend optional-feature projection and direct module SPA shells,
+  rebuilt/recreated `home-backend`, restored its frontend bundle, and verified
+  operational readiness plus the live feature response and HTTP 200 routes.
+
+- Completed `community_hub_and_app_discovery`: the existing app drawer now
+  exposes every platform-gap destination in its appropriate public or signed-in
+  context, and `/community` provides one feature-, auth-, and permission-tailored
+  onboarding catalog without a new backend navigation system.
+- Verification passed: all 246 frontend tests, lint, production build, and the
+  managed-form, native-dialog, media-placeholder, and loading-boundary gates.
+
+- Completed the remaining platform-gap sequence: external-event rewards,
+  configurable ranked datasets, and community proposal/showcase/event workflows.
+  Migrations 042-044, fresh-schema parity, centralized policy, bounded APIs,
+  shared UI, lifecycle/Trash support, and durable specs now agree.
+- Verification passed: complete backend tests and vet; all 243 frontend tests,
+  lint, build, managed-form/native-dialog/media/loading policy gates, migration
+  ordering, todo pairing, reference, and diff checks. PostgreSQL-backed execution
+  was unavailable because `TEST_DATABASE_URL` is not configured.
+
+- Completed `linked_external_identities`: migration 041 and the fresh schema now
+  provide provider-neutral definitions, session-bound single-use challenges,
+  unique private-by-default verified links, immutable lifecycle events, public
+  projections, and shared settings/profile UX. Stage 4 rewards is unblocked.
+- Verification passed: full backend tests/vet; 239 frontend tests, lint, build,
+  and all affected UI policies. DB-backed PostgreSQL execution was unavailable
+  because `TEST_DATABASE_URL` is not configured.
 
 - Completed `production_readiness_and_service_status`: bounded dependency
   readiness, protected telemetry, opt-in public status and audited incidents,

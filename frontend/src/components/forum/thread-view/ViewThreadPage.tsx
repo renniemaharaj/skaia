@@ -1,15 +1,5 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import {
-  BarChart3,
-  BookOpen,
-  Lock,
-  Pencil,
-  Share2,
-  ThumbsUp,
-  Trash2,
-  Unlock,
-  X,
-} from "lucide-react";
+import { BarChart3, BookOpen, Lock, Pencil, Share2, ThumbsUp, Trash2, Unlock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -322,15 +312,6 @@ const ViewThreadPage = () => {
                     <BarChart3 size={14} />
                   </button>
                 )}
-
-                {/* Close */}
-                <button
-                  className="action-btn close-btn"
-                  onClick={() => navigate("/forum")}
-                  title="Close"
-                >
-                  <X size={20} />
-                </button>
               </div>
             }
           />

@@ -4,24 +4,25 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func cmdUpdateClient(name string) {
 	if !clientExists(name) {
 		die("Client '%s' not found", name)
 	}
-	const oneHint = "Comma-separated list: landing, store, forum, docs, cart, users, inbox, presence"
+	oneHint := "Comma-separated list: " + strings.Join(supportedFeatures(), ", ")
 	current := envVal(clientEnvFile(name), "FEATURES_ENABLED")
 	if current == "" {
-		current = "landing,store,forum,docs,cart,users,inbox,presence"
+		current = allFeaturesCSV()
 	}
 	fmt.Println()
 	fmt.Printf("Updating features for client %s\n", name)
 	fmt.Printf("%s\n", oneHint)
 	values := prompt("Enabled features", current, false)
-	values = normalizeFeatures(values, []string{"landing", "store", "forum", "docs", "cart", "users", "inbox", "presence"})
+	values = normalizeFeatures(values, supportedFeatures())
 	if values == "" {
-		values = "landing,store,forum,docs,cart,users,inbox,presence"
+		values = allFeaturesCSV()
 	}
 	if err := setEnvVal(clientEnvFile(name), "FEATURES_ENABLED", values); err != nil {
 		die("Failed to update .env for %s: %v", name, err)
@@ -34,14 +35,14 @@ func cmdUpdateAll() {
 	if err != nil {
 		die("Unable to read backends dir: %v", err)
 	}
-	const oneHint = "Comma-separated list: landing, store, forum, docs, cart, users, inbox, presence"
+	oneHint := "Comma-separated list: " + strings.Join(supportedFeatures(), ", ")
 	fmt.Println()
 	fmt.Printf("Updating features for all clients\n")
 	fmt.Printf("%s\n", oneHint)
-	values := prompt("Enabled features", "landing,store,forum,docs,cart,users,inbox,presence", false)
-	values = normalizeFeatures(values, []string{"landing", "store", "forum", "docs", "cart", "users", "inbox", "presence"})
+	values := prompt("Enabled features", allFeaturesCSV(), false)
+	values = normalizeFeatures(values, supportedFeatures())
 	if values == "" {
-		values = "landing,store,forum,docs,cart,users,inbox,presence"
+		values = allFeaturesCSV()
 	}
 
 	updated := 0

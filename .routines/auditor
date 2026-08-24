@@ -89,9 +89,60 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Ran
 
-- 2026-08-23
+- 2026-08-24
 
 ## Last Run Remarks
+
+- Audited `wipe all` for destructive-target containment, confirmation clarity,
+  Docker failure handling, root-owned files, exhaustive cleanup, residual
+  verification, and false-success reporting. Focused filesystem tests and the
+  root CLI build pass without executing a live wipe.
+
+- Audited feature-registry consolidation across new/update prompts, env defaults,
+  backend status projection, module boundaries, Docker build context, and drift
+  tests. The shared registry removes the stale-list failure mode without changing
+  legacy empty-env optional-feature semantics.
+
+- Audited owned publication discussions across atomic creation, legacy ownership
+  and duplicate reconciliation, database owner identity, lifecycle, caller input,
+  capability projection, canonical routes, focused/full tests, and durable specs.
+  No material affected-scope issue remains; DB-backed migration execution was
+  unavailable locally.
+
+- The requested second audit found and fixed oversized inherited community/status
+  typography, nonstandard text action bars, inert embedded page interactions,
+  post-decision proposal voting, and a private-event attendance visibility race.
+  Domain-bound actions now reuse the interactive renderer without duplicating
+  workflow state. No Critical, High, or Medium affected-scope issue remains.
+
+- Audited the community permission-control follow-up across fail-closed service
+  authorization, cross-domain privilege isolation, owner/granular capability
+  projection, destructive UX, trash restoration scope, linked-page invalidation,
+  and shared shell geometry. No material affected-scope issue remains.
+
+- Audited linked community custom pages across atomic ownership, document
+  validation, imported interactive-record removal, caller-specific projection,
+  content-free directories, lifecycle coupling, full-width responsive UI,
+  canonical routes, migration backfill, tests, and specs. No material affected-
+  scope issue remains; PostgreSQL migration execution was unavailable locally.
+
+- Audited the community hub and drawer across public/authenticated visibility,
+  live feature flags, permission-only operator discovery, canonical account
+  routes, keyboard behavior, responsive token CSS, and backend authorization
+  ownership. No material affected-scope issue remains.
+
+- Audited the completed platform-gap sequence across provider authentication,
+  replay conflicts, immutable points, redemption and attendance serialization,
+  delivery leases, ranking privacy/cursors/ties, community workflow transitions,
+  Trash restoration, feature-gated UX, migrations, permissions, and specs.
+  Corrected provider-to-adapter resolution, community restore/lifecycle evidence,
+  typed permission seeding, and fresh-schema parity. No material affected-scope
+  issue remains.
+
+- Audited linked identities across tenant/provider uniqueness, challenge replay,
+  user/access-session binding, reference-adapter opt-in, public DTO privacy,
+  service policy, shared UI actions, destructive prompts, responsive token CSS,
+  tests, migrations, and specs. No material affected-scope issue remains.
 
 - Audited production readiness across health amplification/disclosure, incident
   policy/audit integrity, backup handling, release/load safety, session smoke,

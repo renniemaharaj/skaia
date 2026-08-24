@@ -28,6 +28,7 @@ import (
 	"github.com/skaia/backend/internal/authhandler"
 	ibible "github.com/skaia/backend/internal/bible"
 	iclipmaker "github.com/skaia/backend/internal/clipmaker"
+	icommunity "github.com/skaia/backend/internal/community"
 	icfg "github.com/skaia/backend/internal/config"
 	"github.com/skaia/backend/internal/ctx"
 	ics "github.com/skaia/backend/internal/customsection"
@@ -35,6 +36,7 @@ import (
 	idocumentation "github.com/skaia/backend/internal/documentation"
 	iemail "github.com/skaia/backend/internal/email"
 	ievents "github.com/skaia/backend/internal/events"
+	iexternalidentity "github.com/skaia/backend/internal/externalidentity"
 	iforum "github.com/skaia/backend/internal/forum"
 	igrengo "github.com/skaia/backend/internal/grengo"
 	"github.com/skaia/backend/internal/grpcserver"
@@ -46,6 +48,8 @@ import (
 	inotif "github.com/skaia/backend/internal/notification"
 	ipage "github.com/skaia/backend/internal/page"
 	iprovisioning "github.com/skaia/backend/internal/provisioning"
+	irankings "github.com/skaia/backend/internal/rankings"
+	irewards "github.com/skaia/backend/internal/rewards"
 	isecurity "github.com/skaia/backend/internal/security"
 	"github.com/skaia/backend/internal/seo"
 	isession "github.com/skaia/backend/internal/session"
@@ -1037,6 +1041,33 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		isecurity.NewAccountTrustHandler(accountTrustPolicy).Mount(api, imw.JWTAuthMiddleware)
 		isession.NewHandler(isession.NewService(isession.NewSQLRepository(db))).MountPublic(api)
 		iuser.NewHandler(userSvc, hub, dispatcher, inboxSender, emailSender).Mount(api, imw.JWTAuthMiddleware)
+		identityRepo := iexternalidentity.NewRepository(db)
+		identitySvc := iexternalidentity.NewService(
+			identityRepo,
+			func(ctx context.Context, userID int64) error {
+				_, err := accountTrustPolicy.RequireEstablished(ctx, userID)
+				return err
+			},
+			userSvc.HasPermission,
+			map[string]iexternalidentity.Adapter{
+				"reference": iexternalidentity.ReferenceAdapter{Enabled: strings.EqualFold(os.Getenv("IDENTITY_REFERENCE_ADAPTER_ENABLED"), "true")},
+			},
+		)
+		iexternalidentity.NewHandler(identitySvc).Mount(api, imw.JWTAuthMiddleware)
+		rewardSecret := []byte(os.Getenv("REWARD_REFERENCE_WEBHOOK_SECRET"))
+		rewardRepo := irewards.NewRepository(db)
+		rewardSvc := irewards.NewService(
+			rewardRepo,
+			userSvc.HasPermission,
+			map[string]irewards.EventAuthenticator{
+				"reference": irewards.HMACAuthenticator{Secret: rewardSecret, Window: 5 * time.Minute},
+			},
+			map[string]irewards.DeliveryAdapter{
+				"reference": irewards.ReferenceDelivery{Enabled: strings.EqualFold(os.Getenv("REWARD_REFERENCE_DELIVERY_ENABLED"), "true")},
+			},
+		)
+		irewards.NewHandler(rewardSvc).Mount(api, imw.JWTAuthMiddleware)
+		irankings.NewHandler(irankings.NewService(irankings.NewRepository(db), userSvc.HasPermission)).Mount(api, imw.JWTAuthMiddleware)
 		iforum.NewHandler(forumSvc, hub, notifSvc, userSvc, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, commentSlowMode)
 		idocumentation.NewHandler(documentationSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware)
 		istore.NewHandler(storeSvc, hub, notifSvc, userSvc, dispatcher).Mount(api, imw.JWTAuthMiddleware)
@@ -1052,6 +1083,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			ics.NewTrashProvider(db),
 		)
 		trashProviders = append(trashProviders, ipage.NewTrashProviders(db)...)
+		trashProviders = append(trashProviders, icommunity.NewTrashProvider(db))
 		trashProviders = append(trashProviders, istore.NewTrashProviders(db)...)
 		trashProviders = append(trashProviders, iinbox.NewTrashProviders(db)...)
 		trashProviders = append(trashProviders, iuser.NewTrashProviders(db)...)
@@ -1082,6 +1114,34 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		pagePolicy := isecurity.NewPagePolicy(pageRepo, userSvc)
 		pageSvc := ipage.NewService(pageRepo, inboxSvc, ipage.WithIntegrationResolvers(dsSvc, csSvc), ipage.WithRedisClient(rdb), ipage.WithInteractivePolicy(pagePolicy))
 		ipage.NewHandler(pageSvc, cfgSvc, userSvc, hub, dispatcher, analyticsSvc).Mount(api, imw.JWTAuthMiddleware, commentSlowMode)
+		communitySvc := icommunity.NewService(
+			icommunity.NewRepository(db),
+			userSvc.HasPermission,
+			icommunity.WithPageDocuments(
+				func(pageID, actorID int64, canManage bool) (string, error) {
+					page, err := pageSvc.GetByID(pageID)
+					if err != nil {
+						return "", err
+					}
+					pageSvc.SanitizeInteractivePage(page, actorID, canManage)
+					return page.Content, nil
+				},
+				pageSvc.ValidateDocument,
+			),
+			icommunity.WithPageChangeNotifier(func(actorID, pageID int64, oldSlug, newSlug, action string) {
+				pageSvc.InvalidateExternalMutation(oldSlug, newSlug)
+				if action == "create" {
+					hub.BroadcastPage("page_created", map[string]interface{}{"id": pageID, "slug": newSlug, "partial": true})
+					return
+				}
+				if action == "delete" {
+					hub.BroadcastPage("page_deleted", map[string]interface{}{"id": pageID, "slug": oldSlug})
+					return
+				}
+				hub.BroadcastPageExceptUser(actorID, "page_updated", map[string]interface{}{"id": pageID, "slug": newSlug, "partial": true})
+			}),
+		)
+		icommunity.NewHandler(communitySvc).Mount(api, imw.JWTAuthMiddleware)
 
 		// Events log admin API.
 		eventsRepo := ievents.NewRepository(db)

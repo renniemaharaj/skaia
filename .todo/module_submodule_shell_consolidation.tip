@@ -1,0 +1,25 @@
+<--/------->
+
+## module_submodule_shell_consolidation
+
+### Current Progress
+- **Phase 1: Route and shell inventory** - ✅ Complete
+- **Phase 2: Canonical shell consolidation** - ✅ Complete
+- **Phase 3: Tests and architecture documentation** - ✅ Complete
+- **Phase 4: Verification and drift audit** - ✅ Complete
+
+### Next Steps
+- [x] 2026-08-23: Store, forum, documentation authoring, custom-page management,
+  community, rewards, rankings, settings, and applicable operator children use
+  managed module/domain shells; side-navigation and immersive route families
+  retain documented purpose-built owners.
+- [x] 2026-08-23: Route chrome ownership moved to pathname policy; the drift scan
+  finds no routed component mutating application mode.
+- [x] 2026-08-23: `npm test -- --run` passes (76 files, 252 tests), `npm run lint`,
+  `npm run build`, `check:native-dialogs`, `check:media-placeholders`,
+  `check:managed-forms`, and `check:loading-boundaries` pass under Node 24.16.0.
+- [x] 2026-08-23: Headless Chromium geometry check confirms Orders and Wallet
+  share the content rail, inset 40px from the back rail on desktop and 16px on
+  mobile.
+
+<--/------->

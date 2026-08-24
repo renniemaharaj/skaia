@@ -1,9 +1,7 @@
-import { useSetAtom } from "jotai";
 import { ChevronDown, ChevronUp, Plus, Save, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { User } from "../../atoms/auth";
-import { layoutModeAtom } from "../../atoms/layoutMode";
 import { apiRequest } from "../../utils/api";
 import PersonPicker from "../ui/PersonPicker";
 import { customConfirm } from "../ui/Prompt";
@@ -26,7 +24,6 @@ interface RoleWithPerms extends Role {
 }
 
 export default function RolesManagementPage() {
-  const setLayoutMode = useSetAtom(layoutModeAtom);
   const [roles, setRoles] = useState<RoleWithPerms[]>([]);
   const [allPerms, setAllPerms] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,11 +50,6 @@ export default function RolesManagementPage() {
 
   // Per-role permission toggling
   const [permToggling, setPermToggling] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    setLayoutMode("application");
-    return () => setLayoutMode("web");
-  }, [setLayoutMode]);
 
   useEffect(() => {
     const load = async () => {

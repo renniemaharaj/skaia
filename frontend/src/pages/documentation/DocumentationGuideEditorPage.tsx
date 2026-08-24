@@ -7,6 +7,7 @@ import type {
   DocumentationArticleView,
   DocumentationManifest,
 } from "../../atoms/documentation";
+import { DocumentationPageShell } from "../../components/documentation/DocumentationPageShell";
 import { FormField, FormSelect, ManagedForm } from "../../components/form";
 import { confirmDestructiveAction } from "../../components/ui/Prompt";
 import RichTextEditor from "../../components/ui/RichTextEditor";
@@ -132,123 +133,132 @@ export default function DocumentationGuideEditorPage() {
     }
   };
 
-  if (loading) return <div className="card">Loading guide editor...</div>;
+  if (loading)
+    return (
+      <DocumentationPageShell backTo={`/doc/${documentationSlug}`}>
+        <div className="card">Loading guide editor...</div>
+      </DocumentationPageShell>
+    );
   if (!manifest || (editing && !article))
     return (
-      <div className="card" role="alert">
-        Guide editor is unavailable.
-      </div>
+      <DocumentationPageShell backTo={`/doc/${documentationSlug}`}>
+        <div className="card" role="alert">
+          Guide editor is unavailable.
+        </div>
+      </DocumentationPageShell>
     );
   const returnTo = article
     ? `/doc/${manifest.documentation.slug}/${article.slug}`
     : `/doc/${manifest.documentation.slug}`;
 
   return (
-    <ManagedForm<GuideDraft>
-      id="documentation-guide-form"
-      title={editing ? "Edit Guide" : "Create New Guide"}
-      eyebrow="Documentation"
-      description={
-        editing
-          ? `Update this guide in ${manifest.documentation.title}`
-          : `Add a guide to ${manifest.documentation.title}`
-      }
-      initialValues={draft}
-      enableReinitialize
-      cancelTo={returnTo}
-      submitLabel={editing ? "Save guide" : "Create guide"}
-      submitDisabled={formik => !formik.values.title.trim() || !formik.values.slug.trim()}
-      formClassName="documentation-guide-editor"
-      className="documentation-guide-modal"
-      validate={values => ({
-        ...(!values.title.trim() ? { title: "Guide display name is required" } : {}),
-        ...(!values.slug.trim() ? { slug: "Guide URL slug is required" } : {}),
-      })}
-      onSubmit={save}
-    >
-      {formik => (
-        <>
-          <FormField
-            name="title"
-            label="Guide display name"
-            help="Use a clear title that tells readers what this guide covers."
-            placeholder="Install the platform"
-            maxLength={255}
-            autoFocus
-            required
-            onChange={event => {
-              setDirty(true);
-              void formik.setFieldValue("title", event.target.value);
-            }}
-          />
-          <FormField
-            name="slug"
-            label="Guide URL slug"
-            help={`Published at /doc/${manifest.documentation.slug}/${formik.values.slug || "guide"}`}
-            placeholder="install-platform"
-            maxLength={120}
-            required
-            onChange={event => {
-              setDirty(true);
-              void formik.setFieldValue("slug", event.target.value);
-            }}
-          />
-          <FormField
-            as="textarea"
-            name="summary"
-            label="Guide summary"
-            help="Optional introduction displayed below the guide title."
-            placeholder="Help readers understand what they will learn."
-            maxLength={2000}
-            onChange={event => {
-              setDirty(true);
-              void formik.setFieldValue("summary", event.target.value);
-            }}
-          />
-          <FormSelect
-            name="sectionId"
-            label="Sidebar section"
-            block
-            options={[
-              { value: "", label: "Overview" },
-              ...manifest.sections.map(section => ({
-                value: String(section.id),
-                label: section.title,
-              })),
-            ]}
-            onValueChange={() => setDirty(true)}
-          />
-          <div className="form-group documentation-guide-editor__content">
-            <label>Guide content</label>
-            <p className="form-help">Write and format the complete guide for readers.</p>
-            <RichTextEditor
-              value={formik.values.content}
-              onChange={content => {
+    <DocumentationPageShell backTo={returnTo} backLabel="Back to Guide">
+      <ManagedForm<GuideDraft>
+        id="documentation-guide-form"
+        title={editing ? "Edit Guide" : "Create New Guide"}
+        eyebrow="Documentation"
+        description={
+          editing
+            ? `Update this guide in ${manifest.documentation.title}`
+            : `Add a guide to ${manifest.documentation.title}`
+        }
+        initialValues={draft}
+        enableReinitialize
+        cancelTo={returnTo}
+        submitLabel={editing ? "Save guide" : "Create guide"}
+        submitDisabled={formik => !formik.values.title.trim() || !formik.values.slug.trim()}
+        formClassName="documentation-guide-editor"
+        className="documentation-guide-modal"
+        validate={values => ({
+          ...(!values.title.trim() ? { title: "Guide display name is required" } : {}),
+          ...(!values.slug.trim() ? { slug: "Guide URL slug is required" } : {}),
+        })}
+        onSubmit={save}
+      >
+        {formik => (
+          <>
+            <FormField
+              name="title"
+              label="Guide display name"
+              help="Use a clear title that tells readers what this guide covers."
+              placeholder="Install the platform"
+              maxLength={255}
+              autoFocus
+              required
+              onChange={event => {
                 setDirty(true);
-                void formik.setFieldValue("content", content);
+                void formik.setFieldValue("title", event.target.value);
               }}
-              minHeight="420px"
             />
-          </div>
-          {editing && (
-            <div className="documentation-guide-editor__danger">
-              <div>
-                <strong>Delete guide</strong>
-                <p>Move this guide to Trash.</p>
-              </div>
-              <button
-                className="btn btn-danger"
-                type="button"
-                disabled={formik.isSubmitting}
-                onClick={() => void remove()}
-              >
-                <Trash2 size={15} />
-                Delete guide
-              </button>
+            <FormField
+              name="slug"
+              label="Guide URL slug"
+              help={`Published at /doc/${manifest.documentation.slug}/${formik.values.slug || "guide"}`}
+              placeholder="install-platform"
+              maxLength={120}
+              required
+              onChange={event => {
+                setDirty(true);
+                void formik.setFieldValue("slug", event.target.value);
+              }}
+            />
+            <FormField
+              as="textarea"
+              name="summary"
+              label="Guide summary"
+              help="Optional introduction displayed below the guide title."
+              placeholder="Help readers understand what they will learn."
+              maxLength={2000}
+              onChange={event => {
+                setDirty(true);
+                void formik.setFieldValue("summary", event.target.value);
+              }}
+            />
+            <FormSelect
+              name="sectionId"
+              label="Sidebar section"
+              block
+              options={[
+                { value: "", label: "Overview" },
+                ...manifest.sections.map(section => ({
+                  value: String(section.id),
+                  label: section.title,
+                })),
+              ]}
+              onValueChange={() => setDirty(true)}
+            />
+            <div className="form-group documentation-guide-editor__content">
+              <label>Guide content</label>
+              <p className="form-help">Write and format the complete guide for readers.</p>
+              <RichTextEditor
+                value={formik.values.content}
+                onChange={content => {
+                  setDirty(true);
+                  void formik.setFieldValue("content", content);
+                }}
+                minHeight="420px"
+              />
             </div>
-          )}
-        </>
-      )}
-    </ManagedForm>
+            {editing && (
+              <div className="documentation-guide-editor__danger">
+                <div>
+                  <strong>Delete guide</strong>
+                  <p>Move this guide to Trash.</p>
+                </div>
+                <button
+                  className="btn btn-danger"
+                  type="button"
+                  disabled={formik.isSubmitting}
+                  onClick={() => void remove()}
+                >
+                  <Trash2 size={15} />
+                  Delete guide
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </ManagedForm>
+    </DocumentationPageShell>
   );
 }

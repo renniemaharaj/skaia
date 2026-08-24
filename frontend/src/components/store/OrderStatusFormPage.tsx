@@ -3,29 +3,33 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Order } from "../../atoms/store";
 import { apiRequest } from "../../utils/api";
 import { FormSelect, ManagedForm } from "../form";
+import { StorePageShell } from "./StorePageShell";
 
 type OrderResponse = Order | { order: Order };
 
 const statusOptions = (current: string) => {
-	const labels: Record<string, string> = {
-		pending: "Pending",
-		vendor_review: "Vendor review",
-		accepted: "Accepted",
-		paid: "Paid",
-		fulfilment_pending: "Fulfilment pending",
-		completed: "Completed",
-		failed: "Failed",
-		cancelled: "Cancelled",
-		rejected: "Rejected",
-	};
-	const transitions: Record<string, string[]> = {
-		pending: ["pending", "accepted", "cancelled", "rejected"],
-		vendor_review: ["vendor_review", "accepted", "cancelled", "rejected"],
-		accepted: ["accepted", "paid", "completed", "cancelled", "rejected"],
-		paid: ["paid", "completed"],
-		fulfilment_pending: ["fulfilment_pending", "completed", "cancelled"],
-	};
-	return (transitions[current] || [current]).map(value => ({ value, label: labels[value] || value }));
+  const labels: Record<string, string> = {
+    pending: "Pending",
+    vendor_review: "Vendor review",
+    accepted: "Accepted",
+    paid: "Paid",
+    fulfilment_pending: "Fulfilment pending",
+    completed: "Completed",
+    failed: "Failed",
+    cancelled: "Cancelled",
+    rejected: "Rejected",
+  };
+  const transitions: Record<string, string[]> = {
+    pending: ["pending", "accepted", "cancelled", "rejected"],
+    vendor_review: ["vendor_review", "accepted", "cancelled", "rejected"],
+    accepted: ["accepted", "paid", "completed", "cancelled", "rejected"],
+    paid: ["paid", "completed"],
+    fulfilment_pending: ["fulfilment_pending", "completed", "cancelled"],
+  };
+  return (transitions[current] || [current]).map(value => ({
+    value,
+    label: labels[value] || value,
+  }));
 };
 
 export default function OrderStatusFormPage() {
@@ -40,39 +44,48 @@ export default function OrderStatusFormPage() {
   }, [orderId]);
   if (error)
     return (
-      <div className="card" role="alert">
-        {error}
-      </div>
+      <StorePageShell backTo="/store/orders" backLabel="Back to Orders">
+        <div className="card" role="alert">
+          {error}
+        </div>
+      </StorePageShell>
     );
-  if (!order) return <div className="card">Loading order editor...</div>;
+  if (!order)
+    return (
+      <StorePageShell backTo="/store/orders" backLabel="Back to Orders">
+        <div className="card">Loading order editor...</div>
+      </StorePageShell>
+    );
   return (
-    <ManagedForm
-      id="order-status-form"
-      title="Update order status"
-      eyebrow="Order"
-      description={`Order ${order.id}`}
-      initialValues={{ status: order.status || "pending" }}
-      cancelTo="/store/orders"
-      submitLabel="Save order status"
-      onSubmit={async (values, helpers) => {
-        helpers.setStatus(undefined);
-        try {
-          await apiRequest(`/store/orders/${order.id}/status`, {
-            method: "PUT",
-            body: JSON.stringify({ status: values.status }),
-          });
-          navigate("/store/orders");
-        } catch (cause) {
-          helpers.setStatus(cause instanceof Error ? cause.message : "Failed to update order");
-        }
-      }}
-    >
-      <FormSelect
-        name="status"
-        label="Order status"
-        block
-		options={statusOptions(order.status || "pending")}
-      />
-    </ManagedForm>
+    <StorePageShell backTo="/store/orders" backLabel="Back to Orders">
+      <ManagedForm
+        id="order-status-form"
+        title="Update order status"
+        eyebrow="Order"
+        description={`Order ${order.id}`}
+        initialValues={{ status: order.status || "pending" }}
+        cancelTo="/store/orders"
+        submitLabel="Save order status"
+        onSubmit={async (values, helpers) => {
+          helpers.setStatus(undefined);
+          try {
+            await apiRequest(`/store/orders/${order.id}/status`, {
+              method: "PUT",
+              body: JSON.stringify({ status: values.status }),
+            });
+            navigate("/store/orders");
+          } catch (cause) {
+            helpers.setStatus(cause instanceof Error ? cause.message : "Failed to update order");
+          }
+        }}
+      >
+        <FormSelect
+          name="status"
+          label="Order status"
+          block
+          options={statusOptions(order.status || "pending")}
+        />
+      </ManagedForm>
+    </StorePageShell>
   );
 }

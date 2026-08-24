@@ -38,7 +38,7 @@ go build -o grengo .
 
 | Command | Contract |
 | --- | --- |
-| `grengo new` | Create tenant DB/env/compose/uploads |
+| `grengo new` | Create tenant DB/env/compose/uploads; offer and default to every registered feature |
 | `grengo list` | Show tenants, ports, domains, running/enabled state |
 | `grengo start|stop <name>` | Tenant container lifecycle |
 | `grengo enable|disable <name>` | Toggle routing and regenerate nginx |
@@ -51,6 +51,7 @@ go build -o grengo .
 | `grengo export-node|import-node` | Full-node transfer |
 | `grengo verify backup|release` | Integrity and fail-closed release decisions |
 | `grengo load-check` | Capped read-only, local-by-default load sample |
+| `grengo wipe all` | Confirm exact phrase, attempt all service stops, remove every client plus shared data with ownership fallback, and fail if anything remains |
 
 ## Management API
 
@@ -98,7 +99,7 @@ Per-tenant env:
 | `PUBLIC_BASE_URL`, `SITEMAP_BASE_URL` | matching absolute canonical origin; HTTPS outside localhost |
 | `INDEX_FILE_PATH` | hot-shippable SPA entry document; generated tenant env uses `/app/frontend/dist/index.html`, and migration repairs the legacy exact `/frontend/dist/index.html` default without changing custom paths |
 | `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `ADMIN_PASSWORD` | required runtime secrets |
-| `FEATURES_ENABLED` | comma-separated feature gates |
+| `FEATURES_ENABLED` | comma-separated feature gates; CLI new/update defaults derive from the shared `github.com/skaia/features` registry |
 | `PAYMENT_PROVIDER`, `STRIPE_SECRET_KEY` | store payment provider |
 | `ENVIRONMENT` | production/development behavior |
 | `DB_*`, `HTTP_*`, `WS_*` | pool/server/websocket tuning |
@@ -107,8 +108,16 @@ Per-tenant env:
 
 - No wildcard production CORS/domains.
 - Tenant data isolation is database + Redis prefix + upload directory + env file.
+- `backend/pkg/features` is the authoritative ordered feature registry shared by
+  backend projection and grengo client creation/update. Legacy tenants with an
+  absent feature env retain the default/optional split, while newly generated or
+  explicitly reset tenant lists include every registered feature.
 - Root `.dockerignore` excludes the complete `backends/` tenant state tree.
 - Runtime nginx config is generated, not hand-maintained.
+- A confirmed node wipe does not skip filesystem cleanup merely because Docker
+  or Compose shutdown reports an error. It attempts every bounded target,
+  retries ownership-blocked removal through the existing sudo path, verifies
+  absence, and never reports completion while client/shared data remains.
 - Unknown/local/alias health traffic cannot select a tenant by map fallback or
   warm tenant SSR metadata.
 - Armed mode blocks API traffic except explicit allowlist routes.

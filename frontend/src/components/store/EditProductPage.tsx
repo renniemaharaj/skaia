@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Product, StoreCategory } from "../../atoms/store";
 import { apiRequest } from "../../utils/api";
 import { EditProductForm } from "./EditProductForm";
+import { StorePageShell } from "./StorePageShell";
 
 export default function EditProductPage() {
   const { productId = "" } = useParams<{ productId: string }>();
@@ -25,18 +26,27 @@ export default function EditProductPage() {
 
   if (error)
     return (
-      <div className="card" role="alert">
-        {error}
-      </div>
+      <StorePageShell backTo="/store">
+        <div className="card" role="alert">
+          {error}
+        </div>
+      </StorePageShell>
     );
-  if (!product) return <div className="card">Loading product editor...</div>;
+  if (!product)
+    return (
+      <StorePageShell backTo="/store">
+        <div className="card">Loading product editor...</div>
+      </StorePageShell>
+    );
   const returnTo = `/store/product/${product.id}`;
   return (
-    <EditProductForm
-      product={product}
-      categories={categories}
-      cancelTo={returnTo}
-      onSuccess={() => navigate(returnTo)}
-    />
+    <StorePageShell backTo={returnTo} backLabel="Back to Product">
+      <EditProductForm
+        product={product}
+        categories={categories}
+        cancelTo={returnTo}
+        onSuccess={() => navigate(returnTo)}
+      />
+    </StorePageShell>
   );
 }

@@ -268,6 +268,22 @@ func (s *Service) invalidateSEO(slug string) {
 	}
 }
 
+// InvalidateExternalMutation refreshes route metadata when a domain-owned
+// resource updates its linked custom page in the same database transaction.
+func (s *Service) InvalidateExternalMutation(slugs ...string) {
+	seen := make(map[string]struct{}, len(slugs))
+	for _, slug := range slugs {
+		if slug == "" {
+			continue
+		}
+		if _, exists := seen[slug]; exists {
+			continue
+		}
+		seen[slug] = struct{}{}
+		s.invalidateSEO(slug)
+	}
+}
+
 func (s *Service) Create(p *models.Page) error {
 	if p.Content == "" {
 		p.Content = "[]"
@@ -338,6 +354,10 @@ func (s *Service) validateContent(content string) error {
 	}
 	return nil
 }
+
+// ValidateDocument applies the same registry and integration checks used by
+// ordinary custom-page writes to another domain creating an owned page.
+func (s *Service) ValidateDocument(content string) error { return s.validateContent(content) }
 
 // Duplicate creates a copy of an existing page under a new slug.
 func (s *Service) Duplicate(fromID int64, newSlug, newTitle string) (*models.Page, error) {
