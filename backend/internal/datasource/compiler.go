@@ -7,9 +7,16 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
+
+var nodeVersionOnce sync.Once
+var nodeMajor int
+var nodeMinor int
+var nodeVersionErr error
 
 // Diagnostic is a single TypeScript compiler diagnostic.
 type Diagnostic struct {
@@ -84,28 +91,49 @@ type ExecuteResult struct {
 	Data        json.RawMessage `json:"data"`
 	Diagnostics []Diagnostic    `json:"diagnostics"`
 	Error       string          `json:"error,omitempty"`
+	JS          string          `json:"js,omitempty"`
+	FetchLog    []FetchLogEntry `json:"fetch_log,omitempty"`
+}
+
+// FetchLogEntry is bounded request metadata captured for privileged previews.
+type FetchLogEntry struct {
+	URL        string `json:"url"`
+	Method     string `json:"method"`
+	Status     int    `json:"status,omitempty"`
+	StatusText string `json:"statusText,omitempty"`
+	Duration   int64  `json:"duration,omitempty"`
+	Error      string `json:"error,omitempty"`
 }
 
 // ExecuteTypeScript compiles TypeScript source files and executes the result
 // server-side in a sandboxed VM context with provided environment variables.
-func ExecuteTypeScript(files map[string]string, env map[string]string) (*ExecuteResult, error) {
+func ExecuteTypeScript(files map[string]string, env map[string]string, includePreviewDetails bool) (*ExecuteResult, error) {
 	dir := tsRunnerDir()
 	scriptPath := filepath.Join(dir, "execute.js")
 
 	input := struct {
-		Files map[string]string `json:"files"`
-		Env   map[string]string `json:"env"`
+		Files                 map[string]string `json:"files"`
+		Env                   map[string]string `json:"env"`
+		IncludePreviewDetails bool              `json:"includePreviewDetails"`
 	}{
-		Files: files,
-		Env:   env,
+		Files:                 files,
+		Env:                   env,
+		IncludePreviewDetails: includePreviewDetails,
 	}
 	inputJSON, err := json.Marshal(input)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal execute input: %w", err)
 	}
 
-	cmd := exec.Command("node", scriptPath)
+	args, err := sandboxedNodeArgs(dir, scriptPath)
+	if err != nil {
+		return nil, err
+	}
+	cmd := exec.Command("node", args...)
 	cmd.Dir = dir
+	// Datasource env belongs only inside the VM. Never inherit backend process
+	// credentials or Node option injection into the runner subprocess.
+	cmd.Env = []string{"NODE_NO_WARNINGS=1"}
 	cmd.Stdin = strings.NewReader(string(inputJSON))
 
 	var stdout, stderr bytes.Buffer
@@ -134,4 +162,41 @@ func ExecuteTypeScript(files map[string]string, env map[string]string) (*Execute
 		return nil, fmt.Errorf("failed to parse ts execute output: %w", err)
 	}
 	return &result, nil
+}
+
+func sandboxedNodeArgs(dir, scriptPath string) ([]string, error) {
+	nodeVersionOnce.Do(func() {
+		output, err := exec.Command("node", "--version").Output()
+		if err != nil {
+			nodeVersionErr = fmt.Errorf("failed to inspect Node.js runtime: %w", err)
+			return
+		}
+		version := strings.TrimSpace(strings.TrimPrefix(string(output), "v"))
+		parts := strings.Split(version, ".")
+		if len(parts) < 2 {
+			nodeVersionErr = fmt.Errorf("unsupported Node.js version %q", version)
+			return
+		}
+		major, majorErr := strconv.Atoi(parts[0])
+		minor, minorErr := strconv.Atoi(parts[1])
+		if majorErr != nil || minorErr != nil || major < 20 {
+			nodeVersionErr = fmt.Errorf("Node.js 20 or newer is required for datasource isolation")
+			return
+		}
+		nodeMajor = major
+		nodeMinor = minor
+	})
+	if nodeVersionErr != nil {
+		return nil, nodeVersionErr
+	}
+
+	permissionFlag := "--permission"
+	if nodeMajor == 20 || nodeMajor == 21 || (nodeMajor == 22 && nodeMinor < 13) {
+		permissionFlag = "--experimental-permission"
+	}
+	args := []string{permissionFlag, "--allow-fs-read=" + dir}
+	if nodeMajor >= 25 {
+		args = append(args, "--allow-net")
+	}
+	return append(args, scriptPath), nil
 }

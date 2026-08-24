@@ -39,19 +39,12 @@ import type {
   DataSource,
   EventHook,
 } from "../types";
+import {
+  type DataSourceDiagnostic,
+  type DataSourceFetchLogEntry,
+  runDatasourcePreview,
+} from "./datasourcePreview";
 import "./DataSources.css";
-
-interface CompileResult {
-  js: string;
-  diagnostics: {
-    file: string;
-    line: number;
-    col: number;
-    message: string;
-    category: number;
-  }[];
-  cached?: boolean;
-}
 
 interface EvalItem {
   heading?: string;
@@ -62,15 +55,7 @@ interface EvalItem {
   [key: string]: unknown;
 }
 
-interface FetchLogEntry {
-  url: string;
-  method: string;
-  status?: number;
-  statusText?: string;
-  headers?: Record<string, string>;
-  duration?: number;
-  error?: string;
-}
+type FetchLogEntry = DataSourceFetchLogEntry;
 
 interface RunStats {
   duration: number;
@@ -80,8 +65,6 @@ interface RunStats {
   skippedItems: number;
   fetchLog: FetchLogEntry[];
 }
-
-const EVAL_TIMEOUT_MS = 15_000;
 
 const EXIT_REASON_LABELS: Record<RunStats["exitReason"], string> = {
   success: "Success",
@@ -127,7 +110,7 @@ export default function DataSourceEditorPage() {
   const [compiling, setCompiling] = useState(false);
   const [compiledJS, setCompiledJS] = useState<string | null>(null);
   const [lastRunAt, setLastRunAt] = useState<Date | null>(null);
-  const [diagnostics, setDiagnostics] = useState<CompileResult["diagnostics"]>([]);
+  const [diagnostics, setDiagnostics] = useState<DataSourceDiagnostic[]>([]);
   const [previewItems, setPreviewItems] = useState<EvalItem[]>([]);
   const [evalError, setEvalError] = useState<string | null>(null);
   const [runStats, setRunStats] = useState<RunStats | null>(null);
@@ -270,60 +253,11 @@ export default function DataSourceEditorPage() {
     setExpandedFetch(new Set());
 
     const startedAt = performance.now();
-    const fetchLog: FetchLogEntry[] = [];
-
-    // Tracked fetch - logs every outbound request including status + headers
-    const trackedFetch = async (
-      input: string | Request | URL,
-      init?: RequestInit
-    ): Promise<Response> => {
-      const url =
-        typeof input === "string"
-          ? input
-          : input instanceof URL
-            ? input.href
-            : (input as Request).url;
-      const method = (
-        init?.method ?? (input instanceof Request ? (input as Request).method : "GET")
-      ).toUpperCase();
-      const entry: FetchLogEntry = { url, method };
-      const t0 = performance.now();
-      try {
-        const resp = await fetch(input as RequestInfo, init);
-        entry.status = resp.status;
-        entry.statusText = resp.statusText;
-        const hdrs: Record<string, string> = {};
-        resp.headers.forEach((val, key) => {
-          hdrs[key] = val;
-        });
-        entry.headers = hdrs;
-        if (!resp.ok) {
-          const clone = resp.clone();
-          let bodyText = "";
-          try {
-            bodyText = await clone.text();
-          } catch {
-            bodyText = "";
-          }
-          entry.error = `HTTP ${resp.status} ${resp.statusText}${bodyText ? `: ${bodyText}` : ""}`;
-        }
-        entry.duration = Math.round(performance.now() - t0);
-        fetchLog.push(entry);
-        return resp;
-      } catch (e) {
-        entry.error = e instanceof Error ? e.message : String(e);
-        entry.duration = Math.round(performance.now() - t0);
-        fetchLog.push(entry);
-        throw e;
-      }
-    };
-
+    let fetchLog: FetchLogEntry[] = [];
     try {
-      const result = await apiRequest<CompileResult>("/config/datasources/compile", {
-        method: "POST",
-        body: JSON.stringify({ files }),
-      });
-      setCompiledJS(result.js);
+      const result = await runDatasourcePreview(files, envData);
+      fetchLog = result.fetch_log ?? [];
+      setCompiledJS(result.js ?? null);
       setLastRunAt(new Date());
       setDiagnostics(result.diagnostics ?? []);
 
@@ -344,47 +278,8 @@ export default function DataSourceEditorPage() {
         return;
       }
 
-      // Parse .env data into key-value pairs for sandbox injection
-      const parsedEnv: Record<string, string> = {};
-      for (const line of envData.split("\n")) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith("#")) continue;
-        const eqIdx = trimmed.indexOf("=");
-        if (eqIdx < 1) continue;
-        const key = trimmed.slice(0, eqIdx).trim();
-        let val = trimmed.slice(eqIdx + 1).trim();
-        // Strip surrounding quotes
-        if (
-          (val.startsWith('"') && val.endsWith('"')) ||
-          (val.startsWith("'") && val.endsWith("'"))
-        ) {
-          val = val.slice(1, -1);
-        }
-        parsedEnv[key] = val;
-      }
-      const envKeys = Object.keys(parsedEnv);
-      const envValues = Object.values(parsedEnv);
-
-      // Evaluate compiled JS with timeout and intercepted fetch + env vars
-      const fn = new Function(
-        "fetch",
-        "env",
-        ...envKeys,
-        `"use strict"; return (async () => { ${result.js} })();`
-      );
-      let rawItems: unknown;
-      try {
-        rawItems = await Promise.race([
-          fn(trackedFetch, Object.freeze({ ...parsedEnv }), ...envValues),
-          new Promise<never>((_, reject) =>
-            setTimeout(
-              () => reject(new Error(`Execution timed out after ${EVAL_TIMEOUT_MS / 1000}s`)),
-              EVAL_TIMEOUT_MS
-            )
-          ),
-        ]);
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
+      if (result.error) {
+        const msg = result.error;
         setRunStats({
           duration: Math.round(performance.now() - startedAt),
           exitReason: msg.includes("timed out") ? "timeout" : "runtime_error",
@@ -397,6 +292,8 @@ export default function DataSourceEditorPage() {
         setActivePanel("diagnostics");
         return;
       }
+
+      const rawItems = result.data;
 
       if (!Array.isArray(rawItems)) {
         setRunStats({

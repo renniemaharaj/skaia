@@ -148,6 +148,22 @@ bibliographical certification.
 | `GET/POST/PUT/DELETE` | `/config/section-presets...` | Preferred datasource-backed reusable preset routes; writes require service-level `home.manage` |
 | Alias | `/config/custom-sections...` | Compatibility alias for section presets |
 | `GET` | `/config/components`, `/config/components/{type}` | Registered render components |
+| `POST` | `/config/datasources/preview` | Established `home.manage` editor preview; bounded unsaved `.ts` files and transient env input execute only through the backend TypeScript queue and return data, diagnostics, compiled output, and bounded outbound-request metadata |
+
+Saved datasource renders continue through `POST /config/datasources/{id}/execute`.
+They may use stored env values and shared result caching, but omit privileged
+preview-only compiled output and outbound-request metadata.
+Compile, saved execute, and protected preview jobs share one bounded datasource
+conveyor manager. Deterministic per-operation datasource keys coalesce identical
+saved work; unsaved/transient work uses a deterministic input hash. Followers
+wait outside the worker pool for the winning result, and the winning worker
+rechecks Redis before launching Node so a cache fill between dispatch and start
+does not produce duplicate work. Panic recovery releases every waiter.
+The execution worker uses the Node permission model and a context-owned fetch
+facade; the child inherits no backend env and cannot generate code strings,
+write files, spawn children/workers, load addons, or receive unbounded HTTP
+payloads. Outbound requests resolve and pin public addresses, reject private or
+credential-bearing destinations, and strip sensitive headers across origins.
 
 ## Store Contracts
 

@@ -64,6 +64,9 @@ func mutationBudgetClass(path string) (string, int64, time.Duration, int64) {
 	case "/api/voice/livekit-token":
 		return "guest-voice-token", 6, time.Minute, 1
 	default:
+		if path == "/api/config/datasources/preview" {
+			return "datasource-execute", 10, time.Minute, 1
+		}
 		if strings.HasPrefix(path, "/api/config/datasources/") && strings.HasSuffix(path, "/execute") {
 			return "datasource-execute", 10, time.Minute, 1
 		}

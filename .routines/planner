@@ -111,6 +111,14 @@ operational policies.
 
 ## Last Run Remarks
 
+- Extended and completed the datasource sandbox handoff with shared conveyor
+  ownership and cache-flight concurrency; backend and security specs now record
+  deterministic coalescing, worker-side cache rechecks, and waiter fan-out.
+
+- Created and completed `datasource_backend_sandbox_execution`; backend,
+  frontend, security, and runtime contracts now establish the protected raw
+  preview route and the hardened backend runner as the sole execution authority.
+
 - Recorded the destructive node-wipe contract: exact confirmation, bounded
   targets, best-effort service shutdown, ownership-aware deletion, exhaustive
   attempts, and verified failure whenever client or shared data remains.

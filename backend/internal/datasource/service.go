@@ -1,15 +1,43 @@
 package datasource
 
-import "github.com/skaia/backend/models"
+import (
+	"errors"
+
+	"github.com/skaia/backend/models"
+)
+
+var ErrManagementForbidden = errors.New("datasource management forbidden")
+
+type ManagementPolicy interface {
+	HasPermission(userID int64, permission string) (bool, error)
+}
 
 // Service wraps the datasource repository with business logic.
 type Service struct {
-	repo Repository
+	repo   Repository
+	policy ManagementPolicy
 }
 
 // NewService creates a new datasource Service.
-func NewService(repo Repository) *Service {
-	return &Service{repo: repo}
+func NewService(repo Repository, policy ...ManagementPolicy) *Service {
+	service := &Service{repo: repo}
+	if len(policy) > 0 {
+		service.policy = policy[0]
+	}
+	return service
+}
+
+// RequireManage enforces the database-backed datasource management policy.
+// Missing policy dependencies and lookup failures deny access.
+func (s *Service) RequireManage(actorID int64) error {
+	if s == nil || s.policy == nil || actorID <= 0 {
+		return ErrManagementForbidden
+	}
+	allowed, err := s.policy.HasPermission(actorID, "home.manage")
+	if err != nil || !allowed {
+		return ErrManagementForbidden
+	}
+	return nil
 }
 
 func (s *Service) GetByID(id int64) (*models.DataSource, error) {

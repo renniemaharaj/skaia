@@ -1,0 +1,43 @@
+<--/------->
+
+## datasource_backend_sandbox_execution
+
+### Current Progress
+- **Phase 1: Backend contract and policy** - ✅ Complete
+- **Phase 2: Editor integration** - ✅ Complete
+- **Phase 3: Tests and durable contracts** - ✅ Complete
+- **Phase 4: Shared worker and cache-flight concurrency** - ✅ Complete
+
+### Completed Work (2026-08-24)
+- [x] Added protected, bounded `/config/datasources/preview` execution through the existing backend queue with fail-closed `home.manage` service policy and datasource execution budgets.
+- [x] Removed browser `new Function`, browser env injection, and browser-owned outbound fetch execution from the datasource editor.
+- [x] Preserved compiled output, diagnostics, row validation, run summaries, and bounded outbound request telemetry from the backend runner.
+- [x] Replaced direct host-function injection with a hidden JSON-only fetch bridge and context-owned response facade; disabled VM string/Wasm code generation.
+- [x] Removed inherited backend env from the runner subprocess, enabled Node permissions, bounded fetch inputs/responses, and upgraded the runtime image to Node 24.19.0.
+- [x] Restricted fetch to DNS-pinned public HTTP(S) addresses, blocked private/loopback/link-local/reserved destinations and credential-bearing URLs, bounded redirects, and stripped credentials across origins.
+- [x] Updated backend, frontend, and security contracts.
+- [x] Consolidated TypeScript compile and execute jobs onto one datasource
+  conveyor manager with `DATASOURCE_WORKERS` and
+  `DATASOURCE_QUEUE_THRESHOLD` bounds.
+- [x] Added deterministic saved-datasource flight keys, transient-input hashes,
+  worker-side cache rechecks, shared async job identity, and result fan-out so
+  waiters never consume conveyor workers or launch duplicate Node processes.
+- [x] Made flight completion panic-safe and removed the conveyor worker stop-flag race.
+- [x] Pinned the repository development/runtime test toolchain to Node 24.19.0,
+  matching the backend image so Husky cannot resolve an inactive `mise` shim.
+
+### Verification
+- [x] `JWT_SECRET=test-secret go test ./...` from `backend/`.
+- [x] `JWT_SECRET=test-secret go vet ./...` from `backend/`.
+- [x] `npm test -- --run --maxWorkers=1` - 79 files and 258 tests passed.
+- [x] `npm run lint` and `npm run build`.
+- [x] Native-dialog, managed-form, loading-boundary, and media-placeholder policy gates.
+- [x] Live SkaiaCraft status datasource executed through the hardened runner with HTTP 200 telemetry and a map-ready result.
+- [x] `git diff --check`.
+- [x] `JWT_SECRET=test-secret go test -race ./internal/datasource`.
+- [x] `go test ./... && go vet ./...` from `backend/pkg/conveyor/`.
+
+### Next Steps
+- None.
+
+<--/------->

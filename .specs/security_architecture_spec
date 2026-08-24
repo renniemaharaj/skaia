@@ -214,6 +214,30 @@ telemetry API exposes bounded counters and no identities or payloads.
   voice-token issuance are governed actions, not public reads. They require
   explicit trust/resource policy before database, queue, external-process, or
   retained-memory work.
+- Raw datasource preview is an established-account, JWT-authenticated,
+  `home.manage` service-policy operation with IP/client and distributed execution
+  budgets plus bounded request, file-count, filename, source, and env input.
+  Preview source, env injection, and outbound requests execute only in the backend
+  TypeScript runner; no compiled datasource code executes in the browser. Saved
+  public renders omit preview-only compiled output and outbound-request metadata.
+- Datasource compile and execute share one bounded, tenant-process conveyor pool.
+  Concurrent identical saved operations use deterministic datasource-ID flight
+  keys; transient previews use input hashes. Only the winner enters the queue,
+  rechecks Redis, and launches Node. Followers receive that result outside the
+  pool, including bounded failure/panic completion, so they cannot deadlock the
+  workers or amplify a single cold cache miss within the tenant backend process.
+- The datasource runner receives no inherited backend environment. Its Node
+  subprocess enables the permission model with read access limited to the runner
+  directory and grants no filesystem write, child-process, worker, addon, WASI,
+  or inspector capability. VM string/Wasm code generation is disabled; host
+  fetch is reachable only through a hidden JSON-string bridge that returns
+  context-owned response facades and bounds URL, request, timeout, and response
+  sizes. Host functions and response objects never enter datasource scope.
+- Datasource fetch accepts credential-free HTTP(S) only. Every initial URL and
+  redirect resolves to public addresses before a request, the connection is
+  pinned to the validated address, private/loopback/link-local/reserved ranges
+  are denied, and authorization/cookie headers are stripped on cross-origin
+  redirects. Methods and redirect depth are allowlisted/bounded.
 
 ### Audit and observability
 

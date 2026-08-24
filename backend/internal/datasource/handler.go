@@ -2,17 +2,24 @@ package datasource
 
 import (
 	"encoding/json"
-	log "github.com/skaia/backend/internal/syslog"
+	"errors"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/skaia/backend/internal/events"
+	log "github.com/skaia/backend/internal/syslog"
 	iuser "github.com/skaia/backend/internal/user"
 	"github.com/skaia/backend/internal/utils"
 	"github.com/skaia/backend/models"
 )
+
+const maxPreviewBodyBytes = 1 << 20
+const maxPreviewFiles = 32
+const maxPreviewEnvBytes = 64 << 10
 
 // DataSourceResponse wraps a DataSource with optional creator info.
 type DataSourceResponse struct {
@@ -83,6 +90,7 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler, compi
 		r.Group(func(r chi.Router) {
 			r.Use(jwt)
 			r.Post("/compile", h.compileTypeScript)
+			r.With(compileIPLimit, compileClientLimit).Post("/preview", h.previewDataSource)
 			r.Post("/", h.createDataSource)
 			r.Put("/{id}", h.updateDataSource)
 			r.Delete("/{id}", h.deleteDataSource)
@@ -97,8 +105,84 @@ func (h *Handler) requireHomeManage(r *http.Request) bool {
 	if !ok {
 		return false
 	}
-	has, _ := h.userSvc.HasPermission(uid, "home.manage")
-	return has
+	return h.svc.RequireManage(uid) == nil
+}
+
+type previewRequest struct {
+	Files   map[string]string `json:"files"`
+	EnvData string            `json:"env_data"`
+}
+
+func validatePreviewRequest(body previewRequest) error {
+	if len(body.Files) == 0 || len(body.Files) > maxPreviewFiles {
+		return errors.New("preview requires between 1 and 32 TypeScript files")
+	}
+	if len(body.EnvData) > maxPreviewEnvBytes {
+		return errors.New("preview environment data is too large")
+	}
+	for name, source := range body.Files {
+		if name == "" || filepath.Base(name) != name || !strings.HasSuffix(name, ".ts") {
+			return errors.New("preview files must use plain .ts filenames")
+		}
+		if len(source) > maxPreviewBodyBytes {
+			return errors.New("preview TypeScript file is too large")
+		}
+	}
+	return nil
+}
+
+// previewDataSource executes unsaved editor files in the backend TypeScript
+// runner. Raw source and transient environment values never execute in-browser.
+func (h *Handler) previewDataSource(w http.ResponseWriter, r *http.Request) {
+	uid, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	if h.svc.RequireManage(uid) != nil {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+
+	var body previewRequest
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxPreviewBodyBytes))
+	if err := decoder.Decode(&body); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid preview request")
+		return
+	}
+	if err := validatePreviewRequest(body); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if h.executeDispatcher == nil {
+		utils.WriteError(w, http.StatusServiceUnavailable, "execution queue is unavailable")
+		return
+	}
+
+	job := ExecuteJob{
+		Files:    body.Files,
+		Env:      parseEnvData(body.EnvData),
+		Preview:  true,
+		UserID:   uid,
+		IP:       events.ClientIP(r),
+		UseCache: false,
+	}
+	_, resultCh, ok := h.executeDispatcher.DispatchWithResult(job)
+	if !ok {
+		utils.WriteError(w, http.StatusServiceUnavailable, "execution queue is busy")
+		return
+	}
+	select {
+	case res := <-resultCh:
+		if res.Err != nil {
+			log.Printf("datasource.preview: %v", res.Err)
+			utils.WriteError(w, http.StatusInternalServerError, "execution failed")
+			return
+		}
+		utils.WriteJSON(w, http.StatusOK, &res.Value)
+	case <-time.After(20 * time.Second):
+		utils.WriteError(w, http.StatusGatewayTimeout, "execution timed out")
+	}
 }
 
 func (h *Handler) listDataSources(w http.ResponseWriter, r *http.Request) {

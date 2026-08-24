@@ -169,6 +169,11 @@ navigation/narration, WebSocket consumers, or page-builder UX.
 - Datasource-backed reusable designs use the `SectionPreset` type and
   `/config/section-presets`; `CustomSection` remains a deprecated type alias and
   the backend retains the old route during the compatibility window.
+- Datasource editor Run sends the current `.ts` file map and transient env input
+  to protected `/config/datasources/preview`. Compilation, environment injection,
+  outbound fetches, and execution occur in the backend runner; the browser only
+  validates and renders returned rows, diagnostics, compiled output, and bounded
+  request telemetry. Browser `eval`/`new Function` is forbidden for datasources.
 - Bible reads use only `/bible/kjv/books` and `/bible/kjv/books/{book}`. The
   client coalesces requests, retains the catalog for the page lifetime, and
   bounds its per-book memory cache to eight entries; it never persists corpus

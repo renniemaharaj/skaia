@@ -89,7 +89,9 @@ func TestAccountTrustBoundaryRejectsUnreviewedGuestAndProvisionalWrites(t *testi
 		req  *http.Request
 	}{
 		{name: "guest checkout", req: httptest.NewRequest(http.MethodPost, "/api/store/checkout", nil)},
+		{name: "guest datasource preview", req: httptest.NewRequest(http.MethodPost, "/api/config/datasources/preview", nil)},
 		{name: "guest thread creation", req: httptest.NewRequest(http.MethodPost, "/api/forum/threads", nil)},
+		{name: "provisional datasource preview", req: authenticatedRequest(http.MethodPost, "/api/config/datasources/preview", 9)},
 		{name: "provisional thread creation", req: authenticatedRequest(http.MethodPost, "/api/forum/threads", 9)},
 		{name: "provisional other profile", req: authenticatedRequest(http.MethodPut, "/api/users/10", 9)},
 	}

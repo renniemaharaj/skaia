@@ -123,6 +123,16 @@ update specs and .tip with durable facts
 
 ## Last Run Remarks
 
+- Consolidated datasource compile and execute onto one conveyor pool. Identical
+  saved requests now share deterministic ID flights, the winner rechecks cache
+  before Node execution, followers wait outside the pool, and panic-safe fan-out
+  prevents duplicate cold-cache work or worker-lock deadlock.
+
+- Corrected datasource editor execution so unsaved previews run only through a
+  protected backend queue. Removed browser evaluation/env injection, closed the
+  runner's host-function constructor escape, constrained the Node subprocess,
+  preserved bounded preview telemetry, and passed full backend/frontend gates.
+
 - Repaired `wipe all`: Compose failures no longer short-circuit confirmed local
   cleanup, client directories receive the same ownership fallback as single-site
   removal, the confirmation prompt is unambiguous, and residual paths turn the

@@ -1,7 +1,7 @@
 # Build stage
 FROM golang:1.25-bookworm AS builder
 
-ARG NODE_VERSION=20.0.0
+ARG NODE_VERSION=24.19.0
 ARG TARGETARCH=amd64
 ENV NODE_HOME=/opt/node
 

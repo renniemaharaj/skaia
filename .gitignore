@@ -2,6 +2,7 @@
 node_modules/
 dist/
 
+
 # Mounts
 postgres_data/
 redis_data/
@@ -35,6 +36,7 @@ exports/
 
 # Prevent Root Clutter
 /integrate
+/examples
 
 # Prevent Agents Clutter
 .codex

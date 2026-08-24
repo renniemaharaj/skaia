@@ -93,6 +93,17 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Run Remarks
 
+- Audited datasource cache-flight concurrency across shared worker ownership,
+  cache ordering, deterministic saved/transient keys, async snapshots, waiter
+  fan-out, panic release, and races. No waiter occupies a conveyor worker and
+  one tenant-process cache miss launches at most one identical Node execution.
+
+- Audited datasource preview across browser execution, env injection, service
+  authorization, trust/budgets, queueing, VM host-object escape, subprocess
+  capabilities, SSRF/redirect containment, response bounds, telemetry disclosure,
+  tests, and specs. No
+  material affected-scope issue remains after the complete verification set.
+
 - Audited `wipe all` for destructive-target containment, confirmation clarity,
   Docker failure handling, root-owned files, exhaustive cleanup, residual
   verification, and false-success reporting. Focused filesystem tests and the

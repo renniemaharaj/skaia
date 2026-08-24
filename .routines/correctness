@@ -84,6 +84,15 @@ docs disagree.
 
 ## Last Run Remarks
 
+- Reconciled the public datasource cache contract with worker behavior: compile
+  and execute now use one conveyor manager, deterministic ID/input flights, and
+  a cache recheck by the winner rather than separately queued lock waiters.
+
+- Reconciled datasource intent with implementation: editor previews no longer
+  execute compiled code or inject env values in the browser; the protected
+  backend runner owns unsaved and saved execution, and its VM/process boundary
+  no longer exposes Node host constructors or inherited backend credentials.
+
 - Reconciled `wipe all` with its advertised destructive contract. Compose-down
   errors were incorrectly terminating before client removal and per-client
   deletion lacked the established ownership fallback; both paths now converge

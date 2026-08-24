@@ -1,11 +1,15 @@
 package conveyor
 
-import "github.com/renniemaharaj/conveyor/internal/idgen"
+import (
+	"sync/atomic"
+
+	"github.com/renniemaharaj/conveyor/internal/idgen"
+)
 
 // Struct type for a worker
 type Worker struct {
 	id      int // The worker's id
-	canWork bool
+	canWork *atomic.Bool
 	B       ConveyorBelt // the worker's assigned channel
 }
 
@@ -15,14 +19,14 @@ var (
 
 // Creates and returns a worker with an assigned channel
 func CreateWorker(b *ConveyorBelt) *Worker {
-	return &Worker{canWork: false, B: *b, id: idGenWorker.NewUniqueID()}
+	return &Worker{canWork: &atomic.Bool{}, B: *b, id: idGenWorker.NewUniqueID()}
 }
 
 // Start function of a worker
 func (w *Worker) Start() {
-	w.canWork = true
+	w.canWork.Store(true)
 	for {
-		if !w.canWork {
+		if !w.canWork.Load() {
 			break
 		}
 		j, ok := <-w.B.C
@@ -35,5 +39,5 @@ func (w *Worker) Start() {
 
 // Safe stop function of a worker
 func (w *Worker) Stop() {
-	w.canWork = false
+	w.canWork.Store(false)
 }

@@ -159,10 +159,10 @@ func main() {
 	rdb := database.NewRedisClient()
 	dsCompileCache := ids.NewCompileCacheWithClient(rdb)
 	dsExecuteCache := ids.NewExecuteCacheWithClient(rdb)
-	dsCompileDispatcher := ids.NewCompileDispatcher(dsCompileCache, dispatcher)
-	dsExecuteDispatcher := ids.NewExecuteDispatcher(dsExecuteCache, dispatcher)
-	dsCompileDispatcher.Start()
-	dsExecuteDispatcher.Start()
+	dsRuntimeWorkers := ids.NewRuntimeWorkers()
+	dsCompileDispatcher := ids.NewCompileDispatcher(dsRuntimeWorkers, dsCompileCache, dispatcher)
+	dsExecuteDispatcher := ids.NewExecuteDispatcher(dsRuntimeWorkers, dsExecuteCache, dispatcher)
+	dsRuntimeWorkers.Start()
 
 	conveyorManager := conveyor.CreateManager()
 	conveyorManager.Start()
@@ -209,8 +209,7 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("server forced shutdown: %v", err)
 	}
-	dsCompileDispatcher.Stop()
-	dsExecuteDispatcher.Stop()
+	dsRuntimeWorkers.Stop()
 	dispatcher.Stop()
 	conveyorManager.Stop()
 	log.Println("server stopped")
@@ -1102,7 +1101,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		icfg.NewHandler(cfgSvc, userSvc, hub, dispatcher).Mount(api, imw.JWTAuthMiddleware)
 
 		dsRepo := ids.NewRepository(db)
-		dsSvc := ids.NewService(dsRepo)
+		dsSvc := ids.NewService(dsRepo, userSvc)
 		dsHandler := ids.NewHandler(dsSvc, userSvc, dsCompileCache, dsCompileDispatcher, dsExecuteCache, dsExecuteDispatcher)
 		dsHandler.Mount(api, imw.JWTAuthMiddleware, imw.CompileRateLimitByIP(), imw.CompileRateLimitByClient())
 

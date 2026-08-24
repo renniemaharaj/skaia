@@ -1,0 +1,58 @@
+# Datasource Backend Sandbox Execution
+
+## Context
+The datasource editor compiles TypeScript on the backend but executes compiled
+JavaScript with `new Function` in the browser. This bypasses the established
+backend runner, exposes editor-loaded environment values to browser-executed
+code, and makes otherwise valid outbound requests fail under browser CORS.
+
+## Goal
+- Make the backend TypeScript sandbox the only datasource execution authority.
+- Close host-object constructor escape paths in the existing VM runner and
+  constrain its subprocess capabilities and inherited environment.
+- Restrict outbound HTTP to DNS-pinned public destinations with redirect,
+  request, response, and timeout bounds.
+- Support protected previews of unsaved TypeScript files and transient env input.
+- Preserve saved datasource execution, diagnostics, run summaries, and mapping previews.
+- Run compile and execute work through one bounded datasource conveyor pool and
+  coalesce concurrent identical work by a deterministic datasource/work key.
+- Enforce `home.manage` through a fail-closed datasource service policy for
+  management and raw preview operations.
+
+## Non-Goals
+- Redesign the datasource language, module, or package system.
+- Change the public saved-datasource render contract.
+- Redesign the environment-variable editor beyond removing browser execution.
+
+## Steps
+1. Harden the existing runner's VM/subprocess/network boundary and add regression tests.
+2. Add a protected, rate-limited raw preview endpoint that dispatches files and
+   transient env values to the existing execution queue.
+3. Move datasource management authorization into the service and cover denial
+   and dependency-failure behavior.
+4. Replace editor `new Function` evaluation with the preview endpoint and adapt
+   backend execution results to the existing preview UI.
+5. Add focused backend/frontend regressions and remove obsolete browser fetch
+   interception code.
+6. Reconcile backend, frontend, and security specs and run affected quality gates.
+7. Consolidate compile and execute workers, recheck cache state inside the
+   winning worker, and fan one result out to concurrent waiters without
+   enqueueing lock-wait jobs.
+
+## Verification
+- `JWT_SECRET=test-secret go test ./internal/datasource ./internal/middleware`
+- `JWT_SECRET=test-secret go test ./...` from `backend/`
+- `JWT_SECRET=test-secret go test -race ./internal/datasource` from `backend/`
+- `go test ./... && go vet ./...` from `backend/pkg/conveyor/`
+- Focused frontend tests plus `npm run lint` and `npm run build`
+- `git diff --check`
+
+## References
+- `.routines/worker`
+- `.routines/auditor`
+- `.routines/correctness`
+- `.specs/security_architecture_spec`
+- `.specs/backend_spec`
+- `.specs/frontend_spec`
+- `backend/internal/datasource/`
+- `frontend/src/components/page/datasources/DataSourceEditorPage.tsx`
