@@ -2,6 +2,12 @@ import { GripHorizontal, X } from "lucide-react";
 import { useCallback, useState } from "react";
 import Button from "../input/Button";
 import Select from "../input/Select";
+import {
+  INPUT_TEXT_OPTION,
+  inputTextBinding,
+  inputTextValue,
+  isInputTextBinding,
+} from "./componentBindings";
 import type { BindPoint, ComponentDefinition } from "./types";
 import "./ColumnMapper.css"; // Reuse the same styles
 
@@ -20,7 +26,9 @@ export const ComponentBindMapper = ({
 }: ComponentBindMapperProps) => {
   const [dragOverField, setDragOverField] = useState<string | null>(null);
 
-  const mappedCols = new Set(Object.values(bindings).filter(Boolean));
+  const mappedCols = new Set(
+    Object.values(bindings).filter(value => value && !isInputTextBinding(value))
+  );
 
   const handleDragStart = useCallback((e: React.DragEvent, colName: string) => {
     e.dataTransfer.setData("text/plain", colName);
@@ -55,6 +63,8 @@ export const ComponentBindMapper = ({
         const next = { ...bindings };
         delete next[fieldKey];
         onChange(next);
+      } else if (colName === INPUT_TEXT_OPTION) {
+        onChange({ ...bindings, [fieldKey]: inputTextBinding("") });
       } else {
         onChange({ ...bindings, [fieldKey]: colName });
       }
@@ -104,6 +114,7 @@ export const ComponentBindMapper = ({
       <div className="column-mapper-targets">
         {component.bind_points.map((bp: BindPoint) => {
           const mapped = bindings[bp.key];
+          const usesInputText = isInputTextBinding(mapped);
           return (
             <div
               key={bp.key}
@@ -120,19 +131,32 @@ export const ComponentBindMapper = ({
               </div>
               <span className="column-mapper-slot-value">
                 <Select
-                  value={mapped ?? ""}
+                  value={usesInputText ? INPUT_TEXT_OPTION : (mapped ?? "")}
                   onChange={e => handleSelect(bp.key, e.target.value)}
                   size="sm"
                   variant="minimal"
                   block
                 >
                   <option value="">- none -</option>
+                  <option value={INPUT_TEXT_OPTION}>Input Text</option>
                   {availableColumns.map(col => (
                     <option key={col} value={col}>
                       {col}
                     </option>
                   ))}
                 </Select>
+                {usesInputText && (
+                  <input
+                    className="column-mapper-text-input"
+                    type="text"
+                    value={inputTextValue(mapped)}
+                    onChange={e =>
+                      onChange({ ...bindings, [bp.key]: inputTextBinding(e.target.value) })
+                    }
+                    placeholder="Enter text"
+                    aria-label={`${bp.label} input text`}
+                  />
+                )}
               </span>
               {mapped && (
                 <Button

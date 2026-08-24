@@ -4,6 +4,7 @@ import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { type MediaScrapeJob, MediaViewer } from "../mediascraper/MediaViewer";
 import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import UserAvatar from "../user/UserAvatar";
+import { inputTextValue, isInputTextBinding } from "./componentBindings";
 /**
  * ComponentRenderer - renders a single registered component using bound row data.
  *
@@ -36,7 +37,9 @@ function resolveBindings(
   const resolved: Resolved = {};
   for (const bp of component.bind_points) {
     const column = bindings[bp.key];
-    if (column && row[column] !== undefined) {
+    if (isInputTextBinding(column)) {
+      resolved[bp.key] = inputTextValue(column);
+    } else if (column && row[column] !== undefined) {
       resolved[bp.key] = row[column];
     } else if (bp.fallback !== undefined) {
       resolved[bp.key] = bp.fallback;

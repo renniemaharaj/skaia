@@ -158,6 +158,23 @@
   height: 14px;
 }
 
+.column-mapper-text-input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.column-mapper-text-input:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
 .column-mapper-slot-clear {
   background: none;
   border: none;
