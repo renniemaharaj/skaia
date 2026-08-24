@@ -8,8 +8,8 @@ import {
   inputTextValue,
   isInputTextBinding,
 } from "./componentBindings";
+import { IconPicker } from "./EditControls";
 import type { BindPoint, ComponentDefinition } from "./types";
-import { ICON_NAMES } from "./iconMap";
 import "./ColumnMapper.css"; // Reuse the same styles
 
 interface ComponentBindMapperProps {
@@ -161,23 +161,12 @@ export const ComponentBindMapper = ({
                   />
                 )}
                 {usesInputText && bp.key === "icon" && (
-                  <Select
-                    value={inputTextValue(mapped)}
-                    onChange={event =>
-                      onChange({ ...bindings, [bp.key]: inputTextBinding(event.target.value) })
+                  <IconPicker
+                    current={inputTextValue(mapped)}
+                    onPick={name =>
+                      onChange({ ...bindings, [bp.key]: inputTextBinding(name) })
                     }
-                    size="sm"
-                    variant="minimal"
-                    block
-                    aria-label={`${bp.label} icon`}
-                  >
-                    <option value="">- choose icon -</option>
-                    {ICON_NAMES.map(name => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                  </Select>
+                  />
                 )}
               </span>
               {mapped && (
