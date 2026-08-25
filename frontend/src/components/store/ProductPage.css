@@ -387,7 +387,7 @@
 @media (max-width: 640px) {
   .product-page-container {
     min-width: 0;
-    padding: 1rem;
+    padding: 0;
   }
 
   .product-page-hero {
