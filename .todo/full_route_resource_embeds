@@ -1,0 +1,41 @@
+# Full-Route Resource Embeds
+
+## Context
+Resource embeds currently reconstruct compact product and thread previews and cap
+documentation inside a special embedded shell. They therefore drift from the
+canonical routed resource surfaces and cannot show a complete product, thread,
+or documentation page body.
+
+## Goal
+- Render the canonical route content for store products, forum threads, and
+  documentation inside `resource_embed`, excluding only the global app layout.
+- Add an optional shared section max-height control that caps and scrolls an
+  expanded section while leaving the default height unconstrained.
+
+## Non-Goals
+- Do not add iframe or remote-URL embedding.
+- Do not copy resource records into page JSON or weaken source-domain policy.
+- Do not duplicate global headers, footers, or app-layout chrome inside embeds.
+
+## Steps
+1. Make the three canonical resource routes accept an explicit embedded resource
+   identity while retaining their normal route-param behavior.
+2. Replace bespoke resource preview renderers with those routed content surfaces.
+3. Extend the shared section shell adapter, controls, and frame with a bounded
+   optional max height (1-5000px).
+4. Add focused tests and update the durable frontend/custom-page/documentation
+   contracts.
+
+## Verification
+- Run focused resource embed, route, section shell, and frame tests.
+- Run the complete frontend test suite, lint, production build, and affected UI
+  policy gates.
+
+## References
+- `.specs/frontend_spec`
+- `.specs/custom_page_section_compatibility_spec`
+- `.specs/documentation_spec`
+- `.routines/worker`
+- `.routines/auditor`
+- `frontend/src/components/page/blocks/ResourceEmbedBlock.tsx`
+- `frontend/src/components/page/SectionFrame.tsx`

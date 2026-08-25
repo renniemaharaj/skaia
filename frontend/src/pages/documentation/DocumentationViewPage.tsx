@@ -8,8 +8,8 @@ import type {
   DocumentationSearchResult,
 } from "../../atoms/documentation";
 import {
-  DocumentationShell,
   type DocumentationNavSection,
+  DocumentationShell,
 } from "../../components/documentation/DocumentationShell";
 import { indexDocumentHeadings } from "../../components/documentation/headings";
 import { RichTextRenderer } from "../../components/ui/RichTextRenderer";
@@ -17,11 +17,23 @@ import { SkeletonContent, SkeletonPrimitive, SkeletonText } from "../../componen
 import { useWebSocketSync } from "../../hooks/useWebSocketSync";
 import { apiRequest } from "../../utils/api";
 
-export default function DocumentationViewPage() {
-  const { documentationSlug = "", articleSlug } = useParams<{
+interface DocumentationViewPageProps {
+  embeddedDocumentationSlug?: string;
+  embeddedArticleSlug?: string;
+  embedded?: boolean;
+}
+
+export default function DocumentationViewPage({
+  embeddedDocumentationSlug,
+  embeddedArticleSlug,
+  embedded = false,
+}: DocumentationViewPageProps = {}) {
+  const { documentationSlug: routeDocumentationSlug = "", articleSlug: routeArticleSlug } = useParams<{
     documentationSlug: string;
     articleSlug?: string;
   }>();
+  const documentationSlug = embeddedDocumentationSlug ?? routeDocumentationSlug;
+  const articleSlug = embeddedArticleSlug ?? routeArticleSlug;
   const navigate = useNavigate();
   const { subscribe, unsubscribe } = useWebSocketSync();
   const [manifest, setManifest] = useState<DocumentationManifest | null>(null);
@@ -38,15 +50,16 @@ export default function DocumentationViewPage() {
         `/docs/${encodeURIComponent(documentationSlug)}`
       );
       setManifest(nextManifest);
-      if (!articleSlug && nextManifest.articles[0]) {
+      if (!articleSlug && nextManifest.articles[0] && !embedded) {
         navigate(`/doc/${nextManifest.documentation.slug}/${nextManifest.articles[0].slug}`, {
           replace: true,
         });
         return;
       }
-      if (articleSlug) {
+      const selectedArticleSlug = articleSlug ?? nextManifest.articles[0]?.slug;
+      if (selectedArticleSlug) {
         const nextArticle = await apiRequest<DocumentationArticleView>(
-          `/docs/${encodeURIComponent(documentationSlug)}/articles/${encodeURIComponent(articleSlug)}`
+          `/docs/${encodeURIComponent(documentationSlug)}/articles/${encodeURIComponent(selectedArticleSlug)}`
         );
         setArticleView(nextArticle);
         subscribe("documentation_article", nextArticle.article.id);
@@ -59,7 +72,7 @@ export default function DocumentationViewPage() {
     } finally {
       setLoading(false);
     }
-  }, [articleSlug, documentationSlug, navigate, subscribe]);
+  }, [articleSlug, documentationSlug, embedded, navigate, subscribe]);
 
   useEffect(() => {
     setLoading(true);
@@ -130,7 +143,7 @@ export default function DocumentationViewPage() {
               id: article.id,
               title: article.title,
               href: `/doc/${documentation.slug}/${article.slug}`,
-              active: article.slug === articleSlug,
+              active: article.id === articleView?.article.id,
             })),
           },
         ]
@@ -144,7 +157,7 @@ export default function DocumentationViewPage() {
           id: article.id,
           title: article.title,
           href: `/doc/${documentation.slug}/${article.slug}`,
-          active: article.slug === articleSlug,
+          active: article.id === articleView?.article.id,
         })),
     })),
   ];
@@ -197,7 +210,9 @@ export default function DocumentationViewPage() {
             title="Copy link"
             onClick={() =>
               void navigator.clipboard
-                .writeText(window.location.href)
+                .writeText(
+                  `${window.location.origin}/doc/${documentation.slug}${articleView ? `/${articleView.article.slug}` : ""}`
+                )
                 .then(() => toast.success("Link copied"))
             }
           >

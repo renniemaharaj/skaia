@@ -277,6 +277,26 @@ export function SectionShellControls({ shell, onChange }: SectionShellControlsPr
               />
               <output>{shell.content_scale.toFixed(2)}×</output>
             </label>
+            <label>
+              <span className="section-shell-control-label">Max height</span>
+              <input
+                aria-label="Section max height"
+                type="number"
+                min="1"
+                max="5000"
+                step="40"
+                placeholder="Unlimited"
+                value={shell.max_height ?? ""}
+                onChange={event => {
+                  const value = event.target.valueAsNumber;
+                  update(
+                    "max_height",
+                    Number.isFinite(value) ? Math.min(5000, Math.max(1, value)) : null
+                  );
+                }}
+              />
+              <span className="section-shell-inherit-hint">px</span>
+            </label>
             <div className="section-shell-controls-divider" />
             {colorFields.map(field => (
               <ColorSourceControl

@@ -1,0 +1,18 @@
+<--/------->
+
+## full_route_resource_embeds
+
+### Current Progress
+- **Phase 1: Route surface reuse** - ✅ Complete
+- **Phase 2: Section max-height** - ✅ Complete
+- **Phase 3: Tests and contracts** - ✅ Complete
+- **Phase 4: Verification and audit** - ✅ Complete
+
+### Next Steps
+- [x] Reused canonical product, thread, and documentation route content in resource embeds.
+- [x] Added the shared optional max-height control and expanded-section scrolling.
+- [x] Added focused regression coverage and updated affected specs.
+- [x] Passed 269 frontend tests, lint, production build, four UI policy gates,
+  todo pairing/reference checks, and final diff review on 2026-08-25.
+
+<--/------->

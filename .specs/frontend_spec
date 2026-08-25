@@ -155,17 +155,19 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   Activation is sticky across moves, content updates, collapse, and active
   drafts; page-key/type-preserving React keys reset it only at page teardown.
 - Section colors are inherited or literal; content scale applies to the shared
-  inner wrapper. `PageBuilder` always saves the complete authoritative document
-  with the page update endpoint.
+  inner wrapper. The shared shell also accepts an optional bounded `max_height`;
+  when set, only the expanded section content scrolls within that pixel cap,
+  while an unset value leaves the section's natural height unconstrained.
+  `PageBuilder` always saves the complete authoritative document with the page
+  update endpoint.
 - `resource_embed` persists a supported resource type plus its source identifier
-  or slug. Its compact editor uses resource-type and resource dropdowns backed by bounded existing catalog
-  APIs; their read-only renderers retain shared media/rich-text sanitization,
-  canonical links, source visibility decisions, exact realtime subscriptions,
-  reconnect refetch, and explicit empty/loading/error/retry states.
-  Store product embeds and product pages use the same cycling media/lightbox
-  component. Documentation embeds use the shared documentation shell in an
-  explicitly height-bounded embedded mode and render the first visible guide
-  from the normal article endpoint rather than reconstructing a summary card.
+  or slug. Its compact editor uses resource-type and resource dropdowns backed by
+  bounded existing catalog APIs. Read mode mounts the canonical product, thread,
+  or documentation route content with an explicit resource identity, rather than
+  maintaining summary-card or special embedded-shell renderers. The global app
+  header/footer remain outside the section, while source visibility, canonical
+  links, mutations, sanitization, realtime behavior, and route loading/error
+  states remain owned by the source route.
 - Datasource-backed reusable designs use the `SectionPreset` type and
   `/config/section-presets`; `CustomSection` remains a deprecated type alias and
   the backend retains the old route during the compatibility window. The

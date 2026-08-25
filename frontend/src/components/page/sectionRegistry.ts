@@ -16,7 +16,7 @@ export interface SharedSectionShell {
   animation_intensity: "subtle" | "normal" | "dramatic";
   background_color: ColorSource; text_color: ColorSource; h1_color: ColorSource;
   h2_color: ColorSource; h3_color: ColorSource;
-  content_scale: number; collapsible: boolean; default_collapsed: boolean;
+  content_scale: number; max_height: number | null; collapsible: boolean; default_collapsed: boolean;
 }
 
 export const DEFAULT_SECTION_SHELL: SharedSectionShell = {
@@ -26,5 +26,5 @@ export const DEFAULT_SECTION_SHELL: SharedSectionShell = {
   animation: "none", animation_intensity: "normal",
   background_color: { mode: "inherit" }, text_color: { mode: "inherit" },
   h1_color: { mode: "inherit" }, h2_color: { mode: "inherit" }, h3_color: { mode: "inherit" },
-  content_scale: 1, collapsible: false, default_collapsed: false,
+  content_scale: 1, max_height: null, collapsible: false, default_collapsed: false,
 };

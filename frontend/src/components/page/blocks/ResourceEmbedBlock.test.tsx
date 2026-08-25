@@ -5,17 +5,26 @@ import { apiRequest } from "../../../utils/api";
 import type { PageSection } from "../types";
 import { ResourceEmbedBlock } from "./ResourceEmbedBlock";
 
-const { subscribeMock, unsubscribeMock } = vi.hoisted(() => ({
-  subscribeMock: vi.fn(),
-  unsubscribeMock: vi.fn(),
-}));
-
 vi.mock("../../../utils/api", async importOriginal => ({
   ...(await importOriginal<typeof import("../../../utils/api")>()),
   apiRequest: vi.fn(),
 }));
-vi.mock("../../../hooks/useWebSocketSync", () => ({
-  useWebSocketSync: () => ({ subscribe: subscribeMock, unsubscribe: unsubscribeMock }),
+vi.mock("../../store/ProductPage", () => ({
+  ProductPage: ({ productId }: { productId: string }) => <div>Full product route {productId}</div>,
+}));
+vi.mock("../../forum/thread-view/ViewThreadPage", () => ({
+  default: ({ embeddedThreadId, embedded }: { embeddedThreadId: string; embedded: boolean }) => (
+    <div data-embedded={embedded}>Full thread route {embeddedThreadId}</div>
+  ),
+}));
+vi.mock("../../../pages/documentation/DocumentationViewPage", () => ({
+  default: ({
+    embeddedDocumentationSlug,
+    embedded,
+  }: {
+    embeddedDocumentationSlug: string;
+    embedded: boolean;
+  }) => <div data-embedded={embedded}>Full documentation route {embeddedDocumentationSlug}</div>,
 }));
 
 const mockedApi = vi.mocked(apiRequest);
@@ -43,42 +52,9 @@ function section(config: Record<string, string>): PageSection {
 describe("ResourceEmbedBlock", () => {
   beforeEach(() => {
     mockedApi.mockReset();
-    subscribeMock.mockReset();
-    unsubscribeMock.mockReset();
   });
 
-  it("loads a referenced product without copying product data into section config", async () => {
-    mockedApi.mockResolvedValue({
-      id: "7",
-      name: "Field Guide",
-      description: "Practical notes",
-      price: 2500,
-      stock: 3,
-      stock_unlimited: false,
-      category_id: "1",
-      is_active: true,
-      created_at: "2026-08-20T00:00:00Z",
-      updated_at: "2026-08-20T00:00:00Z",
-      image_url: "/guide.webp",
-      media: [
-        {
-          url: "/guide.webp",
-          filename: "Cover",
-          mime_type: "image/webp",
-          type: "image",
-          size: 10,
-          created_at: "2026-08-20T00:00:00Z",
-        },
-        {
-          url: "/guide-demo.mp4",
-          filename: "Demo",
-          mime_type: "video/mp4",
-          type: "video",
-          size: 20,
-          created_at: "2026-08-20T00:00:00Z",
-        },
-      ],
-    });
+  it("mounts the full product route with the referenced identity", () => {
     render(
       <MemoryRouter>
         <ResourceEmbedBlock
@@ -88,19 +64,8 @@ describe("ResourceEmbedBlock", () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole("heading", { name: "Field Guide" })).toBeInTheDocument();
-    expect(mockedApi).toHaveBeenCalledWith(
-      "/store/products/7",
-      expect.objectContaining({ signal: expect.any(AbortSignal) })
-    );
-    expect(screen.getByRole("link", { name: /Open product/ })).toHaveAttribute(
-      "href",
-      "/store/product/7"
-    );
-    expect(screen.getByText("1/2")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Next media" }));
-    expect(screen.getByText("2/2")).toBeInTheDocument();
-    expect(subscribeMock).toHaveBeenCalledWith("store_product", 7);
+    expect(screen.getByText("Full product route 7")).toBeInTheDocument();
+    expect(mockedApi).not.toHaveBeenCalled();
   });
 
   it("uses bounded public picker reads and persists only the selected thread id", async () => {
@@ -144,55 +109,34 @@ describe("ResourceEmbedBlock", () => {
     );
   });
 
-  it("renders a selected documentation resource", async () => {
-    mockedApi.mockImplementation(async endpoint => {
-      if (!endpoint) return [] as never;
-      if (endpoint === "/docs/handbook")
-        return {
-          documentation: {
-            id: 3,
-            slug: "handbook",
-            title: "Handbook",
-            description: "",
-            visibility: "public",
-          },
-          sections: [],
-          articles: [{ id: 4, slug: "start", title: "Start here" }],
-        } as never;
-      if (endpoint === "/docs/handbook/articles/start")
-        return {
-          article: {
-            id: 4,
-            slug: "start",
-            title: "Start here",
-            summary: "Begin with the platform basics.",
-            content: "<p>Install the application first.</p>",
-          },
-        } as never;
-      throw new Error(`Unexpected ${endpoint}`);
-    });
-    render(
+  it("mounts full thread and documentation routes with their referenced identities", () => {
+    const { rerender } = render(
       <MemoryRouter>
         <ResourceEmbedBlock
-          section={section({
-            resource_type: "documentation",
-            resource_id: "handbook",
-          })}
+          section={section({ resource_type: "forum_thread", resource_id: "12" })}
+          {...handlers()}
+        />
+      </MemoryRouter>
+    );
+    expect(screen.getByText("Full thread route 12")).toHaveAttribute("data-embedded", "true");
+
+    rerender(
+      <MemoryRouter>
+        <ResourceEmbedBlock
+          section={section({ resource_type: "documentation", resource_id: "handbook" })}
           {...handlers()}
         />
       </MemoryRouter>
     );
 
-    expect(await screen.findByRole("heading", { name: "Start here" })).toBeInTheDocument();
-    expect(screen.getByText("Install the application first.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Open documentation/ })).toHaveAttribute(
-      "href",
-      "/doc/handbook"
+    expect(screen.getByText("Full documentation route handbook")).toHaveAttribute(
+      "data-embedded",
+      "true"
     );
-    expect(subscribeMock).toHaveBeenCalledWith("documentation", 3);
+    expect(mockedApi).not.toHaveBeenCalled();
   });
 
-  it("keeps browse previews inert and free of resource enrichment requests", () => {
+  it("keeps browse previews inert and free of route mounting or enrichment requests", () => {
     render(
       <MemoryRouter>
         <ResourceEmbedBlock
@@ -204,7 +148,7 @@ describe("ResourceEmbedBlock", () => {
     );
 
     expect(screen.getByText("Open the page to view this live resource.")).toBeInTheDocument();
+    expect(screen.queryByText("Full product route 7")).not.toBeInTheDocument();
     expect(mockedApi).not.toHaveBeenCalled();
-    expect(subscribeMock).not.toHaveBeenCalled();
   });
 });

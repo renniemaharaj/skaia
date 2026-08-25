@@ -87,13 +87,13 @@ forum documentation projection, documentation SEO/cache/realtime, or migration
 - The forum editor and documentation editor are the same `RichTextEditor`
   boundary. Read-only HTML always passes through `RichTextRenderer`.
 - A custom-page `resource_embed` configured for documentation stores only a
-  documentation slug. It resolves the normal visibility-aware manifest
-  and article APIs, renders the first visible guide through the shared
-  documentation shell and `RichTextRenderer`, subscribes to the existing
-  documentation and article keys, and links to the canonical `/doc` route. The
-  shell's embedded variant has bounded height and internal navigation/content
-  scrolling; it never copies documentation records into `pages.content` or
-  mounts unconstrained full-page/authoring chrome.
+  documentation slug. It mounts the normal visibility-aware documentation route
+  content with that explicit slug, loads the first visible guide, and retains the
+  route's shell, search, navigation, actions, `RichTextRenderer`, subscriptions,
+  and canonical `/doc` links. The global app layout is not duplicated inside the
+  section. Height is natural unless the page author sets the shared section
+  `max_height`, in which case the expanded section owns the scroll boundary. The
+  embed never copies documentation records into `pages.content`.
 - In-app link navigation while editing uses Skaia's Prompt through the
   declarative-`BrowserRouter` compatible dirty-navigation guard; data-router-only
   `useBlocker` and native unload/confirm/prompt/alert dialogs are forbidden.

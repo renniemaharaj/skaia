@@ -133,6 +133,9 @@ export function SectionFrame({
       shell.h3_color.mode === "literal" ? shell.h3_color.value : undefined,
     "--skaia-section-content-scale": shell.content_scale,
   };
+  const contentStyle: CSSProperties = shell.max_height
+    ? { maxHeight: `${shell.max_height}px`, overflowY: "auto" }
+    : {};
 
   const updateShell = useCallback(
     (nextShell: SharedSectionShell) => {
@@ -262,6 +265,7 @@ export function SectionFrame({
         <div
           id={contentId}
           className={`pb-section-content pb-section-container-${shell.container_width}`}
+          style={contentStyle}
           hidden={collapsed}
           aria-busy={!contentMounted}
         >

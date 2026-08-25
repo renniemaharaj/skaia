@@ -138,6 +138,31 @@ describe("SectionFrame", () => {
     expect(screen.getByText("Collapsible content").parentElement).toHaveAttribute("hidden");
   });
 
+  it("caps and scrolls expanded section content when max height is configured", () => {
+    const constrained = {
+      ...section,
+      config: JSON.stringify({ max_height: 960 }),
+    };
+    const { container } = render(
+      <SectionFrame
+        section={constrained}
+        isFirst
+        isLast
+        canEdit={false}
+        onMove={vi.fn()}
+        onUpdate={vi.fn()}
+        onDelete={vi.fn()}
+      >
+        <div>Long section content</div>
+      </SectionFrame>
+    );
+
+    expect(container.querySelector(".pb-section-content")).toHaveStyle({
+      maxHeight: "960px",
+      overflowY: "auto",
+    });
+  });
+
   it("uses a generic viewer collapse label for legacy builder headings", () => {
     render(
       <SectionFrame

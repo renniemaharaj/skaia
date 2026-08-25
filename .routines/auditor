@@ -93,6 +93,11 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Run Remarks
 
+- Audited full-route resource embeds across source-policy ownership, canonical
+  route identity, global-layout exclusion, duplicate renderer removal, natural
+  height, bounded section overflow, preview inertness, responsive reuse, and
+  tests. No material affected-scope issue remains.
+
 - Audited component-group polish across preset authority, update policy, literal
   rendering safety, ordering/width state, dialog accessibility, responsive token
   CSS, stat icon output, and tests. No material affected-scope issue remains.

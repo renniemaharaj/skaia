@@ -120,4 +120,31 @@ describe("SectionShellControls", () => {
       container_width: "wide",
     });
   });
+
+  it("sets and clears an optional bounded section max height", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(
+      <SectionShellControls shell={DEFAULT_SECTION_SHELL} onChange={onChange} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+    const input = screen.getByRole("spinbutton", { name: "Section max height" });
+    fireEvent.change(input, { target: { value: "1200" } });
+    expect(onChange).toHaveBeenLastCalledWith({
+      ...DEFAULT_SECTION_SHELL,
+      max_height: 1200,
+    });
+
+    rerender(
+      <SectionShellControls
+        shell={{ ...DEFAULT_SECTION_SHELL, max_height: 1200 }}
+        onChange={onChange}
+      />
+    );
+    fireEvent.change(input, { target: { value: "" } });
+    expect(onChange).toHaveBeenLastCalledWith({
+      ...DEFAULT_SECTION_SHELL,
+      max_height: null,
+    });
+  });
 });

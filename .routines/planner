@@ -111,6 +111,11 @@ operational policies.
 
 ## Last Run Remarks
 
+- Created and completed `full_route_resource_embeds`; frontend, custom-page, and
+  documentation specs now make canonical route-content reuse and optional shared
+  section max-height authoritative without adding iframe or copied-resource
+  persistence contracts.
+
 - Created and completed `component_group_editor_polish`; frontend and custom-page
   specs now record editable datasource presets and component-group presentation
   controls without introducing a second persistence contract.

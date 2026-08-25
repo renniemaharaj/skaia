@@ -123,6 +123,11 @@ update specs and .tip with durable facts
 
 ## Last Run Remarks
 
+- Completed `full_route_resource_embeds`: product, thread, and documentation
+  embeds now mount canonical route content without duplicating global app chrome,
+  and the shared section shell has an optional bounded max-height control for
+  expanded content. All 269 frontend tests, lint, build, and UI policy gates pass.
+
 - Completed `component_group_editor_polish`: component groups now have explicit
   move controls, stable commit-based widths, selectable named stat icons with
   four positions, literal text bindings, a split-pane component workspace, and

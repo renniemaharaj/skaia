@@ -26,14 +26,21 @@ import ViewThreadMeta from "../ViewThreadMeta";
 import "./ViewThreadPage.css";
 import "../IconButton.css";
 
-const ViewThreadPage = () => {
+interface ViewThreadPageProps {
+  embeddedThreadId?: string;
+  embedded?: boolean;
+}
+
+const ViewThreadPage = ({ embeddedThreadId, embedded = false }: ViewThreadPageProps = {}) => {
   const navigate = useNavigate();
-  const { threadId } = useParams<{ threadId: string }>();
+  const { threadId: routeThreadId } = useParams<{ threadId: string }>();
+  const threadId = embeddedThreadId ?? routeThreadId;
   const [currentThread, setCurrentThread] = useAtom(currentThreadAtom);
   const currentUser = useAtomValue(currentUserAtom);
   const setContextUser = useSetAtom(contextUserAtom);
 
   useEffect(() => {
+    if (embedded) return;
     if (currentThread) {
       setContextUser({
         background_video_url: currentThread.user_background_video_url,
@@ -42,7 +49,7 @@ const ViewThreadPage = () => {
       });
     }
     return () => setContextUser(null);
-  }, [currentThread, setContextUser]);
+  }, [currentThread, embedded, setContextUser]);
 
   const { canEdit, canDelete, canLock } = useAtomValue(threadPermissionsAtom);
   const { subscribe, unsubscribe } = useWebSocketSync();

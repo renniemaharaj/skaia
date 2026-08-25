@@ -128,8 +128,9 @@ authority.
 - Duplicate pages clear interactive records.
 - Page WebSocket events are content-free invalidations.
 - HTML and component output retain their existing sanitization boundaries.
-- Resource embeds never bypass source-domain visibility or mutation policy and
-  expose only canonical read links; they do not add iframe or remote-URL embeds.
+- Resource embeds never bypass source-domain visibility or mutation policy. They
+  mount canonical in-app route content by source identity, keep global layout
+  chrome outside the section, and do not add iframe or remote-URL embeds.
 
 ## Retirement guard
 

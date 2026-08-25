@@ -30,8 +30,8 @@ import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import { MoneyAmount } from "../ui/MoneyAmount";
-import { ProductMediaTable } from "./ProductMediaTable";
 import { ProductMediaCarousel } from "./ProductMediaCarousel";
+import { ProductMediaTable } from "./ProductMediaTable";
 import { StorePageShell } from "./StorePageShell";
 import { getProductMediaItems } from "./storeMedia";
 
@@ -81,8 +81,13 @@ const RELATED_SKELETON_KEYS = ["related-skeleton-1", "related-skeleton-2", "rela
 const errorMessage = (err: unknown, fallback: string) =>
   err instanceof Error && err.message ? err.message : fallback;
 
-export const ProductPage = () => {
-  const { id } = useParams<{ id: string }>();
+interface ProductPageProps {
+  productId?: string;
+}
+
+export const ProductPage = ({ productId }: ProductPageProps = {}) => {
+  const { id: routeProductId } = useParams<{ id: string }>();
+  const id = productId ?? routeProductId;
   const navigate = useNavigate();
   const allProducts = useAtomValue(productsAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
@@ -114,7 +119,7 @@ export const ProductPage = () => {
   }, [id, subscribe, unsubscribe]);
 
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
+    navigator.clipboard.writeText(`${window.location.origin}/store/product/${id}`);
     toast.success("Link copied to clipboard!");
   };
 

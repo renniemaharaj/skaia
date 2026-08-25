@@ -1,4 +1,4 @@
-import { DEFAULT_SECTION_SHELL, type ColorSource, type SharedSectionShell } from "./sectionRegistry";
+import { type ColorSource, DEFAULT_SECTION_SHELL, type SharedSectionShell } from "./sectionRegistry";
 import type { PageSectionConfig } from "./types";
 
 function objectValue(value: unknown): Record<string, unknown> | null {
@@ -37,6 +37,8 @@ export function adaptLegacySectionShell(value: PageSectionConfig | undefined): S
   shell.background_color = color(config.background_color ?? config.bg_color); shell.text_color = color(config.text_color);
   shell.h1_color = color(config.h1_color); shell.h2_color = color(config.h2_color); shell.h3_color = color(config.h3_color);
   shell.content_scale = bounded(config.content_scale ?? config.contentScale,0.5,2,1);
+  const maxHeight = config.max_height ?? config.maxHeight;
+  shell.max_height = typeof maxHeight === "number" && Number.isFinite(maxHeight) && maxHeight >= 1 && maxHeight <= 5000 ? maxHeight : null;
   if (typeof config.collapsible === "boolean") shell.collapsible = config.collapsible;
   const collapsed = config.default_collapsed ?? config.defaultCollapsed; if (typeof collapsed === "boolean") shell.default_collapsed = collapsed;
   return shell;
@@ -50,5 +52,5 @@ export function projectSharedShellToLegacyConfig(value: PageSectionConfig | unde
     paddingTop:shell.padding_top,paddingRight:shell.padding_right,paddingBottom:shell.padding_bottom,paddingLeft:shell.padding_left,
     animation:shell.animation,animationIntensity:shell.animation_intensity,background_color:shell.background_color,
     bg_color:legacyColor(shell.background_color),text_color:shell.text_color,h1_color:shell.h1_color,h2_color:shell.h2_color,h3_color:shell.h3_color,
-    content_scale:shell.content_scale,collapsible:shell.collapsible,default_collapsed:shell.default_collapsed});
+    content_scale:shell.content_scale,max_height:shell.max_height,collapsible:shell.collapsible,default_collapsed:shell.default_collapsed});
 }
