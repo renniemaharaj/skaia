@@ -145,6 +145,7 @@ type Footer struct {
 type LegalConfig struct {
 	Policies                   []LegalPolicy `json:"policies"`
 	CookiePolicyIDs            []string      `json:"cookie_policy_ids"`
+	FooterPolicyIDs            []string      `json:"footer_policy_ids"`
 	CheckoutPolicyIDs          []string      `json:"checkout_policy_ids"`
 	CheckoutNoticeVariant      string        `json:"checkout_notice_variant"`
 	CheckoutNoticeMessage      string        `json:"checkout_notice_message"`

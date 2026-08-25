@@ -24,6 +24,7 @@ describe("CookiePolicyNotice", () => {
         },
       ],
       cookie_policy_ids: ["cookies"],
+      footer_policy_ids: [],
       checkout_policy_ids: [],
     });
     render(
@@ -52,6 +53,7 @@ describe("CookiePolicyNotice", () => {
     vi.mocked(apiRequest).mockResolvedValue({
       policies: [],
       cookie_policy_ids: [],
+      footer_policy_ids: [],
       checkout_policy_ids: [],
     });
     const { container } = render(

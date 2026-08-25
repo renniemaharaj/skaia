@@ -115,7 +115,6 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "form/community/:kind/:id/edit", element: <CommunityFormPage />, conditional: "community" },
   { path: "form/page/:slug/manage", element: <PageManageFormPage /> },
   { path: "form/site/legal/new", element: <LegalPolicyFormPage /> },
-  { path: "form/site/legal", element: <LegalProgressPage /> },
   {
     path: "form/store/checkout-policies",
     element: <StoreCheckoutPolicyPage />,
@@ -224,6 +223,7 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
 
 /** Routes accessible to both guests and authenticated users. */
 export const guestRoutes: (CustomRoute | IndexRoute)[] = [
+  { path: "form/site/legal", element: <LegalProgressPage /> },
   { path: "community", element: <CommunityHubPage />, conditional: "community" },
   { path: "community/:kind", element: <CommunityDirectoryPage />, conditional: "community" },
   { path: "community/:kind/:id", element: <CommunityDetailPage />, conditional: "community" },

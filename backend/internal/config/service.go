@@ -127,7 +127,12 @@ func (s *Service) SaveCheckoutConfig(ids []string, variant, message, checkboxTex
 }
 
 func emptyLegalConfig() *models.LegalConfig {
-	config := &models.LegalConfig{Policies: []models.LegalPolicy{}, CookiePolicyIDs: []string{}, CheckoutPolicyIDs: []string{}}
+	config := &models.LegalConfig{
+		Policies:          []models.LegalPolicy{},
+		CookiePolicyIDs:   []string{},
+		FooterPolicyIDs:   []string{},
+		CheckoutPolicyIDs: []string{},
+	}
 	normalizeLegalConfig(config)
 	return config
 }
@@ -138,6 +143,9 @@ func normalizeLegalConfig(config *models.LegalConfig) {
 	}
 	if config.CookiePolicyIDs == nil {
 		config.CookiePolicyIDs = []string{}
+	}
+	if config.FooterPolicyIDs == nil {
+		config.FooterPolicyIDs = []string{}
 	}
 	if config.CheckoutPolicyIDs == nil {
 		config.CheckoutPolicyIDs = []string{}
@@ -198,6 +206,9 @@ func validateLegalConfig(config *models.LegalConfig) error {
 		}
 	}
 	if err := validatePolicySelection(config.CookiePolicyIDs, ids, "cookie"); err != nil {
+		return err
+	}
+	if err := validatePolicySelection(config.FooterPolicyIDs, ids, "footer"); err != nil {
 		return err
 	}
 	if config.CheckoutNoticeVariant != "standard" && config.CheckoutNoticeVariant != "info" && config.CheckoutNoticeVariant != "attention" {

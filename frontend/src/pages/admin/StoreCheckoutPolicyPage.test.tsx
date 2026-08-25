@@ -19,6 +19,7 @@ const config = {
     },
   ],
   cookie_policy_ids: [],
+  footer_policy_ids: [],
   checkout_policy_ids: [],
   checkout_notice_variant: "standard" as const,
   checkout_notice_message: "Review every policy.",

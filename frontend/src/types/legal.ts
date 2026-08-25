@@ -10,6 +10,7 @@ export interface LegalPolicy {
 export interface LegalConfig {
   policies: LegalPolicy[];
   cookie_policy_ids: string[];
+  footer_policy_ids: string[];
   checkout_policy_ids: string[];
   checkout_notice_variant: "standard" | "info" | "attention";
   checkout_notice_message: string;

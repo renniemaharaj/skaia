@@ -10,9 +10,15 @@ interface Values {
   name: string;
   description: string;
   cookie_notice: boolean;
+  footer_link: boolean;
 }
 
-const initialValues: Values = { name: "", description: "", cookie_notice: false };
+const initialValues: Values = {
+  name: "",
+  description: "",
+  cookie_notice: false,
+  footer_link: false,
+};
 
 export default function LegalPolicyFormPage() {
   const navigate = useNavigate();
@@ -64,6 +70,7 @@ export default function LegalPolicyFormPage() {
               ...current,
               policies: current.policies ?? [],
               cookie_policy_ids: current.cookie_policy_ids ?? [],
+              footer_policy_ids: current.footer_policy_ids ?? [],
               checkout_policy_ids: current.checkout_policy_ids ?? [],
             };
             const policy: LegalPolicy = {
@@ -82,6 +89,9 @@ export default function LegalPolicyFormPage() {
                 cookie_policy_ids: values.cookie_notice
                   ? [...config.cookie_policy_ids, policy.id]
                   : config.cookie_policy_ids,
+                footer_policy_ids: values.footer_link
+                  ? [...config.footer_policy_ids, policy.id]
+                  : config.footer_policy_ids,
               }),
             });
             navigate(`/page/${page.slug}`);
@@ -110,6 +120,11 @@ export default function LegalPolicyFormPage() {
           name="cookie_notice"
           label="Show this policy in the cookie notice"
           description="Visitors can accept it from the shared site banner."
+        />
+        <FormCheckbox
+          name="footer_link"
+          label="Show this policy in the footer"
+          description="Visitors can open it from the shared site footer."
         />
       </ManagedForm>
     </ModulePageShell>

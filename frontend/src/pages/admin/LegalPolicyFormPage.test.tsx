@@ -21,7 +21,12 @@ describe("LegalPolicyFormPage", () => {
         };
       }
       if (endpoint === "/config/legal" && !options)
-        return { policies: [], cookie_policy_ids: [], checkout_policy_ids: [] };
+        return {
+          policies: [],
+          cookie_policy_ids: [],
+          footer_policy_ids: [],
+          checkout_policy_ids: [],
+        };
       if (endpoint === "/config/legal" && options?.method === "PUT")
         return JSON.parse(options.body as string);
       return undefined;
@@ -60,7 +65,11 @@ describe("LegalPolicyFormPage", () => {
       page_id: 44,
       page_slug: "legal-refund-policy-12345678",
     });
-    expect(saved).toMatchObject({ cookie_policy_ids: [], checkout_policy_ids: [] });
+    expect(saved).toMatchObject({
+      cookie_policy_ids: [],
+      footer_policy_ids: [],
+      checkout_policy_ids: [],
+    });
     expect(vi.mocked(apiRequest).mock.calls.map(([path]) => path)).toEqual([
       "/pages",
       "/config/legal",

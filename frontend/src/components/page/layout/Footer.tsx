@@ -7,8 +7,8 @@ import { hasPermissionAtom } from "../../../atoms/auth";
 import { footerConfigAtom } from "../../../atoms/config";
 import { brandingAtom } from "../../../atoms/config";
 import { useGuestSandboxMode } from "../../../hooks/useGuestSandboxMode";
-import { apiRequest } from "../../../utils/api";
 import type { LegalConfig } from "../../../types/legal";
+import { apiRequest } from "../../../utils/api";
 import { EditableText, VariantCycler } from "../EditControls";
 import type { FooterConfig, FooterLink, FooterSocialLink } from "../types";
 import "./Footer.css";
@@ -70,7 +70,7 @@ export const Footer: React.FC = () => {
     social_links: merged.social_links ?? [],
   };
   const variant = cfg.variant || 1;
-  const footerPolicyIDs = new Set(legalConfig?.cookie_policy_ids ?? []);
+  const footerPolicyIDs = new Set(legalConfig?.footer_policy_ids ?? []);
   const footerPolicies = (legalConfig?.policies ?? []).filter(policy =>
     footerPolicyIDs.has(policy.id)
   );

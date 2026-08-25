@@ -37,7 +37,8 @@ describe("Footer policies", () => {
           page_slug: "legal-privacy-a1b2",
         },
       ],
-      cookie_policy_ids: ["privacy"],
+      cookie_policy_ids: [],
+      footer_policy_ids: ["privacy"],
       checkout_policy_ids: [],
     });
   });

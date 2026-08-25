@@ -20,7 +20,8 @@ func TestValidateLegalConfigAcceptsPageReferencesAndSelections(t *testing.T) {
 			PageSlug:    "legal-refund-policy-a1b2",
 			CreatedAt:   time.Now().UTC(),
 		}},
-		CookiePolicyIDs:   []string{},
+		CookiePolicyIDs:   []string{"refund_policy"},
+		FooterPolicyIDs:   []string{"refund_policy"},
 		CheckoutPolicyIDs: []string{"refund_policy"},
 	}
 
@@ -45,9 +46,18 @@ func TestValidateLegalConfigNormalizesNilCollections(t *testing.T) {
 	require.NoError(t, validateLegalConfig(config))
 	assert.NotNil(t, config.Policies)
 	assert.NotNil(t, config.CookiePolicyIDs)
+	assert.NotNil(t, config.FooterPolicyIDs)
 	assert.NotNil(t, config.CheckoutPolicyIDs)
 	assert.Equal(t, "standard", config.CheckoutNoticeVariant)
 	assert.Contains(t, config.CheckoutPolicyCheckboxText, "{policy}")
+}
+
+func TestValidateLegalConfigRejectsMissingFooterSelection(t *testing.T) {
+	config := &models.LegalConfig{FooterPolicyIDs: []string{"missing"}}
+
+	err := validateLegalConfig(config)
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, ErrInvalidLegalConfig))
 }
 
 func TestValidateLegalConfigRejectsUnknownCheckoutNoticeVariant(t *testing.T) {
