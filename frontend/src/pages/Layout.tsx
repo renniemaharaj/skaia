@@ -39,6 +39,7 @@ import { syncServerTime } from "../utils/serverTime";
 import MFAChallenge from "./MFAChallenge";
 import RateLimitedPage from "./RateLimitedPage";
 import AccountTrustNotice from "./AccountTrustNotice";
+import { CookiePolicyNotice } from "../components/page/layout/CookiePolicyNotice";
 
 // Heavy ambient/overlay widgets - lazy-loaded so they never block the
 // critical paint path.  Null fallbacks are intentional: these are decorative
@@ -576,6 +577,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </span>
         </div>
       )}
+      <CookiePolicyNotice />
       <AccountTrustNotice userId={currentUser?.id} />
       {seo?.particle_style === "gravity" && (
         <Suspense fallback={null}>

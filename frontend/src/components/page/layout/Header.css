@@ -382,6 +382,38 @@
   font-size: 0.7rem;
 }
 
+.drawer-context-tools {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+.drawer-context-tools__actions {
+  display: grid;
+  border-top: 1px solid var(--border-color);
+}
+
+.drawer-context-tools__action {
+  width: 100%;
+  padding: 0.7rem 0.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.drawer-context-tools__action:hover:not(:disabled) {
+  color: var(--primary-color);
+  background: var(--bg-tertiary);
+}
+
+.drawer-context-tools__action--success { color: var(--success-color); }
+.drawer-context-tools__action--danger { color: var(--error-color); }
+.drawer-context-tools__action:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.drawer-context-tools__action:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .drawer-customize-trigger:hover,
 .drawer-customize-trigger.active {
   color: var(--primary-color);

@@ -1,0 +1,3 @@
+.legal-policy-form.managed-form.modal {
+  width: min(36rem, calc(100% - 2rem));
+}

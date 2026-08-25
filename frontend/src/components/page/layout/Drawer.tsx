@@ -28,10 +28,12 @@ import {
   Volume1,
   Volume2,
   VolumeX,
+  Wrench,
 } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { drawerToolGroupAtom } from "../../../atoms/drawerTools";
 import { unreadNotifCountAtom } from "../../../atoms/notifications";
 import {
   getSoundVolume,
@@ -72,7 +74,7 @@ interface DrawerAppOption {
   label: string;
 }
 
-type DrawerView = "root" | "customize" | "sound" | "alerts";
+type DrawerView = "root" | "customize" | "sound" | "alerts" | "context-tools";
 
 const navigationAppId = (item: DrawerNavigationItem) => `workspace:${item.to}`;
 
@@ -94,6 +96,7 @@ export function Drawer({
 }: DrawerProps) {
   const drawerLocation = useLocation();
   const unreadNotifications = useAtomValue(unreadNotifCountAtom);
+  const contextTools = useAtomValue(drawerToolGroupAtom);
   const [open, setOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [view, setView] = useState<DrawerView>("root");
@@ -118,6 +121,7 @@ export function Drawer({
     ...(isAuthenticated ? [{ id: "alerts", label: "Alerts" }] : []),
     ...(isAuthenticated && inboxEnabled ? [{ id: "messages", label: "Messages" }] : []),
     ...(isAuthenticated && user ? [{ id: "settings", label: "Settings" }] : []),
+    ...(contextTools ? [{ id: "context-tools", label: contextTools.label }] : []),
   ];
   const allApps: DrawerAppOption[] = [
     ...navigationItems.map(item => ({
@@ -321,7 +325,13 @@ export function Drawer({
               <ChevronLeft size={18} />
             </button>
             <span>
-              {view === "customize" ? "Customize drawer" : view === "sound" ? "Sound" : "Alerts"}
+              {view === "customize"
+                ? "Customize drawer"
+                : view === "sound"
+                  ? "Sound"
+                  : view === "context-tools"
+                    ? contextTools?.label
+                    : "Alerts"}
             </span>
           </div>
         )}
@@ -440,6 +450,37 @@ export function Drawer({
         )}
         {view === "sound" && <SoundPanel />}
         {view === "alerts" && <NotificationBell embedded />}
+        {view === "context-tools" && contextTools && (
+          <div className="drawer-context-tools">
+            {contextTools.selects?.map(control => (
+              <Select
+                key={control.id}
+                label={control.label}
+                block
+                value={control.value}
+                options={control.options}
+                truncateSelectedTo={control.truncateSelectedTo}
+                onChange={event => control.onChange(event.target.value)}
+              />
+            ))}
+            <div className="drawer-context-tools__actions">
+              {contextTools.actions.map(action => (
+                <button
+                  key={action.id}
+                  type="button"
+                  className={`drawer-context-tools__action drawer-context-tools__action--${action.tone ?? "default"}`}
+                  disabled={action.disabled}
+                  onClick={() => {
+                    closeAfterAction();
+                    action.onSelect();
+                  }}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {view === "root" && filteredNavigationItems.length > 0 && (
           <>
             <div className="drawer-section-title">Workspaces</div>
@@ -588,6 +629,23 @@ export function Drawer({
                 </span>
                 {label("Settings")}
               </Link>
+            )}
+            {contextTools && !hiddenApps.has("context-tools") && (
+              <button
+                className="utility-launcher__item"
+                type="button"
+                title={contextTools.label}
+                aria-label={contextTools.label}
+                onClick={() => {
+                  setPinned(true);
+                  setView("context-tools");
+                }}
+              >
+                <span className="utility-launcher__icon utility-launcher__icon--slate">
+                  <Wrench />
+                </span>
+                {label(contextTools.label)}
+              </button>
             )}
           </div>
         )}

@@ -1,0 +1,49 @@
+# Simple Page-Backed Site Policies
+
+## Context
+
+Policy text belongs in ordinary custom pages. Placement-specific acceptance is a
+small browser-local convenience, not a second form protocol or server receipt
+system.
+
+## Goal
+
+- Let site managers create, edit, list, and delete page-backed policies.
+- Let managers select policies for the global cookie notice.
+- Let store managers select policies required by checkout.
+- Reuse one browser-local acceptance key across cookie and checkout checkboxes.
+- Keep page tools contextual in one drawer tile.
+
+## Non-Goals
+
+- Legal advice, jurisdiction inference, compliance scoring, or a universal list
+  of required policies.
+- Server-side consent receipts or inspection of custom-page form responses.
+- Automatic attachment of policies to arbitrary surfaces.
+
+## Steps
+
+1. Persist bounded policy page references and cookie/checkout selections in the
+   legal site config.
+2. Build a compact Site policies hub and public custom-page creation flow.
+3. Add the sandbox-styled cookie notice and shared local acceptance storage.
+4. Add store-manager checkout policy configuration and client checkout gating.
+5. Move the page editor menu into one contextual drawer tool.
+6. Verify backend validation, frontend behavior, build, lint, and specs.
+
+## Verification
+
+- Focused config and policy UI tests.
+- Frontend production build, lint, and UI policy checks.
+- Backend changed-package and full tests.
+- `git diff --check`.
+
+## References
+
+- `.specs/backend_spec`
+- `.specs/frontend_spec`
+- `.specs/security_architecture_spec`
+- `.routines/worker`
+- `frontend/src/pages/admin/LegalProgressPage.tsx`
+- `frontend/src/utils/policyAcceptance.ts`
+- `backend/internal/config/service.go`

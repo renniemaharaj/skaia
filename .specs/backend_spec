@@ -167,6 +167,23 @@ credential-bearing destinations, and strip sensitive headers across origins.
 
 ## Store Contracts
 
+### Page-backed policy configuration
+
+- `GET /config/legal/manifest` publicly exposes bounded policy page references
+  plus selected cookie and checkout policy IDs. It contains no user acceptance
+  state or custom-page response data.
+- `GET/PUT /config/legal` requires `home.manage`. Checkout selection writes at
+  `PUT /config/legal/checkout` require `home.manage` or `store.manageOrders`.
+- Checkout configuration includes a bounded notice variant, message, and
+  checkbox template alongside its selected policy IDs.
+- The public legal manifest lets every footer variant resolve the cookie policy
+  selection's current page names and routes without copied footer labels or URLs.
+- Saving legal config replaces the JSON document so retired protocol fields do
+  not survive JSONB merge behavior. The service rejects duplicate, malformed,
+  or dangling policy selections.
+- The backend does not inspect custom-page forms or persist browser acceptance.
+  Checkout acceptance in this design is client UX and not a server security gate.
+
 - Product/category reads allow optional JWT; management writes require JWT plus
   service-level permission checks.
 - Product prices, order totals, wallet amounts, and reference incentives are cents.

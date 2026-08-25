@@ -1,10 +1,15 @@
 import { useAtomValue, useSetAtom } from "jotai";
-import { BarChart3, Eye, MoreHorizontal, ThumbsUp } from "lucide-react";
+import { Eye, ThumbsUp } from "lucide-react";
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { currentUserAtom, isAuthenticatedAtom } from "../../atoms/auth";
 import { contextUserAtom } from "../../atoms/contextUser";
+import {
+  type DrawerToolAction,
+  type DrawerToolSelect,
+  drawerToolGroupAtom,
+} from "../../atoms/drawerTools";
 import { useGuestSandboxMode } from "../../hooks/useGuestSandboxMode";
 import { usePageData } from "../../hooks/usePageData";
 import type { PageBuilderDoc } from "../../hooks/usePageData";
@@ -12,7 +17,6 @@ import { useSetHomepage } from "../../hooks/useSetHomepage";
 import { apiRequest } from "../../utils/api";
 import { AnalyticsSkeleton } from "../analytics/AnalyticsSkeleton";
 import Button from "../input/Button";
-import Select from "../input/Select";
 import { confirmDestructiveAction, customConfirm } from "../ui/Prompt";
 import { BlockRenderer } from "./BlockRenderer";
 import { PageBuilderContext, type SaveStatus } from "./PageBuilderContext";
@@ -126,7 +130,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const showToolbar = isAdmin || isOwner || (!slug && !isEditable);
   const showManageBtn = showToolbar && !!page?.id;
   const canShowSandboxToggle = !isEditable;
-  const sandboxToggleIsStandalone = canShowSandboxToggle && !showManageBtn && !(isAdmin && !slug);
 
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const currentUser = useAtomValue(currentUserAtom);
@@ -146,25 +149,12 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   const [allPages, setAllPages] = useState<PageBuilderDoc[]>([]);
   const [landingPageSlug, setLandingPageSlug] = useState("");
   const { handleSetHomepage } = useSetHomepage(landingPageSlug, setLandingPageSlug);
-  const [moreOpen, setMoreOpen] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const moreRef = useRef<HTMLDivElement | null>(null);
   const [pageIsLiked, setPageIsLiked] = useState(false);
   const [pageLikes, setPageLikes] = useState(0);
   const [armInProgress, setArmInProgress] = useState(false);
   const [isArmed, setIsArmed] = useState(false);
   const [resetInProgress, setResetInProgress] = useState(false);
-
-  useEffect(() => {
-    if (!moreOpen) return;
-    const onDocumentClick = (event: globalThis.MouseEvent) => {
-      if (moreRef.current && !moreRef.current.contains(event.target as Node)) {
-        setMoreOpen(false);
-      }
-    };
-    window.addEventListener("mousedown", onDocumentClick);
-    return () => window.removeEventListener("mousedown", onDocumentClick);
-  }, [moreOpen]);
 
   const currentUserPowerLevel =
     typeof (currentUser as any)?.power_level === "number"
@@ -303,6 +293,134 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
       toast.error("Failed to delete page");
     }
   }, [deletePage, navigate, page?.id]);
+
+  const setDrawerTools = useSetAtom(drawerToolGroupAtom);
+  useEffect(() => {
+    if (!showToolbar) {
+      setDrawerTools(null);
+      return;
+    }
+
+    const selects: DrawerToolSelect[] = [];
+    if (canChangeVisibility && page) {
+      selects.push({
+        id: "visibility",
+        label: "Page visibility",
+        value: page.visibility || "public",
+        options: [
+          { value: "public", label: "Public" },
+          { value: "private", label: "Private" },
+          { value: "unlisted", label: "Unlisted" },
+        ],
+        onChange: visibility => {
+          void updatePage({ ...page, visibility })
+            .then(() => refresh(slug))
+            .catch(() => toast.error("Failed to update page visibility"));
+        },
+      });
+    }
+    if (isAdmin && !slug) {
+      selects.push({
+        id: "landing-page",
+        label: "Landing page",
+        value: landingPageSlug || "",
+        truncateSelectedTo: 15,
+        options: allPages.map(candidate => ({
+          value: candidate.slug,
+          label: candidate.title || candidate.slug,
+        })),
+        onChange: value => {
+          const selected = allPages.find(candidate => candidate.slug === value);
+          if (selected) handleSetHomepage(selected);
+        },
+      });
+    }
+
+    const actions: DrawerToolAction[] = [];
+    if (canArmSite) {
+      actions.push({
+        id: "arm-site",
+        label: armInProgress
+          ? isArmed
+            ? "Disarming…"
+            : "Arming…"
+          : isArmed
+            ? "Disarm site"
+            : "Arm site",
+        tone: isArmed ? "success" : "danger",
+        disabled: armInProgress,
+        onSelect: () => void handleArmToggle(),
+      });
+    }
+    if (canShowSandboxToggle) {
+      actions.push({
+        id: "sandbox",
+        label: guestSandboxEnabled ? "Disable sandbox" : "Enable sandbox",
+        onSelect: () => setGuestSandboxEnabled(current => !current),
+      });
+    }
+    if (showManageBtn && page?.slug) {
+      actions.push({
+        id: "manage-page",
+        label: "Manage page",
+        onSelect: () => navigate(`/form/page/${page.slug}/manage`),
+      });
+    }
+    if (showManageBtn && page?.id) {
+      actions.push({
+        id: "page-analytics",
+        label: "Page analytics",
+        onSelect: () => setShowAnalytics(true),
+      });
+    }
+    if (isAdmin && !slug) {
+      actions.push({
+        id: "reset-pages",
+        label: resetInProgress ? "Resetting…" : "Reset all pages",
+        tone: "danger",
+        disabled: resetInProgress,
+        onSelect: () => void handleFactoryReset(),
+      });
+    }
+    if (canDelete && page?.id) {
+      actions.push({
+        id: "delete-page",
+        label: "Delete this page",
+        tone: "danger",
+        onSelect: () => void handleDeletePage(),
+      });
+    }
+
+    setDrawerTools({ id: "page-tools", label: "Page tools", selects, actions });
+    return () => {
+      setDrawerTools(current => (current?.id === "page-tools" ? null : current));
+    };
+  }, [
+    allPages,
+    armInProgress,
+    canArmSite,
+    canChangeVisibility,
+    canDelete,
+    canShowSandboxToggle,
+    guestSandboxEnabled,
+    handleArmToggle,
+    handleDeletePage,
+    handleFactoryReset,
+    handleSetHomepage,
+    isAdmin,
+    isArmed,
+    landingPageSlug,
+    navigate,
+    page,
+    refresh,
+    resetInProgress,
+    setDrawerTools,
+    setGuestSandboxEnabled,
+    showManageBtn,
+    showToolbar,
+    slug,
+    updatePage,
+  ]);
 
   // Track whether the page needs to be created (404 + editable or sandbox enabled).
   const isNewPage = !!(slug && error && guestSandboxMode);
@@ -726,196 +844,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
   return (
     <PageBuilderContext.Provider value={contextValue}>
       <div className="pb-container">
-        {showToolbar && (
-          <div className="page-admin-bar page-admin-bar--menu">
-            <div className="page-admin-more-wrap" ref={moreRef}>
-              <Button
-                unstyled
-                type="button"
-                className={`action-btn page-admin-more-btn${moreOpen ? " active" : ""}`}
-                onClick={() => setMoreOpen(v => !v)}
-                title="Page settings"
-              >
-                <MoreHorizontal size={18} />
-              </Button>
-              {moreOpen && (
-                <div className="page-admin-more-dropdown">
-                  {canChangeVisibility && page && (
-                    <Select
-                      id="page-visibility"
-                      className="page-admin-select page-admin-more-item"
-                      value={page.visibility || "public"}
-                      onChange={async e => {
-                        const nextVisibility = e.target.value;
-                        try {
-                          await updatePage({
-                            ...page,
-                            visibility: nextVisibility,
-                          });
-                          await refresh(slug);
-                        } catch (err) {
-                          console.error("Failed to update page visibility", err);
-                        }
-                      }}
-                    >
-                      <option value="public">Visibility: Public</option>
-                      <option value="private">Visibility: Private</option>
-                      <option value="unlisted">Visibility: Unlisted</option>
-                    </Select>
-                  )}
-
-                  {isAdmin && !slug && (
-                    <Select
-                      className="page-admin-select page-admin-more-item"
-                      value={landingPageSlug || ""}
-                      truncateSelectedTo={15} // Don't touch this I want it to be 15
-                      onChange={e => {
-                        const val = e.target.value;
-                        const p = allPages.find(p => p.slug === val);
-                        if (p) {
-                          handleSetHomepage(p);
-                          setMoreOpen(false);
-                        }
-                      }}
-                    >
-                      <option value="" disabled>
-                        Set landing page
-                      </option>
-                      {allPages.map(p => (
-                        <option key={p.id} value={p.slug}>
-                          {p.title || p.slug}
-                          {p.slug === landingPageSlug ? " (Current)" : ""}
-                        </option>
-                      ))}
-                    </Select>
-                  )}
-
-                  {canArmSite && (
-                    <Button
-                      unstyled
-                      type="button"
-                      className={`page-admin-more-item ${
-                        isArmed ? "page-admin-more-item--success" : "page-admin-more-item--danger"
-                      }`}
-                      onClick={() => {
-                        void handleArmToggle();
-                        setMoreOpen(false);
-                      }}
-                      disabled={armInProgress}
-                    >
-                      {armInProgress
-                        ? isArmed
-                          ? "Disarming…"
-                          : "Arming…"
-                        : isArmed
-                          ? "Disarm site"
-                          : "Arm site"}
-                    </Button>
-                  )}
-
-                  {sandboxToggleIsStandalone && (
-                    <Button
-                      unstyled
-                      type="button"
-                      className="page-admin-more-item"
-                      onClick={() => {
-                        setGuestSandboxEnabled(current => !current);
-                        setMoreOpen(false);
-                      }}
-                    >
-                      {guestSandboxEnabled ? "Disable sandbox" : "Enable sandbox"}
-                    </Button>
-                  )}
-
-                  {showManageBtn && (
-                    <Button
-                      unstyled
-                      type="button"
-                      className="page-admin-more-item"
-                      onClick={() => {
-                        setMoreOpen(false);
-                        if (page?.slug) navigate(`/form/page/${page.slug}/manage`);
-                      }}
-                    >
-                      Manage page
-                    </Button>
-                  )}
-                  {showManageBtn && page?.id && (
-                    <Button
-                      unstyled
-                      type="button"
-                      className="page-admin-more-item"
-                      onClick={() => {
-                        setShowAnalytics(true);
-                        setMoreOpen(false);
-                      }}
-                    >
-                      Page Analytics
-                    </Button>
-                  )}
-                  {isAdmin && !slug && (
-                    <>
-                      <Link
-                        to="/form/site/seo"
-                        className="page-admin-more-item"
-                        onClick={() => setMoreOpen(false)}
-                      >
-                        Site Meta
-                      </Link>
-                      <Link
-                        to="/admin/roles"
-                        className="page-admin-more-item"
-                        onClick={() => setMoreOpen(false)}
-                      >
-                        Roles
-                      </Link>
-                      <Button
-                        unstyled
-                        type="button"
-                        className="page-admin-more-item page-admin-more-item--danger"
-                        disabled={resetInProgress}
-                        onClick={() => {
-                          setMoreOpen(false);
-                          void handleFactoryReset();
-                        }}
-                      >
-                        {resetInProgress ? "Resetting…" : "Reset all pages"}
-                      </Button>
-                    </>
-                  )}
-                  {!isEditable && !sandboxToggleIsStandalone && canShowSandboxToggle && (
-                    <Button
-                      unstyled
-                      type="button"
-                      className="page-admin-more-item"
-                      onClick={() => {
-                        setGuestSandboxEnabled((current: boolean) => !(current as boolean));
-                        setMoreOpen(false);
-                      }}
-                    >
-                      {guestSandboxEnabled ? "Disable sandbox" : "Enable sandbox"}
-                    </Button>
-                  )}
-
-                  {canDelete && page?.id && (
-                    <Button
-                      unstyled
-                      type="button"
-                      className="page-admin-more-item page-admin-more-item--danger"
-                      onClick={() => {
-                        setMoreOpen(false);
-                        void handleDeletePage();
-                      }}
-                    >
-                      Delete this page
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Engagement stats bar */}
         {page?.id && (
           <div className="page-engagement-bar">
@@ -933,17 +861,6 @@ export default function PageBuilder(props: PageBuilderProps = {}) {
               {pageLikes > 0 && <span>{pageLikes}</span>}
             </Button>
             <span className="page-engagement-stat">{page.comment_count ?? 0} comments</span>
-            {slug && (isAdmin || isOwner) && (
-              <Button
-                unstyled
-                type="button"
-                className="action-btn page-engagement-analytics"
-                onClick={() => setShowAnalytics(true)}
-                title="Page analytics"
-              >
-                <BarChart3 size={14} />
-              </Button>
-            )}
           </div>
         )}
 

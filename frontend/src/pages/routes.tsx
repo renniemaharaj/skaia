@@ -106,11 +106,21 @@ const CommunityDirectoryPage = lazy(() => import("./community/CommunityDirectory
 const CommunityHubPage = lazy(() => import("./community/CommunityHubPage.tsx"));
 const CommunityDetailPage = lazy(() => import("./community/CommunityDetailPage.tsx"));
 const CommunityFormPage = lazy(() => import("./community/CommunityFormPage.tsx"));
+const LegalProgressPage = lazy(() => import("./admin/LegalProgressPage.tsx"));
+const LegalPolicyFormPage = lazy(() => import("./admin/LegalPolicyFormPage.tsx"));
+const StoreCheckoutPolicyPage = lazy(() => import("./admin/StoreCheckoutPolicyPage.tsx"));
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "form/community/:kind/new", element: <CommunityFormPage />, conditional: "community" },
   { path: "form/community/:kind/:id/edit", element: <CommunityFormPage />, conditional: "community" },
   { path: "form/page/:slug/manage", element: <PageManageFormPage /> },
+  { path: "form/site/legal/new", element: <LegalPolicyFormPage /> },
+  { path: "form/site/legal", element: <LegalProgressPage /> },
+  {
+    path: "form/store/checkout-policies",
+    element: <StoreCheckoutPolicyPage />,
+    conditional: "store",
+  },
   { path: "form/user/:userId/*", element: <SettingsPage /> },
   { path: "form/user/*", element: <SettingsPage /> },
   { path: "form/site/*", element: <AdminMetaSettings /> },

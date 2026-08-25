@@ -366,6 +366,60 @@
   background: transparent;
 }
 
+.cart-checkout-card--payment {
+  position: relative;
+}
+
+.cart-checkout-policy-edit {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1;
+  text-decoration: none;
+}
+
+.cart-checkout-policies {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+}
+
+.cart-checkout-policies h4,
+.cart-checkout-policies p {
+  margin: 0;
+}
+
+.cart-checkout-policies p {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.cart-checkout-policies--info {
+  border-color: color-mix(in srgb, var(--info-color) 38%, var(--border-color));
+  background: color-mix(in srgb, var(--info-color) 8%, var(--bg-secondary));
+}
+
+.cart-checkout-policies--attention {
+  border-color: color-mix(in srgb, var(--warning-color) 45%, var(--border-color));
+  background: var(--warning-bg);
+}
+
+.cart-checkout-policies__choices {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 0.35rem;
+}
+
+.cart-checkout-policies__choices a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .cart-summary h3 {
   font-size: 1rem;
   font-weight: 700;

@@ -2,7 +2,7 @@ import { useAtom, useAtomValue } from "jotai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { isAuthenticatedAtom } from "../../../atoms/auth";
+import { hasPermissionAtom, isAuthenticatedAtom } from "../../../atoms/auth";
 import {
   type CartItem,
   type CheckoutResponse,
@@ -12,6 +12,12 @@ import {
   storeCartItemsAtom,
 } from "../../../atoms/store";
 import { apiRequest } from "../../../utils/api";
+import type { LegalConfig, LegalPolicy } from "../../../types/legal";
+import {
+  readPolicyAcceptances,
+  setPolicyAccepted,
+  subscribeToPolicyAcceptance,
+} from "../../../utils/policyAcceptance";
 import OrderSubmittedView from "../OrderStatusView";
 import { StorePageShell } from "../StorePageShell";
 import { CartHeader } from "./CartHeader";
@@ -33,6 +39,7 @@ export const CartPage = () => {
   const products = useAtomValue(productsAtom);
   const cartTotal = useAtomValue(cartTotalAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
+  const hasPermission = useAtomValue(hasPermissionAtom);
 
   const [loading, setLoading] = useState(false);
   const [successOrder, setSuccessOrder] = useState<Order | null>(null);
@@ -51,7 +58,40 @@ export const CartPage = () => {
   const [referralCode, setReferralCode] = useState("");
   const [userCards, setUserCards] = useState<WalletCard[]>([]);
   const [savedCheckoutBrief, setSavedCheckoutBrief] = useState<SavedCheckoutInfo | null>(null);
+  const [checkoutPolicies, setCheckoutPolicies] = useState<LegalPolicy[]>([]);
+  const [checkoutNoticeVariant, setCheckoutNoticeVariant] = useState<LegalConfig["checkout_notice_variant"]>("standard");
+  const [checkoutNoticeMessage, setCheckoutNoticeMessage] = useState(
+    "Review and accept each policy before submitting your order. This browser remembers your choices."
+  );
+  const [checkoutPolicyCheckboxText, setCheckoutPolicyCheckboxText] = useState("I accept {policy}");
+  const [acceptedPolicyIDs, setAcceptedPolicyIDs] = useState(() => readPolicyAcceptances());
   const checkoutAttemptRef = useRef<{ fingerprint: string; key: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    apiRequest<LegalConfig>("/config/legal/manifest")
+      .then(config => {
+        if (!active) return;
+        const selected = new Set(config.checkout_policy_ids ?? []);
+        setCheckoutPolicies((config.policies ?? []).filter(policy => selected.has(policy.id)));
+        setCheckoutNoticeVariant(config.checkout_notice_variant ?? "standard");
+        setCheckoutNoticeMessage(
+          config.checkout_notice_message ??
+            "Review and accept each policy before submitting your order. This browser remembers your choices."
+        );
+        setCheckoutPolicyCheckboxText(config.checkout_policy_checkbox_text ?? "I accept {policy}");
+      })
+      .catch(() => {
+        if (active) setCheckoutPolicies([]);
+      });
+    const unsubscribe = subscribeToPolicyAcceptance(() =>
+      setAcceptedPolicyIDs(readPolicyAcceptances())
+    );
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -153,6 +193,11 @@ export const CartPage = () => {
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
+
+    if (checkoutPolicies.some(policy => !acceptedPolicyIDs.has(policy.id))) {
+      toast.error("Accept the required store policies before placing your order.");
+      return;
+    }
 
     if (!isAuthenticated) {
       toast.info("Sign in before placing an order. Your cart will stay here.");
@@ -340,6 +385,14 @@ export const CartPage = () => {
           referralCode={referralCode}
           rememberBilling={rememberBilling}
           userCards={userCards}
+          checkoutPolicies={checkoutPolicies}
+          acceptedPolicyIDs={acceptedPolicyIDs}
+          checkoutNoticeVariant={checkoutNoticeVariant}
+          checkoutNoticeMessage={checkoutNoticeMessage}
+          checkoutPolicyCheckboxText={checkoutPolicyCheckboxText}
+          canManageCheckoutPolicies={
+            hasPermission("home.manage") || hasPermission("store.manageOrders")
+          }
           onBillingInfoChange={setBillingInfo}
           onCheckout={handleCheckout}
           onDeliveryApplicableChange={setDeliveryApplicable}
@@ -352,6 +405,10 @@ export const CartPage = () => {
           onPaymentMethodChange={setPaymentMethod}
           onReferralCodeChange={setReferralCode}
           onRememberBillingChange={setRememberBilling}
+          onPolicyAcceptanceChange={(policyID, accepted) => {
+            setPolicyAccepted(policyID, accepted);
+            setAcceptedPolicyIDs(readPolicyAcceptances());
+          }}
         />
       </div>
     </StorePageShell>

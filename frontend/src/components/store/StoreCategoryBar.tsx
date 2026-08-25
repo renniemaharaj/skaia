@@ -6,6 +6,7 @@ import {
   PanelLeft,
   Plus,
   SlidersHorizontal,
+  ShieldCheck,
   Trash2,
   Wallet,
 } from "lucide-react";
@@ -28,6 +29,7 @@ interface StoreCategoryBarProps {
   canCreateCategory: boolean;
   canCreateProduct: boolean;
   canDeleteCategory: boolean;
+  canManageCheckoutPolicies: boolean;
   isAuthenticated: boolean;
   viewMode: StoreViewMode;
   isDocked: boolean;
@@ -60,6 +62,7 @@ export function StoreCategoryBar({
   canCreateCategory,
   canCreateProduct,
   canDeleteCategory,
+  canManageCheckoutPolicies,
   isAuthenticated,
   viewMode,
   isDocked,
@@ -170,6 +173,18 @@ export function StoreCategoryBar({
                 iconLeft={<Plus size={16} />}
               >
                 <span className="store-action-label">New Product</span>
+              </Button>
+            )}
+            {canManageCheckoutPolicies && (
+              <Button
+                size="sm"
+                variant="action"
+                onClick={() => onNavigate("/form/store/checkout-policies")}
+                title="Checkout policies"
+                aria-label="Checkout policies"
+                iconLeft={<ShieldCheck size={16} />}
+              >
+                <span className="store-action-label">Checkout policies</span>
               </Button>
             )}
             {isAuthenticated && (

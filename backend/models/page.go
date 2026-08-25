@@ -139,6 +139,27 @@ type Footer struct {
 	SocialLinks      []SocialLink `json:"social_links"`
 }
 
+// LegalConfig is a small registry of custom pages used as site policies.
+// Acceptance is deliberately browser-local; the backend stores no consent
+// records and does not inspect page form responses.
+type LegalConfig struct {
+	Policies                   []LegalPolicy `json:"policies"`
+	CookiePolicyIDs            []string      `json:"cookie_policy_ids"`
+	CheckoutPolicyIDs          []string      `json:"checkout_policy_ids"`
+	CheckoutNoticeVariant      string        `json:"checkout_notice_variant"`
+	CheckoutNoticeMessage      string        `json:"checkout_notice_message"`
+	CheckoutPolicyCheckboxText string        `json:"checkout_policy_checkbox_text"`
+}
+
+type LegalPolicy struct {
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	PageID      int64     `json:"page_id"`
+	PageSlug    string    `json:"page_slug"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 // Link is a named URL used in footer quick links.
 type Link struct {
 	Label string `json:"label"`

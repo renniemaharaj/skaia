@@ -2,6 +2,12 @@ package config
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -9,6 +15,11 @@ import (
 	log "github.com/skaia/backend/internal/syslog"
 	"github.com/skaia/backend/models"
 )
+
+var ErrInvalidLegalConfig = errors.New("invalid legal configuration")
+
+var legalIdentifier = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+var legalSlug = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
 // Service wraps the repository with business logic.
 type Service struct {
@@ -69,6 +80,153 @@ func (s *Service) DeleteConfig(key string) error {
 	}
 	if seoRelevantConfig(key) && s.invalidateSEO != nil {
 		s.invalidateSEO()
+	}
+	return nil
+}
+
+func (s *Service) LegalConfig() (*models.LegalConfig, error) {
+	siteConfig, err := s.GetConfig("legal")
+	if errors.Is(err, sql.ErrNoRows) {
+		return emptyLegalConfig(), nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var config models.LegalConfig
+	if err := json.Unmarshal([]byte(siteConfig.Value), &config); err != nil {
+		return nil, err
+	}
+	normalizeLegalConfig(&config)
+	return &config, nil
+}
+
+func (s *Service) SaveLegalConfig(config *models.LegalConfig) error {
+	if err := validateLegalConfig(config); err != nil {
+		return err
+	}
+	payload, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	return s.UpsertConfig("legal", string(payload))
+}
+
+func (s *Service) SaveCheckoutConfig(ids []string, variant, message, checkboxText string) (*models.LegalConfig, error) {
+	config, err := s.LegalConfig()
+	if err != nil {
+		return nil, err
+	}
+	config.CheckoutPolicyIDs = ids
+	config.CheckoutNoticeVariant = variant
+	config.CheckoutNoticeMessage = message
+	config.CheckoutPolicyCheckboxText = checkboxText
+	if err := s.SaveLegalConfig(config); err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+func emptyLegalConfig() *models.LegalConfig {
+	config := &models.LegalConfig{Policies: []models.LegalPolicy{}, CookiePolicyIDs: []string{}, CheckoutPolicyIDs: []string{}}
+	normalizeLegalConfig(config)
+	return config
+}
+
+func normalizeLegalConfig(config *models.LegalConfig) {
+	if config.Policies == nil {
+		config.Policies = []models.LegalPolicy{}
+	}
+	if config.CookiePolicyIDs == nil {
+		config.CookiePolicyIDs = []string{}
+	}
+	if config.CheckoutPolicyIDs == nil {
+		config.CheckoutPolicyIDs = []string{}
+	}
+	config.CheckoutNoticeVariant = strings.TrimSpace(config.CheckoutNoticeVariant)
+	if config.CheckoutNoticeVariant == "" {
+		config.CheckoutNoticeVariant = "standard"
+	}
+	config.CheckoutNoticeMessage = strings.TrimSpace(config.CheckoutNoticeMessage)
+	if config.CheckoutNoticeMessage == "" {
+		config.CheckoutNoticeMessage = "Review and accept each policy before submitting your order. This browser remembers your choices."
+	}
+	config.CheckoutPolicyCheckboxText = strings.TrimSpace(config.CheckoutPolicyCheckboxText)
+	if config.CheckoutPolicyCheckboxText == "" {
+		config.CheckoutPolicyCheckboxText = "I accept {policy}"
+	}
+}
+
+func invalidLegal(message string) error {
+	return fmt.Errorf("%w: %s", ErrInvalidLegalConfig, message)
+}
+
+func validateLegalConfig(config *models.LegalConfig) error {
+	if config == nil {
+		return invalidLegal("configuration is required")
+	}
+	normalizeLegalConfig(config)
+	if len(config.Policies) > 250 {
+		return invalidLegal("too many policies")
+	}
+	ids := make(map[string]struct{}, len(config.Policies))
+	pageIDs := make(map[int64]struct{}, len(config.Policies))
+	for index := range config.Policies {
+		policy := &config.Policies[index]
+		policy.ID = strings.TrimSpace(policy.ID)
+		policy.Name = strings.TrimSpace(policy.Name)
+		policy.Description = strings.TrimSpace(policy.Description)
+		policy.PageSlug = strings.TrimSpace(policy.PageSlug)
+		if policy.ID == "" || len(policy.ID) > 64 || !legalIdentifier.MatchString(policy.ID) {
+			return invalidLegal("policy id is invalid")
+		}
+		if _, exists := ids[policy.ID]; exists {
+			return invalidLegal("duplicate policy id")
+		}
+		ids[policy.ID] = struct{}{}
+		if len(policy.Name) < 2 || len(policy.Name) > 160 || len(policy.Description) > 1000 {
+			return invalidLegal("policy metadata is invalid")
+		}
+		if policy.PageID < 1 {
+			return invalidLegal("policy page is invalid")
+		}
+		if _, exists := pageIDs[policy.PageID]; exists {
+			return invalidLegal("duplicate policy page")
+		}
+		pageIDs[policy.PageID] = struct{}{}
+		if len(policy.PageSlug) > 120 || !legalSlug.MatchString(policy.PageSlug) || policy.CreatedAt.IsZero() {
+			return invalidLegal("policy page reference is invalid")
+		}
+	}
+	if err := validatePolicySelection(config.CookiePolicyIDs, ids, "cookie"); err != nil {
+		return err
+	}
+	if config.CheckoutNoticeVariant != "standard" && config.CheckoutNoticeVariant != "info" && config.CheckoutNoticeVariant != "attention" {
+		return invalidLegal("checkout notice variant is invalid")
+	}
+	if len(config.CheckoutNoticeMessage) > 500 {
+		return invalidLegal("checkout notice message is too long")
+	}
+	if len(config.CheckoutPolicyCheckboxText) > 200 {
+		return invalidLegal("checkout policy checkbox text is too long")
+	}
+	return validatePolicySelection(config.CheckoutPolicyIDs, ids, "checkout")
+}
+
+func validatePolicySelection(selection []string, policies map[string]struct{}, label string) error {
+	if len(selection) > len(policies) {
+		return invalidLegal("too many " + label + " policies")
+	}
+	seen := make(map[string]struct{}, len(selection))
+	for index, rawID := range selection {
+		id := strings.TrimSpace(rawID)
+		selection[index] = id
+		if _, exists := policies[id]; !exists {
+			return invalidLegal(label + " policy does not exist")
+		}
+		if _, exists := seen[id]; exists {
+			return invalidLegal("duplicate " + label + " policy")
+		}
+		seen[id] = struct{}{}
 	}
 	return nil
 }

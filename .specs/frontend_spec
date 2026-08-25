@@ -331,6 +331,24 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   orders converge through buyer/manager direct delivery or seller-filtered direct
   delivery. Clients do not create generic order subscriptions.
 - Cart page and checkout require an authenticated account.
+- Site policies are ordinary public custom pages managed from
+  `/form/site/legal`; the hub stores only stable page references and cookie or
+  checkout placement selections. Page-builder forms remain optional content and
+  are not interpreted as a policy protocol.
+- Cookie and checkout acceptance share local storage key
+  `skaia.policy-acceptance.v1`. The cookie notice reuses the guest-sandbox banner
+  treatment; checkout stays disabled in the client until every selected policy
+  is checked. This browser-local state is convenience UX, not a durable receipt.
+- Store managers configure checkout selections contextually from the store
+  toolbar or the payment card's compact edit action. They also configure the
+  notice tone, message, and checkbox template; `{policy}` resolves to the linked
+  policy name. Page editor actions live under one `Page tools` drawer tile
+  rather than a floating overflow menu or expanded route inventory.
+- All four footer variants mirror the cookie-notice policy selection through one
+  shared policy strip. Each variant gives the configured client logo a distinct
+  decorative background placement; no logo background renders when the client
+  has not configured one. Client-authored title, description, links, and tagline
+  remain intact, while hardcoded Skaia product branding is excluded.
 - Empty cart state uses the compact storefront empty-state treatment with
   "No products added" copy, not a large CTA card.
 - Checkout payload includes `items`, `payment_method_id`, `currency`, delivery

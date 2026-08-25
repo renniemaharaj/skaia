@@ -1,18 +1,21 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { Check, Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { hasPermissionAtom } from "../../../atoms/auth";
 import { footerConfigAtom } from "../../../atoms/config";
 import { brandingAtom } from "../../../atoms/config";
 import { useGuestSandboxMode } from "../../../hooks/useGuestSandboxMode";
 import { apiRequest } from "../../../utils/api";
+import type { LegalConfig } from "../../../types/legal";
 import { EditableText, VariantCycler } from "../EditControls";
 import type { FooterConfig, FooterLink, FooterSocialLink } from "../types";
 import "./Footer.css";
 import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
 import SocialLinks from "./SocialLinks";
 
-const FOOTER_VARIANTS = 2;
+const FOOTER_VARIANTS = 4;
 
 const DEFAULTS: FooterConfig = {
   site_title: "",
@@ -41,6 +44,21 @@ export const Footer: React.FC = () => {
   const footerConfig = useAtomValue(footerConfigAtom);
   const setFooter = useSetAtom(footerConfigAtom);
   const branding = useAtomValue(brandingAtom);
+  const [legalConfig, setLegalConfig] = useState<LegalConfig | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    apiRequest<LegalConfig>("/config/legal/manifest")
+      .then(config => {
+        if (active) setLegalConfig(config);
+      })
+      .catch(() => {
+        if (active) setLegalConfig(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const loading = !footerConfig && !branding;
   const merged: FooterConfig = { ...DEFAULTS, ...footerConfig };
@@ -52,7 +70,11 @@ export const Footer: React.FC = () => {
     social_links: merged.social_links ?? [],
   };
   const variant = cfg.variant || 1;
-  const logoUrl = branding?.logo_url || "/logo.png";
+  const footerPolicyIDs = new Set(legalConfig?.cookie_policy_ids ?? []);
+  const footerPolicies = (legalConfig?.policies ?? []).filter(policy =>
+    footerPolicyIDs.has(policy.id)
+  );
+  const logoUrl = branding?.logo_url?.trim() || "";
 
   const saveFooter = async (updates: Partial<FooterConfig>) => {
     const updated = { ...cfg, ...updates };
@@ -156,6 +178,19 @@ export const Footer: React.FC = () => {
         </div>
       )}
 
+      {logoUrl && (
+        <MediaPlaceholder
+          alt=""
+          className={`footer-logo-background footer-v${variant}-watermark`}
+          decorative
+          href={logoUrl}
+          layout="background"
+          mediaType="image"
+          preserveFrame
+          showCaption={false}
+        />
+      )}
+
       {/* Variant 1: Classic community layout */}
       {variant === 1 && (
         <>
@@ -256,20 +291,8 @@ export const Footer: React.FC = () => {
       {/* Variant 2: Three-column with quick links */}
       {variant === 2 && (
         <>
-          {/* Background watermark logo */}
-          <MediaPlaceholder
-            alt=""
-            className="footer-v2-watermark"
-            decorative
-            href={logoUrl}
-            layout="background"
-            mediaType="image"
-            preserveFrame
-            showCaption={false}
-          />
-
           <div className="footer-content footer-v2-grid">
-            {/* Brand column */}
+            {/* Client identity column */}
             <div className="footer-section">
               {canEdit ? (
                 <>
@@ -383,6 +406,252 @@ export const Footer: React.FC = () => {
             </p>
           </div>
         </>
+      )}
+
+      {/* Variant 3: Centered editorial layout */}
+      {variant === 3 && (
+        <>
+          <div className="footer-content footer-v3-content">
+            <div className="footer-section footer-v3-intro">
+              {canEdit ? (
+                <>
+                  <EditableText
+                    value={cfg.site_title}
+                    onSave={v => saveFooter({ site_title: v })}
+                    tag="h3"
+                  />
+                  <EditableText
+                    value={cfg.site_description}
+                    onSave={v => saveFooter({ site_description: v })}
+                    tag="p"
+                  />
+                </>
+              ) : (
+                <>
+                  <h3>{cfg.site_title}</h3>
+                  <p>{cfg.site_description}</p>
+                </>
+              )}
+              <SocialLinks
+                links={socialLinks}
+                canEdit={canEdit}
+                onUpdate={updateSocialLink}
+                onAdd={addSocialLink}
+                onRemove={removeSocialLink}
+              />
+            </div>
+
+            <div className="footer-v3-directory">
+              <div className="footer-section">
+                <h4>Explore</h4>
+                <div className="footer-v3-links">
+                  {links.map((link, i) => (
+                    <div key={i} className="footer-v2-link-item">
+                      {canEdit ? (
+                        <>
+                          <EditableText
+                            value={link.label}
+                            onSave={v => updateLink(i, { label: v })}
+                            tag="span"
+                          />
+                          <button
+                            className="footer-remove-item-btn"
+                            onClick={() => removeLink(i)}
+                            title="Remove link"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </>
+                      ) : (
+                        <a href={link.url}>{link.label}</a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {canEdit && (
+                  <button className="footer-add-item-btn" onClick={addLink}>
+                    <Plus size={14} /> Add link
+                  </button>
+                )}
+              </div>
+
+              <div className="footer-section">
+                {canEdit ? (
+                  <>
+                    <EditableText
+                      value={cfg.contact_heading || DEFAULTS.contact_heading!}
+                      onSave={v => saveFooter({ contact_heading: v })}
+                      tag="h4"
+                    />
+                    <EditableText
+                      value={cfg.contact_text || DEFAULTS.contact_text!}
+                      onSave={v => saveFooter({ contact_text: v })}
+                      tag="p"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <h4>{cfg.contact_heading || DEFAULTS.contact_heading}</h4>
+                    <p>{cfg.contact_text || DEFAULTS.contact_text}</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="footer-bottom footer-v3-bottom">
+            <p>
+              &copy; {currentYear}{" "}
+              {canEdit ? (
+                <EditableText
+                  value={cfg.copyright_text}
+                  onSave={v => saveFooter({ copyright_text: v })}
+                  tag="span"
+                />
+              ) : (
+                cfg.copyright_text
+              )}
+            </p>
+            <p className="footer-v2-tagline">
+              {canEdit ? (
+                <EditableText
+                  value={cfg.tagline || DEFAULTS.tagline!}
+                  onSave={v => saveFooter({ tagline: v })}
+                  tag="span"
+                />
+              ) : (
+                cfg.tagline || DEFAULTS.tagline
+              )}
+            </p>
+          </div>
+        </>
+      )}
+
+      {/* Variant 4: Asymmetric directory layout */}
+      {variant === 4 && (
+        <>
+          <div className="footer-content footer-v4-content">
+            <div className="footer-section footer-v4-identity">
+              {canEdit ? (
+                <>
+                  <EditableText
+                    value={cfg.site_title}
+                    onSave={v => saveFooter({ site_title: v })}
+                    tag="h3"
+                  />
+                  <EditableText
+                    value={cfg.site_description}
+                    onSave={v => saveFooter({ site_description: v })}
+                    tag="p"
+                  />
+                  <EditableText
+                    value={cfg.tagline || DEFAULTS.tagline!}
+                    onSave={v => saveFooter({ tagline: v })}
+                    tag="p"
+                  />
+                </>
+              ) : (
+                <>
+                  <h3>{cfg.site_title}</h3>
+                  <p>{cfg.site_description}</p>
+                  {cfg.tagline && <p className="footer-v4-tagline">{cfg.tagline}</p>}
+                </>
+              )}
+              <SocialLinks
+                links={socialLinks}
+                canEdit={canEdit}
+                onUpdate={updateSocialLink}
+                onAdd={addSocialLink}
+                onRemove={removeSocialLink}
+              />
+            </div>
+
+            <div className="footer-v4-directory">
+              <div className="footer-section">
+                <h4>Quick Links</h4>
+                <div className="footer-v4-links">
+                  {links.map((link, i) => (
+                    <div key={i} className="footer-v2-link-item">
+                      {canEdit ? (
+                        <>
+                          <EditableText
+                            value={link.label}
+                            onSave={v => updateLink(i, { label: v })}
+                            tag="span"
+                          />
+                          <button
+                            className="footer-remove-item-btn"
+                            onClick={() => removeLink(i)}
+                            title="Remove link"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </>
+                      ) : (
+                        <a href={link.url}>{link.label}</a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {canEdit && (
+                  <button className="footer-add-item-btn" onClick={addLink}>
+                    <Plus size={14} /> Add link
+                  </button>
+                )}
+              </div>
+
+              <div className="footer-section">
+                {canEdit ? (
+                  <>
+                    <EditableText
+                      value={cfg.contact_heading || DEFAULTS.contact_heading!}
+                      onSave={v => saveFooter({ contact_heading: v })}
+                      tag="h4"
+                    />
+                    <EditableText
+                      value={cfg.contact_text || DEFAULTS.contact_text!}
+                      onSave={v => saveFooter({ contact_text: v })}
+                      tag="p"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <h4>{cfg.contact_heading || DEFAULTS.contact_heading}</h4>
+                    <p>{cfg.contact_text || DEFAULTS.contact_text}</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="footer-bottom footer-v4-bottom">
+            <p>
+              &copy; {currentYear}{" "}
+              {canEdit ? (
+                <EditableText
+                  value={cfg.copyright_text}
+                  onSave={v => saveFooter({ copyright_text: v })}
+                  tag="span"
+                />
+              ) : (
+                cfg.copyright_text
+              )}
+            </p>
+          </div>
+        </>
+      )}
+
+      {footerPolicies.length > 0 && (
+        <nav className="footer-policies" aria-label="Site policies">
+          <span>Policies</span>
+          <div>
+            {footerPolicies.map(policy => (
+              <Link key={policy.id} to={`/page/${policy.page_slug}`}>
+                {policy.name}
+              </Link>
+            ))}
+          </div>
+        </nav>
       )}
     </footer>
   );

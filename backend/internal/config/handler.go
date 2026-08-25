@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	log "github.com/skaia/backend/internal/syslog"
 	"net/http"
 	"os"
@@ -115,6 +116,7 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 		r.Get("/branding", h.getBranding)
 		r.Get("/seo", h.getSEO)
 		r.Get("/footer", h.getFooter)
+		r.Get("/legal/manifest", h.getLegalManifest)
 		r.Get("/comment-slowmode", h.getCommentSlowMode)
 		r.Get("/features", h.getFeatures)
 		r.Get("/feature/{feature}", h.getFeature)
@@ -123,10 +125,13 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 		r.Get("/components", h.listComponents)
 		r.Get("/components/{type}", h.getComponent)
 
-		// Protected – requires home.manage
+		// Protected – legal checkout selection also permits store.manageOrders.
 		r.Group(func(r chi.Router) {
 			r.Use(jwt)
 			r.Put("/branding", h.updateBranding)
+			r.Get("/legal", h.getLegal)
+			r.Put("/legal", h.updateLegal)
+			r.Put("/legal/checkout", h.updateCheckoutPolicies)
 			r.Put("/seo", h.updateSEO)
 			r.Put("/footer", h.updateFooter)
 			r.Put("/comment-slowmode", h.updateCommentSlowMode)
@@ -142,6 +147,16 @@ func (h *Handler) requireHomeManage(r *http.Request) bool {
 	}
 	has, _ := h.userSvc.HasPermission(uid, "home.manage")
 	return has
+}
+
+func (h *Handler) canManageCheckoutPolicies(r *http.Request) bool {
+	uid, ok := utils.UserIDFromCtx(r)
+	if !ok {
+		return false
+	}
+	home, _ := h.userSvc.HasPermission(uid, "home.manage")
+	store, _ := h.userSvc.HasPermission(uid, "store.manageOrders")
+	return home || store
 }
 
 // config endpoints
@@ -296,6 +311,80 @@ func (h *Handler) updateFooter(w http.ResponseWriter, r *http.Request) {
 			h.hub.BroadcastConfig("footer_updated", body)
 		},
 	})
+}
+
+func (h *Handler) getLegalManifest(w http.ResponseWriter, _ *http.Request) {
+	config, err := h.svc.LegalConfig()
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "policy configuration unavailable")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, config)
+}
+
+func (h *Handler) getLegal(w http.ResponseWriter, r *http.Request) {
+	if !h.requireHomeManage(r) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	config, err := h.svc.LegalConfig()
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "policy configuration unavailable")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, config)
+}
+
+func (h *Handler) updateLegal(w http.ResponseWriter, r *http.Request) {
+	if !h.requireHomeManage(r) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	var body models.LegalConfig
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 128<<10))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&body); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid policy configuration")
+		return
+	}
+	if err := h.svc.SaveLegalConfig(&body); err != nil {
+		if errors.Is(err, ErrInvalidLegalConfig) {
+			utils.WriteError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		utils.WriteError(w, http.StatusInternalServerError, "save failed")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, body)
+}
+
+func (h *Handler) updateCheckoutPolicies(w http.ResponseWriter, r *http.Request) {
+	if !h.canManageCheckoutPolicies(r) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	var body struct {
+		PolicyIDs    []string `json:"policy_ids"`
+		Variant      string   `json:"notice_variant"`
+		Message      string   `json:"notice_message"`
+		CheckboxText string   `json:"checkbox_text"`
+	}
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 32<<10))
+	if err := decoder.Decode(&body); err != nil {
+		log.Printf("config.updateCheckoutPolicies: decode: %v", err)
+		utils.WriteError(w, http.StatusBadRequest, "invalid checkout policy configuration")
+		return
+	}
+	config, err := h.svc.SaveCheckoutConfig(body.PolicyIDs, body.Variant, body.Message, body.CheckboxText)
+	if err != nil {
+		if errors.Is(err, ErrInvalidLegalConfig) {
+			utils.WriteError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		utils.WriteError(w, http.StatusInternalServerError, "save failed")
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, config)
 }
 
 func (h *Handler) getCommentSlowMode(w http.ResponseWriter, r *http.Request) {

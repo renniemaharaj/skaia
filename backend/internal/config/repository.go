@@ -28,7 +28,7 @@ func (r *sqlRepository) UpsertConfig(key, valueJSON string) error {
 	query := `INSERT INTO site_config (key, value, updated_at)
 		 VALUES ($1, $2::jsonb, CURRENT_TIMESTAMP)
 		 ON CONFLICT (key) DO UPDATE SET value=site_config.value||$2::jsonb,deleted_at=NULL,deleted_by=NULL,updated_at=CURRENT_TIMESTAMP`
-	if key == "landing_page_slug" {
+	if key == "landing_page_slug" || key == "legal" {
 		query = `INSERT INTO site_config (key, value, updated_at)
 		 VALUES ($1, $2::jsonb, CURRENT_TIMESTAMP)
 		 ON CONFLICT (key) DO UPDATE SET value=$2::jsonb,deleted_at=NULL,deleted_by=NULL,updated_at=CURRENT_TIMESTAMP`

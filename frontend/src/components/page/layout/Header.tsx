@@ -115,6 +115,12 @@ export const Header: React.FC<HeaderProps> = ({
     routeAllowed("forum") && { to: "/forum", label: "Forum", icon: "forum" },
     routeAllowed("docs") && { to: "/doc", label: "Documentation", icon: "docs" },
     { to: "/pages", label: "Pages", icon: "pages" },
+    isAuthenticated &&
+      hasPermission("home.manage") && {
+        to: "/form/site/legal",
+        label: "Site policies",
+        icon: "pages",
+      },
     { to: "/kjv", label: "Bible", icon: "bible" },
     routeAllowed("rankings") && {
       to: "/leaderboards",

@@ -1,0 +1,34 @@
+<--/------->
+
+## legal_footer_and_consent_configuration
+
+### Current Progress
+
+- **Phase 1: Simplify policy configuration** - ✅ Complete
+- **Phase 2: Page-backed management hub** - ✅ Complete
+- **Phase 3: Browser-local cookie and checkout acceptance** - ✅ Complete
+- **Phase 4: Contextual drawer page tools** - ✅ Complete
+- **Phase 5: Verification and spec reconciliation** - ✅ Complete
+- **Phase 6: Inline checkout policy presentation controls** - ✅ Complete
+- **Phase 7: Cookie-mirrored footer policy support** - ✅ Complete
+- **Phase 8: Four client-logo footer variants** - ✅ Complete
+
+### Current Decisions - 2026-08-25
+
+- `pages.content` is the policy-body authority.
+- Legal config stores policy page references and selected cookie/checkout IDs.
+- `skaia.policy-acceptance.v1` is browser-local convenience state only; it is not
+  a server authorization boundary or durable consent receipt.
+- Operators choose applicable policies with qualified legal guidance.
+
+### Next Steps
+
+- [x] Frontend: 88 files and 280 tests pass; lint, production build, and all UI policy checks pass.
+- [x] Backend: all packages pass with the required test JWT environment; Go vet passes.
+- [x] Specs reconciled and `git diff --check` passes.
+- [x] Manager edit action, notice fields, variants, linked checkbox template, config validation, and production build pass.
+- [x] Full backend suite passes. Frontend reached 281/282 under full-suite load; the unrelated lazy hero parity timing test passed immediately in isolation (6/6).
+- [x] Both footer variants preserve client content and configured logo treatment while mirroring cookie policies; focused tests, lint, and production build pass.
+- [x] Two additional responsive footer layouts, four unique configured-client-logo background placements, no static fallback, shared policies, focused tests, lint, production build, and diff checks pass.
+
+<--/------->

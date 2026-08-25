@@ -1,4 +1,4 @@
-import { CreditCard, Loader, Mail, ShieldCheck } from "lucide-react";
+import { CreditCard, Loader, Mail, Settings, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../../cards/ContentStandOutCard";
@@ -7,6 +7,8 @@ import Select, { type SelectOption } from "../../input/Select";
 import { MoneyAmount } from "../../ui/MoneyAmount";
 import { BillingInfoCard } from "./BillingInfoCard";
 import { DeliveryLocationPicker } from "./DeliveryLocationPicker";
+import Checkbox from "../../input/Checkbox";
+import type { LegalPolicy } from "../../../types/legal";
 
 export type WalletCard = {
   id: string;
@@ -32,6 +34,12 @@ interface CheckoutPanelProps {
   referralCode: string;
   rememberBilling: boolean;
   userCards: WalletCard[];
+  checkoutPolicies: LegalPolicy[];
+  acceptedPolicyIDs: Set<string>;
+  checkoutNoticeVariant: "standard" | "info" | "attention";
+  checkoutNoticeMessage: string;
+  checkoutPolicyCheckboxText: string;
+  canManageCheckoutPolicies: boolean;
   onBillingInfoChange: (value: string) => void;
   onCheckout: () => void;
   onDeliveryApplicableChange: (value: boolean) => void;
@@ -44,6 +52,7 @@ interface CheckoutPanelProps {
   onPaymentMethodChange: (value: string) => void;
   onReferralCodeChange: (value: string) => void;
   onRememberBillingChange: (value: boolean) => void;
+  onPolicyAcceptanceChange: (policyID: string, accepted: boolean) => void;
 }
 
 export function CheckoutPanel({
@@ -63,6 +72,12 @@ export function CheckoutPanel({
   referralCode,
   rememberBilling,
   userCards,
+  checkoutPolicies,
+  acceptedPolicyIDs,
+  checkoutNoticeVariant,
+  checkoutNoticeMessage,
+  checkoutPolicyCheckboxText,
+  canManageCheckoutPolicies,
   onBillingInfoChange,
   onCheckout,
   onDeliveryApplicableChange,
@@ -75,7 +90,9 @@ export function CheckoutPanel({
   onPaymentMethodChange,
   onReferralCodeChange,
   onRememberBillingChange,
+  onPolicyAcceptanceChange,
 }: CheckoutPanelProps) {
+  const policiesAccepted = checkoutPolicies.every(policy => acceptedPolicyIDs.has(policy.id));
   const paymentOptions: SelectOption[] = [
     { value: "delivery_cash", label: "Payment on Delivery (Cash)" },
     ...(isAuthenticated ? [{ value: "wallet", label: "Store Wallet Balance" }] : []),
@@ -148,6 +165,15 @@ export function CheckoutPanel({
       )}
 
       <ContentFlatCard className="cart-checkout-card cart-glass-tile cart-checkout-card--payment">
+        {canManageCheckoutPolicies && (
+          <Link
+            className="sk-btn sk-btn--action sk-btn--sm cart-checkout-policy-edit"
+            to="/form/store/checkout-policies"
+          >
+            <Settings size={14} aria-hidden="true" />
+            Edit policies
+          </Link>
+        )}
         <FormSectionIntro
           className="managed-form__section-intro--spaced"
           icon={<ShieldCheck size={18} />}
@@ -170,6 +196,26 @@ export function CheckoutPanel({
           </div>
         </ContentStandOutCard>
 
+        {checkoutPolicies.length > 0 && (
+          <section
+            className={`cart-checkout-policies cart-checkout-policies--${checkoutNoticeVariant}`}
+            aria-labelledby="checkout-policy-heading"
+          >
+            <h4 id="checkout-policy-heading">Required store policies</h4>
+            <p>{checkoutNoticeMessage}</p>
+            <div className="cart-checkout-policies__choices">
+              {checkoutPolicies.map(policy => (
+                <Checkbox
+                  key={policy.id}
+                  checked={acceptedPolicyIDs.has(policy.id)}
+                  label={policyCheckboxLabel(checkoutPolicyCheckboxText, policy.name, policy.page_slug)}
+                  onChange={event => onPolicyAcceptanceChange(policy.id, event.target.checked)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         <hr className="cart-divider" />
 
         <div className="cart-total-row">
@@ -181,7 +227,7 @@ export function CheckoutPanel({
           type="button"
           className="btn btn-primary cart-submit-btn"
           onClick={onCheckout}
-          disabled={loading}
+          disabled={loading || !policiesAccepted}
         >
           {loading ? (
             <>
@@ -194,5 +240,25 @@ export function CheckoutPanel({
         </button>
       </ContentFlatCard>
     </div>
+  );
+}
+
+function policyCheckboxLabel(template: string, policyName: string, pageSlug: string) {
+  const marker = "{policy}";
+  const markerIndex = template.indexOf(marker);
+  const policyLink = <Link to={`/page/${pageSlug}`}>{policyName}</Link>;
+  if (markerIndex < 0) {
+    return (
+      <>
+        {template} ({policyLink})
+      </>
+    );
+  }
+  return (
+    <>
+      {template.slice(0, markerIndex)}
+      {policyLink}
+      {template.slice(markerIndex + marker.length)}
+    </>
   );
 }

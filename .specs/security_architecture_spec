@@ -279,6 +279,10 @@ telemetry API exposes bounded counters and no identities or payloads.
   Raw checkout keys, provider event IDs, and callback payloads never persist or
   enter public DTOs/logs. Stripe callbacks require a valid signature and bounded
   body; payment polling first authorizes the order owner or `store.manageOrders`.
+- Browser-local policy acceptance is explicitly not trusted authorization,
+  compliance evidence, or a server-enforced commerce control. It may gate the
+  checkout button for UX, but server security, pricing, stock, payment, and
+  idempotency invariants must remain valid if a client bypasses it.
 - Exhausted commerce fulfilments are operator data. Recovery fails closed inside
   the store service on a live database permission check, cannot reset active
   leases or succeeded jobs, and is safe only because each delivered effect is

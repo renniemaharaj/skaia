@@ -314,21 +314,53 @@
   z-index: 5;
 }
 
-/* Footer Variant 2 */
-.footer-v2 {
-  background: var(--bg-secondary);
+/* Client logo background placements */
+.footer .footer-logo-background {
+  position: absolute;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
 }
 
-.footer-v2-watermark {
-  position: absolute;
+.footer .footer-v1-watermark {
+  top: -70px;
+  left: -55px;
+  width: 280px;
+  height: 280px;
+  opacity: 0.035;
+  transform: rotate(-8deg);
+}
+
+.footer .footer-v2-watermark {
   right: -80px;
   bottom: -60px;
   width: 320px;
   height: 320px;
-  object-fit: contain;
   opacity: 0.03;
-  pointer-events: none;
-  user-select: none;
+}
+
+.footer .footer-v3-watermark {
+  top: 50%;
+  left: 50%;
+  width: 440px;
+  height: 440px;
+  opacity: 0.025;
+  transform: translate(-50%, -50%);
+}
+
+.footer .footer-v4-watermark {
+  top: 50%;
+  left: 2rem;
+  width: 260px;
+  height: 260px;
+  opacity: 0.04;
+  transform: translateY(-50%);
+}
+
+/* Footer Variant 2 */
+.footer-v2 {
+  background: var(--bg-secondary);
 }
 
 .footer-v2-grid {
@@ -374,8 +406,137 @@
   opacity: 0.7;
 }
 
+/* Footer Variant 3 */
+.footer-v3 {
+  background: color-mix(in srgb, var(--bg-secondary) 92%, var(--primary-color));
+}
+
+.footer-v3-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.footer-v3-intro {
+  max-width: 680px;
+  text-align: center;
+}
+
+.footer-v3-intro h3 {
+  font-size: 1.75rem;
+}
+
+.footer-v3-directory {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.6fr);
+  gap: 4rem;
+  width: min(820px, 100%);
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.footer-v3-directory .footer-section {
+  text-align: center;
+}
+
+.footer-v3-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem 1.5rem;
+}
+
+.footer-v3-bottom {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+/* Footer Variant 4 */
+.footer-v4 {
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--primary-color) 9%, var(--bg-secondary)) 0%,
+    var(--bg-secondary) 46%
+  );
+}
+
+.footer-v4-content {
+  grid-template-columns: minmax(280px, 0.9fr) minmax(420px, 1.4fr);
+  gap: clamp(3rem, 8vw, 7rem);
+}
+
+.footer-v4-content .footer-section {
+  align-items: flex-start;
+}
+
+.footer-v4-identity {
+  justify-content: center;
+  padding: 2rem;
+  border-left: 3px solid var(--primary-color);
+}
+
+.footer-v4-identity .footer-v4-tagline {
+  margin-top: 1rem;
+  font-style: italic;
+}
+
+.footer-v4-directory {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  padding: 2rem 0;
+}
+
+.footer-v4-links {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.footer-v4-bottom {
+  text-align: right;
+}
+
+.footer-policies {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 1200px;
+  margin: 1.25rem auto 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.footer-policies > span {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.footer-policies > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+}
+
+.footer-policies a {
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.footer-policies a:hover {
+  color: var(--text-primary);
+}
+
 @media (max-width: 768px) {
-  .footer-v2-grid {
+  .footer-v2-grid,
+  .footer-v4-content,
+  .footer-v4-directory {
     grid-template-columns: 1fr;
   }
 
@@ -383,5 +544,45 @@
     flex-direction: column;
     gap: 8px;
     text-align: center;
+  }
+
+  .footer-policies {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .footer-v3-directory {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .footer-v3-bottom {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .footer-v4-content,
+  .footer-v4-directory {
+    gap: 2rem;
+  }
+
+  .footer-v4-identity {
+    padding: 1.5rem;
+  }
+
+  .footer-v4-bottom {
+    text-align: center;
+  }
+
+  .footer .footer-v1-watermark,
+  .footer .footer-v2-watermark,
+  .footer .footer-v4-watermark {
+    width: 220px;
+    height: 220px;
+  }
+
+  .footer .footer-v3-watermark {
+    width: 320px;
+    height: 320px;
   }
 }

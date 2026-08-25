@@ -126,6 +126,10 @@ export const Store: React.FC = () => {
     currentUser?.permissions?.includes("store.manageCategories") || guestSandboxMode;
   const canCreateCategory = canManageCategories || guestSandboxMode;
   const canDeleteCategory = canManageCategories || guestSandboxMode;
+  const canManageCheckoutPolicies =
+    currentUser?.permissions?.includes("store.manageOrders") ||
+    currentUser?.permissions?.includes("home.manage") ||
+    false;
 
   const categoryNameById = useMemo(
     () => new Map(categories.map(category => [category.id, category.name])),
@@ -456,6 +460,7 @@ export const Store: React.FC = () => {
           canCreateCategory={canCreateCategory}
           canCreateProduct={canCreateProduct}
           canDeleteCategory={canDeleteCategory}
+          canManageCheckoutPolicies={canManageCheckoutPolicies}
           isAuthenticated={isAuthenticated}
           viewMode={viewMode}
           isDocked={isCategoryBarDocked}
