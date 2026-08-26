@@ -28,7 +28,7 @@ func TestCommunityPublicationThreadsHaveFreshAndIncrementalParity(t *testing.T) 
 	}
 
 	for _, contract := range []string{
-		"thread_owner_id IS DISTINCT FROM publication.author_id",
+		"thread_owner_id IS DISTINCT FROM publication_row.author_id",
 		"ALTER COLUMN canonical_thread_id SET NOT NULL",
 		"idx_community_publications_canonical_thread_id",
 		"community_publications_thread_owner_fkey",

@@ -50,7 +50,7 @@ type ManagedFormProps<Values extends FormikValues> = ManagedFormBaseProps<Values
   );
 
 /**
- * The standard Skaia form. Formik owns submission state and validation; routed
+ * The standard GWP form. Formik owns submission state and validation; routed
  * editors use header actions while grouped auth/access forms use footer actions.
  */
 export default function ManagedForm<Values extends FormikValues>({

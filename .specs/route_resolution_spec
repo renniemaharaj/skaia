@@ -33,6 +33,11 @@ page config, CDN/cache behavior, or page WebSocket events.
 `/pages/index` remains as a legacy inline landing endpoint but is not the primary
 frontend path because it is a single CDN cache key for different possible pages.
 
+Fresh tenants select the GWP `get-started` capability tour through the existing
+`landing_page_slug` seed. Migration 048 may replace only the exact pristine
+legacy page document and never changes an existing homepage selection or a
+tenant-edited page.
+
 ## Landing Swap
 
 Current backend route:

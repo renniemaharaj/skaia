@@ -63,7 +63,7 @@ export const SECTION_TYPE_DESCRIPTIONS: Record<SectionType, string> = {
   survey: "Gather answers across multiple questions.",
   poll: "Run a quick audience poll and summarize results.",
   vote: "Collect confirmed ballots with controlled results.",
-  resource_embed: "Reference an existing Skaia resource without copying it.",
+  resource_embed: "Reference an existing Go Web Platform resource without copying it.",
 };
 
 export function isGeneratedSectionHeading(section: Pick<PageSection, "heading" | "section_type">): boolean {
@@ -106,7 +106,7 @@ export const SECTION_TYPE_GROUPS: SectionTypeGroup[] = [
   {
     id: "embeds",
     label: "Resource embeds",
-    description: "Place an existing Skaia resource on this page.",
+    description: "Place an existing Go Web Platform resource on this page.",
     types: ["resource_embed"],
   },
 ];

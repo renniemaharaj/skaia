@@ -25,7 +25,7 @@ boundaries, Turnstile, security metrics, or any privileged/sensitive action.
 
 ## Threat Model
 
-Skaia assumes any one control can fail. Security must remain intact when an
+Go Web Platform assumes any one control can fail. Security must remain intact when an
 attacker bypasses or exhausts one layer, and when generated code omits a local
 check. Controls therefore compose independently and fail closed:
 
@@ -137,7 +137,7 @@ telemetry API exposes bounded counters and no identities or payloads.
   grant identifies actor, session, action, target/resource, issued time, expiry,
   and consumption state; changing any binding requires a new challenge.
 - TOTP verification is unconditional once requested. Codes must use an explicit
-  validation window owned by Skaia; library defaults are not policy. Replay in
+  validation window owned by GWP; library defaults are not policy. Replay in
   the accepted time step must be prevented for sensitive-action grants.
 - Expired, consumed, mismatched, or missing grants fail closed. Expiration never
   auto-issues another challenge; the client explicitly requests a new one.
@@ -330,7 +330,7 @@ telemetry API exposes bounded counters and no identities or payloads.
 - MFA challenge expiry and recovery action binding exist in selected flows, but
   fresh step-up is not enforced for every sensitive action.
 - `totp.Validate` currently uses the dependency's default skew of one adjacent
-  period; exact-cycle validation is not implemented as a Skaia invariant.
+  period; exact-cycle validation is not implemented as a GWP invariant.
 - Stateful `sessions` track IP and user-agent hash and can use Turnstile on an IP
   change. Trust is a boolean and is not yet a general action/session grant model.
 - DEFCON weighted limiting and priority bypass primitives exist. Generic cached

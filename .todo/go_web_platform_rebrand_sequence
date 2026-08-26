@@ -1,0 +1,62 @@
+# Go Web Platform Two-Phase Rebrand
+
+## Context
+
+The platform is being renamed from Skaia to **Go Web Platform (GWP)**. A
+2026-08-26 tracked-file inventory found 1,061 case-insensitive Skaia references
+across 348 files. Alongside visible copy, the name is embedded in modules,
+protocols, authentication, persisted state, database security, infrastructure,
+provisioning, and repository coordinates.
+
+A blind replacement would invalidate sessions, split persisted client state,
+reset security counters, break RPC negotiation, or orphan deployed data. The
+work is therefore divided at the compatibility boundary: a non-breaking surface
+phase followed by a separately controlled breaking-change phase.
+
+## Goal
+
+- Present one consistent product identity: `Go Web Platform`, abbreviated `GWP`.
+- Complete user-facing surface changes without altering machine contracts.
+- Subsequently rename machine, runtime, and repository identifiers without data
+  loss or an unsupported flag-day deployment.
+- Preserve tenant branding and distinguish the platform from tenant brands such
+  as SkaiaCraft and from the Grengo control-plane CLI.
+
+## Non-Goals
+
+- Renaming customer/tenant brands, domains, or content merely because they
+  contain `skaia`.
+- Redesigning the UI, logo, architecture, or APIs beyond what the rename needs.
+- Renaming Grengo unless phase 2 explicitly expands the scope.
+- Rewriting applied migrations or destructively recreating production state.
+
+## Steps
+
+1. Execute `.todo/go_web_platform_surface_rebrand`. Change visible product copy,
+   defaults, assets, documentation, and the seeded Getting Started capability
+   showcase while preserving every machine-readable, wire, package, repository,
+   and runtime identifier and every tenant-edited page document.
+2. Release and verify phase 1 independently to establish a production baseline.
+3. Execute `.todo/go_web_platform_breaking_rebrand`. Freeze the machine identity
+   map, introduce compatibility, migrate application/runtime/repository contracts,
+   and complete the residual-name audit.
+4. Retire the sequence only after phase 2 production verification and all
+   compatibility-retirement obligations are complete.
+
+## Verification
+
+- Validate the sequence declarations and require phase 1 proof before phase 2.
+- At completion, search tracked, generated, packaged, and deployed surfaces for
+  `skaia`, classifying every remaining match.
+- Confirm tenant data, supported sessions/clients, browser preferences, security
+  counters, and provisioned services survive the rollout.
+
+## References
+
+- `.todo/go_web_platform_surface_rebrand`
+- `.todo/go_web_platform_breaking_rebrand`
+- `.routines/planner`
+- `.routines/worker`
+- `.specs/infrastructure_spec`
+- `.specs/realtime_wss_spec`
+- `.specs/security_architecture_spec`

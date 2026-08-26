@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Strict whole-repository audit routine for enterprise-grade quality across Skaia:
+Strict whole-repository audit routine for enterprise-grade quality across Go Web Platform:
 backend, frontend, dynamic pages, WebSocket protocols, migrations, specs, todos,
 routines, security, performance, tests, and user experience. It is more demanding
 than `correctness`: `correctness` resolves truth; `auditor` challenges whether the
@@ -89,9 +89,17 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Ran
 
-- 2026-08-24
+- 2026-08-26
 
 ## Last Run Remarks
+
+- Audited the Go Web Platform surface implementation across tenant-brand authority,
+  pristine-only page migration, landing-page preservation, canonical registered
+  sections, feature-safe capability copy, exact cache invalidation, deployment
+  probes, and the phase-2 machine-identity boundary. No material implementation
+  issue remains; permanent artwork correctly remains deferred without approved
+  brand inputs. Public-origin probes exposed an outstanding deployment gap, so
+  the surface release and phase-2 gate remain open.
 
 - Audited full-route resource embeds across source-policy ownership, canonical
   route identity, global-layout exclusion, duplicate renderer removal, natural

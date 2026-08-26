@@ -29,7 +29,7 @@ func siteName() string {
 	if cn := os.Getenv("CLIENT_NAME"); cn != "" {
 		return titleCaser.String(cn)
 	}
-	return "Skaia"
+	return "Go Web Platform"
 }
 
 func wrap(title, body string) string {

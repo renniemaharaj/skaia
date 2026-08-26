@@ -39,7 +39,7 @@ var definitions = []Definition{
 	def("data_sources", "Data Sources", "rich", "Datasource management block."),
 	def("derived_section", "Derived Section", "rich", "Datasource-backed rendered section."),
 	def("custom_section", "Custom Section", "rich", "Reusable custom datasource-backed section."),
-	def("resource_embed", "Resource Embed", "embed", "Read-only reference to a supported Skaia resource."),
+	def("resource_embed", "Resource Embed", "embed", "Read-only reference to a supported Go Web Platform resource."),
 	interactiveDef("form", "Form", "Schema-designed form with section-local responses."),
 	interactiveDef("qa", "Questions & Answers", "Moderated questions and answers."),
 	interactiveDef("survey", "Survey", "Multi-question survey with summarized results."),

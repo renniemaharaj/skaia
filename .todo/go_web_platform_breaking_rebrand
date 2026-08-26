@@ -1,0 +1,107 @@
+# Go Web Platform Breaking-Changes Rebranding
+
+## Context
+
+Phase 2 owns every change that can affect imports, generated code, wire
+negotiation, authentication, persisted state, automation, database security,
+deployed resources, repository coordinates, or rollback. Examples include
+`github.com/skaia/*`, protobuf packages, `skaia.proto.v1`, `skaia-api`,
+`X-Skaia-API-Key`, browser/Redis namespaces, source/serialized markers,
+PostgreSQL roles/triggers, `skaia-backend`, Docker resources, provisioning paths,
+systemd configuration, and the Git remote.
+
+This phase begins only after the surface release is verified.
+
+## Goal
+
+- Apply one approved lowercase GWP machine identity across source, protocols,
+  persisted state, runtime infrastructure, repository, and releases.
+- Support rolling deployment and migration without invalidating sessions,
+  resetting enforcement, losing tenant data, or attaching to empty resources.
+- End with no unexplained live Skaia identifiers and removal conditions for
+  every temporary compatibility alias.
+
+## Non-Goals
+
+- Repeating phase-1 copy/asset work or redesigning the application.
+- Renaming Grengo, tenant IDs/domains/content, or SkaiaCraft without approval.
+- Rewriting applied SQL or Git history for cosmetic consistency.
+- Removing aliases/resources before production proof and the rollback window.
+
+## Steps
+
+1. Freeze the identity matrix: slug, repository and Go coordinates, npm name,
+   image/resource prefix, protobuf/RPC/WS names, JWT issuer, API-key header,
+   browser/Redis namespaces, source/serialized markers, database objects,
+   service paths, and registry/release coordinates. Verify destinations exist.
+2. Define compatibility and removal gates: negotiate old/new WS protocols and
+   gRPC services; accept the old JWT issuer through maximum token lifetime;
+   prefer the new API header while accepting the old; migrate browser/document
+   values read-old/write-new; preserve Redis security state; and use additive
+   database migrations compatible with partially upgraded services.
+3. Rename root/backend/features/gRPC modules and imports coherently. Rename
+   protobuf sources/packages, preserve field numbers and wire shapes, regenerate
+   Go/TypeScript artifacts, and require clean second generation.
+4. Rename internal backend/frontend contracts including auth, protobuf lookup,
+   WebRTC, CSS identifiers, datasource globals, page markers, browser/Redis keys,
+   package metadata, test identities, logs, and metrics. Add migration adapters
+   wherever values can outlive a deployment.
+5. Inventory deployed state and build an idempotent infrastructure cutover with
+   collision checks, backups, health gates, rollback, and exact mappings for
+   images, containers, networks, volumes, databases/roles, systemd, provisioning,
+   tenant files, Frappe/Superset, monitoring, and automation.
+6. Update Compose, control-plane templates, provisioning, Dockerfiles, services,
+   health/metrics, and clean-install defaults. Add forward database migrations
+   preserving ownership, grants, and hard-delete enforcement; do not edit history.
+7. Test clean install, upgrade, interrupted retry, mixed versions, downgrade,
+   rollback, backup/restore, import/transfer, frontend shipping, nginx reload,
+   and provisioned-service lifecycles before staged production rollout.
+8. Once destinations exist, rename repository/release coordinates and update
+   remotes, CI/CD, registries, automation, monitoring, publishing, and developer
+   paths. Treat workspace-directory rename as an explicit operator action.
+9. Reconcile specs, routines, active todos, operations docs, and generated indexes.
+   Classify every residual old-name match as tenant-owned, immutable history, or
+   time-bounded compatibility.
+10. Observe compatibility through the approved window. Remove aliases/resources
+    only in a reviewed release with telemetry, client-version, rollback, and
+    state-inventory evidence; then retire the sequence.
+
+## Verification
+
+- Pass full root/backend/features/gRPC tests, vet, static analysis, race coverage,
+  builds, and frontend type-check/build/tests/lint/policy gates.
+- Test mixed WS/gRPC clients, JWT issuers, API header precedence, browser/document
+  migration, Redis continuity, and rollback/downgrade behavior.
+- Regenerate protobufs twice; confirm no second diff and stable wire shapes.
+- Compare tenant/database/object, volume, upload, provisioning, and service state
+  before/after cutover and prove database security during partial/final upgrades.
+- Validate install/upgrade/retry/restore/import/ship/nginx/provisioning, observability,
+  repository, registry, packages, and public responses.
+- Produce a residual-name report with owner, rationale, and removal gate; require
+  zero unexplained live or user-facing Skaia identity.
+- Run `git diff --check`, validate sequence indexes, update specs, and record
+  staging/production evidence.
+
+## References
+
+- `.todo/go_web_platform_surface_rebrand`
+- `.todo/blue_green_deployments`
+- `.todo/grengo_cli_refactor`
+- `.todo/grengo_multi_node_network`
+- `.todo/soft_delete_and_destructive_prompts`
+- `.specs/backend_spec`
+- `.specs/frontend_spec`
+- `.specs/infrastructure_spec`
+- `.specs/migrations_spec`
+- `.specs/operations_readiness_spec`
+- `.specs/realtime_wss_spec`
+- `.specs/security_architecture_spec`
+- `go.mod`
+- `backend/go.mod`
+- `backend/pkg/grpc/`
+- `compose.yml`
+- `internal/app/`
+- `backend/internal/provisioning/`
+- `frontend/src/`
+- `grengo.service`
+

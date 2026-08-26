@@ -1,4 +1,21 @@
-# Skaia Operations Runbook
+# Go Web Platform Operations Runbook
+
+## Surface Rebrand Seed Rollout
+
+Migration `048_go_web_platform_get_started.sql` upgrades only the exact pristine
+legacy `get-started` page. Before applying it, back up each tenant and record the
+page title, description, ownership, visibility, SEO fields, content hash, and
+`landing_page_slug`. Customized pages and homepage selections must remain
+unchanged.
+
+Apply the migration before shipping the matching backend and frontend. For a
+tenant whose pristine page changed, remove only its Redis semantic SEO keys for
+`/`, `/page/get-started`, and `/sitemap.xml` under the existing
+`<client>:seo:meta:v3:` namespace. Do not flush Redis: other tenant caches,
+sessions, security budgets, and realtime state are unrelated. Restart/recreate
+the tenant backend as part of the release, then verify `/health`, `/ready`, `/`,
+`/page/get-started`, and raw SSR metadata. A second migration run must report no
+page change.
 
 The durable contract is `.specs/operations_readiness_spec`. These commands are
 the repeatable operator sequence; run them from the repository root.

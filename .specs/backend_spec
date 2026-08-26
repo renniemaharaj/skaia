@@ -31,7 +31,7 @@ auth, store, cache, WebSocket emission, uploads, SSR, or grengo proxy behavior.
   66 rendering-marker sidecars. Before the router starts it validates 66 books,
   1,189 chapters, 31,102 verses, consecutive coordinates, non-empty text,
   metadata identity, exact marker alignment/span bounds, the aggregate corpus
-  SHA-512, and Skaia's metadata/marker snapshot SHA-512.
+  SHA-512, and GWP's metadata/marker snapshot SHA-512.
 - Redis caches are best-effort, tenant-prefixed, read-through, and invalidated on writes.
 - SSR SEO uses a typed success/absence/degraded/error resolution boundary. Only
   authoritative success and genuine absence are cacheable; core SQL/config
@@ -138,6 +138,11 @@ bibliographical certification.
 | `POST/PUT/DELETE` | `/pages/.../comments` | Comments and comment likes |
 | `GET/PUT/DELETE` | `/pages/allocations...` | Page allocation admin |
 | `POST` | `/pages/{id}/set-homepage` | Set `landing_page_slug` by page id |
+
+The fresh `get-started` page is the platform capability-tour seed. Migration 048
+updates only the exact legacy seed signature; ordinary tenant page authority,
+visibility, ownership, SEO fields, interactive records, and homepage selection
+are not inferred or overwritten from the slug.
 
 ## Config Registry Routes
 

@@ -149,7 +149,7 @@ export default function SecuritySettings({
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `skaia-backup-codes-${managedUsername}.txt`;
+    a.download = `gwp-backup-codes-${managedUsername}.txt`;
     document.body.appendChild(a);
     a.click();
     setTimeout(() => {
@@ -470,7 +470,7 @@ export default function SecuritySettings({
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "skaia-backup-codes.txt";
+    a.download = "gwp-backup-codes.txt";
     document.body.appendChild(a);
     a.click();
     setTimeout(() => {

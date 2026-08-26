@@ -6,7 +6,7 @@ The later `custom_page_document_model_consolidation` retired the unused
 normalized custom-page tables and their trash providers. The lifecycle ledger
 below records the implementation-time inventory rather than current page truth.
 
-Skaia currently hard-deletes records across forum, pages, store, inbox,
+GWP currently hard-deletes records across forum, pages, store, inbox,
 notifications, configuration, provisioning, auth/session, and relationship
 repositories. Several parent deletes rely on PostgreSQL cascades; store
 category/product deletion also deletes historical `order_items` explicitly.
@@ -41,7 +41,7 @@ currently have no confirmation.
 - Preserve immutable financial, audit, analytics, and migration evidence by
   forbidding user-facing deletion rather than inventing a destructive path.
 - Replace every browser-native `confirm`, `prompt`, `alert`, or unload prompt
-  with Skaia UI, and require the shared destructive prompt before user-facing
+  with GWP UI, and require the shared destructive prompt before user-facing
   destructive commands.
 - Ship migrations, repository/service/API changes, restore workflows, realtime
   convergence, tests, rollout controls, and durable specs as one verified policy.
@@ -50,7 +50,7 @@ currently have no confirmation.
 
 - Do not soft-delete or retain the bytes of user uploads, exports, archives, or
   other files. Their existing physical deletion remains permanent, but must use
-  Skaia confirmation/error UI.
+  GWP confirmation/error UI.
 - Do not promise restoration of external infrastructure destroyed during site,
   app, or provisioned-instance teardown. Retain the database lifecycle record
   and make the permanent external effect explicit.
@@ -205,7 +205,7 @@ but new runtime code must pass a strict allowlist check.
    - Add metrics for delete, restore, conflict, hard-delete-guard rejection, and
      rows hidden by active scope. Alert on unexpected runtime hard-delete attempts.
 
-7. **Standardize Skaia prompts and guard destructive controls**
+7. **Standardize GWP prompts and guard destructive controls**
    - Evolve `components/ui/Prompt.tsx` to accept structured title/body,
      destructive confirm label/variant, pending/disabled state, and optional
      typed-name confirmation for bulk/permanent operations. Preserve the
@@ -214,7 +214,7 @@ but new runtime code must pass a strict allowlist check.
      title/description, initial focus, focus trap/restore, Escape/cancel behavior,
      and serialized requests so concurrent prompts never strand promises.
    - Replace the three store `confirm()` calls with the shared prompt and the two
-     upload `alert()` calls with `customAlert` or a Skaia toast.
+     upload `alert()` calls with `customAlert` or a GWP toast.
    - Add confirmation to user-facing record deletion: forum
      category/thread/comment; store category/product/order/reference code/card;
      page/page section/item/comment/interactive response; data source/preset;

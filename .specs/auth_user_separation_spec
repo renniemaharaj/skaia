@@ -65,7 +65,7 @@ backup codes, auth migrations, password policy, or user/auth model boundaries.
   legacy `users.password_hash`, `users.totp_secret`, and `users.totp_enabled`
   only if those columns exist, upserts by `user_id`, then drops legacy sensitive
   columns.
-- Skaia has no legacy `users` backup-code column; backup codes are generated into
+- GWP has no legacy `users` backup-code column; backup codes are generated into
   `auth_backup_codes` after TOTP enablement.
 
 ## Testing Contract

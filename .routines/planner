@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Planning and durable-context upkeep routine for Skaia. Use it to create, split,
+Planning and durable-context upkeep routine for Go Web Platform. Use it to create, split,
 dedupe, update, or retire `.todo/` entries and to keep `.specs/` aligned with
 implemented architecture, models, migrations, protocols, frontend contracts, and
 operational policies.
@@ -107,9 +107,28 @@ operational policies.
 
 ## Last Ran
 
-- 2026-08-24
+- 2026-08-26
 
 ## Last Run Remarks
+
+- Reconciled the completed surface implementation into backend, frontend,
+  migration, route-resolution, caching, security, documentation, and protocol
+  specs. The coordinator now gates index 2 on a verified public surface baseline;
+  workspace runtimes are current, but both declared public origins still serve
+  the legacy surface. Phase-2 machine identifiers remain deliberately unchanged.
+
+- Reorganized `go_web_platform_rebrand_sequence` into two release boundaries:
+  non-breaking surface rebranding first, then all machine-contract and breaking
+  changes with compatibility, state-safe runtime/repository cutover, and residual-
+  name reconciliation. The original inventory found 1,061 tracked Skaia
+  references across 348 files; tenant brands, applied migration history, and the
+  Grengo CLI are not implicitly renamed.
+
+- Extended the surface phase with a responsive Getting Started capability
+  showcase. The plan requires fresh installs to receive the improved seed and
+  deployed tenants to update only when their page matches the deterministic
+  pristine legacy signature, while protecting customized content, homepage
+  selection, feature/permission boundaries, and the canonical page document.
 
 - Created and completed `full_route_resource_embeds`; frontend, custom-page, and
   documentation specs now make canonical route-content reuse and optional shared

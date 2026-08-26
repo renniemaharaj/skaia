@@ -119,9 +119,26 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-08-24
+- 2026-08-26
 
 ## Last Run Remarks
+
+- Completed the implementation and workspace rollout for
+  `go_web_platform_surface_rebrand`. Platform-owned copy,
+  defaults, health output, documentation, page-builder descriptions, and the
+  default Getting Started experience now use Go Web Platform while tenant assets
+  and all phase-2 machine contracts remain unchanged.
+- Added migration 048 with a complete pristine legacy signature and matching fresh
+  seed authority. Three tenants upgraded to the six-section capability showcase,
+  retained their independent landing-page selections, and produced no change on
+  a repeat migration. Exact SEO keys were purged without flushing Redis.
+- Built and deployed backend image
+  `sha256:de94801757dccbedc7a172e61451643ca94fe5e24935632347dc638d91b005b5`
+  plus the frontend bundle to all three workspace tenant runtimes. Backend/root gates, all 285 serial
+  frontend tests, lint/build/policy gates, migration integration coverage, and all
+  three local release-verification reports passed. The two declared public origins
+  still serve the pre-rebrand health text and legacy Getting Started seed, so the
+  surface todo remains in progress and sequence index 2 remains blocked.
 
 - Completed `full_route_resource_embeds`: product, thread, and documentation
   embeds now mount canonical route content without duplicating global app chrome,

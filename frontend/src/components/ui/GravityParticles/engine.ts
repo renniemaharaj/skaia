@@ -142,7 +142,7 @@ export const defaultSettings: PhysicsSettings = {
   fragmentMass: 2,
   particlesAreAlive: false,
   rendererType: "default",
-  rendererText: "SKAIA",
+  rendererText: "GWP",
   thinkInterval: 90,
   sightRadius: 140,
   sightRays: 16,

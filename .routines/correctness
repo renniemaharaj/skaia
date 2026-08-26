@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Architectural truth and drift-resolution routine for Skaia. Use it to determine
+Architectural truth and drift-resolution routine for Go Web Platform. Use it to determine
 what is actually correct when code, specs, routines, todos, migrations, tests, or
 docs disagree.
 

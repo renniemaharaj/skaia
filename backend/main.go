@@ -606,7 +606,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
+		json.NewEncoder(w).Encode(SimpleResponse{Message: "Go Web Platform API is healthy", Status: "ok"})
 	}
 	r.Get("/health", healthHandler)
 	r.Head("/health", healthHandler)
@@ -687,7 +687,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(SimpleResponse{Message: "Skaia API is healthy", Status: "ok"})
+			json.NewEncoder(w).Encode(SimpleResponse{Message: "Go Web Platform API is healthy", Status: "ok"})
 		})
 		api.Get("/ready", readinessHandler)
 

@@ -50,7 +50,7 @@ func NewSenderFromEnv() *Sender {
 		if cn := os.Getenv("CLIENT_NAME"); cn != "" {
 			fromName = titleCaser.String(cn)
 		} else {
-			fromName = "Skaia"
+			fromName = "Go Web Platform"
 		}
 	}
 	fmt.Printf("email: configured with host=%s port=%d from=%s\n", host, port, from)

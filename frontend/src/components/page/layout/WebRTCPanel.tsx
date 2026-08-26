@@ -1069,7 +1069,7 @@ export default function WebRTCPanel({
           <div className="vp-setting-row">
             <span className="vp-setting-label">
               <Settings size={14} />
-              Use SkaiaRTC (v2)
+              Use GWP peer-to-peer (v2)
             </span>
             <label className="vp-switch">
               <input

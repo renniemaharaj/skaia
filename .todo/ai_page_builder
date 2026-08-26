@@ -1,7 +1,7 @@
 # AI-Assisted Datasources & Custom Page Builder
 
 ## Context
-Skaia's CMS currently supports generic page building, but users need a dynamic, AI-assisted way to generate and iterate on custom pages and datasources in real-time. By integrating a Model Context Protocol (MCP) toolchain and an LLM pipeline, users can simply type prompts into an overlay, and the AI will autonomously build or update the page sections and connect relevant datasources.
+GWP's CMS currently supports generic page building, but users need a dynamic, AI-assisted way to generate and iterate on custom pages and datasources in real-time. By integrating a Model Context Protocol (MCP) toolchain and an LLM pipeline, users can simply type prompts into an overlay, and the AI will autonomously build or update the page sections and connect relevant datasources.
 
 For example: A user could prompt "Show me what's going on right now in the Middle East." The pipeline should empower the model to autonomously read news API docs, configure the backend datasource, map the fetched data fields to UI components, manage styles, check the current page layout, and either update an existing news section in-place or dynamically build a new section/page on the fly.
 

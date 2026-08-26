@@ -65,7 +65,7 @@ forum documentation projection, documentation SEO/cache/realtime, or migration
 
 ## Frontend Contracts
 
-- `integrate/` is a UX reference only. The implementation uses Skaia routing,
+- `integrate/` is a UX reference only. The implementation uses GWP routing,
   tokens, permissions, API utilities, Prompt, WebSocket, and existing content;
   it does not import the reference corpus, router, fonts, or app shell.
 - `DocumentationShell` owns responsive sidebar/search/navigation, mobile scrim,
@@ -94,7 +94,7 @@ forum documentation projection, documentation SEO/cache/realtime, or migration
   section. Height is natural unless the page author sets the shared section
   `max_height`, in which case the expanded section owns the scroll boundary. The
   embed never copies documentation records into `pages.content`.
-- In-app link navigation while editing uses Skaia's Prompt through the
+- In-app link navigation while editing uses GWP's Prompt through the
   declarative-`BrowserRouter` compatible dirty-navigation guard; data-router-only
   `useBlocker` and native unload/confirm/prompt/alert dialogs are forbidden.
   Realtime events do not overwrite an active draft.

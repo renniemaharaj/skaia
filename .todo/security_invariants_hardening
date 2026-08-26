@@ -2,7 +2,7 @@
 
 ## Context
 
-Skaia has strong security primitives, but important authorization, step-up,
+GWP has strong security primitives, but important authorization, step-up,
 session-risk, and audit rules remain distributed across handlers and services.
 The target contracts are authoritative in `.specs/security_architecture_spec`.
 

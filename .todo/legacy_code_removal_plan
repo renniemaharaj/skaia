@@ -2,7 +2,7 @@
 
 ## Context
 
-There are multiple references to legacy code paths and fallback logic in the Skaia backend, especially in:
+There are multiple references to legacy code paths and fallback logic in the GWP backend, especially in:
 
 - backend/internal/datasource/
 - backend/internal/integration/

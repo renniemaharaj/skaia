@@ -1,0 +1,48 @@
+<--/------->
+
+## go_web_platform_surface_rebrand
+@todo-sequence(group=go_web_platform_rebrand_sequence, index=1)
+
+### Current Progress
+- **Surface allowlist and exclusions** - ✅ Complete
+- **Application-visible branding** - ✅ Complete
+- **Getting Started capability showcase** - ✅ Complete
+- **Documentation and asset branding** - ✅ Complete
+- **Surface-only release verification** - 🟡 In progress
+
+### Next Steps
+- [x] Classify platform copy separately from tenant names and machine contracts.
+- [x] Apply GWP copy/defaults and approved assets without changing identifiers.
+- [x] Expand `get-started` using implemented capabilities and canonical registered
+      sections; add a pristine-only, idempotent upgrade path that preserves all
+      tenant edits and feature/permission boundaries.
+- [x] Prove the machine-identity inventory is unchanged and tenant overrides still win.
+- [ ] Deploy the verified image/frontend/migration to the public origins and
+      record the phase-1 baseline before index 2 begins.
+
+### Verification Evidence (2026-08-26)
+
+- Migration `048_go_web_platform_get_started.sql` updated the three exact pristine
+  tenant seeds, preserved their distinct `landing_page_slug` values, and returned
+  `UPDATE 0` on a second run. Fresh, pristine-upgrade, customized-page, registered-
+  section, and idempotency coverage passed against a disposable PostgreSQL database.
+- Backend tests, vet, builds, frontend lint/build/policy gates, and all 285 frontend
+  tests passed serially. Two unrelated lazy/timeout tests were unstable only during
+  the first heavily parallel run and passed in the deterministic full rerun.
+- Backend image `sha256:de94801757dccbedc7a172e61451643ca94fe5e24935632347dc638d91b005b5`
+  and the production frontend bundle were deployed to the workspace runtimes for
+  `cueballcraft`, `home`, and `thewriterco`; every local fail-closed release probe
+  returned `decision=proceed`.
+- Public-origin verification is still pending deployment: on 2026-08-26,
+  `https://skaiacraft.com` and `https://thewriterco.com` passed generic endpoint
+  status probes but still returned `Skaia API is healthy` and the legacy
+  three-section `Get Started` document. Phase 2 remains blocked until those
+  origins serve the verified surface baseline.
+- Exact SEO cache keys were purged without a broad Redis flush. No approved permanent
+  GWP artwork was supplied, so existing generic defaults and tenant-owned assets
+  remain authoritative instead of introducing invented brand assets.
+- Module/package manifests, protobuf and WebSocket identities, auth headers, storage
+  keys, runtime names, Docker identities, database names, and repository coordinates
+  remain phase-2 contracts and were not changed.
+
+<--/------->

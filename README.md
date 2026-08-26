@@ -1,14 +1,14 @@
-# Welcome to TheWriterCo, Skaia!
+# Go Web Platform (GWP)
 
-Skaia is a highly performant, multi-tenant, container-orchestrated platform powered by Go, built around a real-time, atomic state architecture using Jotai. The frontend is a React-powered full-stack application featuring server-injected SEO, delivering both speed and search engine optimization without compromising the real-time experience.
+Go Web Platform is a high-performance, multi-tenant platform powered by Go. Its React frontend uses atomic Jotai state, real-time synchronization, and server-injected SEO to combine fast navigation with search-friendly public pages.
 
-A key innovation in Skaia is our **WebSocket Rerouter** for REST endpoints. This completely bypasses traditional REST setup costs, enabling efficient, high-performance state updates. The result is an application that loads routes and synchronizes state at the raw speed of Go concurrency.
+A key capability is the optional **WebSocket Rerouter** for supported REST endpoints. It reduces repeated transport setup while preserving the platform's HTTP authorization and response boundaries, enabling efficient state updates backed by Go concurrency.
 
 The platform includes a powerful suite of integrated modules, including a customizable page builder, forums, a complete e-commerce solution with secure carting, checkout, payment handling, delivery management, order tracking, and a wallet system built around debit and credit transactions.
 
-Beyond commerce, Skaia offers real-time inbox messaging, push notifications, room-based chat, voice chat, video calls, screen sharing, live presence tracking across routes, shared cursor interaction, and a DEFCON rate limiter with a live widget overlay. Organizations can also build rich interfaces using the integrated UI page builder and extend the platform through Frappe Framework deployments and Apache Superset integration for enterprise business intelligence and reporting.
+Beyond commerce, GWP offers custom pages, documentation, forums, inbox messaging, notifications, group chat, voice and video calls, screen sharing, live presence, shared cursors, interactive forms and voting, events, rewards, rankings, and adaptive DEFCON safeguards. Organizations can connect protected datasources, build reusable components, and extend operations through Frappe Framework and Apache Superset deployments.
 
-We're excited to make this project open source as **skaia-repo**.
+The project remains published as **skaia-repo** during the surface-only phase. Repository, module, protocol, storage, and runtime identifiers move together in the separately controlled breaking-change phase.
 
 Thank you for taking the time to explore the platform and browse our current store offerings 🙏
 

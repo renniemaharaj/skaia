@@ -1,6 +1,6 @@
 # Routine System
 
-Routines are executable operating contracts for AI agents maintaining Skaia. They
+Routines are executable operating contracts for AI agents maintaining Go Web Platform. They
 exist to keep work precise in a complex fullstack repository with dynamic pages,
 strict backend contracts, real-time state, and a high bar for intentional UI.
 

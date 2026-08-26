@@ -70,7 +70,8 @@ import (
 
 func main() {
     //  Redis client
-    // Assumes skaia-redis is reachable at REDIS_URL (e.g. "redis://localhost:6379")
+    // Go Web Platform currently keeps the skaia-redis machine identifier until phase 2.
+    // It must be reachable at REDIS_URL (e.g. "redis://localhost:6379").
     // or falls back to localhost.
     redisURL := os.Getenv("REDIS_URL")
     if redisURL == "" {

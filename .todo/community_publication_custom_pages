@@ -21,7 +21,7 @@ the document to the comfortable submodule measure.
 - Give every visible publication a View discussion path and give the thread owner
   or a forum editor the existing `/edit-thread/:threadId` path.
 - Preserve visibility, lifecycle, migration parity, and existing publication data.
-- Match Skaia's owner-or-granular-permission control model for publication edit,
+- Match GWP's owner-or-granular-permission control model for publication edit,
   delete, workflow moderation, participation, and linked-page management.
 - Keep comfortable submodule forms centered within the shared shell on every
   viewport without route-specific alignment overrides.

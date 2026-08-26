@@ -1,0 +1,19 @@
+<--/------->
+
+## go_web_platform_rebrand_sequence
+@todo-sequence(group=go_web_platform_rebrand_sequence, index=0)
+
+### Current Progress
+- **Scope and repository inventory** - ✅ Complete
+- **Surface rebranding** - 🟡 In progress
+- **Breaking-changes rebranding** - ⬜ Not started
+
+### Next Steps
+- [x] Inventory Skaia references and identify stateful/wire compatibility boundaries.
+- [ ] Deploy the completed `go_web_platform_surface_rebrand`, including the expanded
+      Getting Started capability showcase, without changing machine contracts or
+      overwriting tenant-edited pages.
+- [ ] Execute `go_web_platform_breaking_rebrand` only after the surface baseline passes.
+- [ ] Retire the sequence after production verification and residual-name classification.
+
+<--/------->

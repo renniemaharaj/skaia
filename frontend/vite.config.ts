@@ -6,7 +6,7 @@ const htmlDevPlugin = () => ({
   apply: "serve" as const,
   transformIndexHtml(html: string) {
     return html
-      .replace("%TITLE_PLACEHOLDER%", "<title>Skaia Dev</title>")
+      .replace("%TITLE_PLACEHOLDER%", "<title>Go Web Platform Dev</title>")
       .replace("%META_DESCRIPTION_PLACEHOLDER%", "")
       .replace("%OG_IMAGE_PLACEHOLDER%", "")
       .replace("%FAVICON_PLACEHOLDER%", "");

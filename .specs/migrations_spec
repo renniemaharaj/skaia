@@ -91,6 +91,7 @@ Schema, seed data, model fields, indexes, store/auth/session/page tables, or
 | `045_community_custom_pages.sql` | Owned custom-page authority and guarded legacy community-body backfill |
 | `046_community_publication_permissions.sql` | Granular manage-others edit/delete permissions for community publications |
 | `047_community_publication_threads.sql` | Required unique author-owned publication discussions with guarded legacy-link backfill |
+| `048_go_web_platform_get_started.sql` | Pristine-only upgrade from the legacy three-section Getting Started seed to the GWP capability tour |
 
 Control-plane migration `002_soft_delete_lifecycle.sql` adds retained
 site/cluster deletion state, inactive API-key permissions, scrubbed passcodes,
@@ -137,6 +138,11 @@ and matching hard-delete protection in `grengo`.
 - Migration 047 retains unique active owner-matched legacy discussion links,
   provisions owned replacements otherwise, constrains thread/publication owner
   identity, and makes the discussion reference required and unique.
+- Migration 002 owns the current GWP `get-started` seed for fresh installs.
+  Migration 048 contains the complete legacy JSON signature and updates only the
+  active public, unowned, SEO-unmodified legacy seed. Title, description,
+  visibility, ownership, SEO, deletion, or content drift preserves the tenant
+  page. The bridge is idempotent and never changes `landing_page_slug`.
 
 ## Verify
 

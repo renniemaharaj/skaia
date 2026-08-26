@@ -3,7 +3,7 @@
 ## Purpose
 
 Reduce model context while preserving the project contracts needed to work on
-Skaia without rediscovering behavior from code.
+Go Web Platform without rediscovering behavior from code.
 
 ## Card Shape
 

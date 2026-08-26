@@ -86,6 +86,12 @@ Live page changes bypass CDN through WebSocket:
 - `page:update page_updated` carries a content-free invalidation.
 - `config:update landing_page_updated` carries `{ slug }` as a fallback/UI signal.
 
+Migration 048 is an offline seed bridge rather than an application page mutation,
+so it emits no WebSocket event. Rollout applies it before the corresponding
+backend/frontend release and explicitly deletes only the tenant-scoped semantic
+SEO keys for `/`, `/page/get-started`, and `/sitemap.xml`; API page reads remain
+no-store. A running browser converges on reload after the release.
+
 `GET /pages/browse` never transfers `pages.content`. Exact preview documents are
 requested from `/pages/browse/{id}/preview` only after viewport and interaction
 intent. They remain personalized, no-store responses and must not enter a CDN or

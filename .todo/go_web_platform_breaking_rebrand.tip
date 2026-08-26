@@ -1,0 +1,18 @@
+<--/------->
+
+## go_web_platform_breaking_rebrand
+@todo-sequence(group=go_web_platform_rebrand_sequence, index=2)
+
+### Current Progress
+- **Machine identity and compatibility contract** - ⬜ Not started
+- **Application and persisted-state migration** - ⬜ Not started
+- **Runtime and repository cutover** - ⬜ Not started
+- **Production verification and compatibility retirement** - ⬜ Not started
+
+### Next Steps
+- [ ] Wait for the verified phase-1 surface release.
+- [ ] Approve machine coordinates and compatibility/removal gates.
+- [ ] Implement application/runtime migration with mixed-version and rollback support.
+- [ ] Reconcile durable context and classify residual identifiers before closure.
+
+<--/------->

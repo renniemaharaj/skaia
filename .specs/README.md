@@ -1,4 +1,4 @@
-# Skaia Specs
+# Go Web Platform Specs
 
 `.specs/` is the authoritative, compact project context. Load this file first,
 then load only the matching spec cards below.

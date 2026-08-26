@@ -1,0 +1,131 @@
+# Go Web Platform Surface Rebranding
+
+## Context
+
+Phase 1 changes the identity users and operators see from Skaia to **Go Web
+Platform (GWP)** without changing any machine contract. It creates an independently
+releasable baseline before module, protocol, storage, database, Docker, repository,
+and deployment identifiers move in phase 2.
+
+Surface work must respect tenant branding. SkaiaCraft names, customer domains,
+tenant-configured titles, email identities, legal text, logos, favicons, and
+content are not platform branding and must not be globally replaced.
+
+## Goal
+
+- Show `Go Web Platform` or `GWP` consistently in platform-owned UI, metadata,
+  default emails, health messages, documentation, examples, and approved assets.
+- Turn the default `get-started` custom page into a credible, responsive tour of
+  the platform's page building, data, community, realtime, interactive, content,
+  media, commerce, and extensibility capabilities.
+- Preserve all APIs, packages, serialized values, storage keys, protocols,
+  infrastructure names, deployment behavior, and repository coordinates.
+- Produce a verified surface-only release distinct from later breaking changes.
+
+## Non-Goals
+
+- Renaming Go/npm packages, imports, symbols, protobuf packages, gRPC methods,
+  WebSocket subprotocols, JWT issuers, headers, storage keys, CSS identifiers,
+  datasource globals, serialized markers, or test domains.
+- Renaming images, containers, networks, volumes, database objects, temporary or
+  service paths, repositories/remotes, or the local workspace.
+- Renaming Grengo, SkaiaCraft, or tenant-owned branding/content.
+- Inventing permanent visual assets without approved inputs.
+- Advertising unavailable tenant features or replacing an administrator's edited
+  `get-started` page/homepage selection.
+
+## Steps
+
+1. Build a surface allowlist. Classify candidates as platform-visible copy,
+   tenant-owned value, internal contract, historical evidence, or phase-2 work.
+2. Replace platform-owned frontend copy: default title, accessible labels,
+   descriptive text, settings/about/help surfaces, errors, empty states, and
+   rendered `SKAIA` artwork. Keep tenant configuration authoritative.
+3. Replace backend-visible defaults and responses: fallback email sender/TOTP
+   display name, health/status prose, and public resource descriptions. Do not
+   change claims, headers, logs, cache keys, or other parsed values.
+4. Apply approved GWP logo, favicon, and social artwork where defaults exist;
+   verify tenant assets still win. Record unavailable assets as blocked.
+5. Redesign the seeded `get-started` custom page as a concise capability tour:
+   - lead with a GWP hero and clear paths for visitors and administrators;
+   - demonstrate representative native blocks instead of only describing the
+     builder, using the canonical document model and registered section types;
+   - cover visual page building and reusable sections, datasources and derived
+     content, documentation/media, forms/polls/surveys/Q&A/voting, community and
+     forum workflows, realtime presence/chat/voice/video, commerce, events,
+     rankings/rewards, integrations, and tenant branding/security where supported;
+   - organize the page as a guided story rather than an exhaustive feature dump,
+     with scannable proof points, accessible headings, responsive layouts, and
+     calls to action appropriate to the viewer;
+   - source claims from implemented specs/registries. Link only to universally
+     available public routes unless an existing block already supports feature/
+     permission visibility; describe or omit feature-dependent capabilities
+     instead of adding a new conditional-page contract or exposing a broken/
+     forbidden destination.
+6. Preserve existing tenants while distributing the improved page:
+   - update the guarded migration `002` insert as the fresh-install seed
+     authority and add a forward, additive seed revision for deployed tenants;
+     rerunning `002` must remain a no-op when the slug already exists;
+   - update only the exact known legacy seed document (or another deterministic
+     pristine signature) and never key safety on slug/title alone;
+   - preserve customized `get-started` content, its ownership/visibility, and the
+     current `landing_page_slug`; administrators with a diverged page retain the
+     ordinary page builder as the sole editing/copying authority rather than
+     receiving a one-off template refresh subsystem;
+   - keep the update idempotent and preserve interactive records. Because the
+     SQL bridge runs outside the page service, deploy it before the backend/
+     frontend release and purge only the tenant's exact `/` and
+     `/page/get-started` SEO keys; do not imply that SQL emits realtime events.
+7. Add focused seed/document tests covering clean install, pristine legacy
+   upgrade, customized-page preservation, repeated migration, valid registered
+   sections, canonical routes, feature/permission-sensitive actions, sanitization,
+   and render/edit/save/reload behavior at desktop and mobile widths.
+8. Update README, setup, operations, in-app docs, examples, screenshots, and
+   current spec/routine prose. Preserve historical evidence, tenant examples,
+   and commands whose old identifiers remain true until phase 2.
+9. Add focused assertions that visible platform output uses GWP and machine
+   identifiers remain byte-for-byte unchanged. Regenerate documentation/search
+   artifacts only through their authoritative generators.
+10. Release phase 1 independently and record public, Getting Started, upgrade,
+    and tenant-branding evidence.
+
+## Verification
+
+- Run relevant backend/root tests and builds plus frontend type-check/build,
+  tests, lint, and repository UI policy gates.
+- Snapshot machine identity before/after phase 1 and prove no module/import,
+  protobuf, WS, JWT, header, browser/Redis, serialized, database, Docker, service,
+  or Git coordinate changed.
+- Inspect UI, auth/TOTP/email, health/status, page-builder descriptions, errors,
+  docs, SEO/social metadata, and downloads with defaults and a branded tenant.
+- On a clean database, verify `get-started` is valid GWP content and remains the
+  configured landing page. On upgrade fixtures, verify only the pristine legacy
+  seed changes; customized content and homepage selection remain byte-for-byte
+  unchanged, and a second run is a no-op.
+- Render the Getting Started page as guest, member, and administrator with
+  representative feature combinations. Assert there are no forbidden/broken
+  calls to action, unsupported section types, leaked edit controls, layout
+  overflows, inaccessible headings/actions, or duplicated interactive records.
+- Search visible output for unexplained `Skaia`; retain a categorized backlog of
+  phase-2, tenant, and historical matches.
+- Run `git diff --check` and record the phase-1 release identifier in the tip.
+
+## References
+
+- `.todo/go_web_platform_rebrand_sequence`
+- `.specs/backend_spec`
+- `.specs/frontend_spec`
+- `.specs/documentation_spec`
+- `.specs/infrastructure_spec`
+- `README.md`
+- `SETUP.md`
+- `OPERATIONS.md`
+- `frontend/vite.config.ts`
+- `frontend/src/components/`
+- `backend/internal/email/`
+- `backend/internal/migrations/002_seed.sql`
+- `backend/internal/s_registry/registry.go`
+- `backend/internal/page/`
+- `frontend/src/components/page/BlockRenderer.tsx`
+- `frontend/src/components/page/PageBuilder.tsx`
+- `backend/main.go`
