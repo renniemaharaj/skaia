@@ -21,5 +21,8 @@
 - [x] 2026-08-23: Headless Chromium geometry check confirms Orders and Wallet
   share the content rail, inset 40px from the back rail on desktop and 16px on
   mobile.
+- [x] 2026-08-26: Presence split mode now gives captured route content, the
+  shared module shell, and routed managed forms the full remaining pane width;
+  ordinary route measures remain unchanged outside the split context.
 
 <--/------->

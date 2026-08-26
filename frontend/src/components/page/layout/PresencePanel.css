@@ -981,3 +981,43 @@
   max-height: none;
   flex: 1;
 }
+
+/* The split pane already owns the route gutter. Let the captured route and its
+   shared shells consume the remaining pane instead of stacking their normal
+   centered-page width constraints. */
+.presence-panel.pp-split-mode .pp-split-content-area {
+  display: block;
+  position: relative;
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
+.presence-panel.pp-split-mode .pp-split-content-area > * {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  margin-inline: 0;
+}
+
+.presence-panel.pp-split-mode .pp-split-content-area .module-page-shell {
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+.presence-panel.pp-split-mode .pp-split-content-area .module-page-shell__tabs,
+.presence-panel.pp-split-mode .pp-split-content-area .module-page-shell__header,
+.presence-panel.pp-split-mode .pp-split-content-area .module-page-shell__content {
+  padding-inline: 0;
+}
+
+.presence-panel.pp-split-mode .pp-split-content-area .managed-form.modal {
+  width: 100%;
+  margin-inline: 0;
+}

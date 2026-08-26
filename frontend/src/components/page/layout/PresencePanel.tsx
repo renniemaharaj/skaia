@@ -1010,18 +1010,7 @@ const PresencePanel = () => {
         />
       )}
       {isRoutingLayout && (
-        <div
-          className="pp-split-content-area layout-main"
-          style={{
-            flex: 1,
-            position: "relative",
-            overflowY: "auto",
-            padding: "0 24px",
-            maxHeight: "100vh",
-            height: "100vh",
-            display: "block",
-          }}
-        >
+        <div className="pp-split-content-area layout-main">
           {layoutChildren}
         </div>
       )}
