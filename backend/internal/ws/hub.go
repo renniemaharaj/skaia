@@ -162,7 +162,6 @@ type Hub struct {
 	// extract mentions and dispatch notifications.
 	MentionProcessor func(content string, senderID int64, message string, route string)
 
-	OnGuestSessionClosed   func(guestSessionID string)
 	AccountTrustAuthorizer func(ctx context.Context, userID int64) error
 	ChatBudgetAuthorizer   func(client *Client) (time.Duration, error)
 	PermissionAuthorizer   func(userID int64, permission string) (bool, error)
@@ -510,31 +509,6 @@ func (h *Hub) SendToUser(userID int64, msg *Message) {
 			}
 		}
 	}
-}
-
-// SendToGuestSession delivers a targeted message to all guest connections
-// carrying the supplied browser-local guest session id.
-func (h *Hub) SendToGuestSession(guestSessionID string, msg *Message) bool {
-	if guestSessionID == "" {
-		return false
-	}
-	delivered := false
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	for client := range h.clients {
-		if client.UserID != 0 || client.GuestSessionID != guestSessionID {
-			continue
-		}
-		if client.queueMessage(msg) {
-			if msg.Type == RecoveryRequestAccepted {
-				client.RecoveryAccepted = true
-			}
-			delivered = true
-		} else {
-			log.Printf("ws: send buffer full for guest session %s", guestSessionID)
-		}
-	}
-	return delivered
 }
 
 // RegisterClient registers a client with the hub.

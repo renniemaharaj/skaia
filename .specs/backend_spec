@@ -170,6 +170,14 @@ write files, spawn children/workers, load addons, or receive unbounded HTTP
 payloads. Outbound requests resolve and pin public addresses, reject private or
 credential-bearing destinations, and strip sensitive headers across origins.
 
+## Site Configuration
+
+- Public SEO configuration may include an optional `font_family`. The value is
+  one normalized Google Fonts family name, not a URL or CSS fragment.
+- SEO writes require service-level `home.manage`, reject unknown/non-string
+  fields and unsafe font syntax, retain partial JSONB merge behavior, invalidate
+  semantic SEO caches, and publish only the validated normalized payload.
+
 ## Store Contracts
 
 ### Page-backed policy configuration

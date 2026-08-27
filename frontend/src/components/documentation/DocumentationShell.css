@@ -256,7 +256,7 @@
   border-bottom: 1px solid var(--border-color);
 }
 
-.documentation-article__hero h1 {
+.documentation-article__hero h3 {
   margin: 0 0 0.5rem;
   overflow-wrap: anywhere;
 }

@@ -3,14 +3,14 @@ package auth
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/base32"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/pquerna/otp/totp"
@@ -282,21 +282,7 @@ func (s *Service) AdminGenerateBackupCodes(ctx context.Context, userID int64) ([
 
 var ErrInvalidPassword = errors.New("invalid password")
 var ErrInvalidTOTPCode = errors.New("invalid TOTP code")
-var ErrRecoveryRequestRateLimited = errors.New("please wait before requesting account recovery again")
-var ErrRecoveryRequestNotFound = errors.New("recovery request not found")
-var ErrRecoveryRequestExpired = errors.New("recovery request expired")
-var ErrRecoveryRequestAlreadyPending = errors.New("you already have a recovery request pending")
-var ErrRecoveryChallengeRequired = errors.New("MFA Required")
-var ErrRecoveryChallengeMethodRequired = errors.New("TOTP must be enabled to resolve recovery requests")
-
-const recoveryRequestTTL = 30 * time.Minute
-const recoveryRequestCooldown = 2 * time.Minute
-const recoveryChallengeTTL = 10 * time.Minute
-
-type recoveryChallengeJob struct {
-	Key      string
-	ExpireAt time.Time
-}
+var ErrInvalidOrExpiredToken = errors.New("token is invalid or has expired")
 
 type UserService interface {
 	GetByID(id int64) (*models.User, error)
@@ -306,249 +292,12 @@ type UserService interface {
 }
 
 type Service struct {
-	repo               Repository
-	userService        UserService
-	recoveryMu         sync.Mutex
-	recoveryRequests   map[string]*models.RecoveryRequest
-	recoveryLastSeen   map[string]time.Time
-	recoveryChallenges map[int64]recoveryChallengeJob
+	repo        Repository
+	userService UserService
 }
 
 func NewService(r Repository, userService UserService) *Service {
-	return &Service{
-		repo:               r,
-		userService:        userService,
-		recoveryRequests:   make(map[string]*models.RecoveryRequest),
-		recoveryLastSeen:   make(map[string]time.Time),
-		recoveryChallenges: make(map[int64]recoveryChallengeJob),
-	}
-}
-
-func recoveryRateKey(kind, value string) string {
-	return kind + ":" + strings.ToLower(strings.TrimSpace(value))
-}
-
-func (s *Service) cleanupRecoveryRequestsLocked(now time.Time) {
-	for id, req := range s.recoveryRequests {
-		if !now.Before(req.ExpiresAt) || req.Status != "pending" {
-			delete(s.recoveryRequests, id)
-		}
-	}
-	for key, seen := range s.recoveryLastSeen {
-		if now.Sub(seen) > recoveryRequestTTL {
-			delete(s.recoveryLastSeen, key)
-		}
-	}
-	for userID, challenge := range s.recoveryChallenges {
-		if !now.Before(challenge.ExpireAt) {
-			delete(s.recoveryChallenges, userID)
-		}
-	}
-}
-
-func newRecoveryRequestID() string {
-	buf := make([]byte, 12)
-	if _, err := rand.Read(buf); err != nil {
-		return fmt.Sprintf("%d", time.Now().UnixNano())
-	}
-	return hex.EncodeToString(buf)
-}
-
-// CreateRecoveryRequest records a short-lived recovery request for an existing
-// account. Missing accounts are silently ignored by callers to avoid public
-// account enumeration while still applying rate limits.
-func (s *Service) CreateRecoveryRequest(ctx context.Context, email, ip, guestSessionID string) (*models.RecoveryRequest, bool, error) {
-	normalizedEmail := strings.ToLower(strings.TrimSpace(email))
-	if normalizedEmail == "" {
-		return nil, false, errors.New("email required")
-	}
-
-	now := time.Now()
-	s.recoveryMu.Lock()
-	defer s.recoveryMu.Unlock()
-	s.cleanupRecoveryRequestsLocked(now)
-
-	user, err := s.userService.GetByEmail(normalizedEmail)
-	if err != nil {
-		for _, key := range []string{
-			recoveryRateKey("email", normalizedEmail),
-			recoveryRateKey("ip", ip),
-		} {
-			if seen, ok := s.recoveryLastSeen[key]; ok && now.Sub(seen) < recoveryRequestCooldown {
-				return nil, false, ErrRecoveryRequestRateLimited
-			}
-			s.recoveryLastSeen[key] = now
-		}
-		return nil, false, nil
-	}
-
-	for _, req := range s.recoveryRequests {
-		if req.UserID == user.ID && req.Status == "pending" {
-			copyReq := *req
-			return &copyReq, true, ErrRecoveryRequestAlreadyPending
-		}
-	}
-
-	for _, key := range []string{
-		recoveryRateKey("email", normalizedEmail),
-		recoveryRateKey("ip", ip),
-	} {
-		if seen, ok := s.recoveryLastSeen[key]; ok && now.Sub(seen) < recoveryRequestCooldown {
-			return nil, false, ErrRecoveryRequestRateLimited
-		}
-		s.recoveryLastSeen[key] = now
-	}
-
-	id := newRecoveryRequestID()
-	req := &models.RecoveryRequest{
-		ID:             id,
-		Email:          normalizedEmail,
-		UserID:         user.ID,
-		Username:       user.Username,
-		DisplayName:    user.DisplayName,
-		Status:         "pending",
-		GuestSessionID: strings.TrimSpace(guestSessionID),
-		CreatedAt:      now,
-		ExpiresAt:      now.Add(recoveryRequestTTL),
-	}
-	s.recoveryRequests[id] = req
-	copyReq := *req
-	return &copyReq, false, nil
-}
-
-func (s *Service) ListRecoveryRequests(ctx context.Context) []*models.RecoveryRequest {
-	now := time.Now()
-	s.recoveryMu.Lock()
-	defer s.recoveryMu.Unlock()
-	s.cleanupRecoveryRequestsLocked(now)
-
-	requests := make([]*models.RecoveryRequest, 0, len(s.recoveryRequests))
-	for _, req := range s.recoveryRequests {
-		copyReq := *req
-		requests = append(requests, &copyReq)
-	}
-	sort.Slice(requests, func(i, j int) bool {
-		return requests[i].CreatedAt.After(requests[j].CreatedAt)
-	})
-	return requests
-}
-
-func (s *Service) GetRecoveryRequest(ctx context.Context, requestID string) (*models.RecoveryRequest, error) {
-	now := time.Now()
-	s.recoveryMu.Lock()
-	defer s.recoveryMu.Unlock()
-	s.cleanupRecoveryRequestsLocked(now)
-
-	req, ok := s.recoveryRequests[requestID]
-	if !ok {
-		return nil, ErrRecoveryRequestNotFound
-	}
-	if !now.Before(req.ExpiresAt) {
-		delete(s.recoveryRequests, requestID)
-		return nil, ErrRecoveryRequestExpired
-	}
-	copyReq := *req
-	return &copyReq, nil
-}
-
-func (s *Service) ResolveRecoveryRequest(ctx context.Context, requestID, status string) (*models.RecoveryRequest, error) {
-	now := time.Now()
-	s.recoveryMu.Lock()
-	defer s.recoveryMu.Unlock()
-	s.cleanupRecoveryRequestsLocked(now)
-
-	req, ok := s.recoveryRequests[requestID]
-	if !ok {
-		return nil, ErrRecoveryRequestNotFound
-	}
-	if !now.Before(req.ExpiresAt) {
-		delete(s.recoveryRequests, requestID)
-		return nil, ErrRecoveryRequestExpired
-	}
-	req.Status = status
-	copyReq := *req
-	delete(s.recoveryRequests, requestID)
-	return &copyReq, nil
-}
-
-func (s *Service) ExpireRecoveryRequestsByGuestSession(ctx context.Context, guestSessionID string) []*models.RecoveryRequest {
-	guestSessionID = strings.TrimSpace(guestSessionID)
-	if guestSessionID == "" {
-		return nil
-	}
-
-	s.recoveryMu.Lock()
-	defer s.recoveryMu.Unlock()
-
-	expired := make([]*models.RecoveryRequest, 0)
-	for id, req := range s.recoveryRequests {
-		if req.GuestSessionID != guestSessionID || req.Status != "pending" {
-			continue
-		}
-		req.Status = "expired"
-		copyReq := *req
-		expired = append(expired, &copyReq)
-		delete(s.recoveryRequests, id)
-	}
-	return expired
-}
-
-func recoveryChallengeKey(requestID, action string) string {
-	return strings.TrimSpace(action) + ":" + strings.TrimSpace(requestID)
-}
-
-func recoveryChallengeActionLabel(action string) string {
-	action = strings.TrimSpace(action)
-	if action == "accept" {
-		return "approve password recovery"
-	}
-	return action + " password recovery"
-}
-
-func (s *Service) RequireRecoveryResolutionChallenge(ctx context.Context, actorID int64, requestID, action string) error {
-	_, enabled, err := s.GetTOTPEnabled(ctx, actorID)
-	if err != nil {
-		return err
-	}
-	if !enabled {
-		return ErrRecoveryChallengeMethodRequired
-	}
-
-	key := recoveryChallengeKey(requestID, action)
-	now := time.Now()
-	s.recoveryMu.Lock()
-	s.cleanupRecoveryRequestsLocked(now)
-	challenge, hasChallenge := s.recoveryChallenges[actorID]
-	s.recoveryMu.Unlock()
-
-	mfaStatus, err := s.GetMFARequired(ctx, actorID)
-	if err != nil {
-		return err
-	}
-	if hasChallenge && challenge.Key == key && now.Before(challenge.ExpireAt) && !mfaStatus.Required {
-		return nil
-	}
-
-	actionLabel := recoveryChallengeActionLabel(action)
-	if err := s.RequireMFA(ctx, actorID, MFAReasonSensitiveAction, actionLabel); err != nil {
-		return err
-	}
-	s.recoveryMu.Lock()
-	s.recoveryChallenges[actorID] = recoveryChallengeJob{
-		Key:      key,
-		ExpireAt: now.Add(recoveryChallengeTTL),
-	}
-	s.recoveryMu.Unlock()
-	return ErrRecoveryChallengeRequired
-}
-
-func (s *Service) ConsumeRecoveryResolutionChallenge(actorID int64, requestID, action string) {
-	key := recoveryChallengeKey(requestID, action)
-	s.recoveryMu.Lock()
-	defer s.recoveryMu.Unlock()
-	if challenge, ok := s.recoveryChallenges[actorID]; ok && challenge.Key == key {
-		delete(s.recoveryChallenges, actorID)
-	}
+	return &Service{repo: r, userService: userService}
 }
 
 // RegisterCredential creates a new credential for a user.
@@ -657,34 +406,76 @@ func (s *Service) GetByEmail(ctx context.Context, email string) (*models.User, e
 	return s.userService.GetByEmail(email)
 }
 
-// TODO: implement token-based password reset flow.
 func (s *Service) CreatePasswordResetToken(ctx context.Context, userID int64) (string, error) {
-	return "", errors.New("not implemented")
+	raw, digest, err := newOpaqueToken()
+	if err != nil {
+		return "", err
+	}
+	if err := s.repo.ReplacePasswordResetToken(ctx, userID, digest, time.Now().Add(time.Hour)); err != nil {
+		return "", err
+	}
+	return raw, nil
 }
 
-// TODO: implement token-based password reset flow.
-func (s *Service) ResetPasswordWithToken(ctx context.Context, token, newPassword string) error {
-	return errors.New("not implemented")
+func (s *Service) ResetPasswordWithToken(ctx context.Context, token, newPassword string) (*models.User, error) {
+	if strings.TrimSpace(token) == "" {
+		return nil, ErrInvalidOrExpiredToken
+	}
+	if err := ValidatePassword(newPassword); err != nil {
+		return nil, err
+	}
+	hash, err := BcryptPassword(newPassword)
+	if err != nil {
+		return nil, err
+	}
+	userID, err := s.repo.ConsumePasswordResetToken(ctx, tokenDigest(token), hash, time.Now())
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrInvalidOrExpiredToken
+		}
+		return nil, err
+	}
+	return s.userService.GetByID(userID)
 }
 
-// TODO: implement token-based password reset flow.
-func (s *Service) GetPasswordResetTokenUser(ctx context.Context, token string) (*models.User, error) {
-	return nil, errors.New("not implemented")
-}
-
-// TODO: implement email-verification flow.
 func (s *Service) CreateEmailVerificationToken(ctx context.Context, userID int64) (string, error) {
-	return "", errors.New("not implemented")
+	raw, digest, err := newOpaqueToken()
+	if err != nil {
+		return "", err
+	}
+	if err := s.repo.ReplaceEmailVerificationToken(ctx, userID, digest, time.Now().Add(24*time.Hour)); err != nil {
+		return "", err
+	}
+	return raw, nil
 }
 
-// TODO: implement email-verification flow.
-func (s *Service) VerifyEmail(ctx context.Context, token string) error {
-	return errors.New("not implemented")
+func (s *Service) VerifyEmail(ctx context.Context, token string) (int64, error) {
+	if strings.TrimSpace(token) == "" {
+		return 0, ErrInvalidOrExpiredToken
+	}
+	userID, err := s.repo.ConsumeEmailVerificationToken(ctx, tokenDigest(token), time.Now())
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, ErrInvalidOrExpiredToken
+	}
+	return userID, err
 }
 
-// TODO: implement email-verification flow.
 func (s *Service) ResendVerificationToken(ctx context.Context, userID int64) (string, error) {
-	return "", errors.New("not implemented")
+	return s.CreateEmailVerificationToken(ctx, userID)
+}
+
+func newOpaqueToken() (raw, digest string, err error) {
+	b := make([]byte, 32)
+	if _, err = rand.Read(b); err != nil {
+		return "", "", err
+	}
+	raw = base64.RawURLEncoding.EncodeToString(b)
+	return raw, tokenDigest(raw), nil
+}
+
+func tokenDigest(raw string) string {
+	sum := sha256.Sum256([]byte(raw))
+	return hex.EncodeToString(sum[:])
 }
 
 func (s *Service) SetMFARequired(ctx context.Context, userID int64, required bool) error {

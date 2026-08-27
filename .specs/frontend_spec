@@ -105,6 +105,11 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   states, and managed forms use the content rail; page-specific classes never
   own the outer shell width or padding. Domain child routes must reuse their
   module adapter so back-link placement cannot drift between siblings.
+- Site Settings > Visuals offers a curated Google Fonts list and a validated
+  custom family name to `home.manage` users. The public SEO projection supplies
+  the selected family; `SiteHead` loads its Google stylesheet and updates the
+  shared `--font-sans` token. Empty or unsafe legacy values retain the platform
+  font stack and never enter generated CSS.
 - Page and thread analytics import only after the analytics action opens. Its
   Suspense fallback mirrors the modal header, stat row, and chart and
   keeps the close action usable. Recharts remains owned by that lazy module;

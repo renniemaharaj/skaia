@@ -52,9 +52,6 @@ func (h *Handler) Mount(r chi.Router, jwt func(http.Handler) http.Handler) {
 		r.With(jwt).Get("/totp/{id}", h.authHandler.AdminTOTPStatus)
 
 		// Admin user management (requires user.manage-others permission)
-		r.With(jwt).Get("/admin/recovery-requests", h.authHandler.ListRecoveryRequests)
-		r.With(jwt).Post("/admin/recovery-requests/{requestID}/accept", h.authHandler.AcceptRecoveryRequest)
-		r.With(jwt).Post("/admin/recovery-requests/{requestID}/reject", h.authHandler.RejectRecoveryRequest)
 		r.With(jwt).Post("/admin/{id}/reset-password", h.authHandler.AdminResetPassword)
 
 		// Admin TOTP management (requires user.manage-others permission)

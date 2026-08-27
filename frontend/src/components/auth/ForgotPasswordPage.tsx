@@ -1,265 +1,46 @@
-import { useAtomValue } from "jotai";
-import { AlertCircle, CheckCircle, Mail, ShieldCheck, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormikHelpers } from "formik";
-import { Link, useNavigate } from "react-router-dom";
-import { hasPermissionAtom } from "../../atoms/auth";
-import {
-  type RecoveryRequest,
-  acceptRecoveryRequest,
-  forgotPassword,
-  listRecoveryRequests,
-  rejectRecoveryRequest,
-} from "../../utils/api";
-import { getGuestSessionId, rememberPendingRecoveryRequest } from "../../utils/guestSession";
+import { CheckCircle, Mail, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { forgotPassword } from "../../utils/api";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { FormField, FormSectionIntro, ManagedForm } from "../form";
-import { type TableColumn, TableView } from "../ui/TableView/TableView";
 import "./Auth.css";
 import "../ui/FormGroup.css";
 
 export default function ForgotPasswordPage() {
-  const [requestsLoading, setRequestsLoading] = useState(false);
-  const [actionRequestId, setActionRequestId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
-  const [requests, setRequests] = useState<RecoveryRequest[]>([]);
-  const [ownRequest, setOwnRequest] = useState<RecoveryRequest | null>(null);
-  const [ownRequestMessage, setOwnRequestMessage] = useState<string | null>(null);
-  const canManageUsers = useAtomValue(hasPermissionAtom)("user.manage-others");
-  const navigate = useNavigate();
-
-  const fetchRequests = useCallback(async () => {
-    if (!canManageUsers) return;
-    setRequestsLoading(true);
-    try {
-      setRequests((await listRecoveryRequests()) ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load recovery requests");
-    } finally {
-      setRequestsLoading(false);
-    }
-  }, [canManageUsers]);
-
-  useEffect(() => {
-    fetchRequests();
-    const handleRecoveryUpdate = (event: Event) => {
-      const detail = (event as CustomEvent<{ action?: string; data?: RecoveryRequest }>).detail;
-      if (canManageUsers) {
-        fetchRequests();
-      }
-      if (detail?.data?.id && ownRequest?.id === detail.data.id && detail.action !== "created") {
-        setOwnRequest(null);
-        setOwnRequestMessage(null);
-      }
-    };
-    window.addEventListener("recovery_request:update", handleRecoveryUpdate);
-    return () => window.removeEventListener("recovery_request:update", handleRecoveryUpdate);
-  }, [canManageUsers, fetchRequests, ownRequest?.id]);
-
-  useEffect(() => {
-    const handleAccepted = () => {
-      setOwnRequest(null);
-      setOwnRequestMessage("Your recovery request was accepted. Signing you in...");
-      navigate("/");
-    };
-    window.addEventListener("recovery_request:accepted", handleAccepted);
-    return () => window.removeEventListener("recovery_request:accepted", handleAccepted);
-  }, [navigate]);
-
-  useEffect(() => {
-    if (!canManageUsers || requests.length === 0) return;
-    const now = Date.now();
-    const nextExpiry = requests.reduce((soonest, request) => {
-      const expiresAt = new Date(request.expires_at).getTime();
-      if (!Number.isFinite(expiresAt) || expiresAt <= now) return soonest;
-      return Math.min(soonest, expiresAt);
-    }, Number.POSITIVE_INFINITY);
-
-    if (!Number.isFinite(nextExpiry)) {
-      setRequests(prev =>
-        prev.filter(request => new Date(request.expires_at).getTime() > Date.now())
-      );
-      return;
-    }
-
-    const timeout = window.setTimeout(
-      () => {
-        setRequests(prev =>
-          prev.filter(request => new Date(request.expires_at).getTime() > Date.now())
-        );
-      },
-      Math.max(nextExpiry - now, 0) + 250
-    );
-    return () => window.clearTimeout(timeout);
-  }, [canManageUsers, requests]);
 
   const handleSubmit = async (
     values: { email: string },
     helpers: FormikHelpers<{ email: string }>
   ) => {
-    setError(null);
     helpers.setStatus(undefined);
     try {
-      const guestSessionId = getGuestSessionId();
-      const data = await forgotPassword(values.email, guestSessionId);
+      await forgotPassword(values.email);
       setSent(true);
-      setOwnRequest(data.request ?? null);
-      if (data.request?.id) {
-        rememberPendingRecoveryRequest(data.request.id, guestSessionId);
-      }
-      setOwnRequestMessage(
-        data.status === "already_pending"
-          ? "You already have a request pending."
-          : data.message || null
-      );
-      fetchRequests();
     } catch (err) {
       helpers.setStatus(err instanceof Error ? err.message : "Something went wrong");
     }
   };
 
-  const acceptRequest = async (request: RecoveryRequest) => {
-    setError(null);
-    setActionRequestId(request.id);
-    try {
-      const result = await acceptRecoveryRequest(request.id);
-      if (!result.delivered) {
-        setError("Accepted, but the requester is no longer connected.");
-      }
-      fetchRequests();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to accept recovery request");
-      fetchRequests();
-    } finally {
-      setActionRequestId(null);
-    }
-  };
-
-  const rejectRequest = async (request: RecoveryRequest) => {
-    setError(null);
-    setActionRequestId(request.id);
-    try {
-      await rejectRecoveryRequest(request.id);
-      fetchRequests();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reject recovery request");
-    } finally {
-      setActionRequestId(null);
-    }
-  };
-
-  const columns = useMemo<TableColumn<RecoveryRequest>[]>(
-    () => [
-      {
-        header: "Email",
-        width: "minmax(180px, 1.6fr)",
-        className: "table-view__cell--bold",
-        cell: request => request.email,
-      },
-      {
-        header: "Account",
-        width: "minmax(160px, 1.2fr)",
-        cell: request => (
-          <div className="recovery-account-cell">
-            <span>{request.display_name || request.username}</span>
-            <span>@{request.username}</span>
-          </div>
-        ),
-      },
-      {
-        header: "Requested",
-        width: "minmax(120px, 0.9fr)",
-        className: "table-view__cell--muted",
-        cell: request =>
-          new Date(request.created_at).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-      },
-      {
-        header: "Expires",
-        width: "minmax(120px, 0.9fr)",
-        className: "table-view__cell--muted",
-        cell: request =>
-          new Date(request.expires_at).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-      },
-      {
-        header: "Actions",
-        width: "116px",
-        className: "table-view__cell--actions",
-        cell: request => (
-          <div className="recovery-actions">
-            <button
-              type="button"
-              className="recovery-action-btn recovery-action-btn--accept"
-              onClick={() => acceptRequest(request)}
-              disabled={actionRequestId === request.id}
-              title="Accept and open account"
-            >
-              <ShieldCheck size={16} />
-            </button>
-            <button
-              type="button"
-              className="recovery-action-btn recovery-action-btn--reject"
-              onClick={() => rejectRequest(request)}
-              disabled={actionRequestId === request.id}
-              title="Reject request"
-            >
-              <Trash2 size={16} />
-            </button>
-          </div>
-        ),
-      },
-    ],
-    [actionRequestId]
-  );
-
   return (
     <div className="auth-page">
-      <div className={`auth-container ${canManageUsers ? "auth-container--wide" : ""}`}>
+      <div className="auth-container">
         {sent ? (
           <ContentFlatCard className="auth-card">
             <FormSectionIntro
               icon={<ShieldCheck size={18} />}
-              title="Recover Account"
-              description="Your request is ready for administrator review"
+              title="Check your email"
+              description="Password reset instructions have been requested"
             />
             <div className="section__content auth-form">
-              {error && (
-                <div className="auth-error">
-                  <AlertCircle size={20} />
-                  <span>{error}</span>
-                </div>
-              )}
-
               <div className="auth-success">
                 <CheckCircle size={20} />
                 <span>
-                  {ownRequestMessage ??
-                    "If an account with that email exists, your request has been queued for review."}
+                  If an account exists for that address, we sent a one-time password reset link.
                 </span>
               </div>
-              {ownRequest && (
-                <div className="recovery-own-request">
-                  <span>Requested {new Date(ownRequest.created_at).toLocaleString()}</span>
-                  <span>
-                    Expires{" "}
-                    {new Date(ownRequest.expires_at).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </div>
-              )}
-
-              <div className="auth-divider">
-                <span>or</span>
-              </div>
-
               <div className="auth-toggle">
                 <p>
                   Remember your password?
@@ -277,73 +58,40 @@ export default function ForgotPasswordPage() {
             formClassName="auth-form"
             variant="grouped"
             icon={<ShieldCheck size={18} />}
-            title="Recover Account"
-            description="Enter your email and an administrator can review your request"
+            title="Reset your password"
+            description="Enter your account email and we’ll send a secure reset link"
             initialValues={{ email: "" }}
             validate={values => (!values.email.trim() ? { email: "Email is required" } : {})}
             onSubmit={handleSubmit}
-            submitLabel="Request Account Recovery"
+            submitLabel="Send reset link"
             afterActions={
-              <>
-                <div className="auth-divider">
-                  <span>or</span>
-                </div>
-                <div className="auth-toggle">
-                  <p>
-                    Remember your password?
-                    <Link to="/login" className="auth-toggle-btn">
-                      Log in
-                    </Link>
-                  </p>
-                </div>
-              </>
+              <div className="auth-toggle">
+                <p>
+                  Remember your password?
+                  <Link to="/login" className="auth-toggle-btn">
+                    Log in
+                  </Link>
+                </p>
+              </div>
             }
           >
             {formik => (
-              <>
-                {error && (
-                  <div className="auth-error">
-                    <AlertCircle size={20} />
-                    <span>{error}</span>
-                  </div>
-                )}
-                <FormField
-                  name="email"
-                  label="Account email"
-                  type="email"
-                  help="Use the email associated with the account."
-                  icon={<Mail size={20} />}
-                  variant="grouped"
-                  placeholder="Enter your email address"
-                  disabled={formik.isSubmitting}
-                />
-              </>
+              <FormField
+                name="email"
+                label="Account email"
+                type="email"
+                help="Use the email associated with the account."
+                icon={<Mail size={20} />}
+                variant="grouped"
+                placeholder="Enter your email address"
+                disabled={formik.isSubmitting}
+              />
             )}
           </ManagedForm>
         )}
-
-        <ContentFlatCard style={{ marginTop: "2rem" }}>
-          {canManageUsers && (
-            <TableView
-              data={requests}
-              columns={columns}
-              rowKey={request => request.id}
-              maxHeight={320}
-              emptyState={
-                <div className="recovery-empty-state">
-                  {requestsLoading
-                    ? "Loading recovery requests..."
-                    : "No pending recovery requests."}
-                </div>
-              }
-            />
-          )}
-        </ContentFlatCard>
-
         <div className="auth-bg-decoration">
           <div className="decoration-circle decoration-circle-1" />
           <div className="decoration-circle decoration-circle-2" />
-          {/* <div className="decoration-circle decoration-circle-3" /> */}
         </div>
       </div>
     </div>

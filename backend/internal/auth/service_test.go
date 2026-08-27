@@ -159,26 +159,59 @@ func TestRequireMFAStoresReasonAndAction(t *testing.T) {
 	assert.Equal(t, "revoke session", status.Action)
 }
 
-func TestRecoveryChallengeActionLabel(t *testing.T) {
-	assert.Equal(t, "approve password recovery", recoveryChallengeActionLabel("accept"))
-	assert.Equal(t, "reject password recovery", recoveryChallengeActionLabel("reject"))
+func TestPasswordResetAndVerificationTokensAreHashOnlyAndSingleUse(t *testing.T) {
+	svc, repo, users := newTestService()
+	user := users.mustCreate(t, "tokens@example.com")
+	require.NoError(t, repo.CreateCredentialHash(user.ID, "OriginalPassword1!"))
+
+	resetToken, err := svc.CreatePasswordResetToken(context.Background(), user.ID)
+	require.NoError(t, err)
+	require.NotEmpty(t, resetToken)
+	_, rawStored := repo.resetTokens[resetToken]
+	assert.False(t, rawStored, "raw reset token must not be stored")
+	assert.Contains(t, repo.resetTokens, tokenDigest(resetToken))
+
+	resetUser, err := svc.ResetPasswordWithToken(context.Background(), resetToken, "ReplacementPassword2!")
+	require.NoError(t, err)
+	assert.Equal(t, user.ID, resetUser.ID)
+	_, err = svc.ResetPasswordWithToken(context.Background(), resetToken, "AnotherPassword3!")
+	assert.ErrorIs(t, err, ErrInvalidOrExpiredToken)
+
+	verificationToken, err := svc.CreateEmailVerificationToken(context.Background(), user.ID)
+	require.NoError(t, err)
+	_, rawStored = repo.verificationTokens[verificationToken]
+	assert.False(t, rawStored, "raw verification token must not be stored")
+	verifiedID, err := svc.VerifyEmail(context.Background(), verificationToken)
+	require.NoError(t, err)
+	assert.Equal(t, user.ID, verifiedID)
+	_, err = svc.VerifyEmail(context.Background(), verificationToken)
+	assert.ErrorIs(t, err, ErrInvalidOrExpiredToken)
+}
+
+type fakeStoredToken struct {
+	userID    int64
+	expiresAt time.Time
 }
 
 type fakeAuthRepository struct {
-	nextID      int64
-	credentials map[int64]*models.Credential
-	totpSecrets map[int64]*models.TOTPSecret
-	backupCodes map[int64][]*models.BackupCode
-	mfaStatuses map[int64]models.MFAChallengeStatus
+	nextID             int64
+	credentials        map[int64]*models.Credential
+	totpSecrets        map[int64]*models.TOTPSecret
+	backupCodes        map[int64][]*models.BackupCode
+	mfaStatuses        map[int64]models.MFAChallengeStatus
+	resetTokens        map[string]fakeStoredToken
+	verificationTokens map[string]fakeStoredToken
 }
 
 func newFakeAuthRepository() *fakeAuthRepository {
 	return &fakeAuthRepository{
-		nextID:      1,
-		credentials: map[int64]*models.Credential{},
-		totpSecrets: map[int64]*models.TOTPSecret{},
-		backupCodes: map[int64][]*models.BackupCode{},
-		mfaStatuses: map[int64]models.MFAChallengeStatus{},
+		nextID:             1,
+		credentials:        map[int64]*models.Credential{},
+		totpSecrets:        map[int64]*models.TOTPSecret{},
+		backupCodes:        map[int64][]*models.BackupCode{},
+		mfaStatuses:        map[int64]models.MFAChallengeStatus{},
+		resetTokens:        map[string]fakeStoredToken{},
+		verificationTokens: map[string]fakeStoredToken{},
 	}
 }
 
@@ -225,6 +258,47 @@ func (r *fakeAuthRepository) UpdatePasswordHash(ctx context.Context, userID int6
 	cred.PasswordHash = newHash
 	cred.UpdatedAt = time.Now()
 	return nil
+}
+
+func (r *fakeAuthRepository) ReplacePasswordResetToken(_ context.Context, userID int64, tokenHash string, expiresAt time.Time) error {
+	for hash, token := range r.resetTokens {
+		if token.userID == userID {
+			delete(r.resetTokens, hash)
+		}
+	}
+	r.resetTokens[tokenHash] = fakeStoredToken{userID: userID, expiresAt: expiresAt}
+	return nil
+}
+
+func (r *fakeAuthRepository) ConsumePasswordResetToken(ctx context.Context, tokenHash, passwordHash string, now time.Time) (int64, error) {
+	token, ok := r.resetTokens[tokenHash]
+	if !ok || !now.Before(token.expiresAt) {
+		return 0, sql.ErrNoRows
+	}
+	delete(r.resetTokens, tokenHash)
+	if err := r.UpdatePasswordHash(ctx, token.userID, passwordHash); err != nil {
+		return 0, err
+	}
+	return token.userID, nil
+}
+
+func (r *fakeAuthRepository) ReplaceEmailVerificationToken(_ context.Context, userID int64, tokenHash string, expiresAt time.Time) error {
+	for hash, token := range r.verificationTokens {
+		if token.userID == userID {
+			delete(r.verificationTokens, hash)
+		}
+	}
+	r.verificationTokens[tokenHash] = fakeStoredToken{userID: userID, expiresAt: expiresAt}
+	return nil
+}
+
+func (r *fakeAuthRepository) ConsumeEmailVerificationToken(_ context.Context, tokenHash string, now time.Time) (int64, error) {
+	token, ok := r.verificationTokens[tokenHash]
+	if !ok || !now.Before(token.expiresAt) {
+		return 0, sql.ErrNoRows
+	}
+	delete(r.verificationTokens, tokenHash)
+	return token.userID, nil
 }
 
 func (r *fakeAuthRepository) CreateTOTPSecret(ctx context.Context, userID int64, secret string) (*models.TOTPSecret, error) {

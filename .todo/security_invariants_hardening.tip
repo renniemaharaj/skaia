@@ -12,6 +12,9 @@
 - **Phase 7: Adversarial verification** - ⬜ Not started
 
 ### Completed Work
+- [x] 2026-08-26: Split the demonstrated guest-session recovery vulnerability
+  and adjacent SMTP/token work into `.todo/email_recovery_hardening` for a
+  bounded worker pass; broader policy and session-risk phases remain unchanged.
 - [x] 2026-06-19: Added persisted MFA `reason_code` and server-owned `action`
   context with fresh-schema and idempotent migration support.
 - [x] 2026-06-19: IP changes, administrator security reviews, expired trust,

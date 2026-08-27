@@ -107,6 +107,10 @@ telemetry API exposes bounded counters and no identities or payloads.
 - Section-preset create/update/delete calls a required service-level
   `home.manage` policy. JWT route grouping and handler checks are not the
   authorization boundary, and permission-store failures deny mutation.
+- Site SEO and typography writes call a service-level `home.manage` policy and
+  fail closed on a missing actor, missing policy, permission lookup failure, or
+  denial. Custom font families are normalized against a strict name grammar;
+  URLs and CSS punctuation are rejected before persistence or broadcast.
 - Documentation creation requires service-level `docs.create`; every set,
   section, article, navigation, delete, and restore mutation requires owner or
   service-level `docs.manage`. Private reads and WebSocket subscriptions reuse

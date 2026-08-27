@@ -18,11 +18,13 @@ func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.svc.VerifyEmail(r.Context(), req.Token); err != nil {
+	userID, err := h.svc.VerifyEmail(r.Context(), req.Token)
+	if err != nil {
 		log.Printf("user.Handler.verifyEmail: %v", err)
 		utils.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	h.propagateAuthUser(r.Context(), userID, nil)
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"status": "email verified"})
 }
 
@@ -55,8 +57,7 @@ func (h *Handler) ResendVerification(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go func(uname, uemail, tok string) {
-		html := iemail.VerifyEmailHTML(uname, tok)
-		if err := h.email.Send(uemail, "Verify Your Email", html); err != nil {
+		if err := h.email.SendMessage(uemail, iemail.VerifyEmailMessage(uname, tok)); err != nil {
 			log.Printf("user.Handler.resendVerification: send email to %s: %v", uemail, err)
 		}
 	}(user.Username, user.Email, token)

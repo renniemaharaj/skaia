@@ -39,12 +39,11 @@ type Client struct {
 	registered  chan bool
 	apiSem      chan struct{}
 	// Presence fields - written under Hub.mu.Lock via presenceUpdates.
-	Route            string
-	UserName         string
-	Avatar           string
-	IsMuted          bool
-	GuestSessionID   string
-	RecoveryAccepted bool
+	Route          string
+	UserName       string
+	Avatar         string
+	IsMuted        bool
+	GuestSessionID string
 	// Per-client rate limiters - used only from ReadPump (single goroutine).
 	chatLimit      rateBucket
 	cursorLimit    rateBucket

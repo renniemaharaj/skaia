@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/skaia/backend/database"
 	"github.com/skaia/backend/models"
@@ -12,6 +13,10 @@ type Repository interface {
 	CreateCredential(ctx context.Context, userID int64, passwordHash string) (*models.Credential, error)
 	GetCredentialByUserID(ctx context.Context, userID int64) (*models.Credential, error)
 	UpdatePasswordHash(ctx context.Context, userID int64, newHash string) error
+	ReplacePasswordResetToken(ctx context.Context, userID int64, tokenHash string, expiresAt time.Time) error
+	ConsumePasswordResetToken(ctx context.Context, tokenHash, passwordHash string, now time.Time) (int64, error)
+	ReplaceEmailVerificationToken(ctx context.Context, userID int64, tokenHash string, expiresAt time.Time) error
+	ConsumeEmailVerificationToken(ctx context.Context, tokenHash string, now time.Time) (int64, error)
 
 	CreateTOTPSecret(ctx context.Context, userID int64, secret string) (*models.TOTPSecret, error)
 	GetTOTPSecretByUserID(ctx context.Context, userID int64) (*models.TOTPSecret, error)
@@ -80,6 +85,68 @@ func (r *SQLRepository) UpdatePasswordHash(ctx context.Context, userID int64, ne
 		UPDATE auth_credentials SET password_hash=$1,cleared_at=NULL,updated_at=NOW()
 		WHERE user_id=$2 AND EXISTS (SELECT 1 FROM users WHERE id=$2 AND deleted_at IS NULL)`, newHash, userID)
 	return err
+}
+
+func (r *SQLRepository) ReplacePasswordResetToken(ctx context.Context, userID int64, tokenHash string, expiresAt time.Time) error {
+	_, err := r.executor(ctx).ExecContext(ctx, `
+		WITH cleared AS (
+			UPDATE password_reset_tokens SET token=NULL,used=TRUE,cleared_at=COALESCE(cleared_at,NOW())
+			WHERE user_id=$1 AND cleared_at IS NULL
+		)
+		INSERT INTO password_reset_tokens (user_id,token,expires_at) VALUES ($1,$2,$3)`, userID, tokenHash, expiresAt)
+	return err
+}
+
+func (r *SQLRepository) ConsumePasswordResetToken(ctx context.Context, tokenHash, passwordHash string, now time.Time) (int64, error) {
+	var userID int64
+	err := r.executor(ctx).QueryRowContext(ctx, `
+		WITH claimed AS (
+			UPDATE password_reset_tokens
+			SET token=NULL,used=TRUE,cleared_at=NOW()
+			WHERE id=(
+				SELECT id FROM password_reset_tokens
+				WHERE token=$1 AND used=FALSE AND cleared_at IS NULL AND expires_at>$3
+				FOR UPDATE SKIP LOCKED LIMIT 1
+			)
+			RETURNING user_id
+		), updated AS (
+			UPDATE auth_credentials c SET password_hash=$2,cleared_at=NULL,updated_at=NOW()
+			FROM claimed WHERE c.user_id=claimed.user_id
+			RETURNING c.user_id
+		)
+		SELECT user_id FROM updated`, tokenHash, passwordHash, now).Scan(&userID)
+	return userID, err
+}
+
+func (r *SQLRepository) ReplaceEmailVerificationToken(ctx context.Context, userID int64, tokenHash string, expiresAt time.Time) error {
+	_, err := r.executor(ctx).ExecContext(ctx, `
+		WITH cleared AS (
+			UPDATE email_verification_tokens SET token=NULL,cleared_at=COALESCE(cleared_at,NOW())
+			WHERE user_id=$1 AND cleared_at IS NULL
+		)
+		INSERT INTO email_verification_tokens (user_id,token,expires_at) VALUES ($1,$2,$3)`, userID, tokenHash, expiresAt)
+	return err
+}
+
+func (r *SQLRepository) ConsumeEmailVerificationToken(ctx context.Context, tokenHash string, now time.Time) (int64, error) {
+	var userID int64
+	err := r.executor(ctx).QueryRowContext(ctx, `
+		WITH claimed AS (
+			UPDATE email_verification_tokens
+			SET token=NULL,cleared_at=NOW()
+			WHERE id=(
+				SELECT id FROM email_verification_tokens
+				WHERE token=$1 AND cleared_at IS NULL AND expires_at>$2
+				FOR UPDATE SKIP LOCKED LIMIT 1
+			)
+			RETURNING user_id
+		), verified AS (
+			UPDATE users u SET email_verified=TRUE,email_verified_at=COALESCE(email_verified_at,NOW()),updated_at=NOW()
+			FROM claimed WHERE u.id=claimed.user_id AND u.deleted_at IS NULL
+			RETURNING u.id
+		)
+		SELECT id FROM verified`, tokenHash, now).Scan(&userID)
+	return userID, err
 }
 
 // TOTP methods

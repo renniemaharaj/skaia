@@ -111,14 +111,7 @@ func (h *Hub) handleUnregister(client *Client) {
 	}
 	h.mu.Unlock()
 
-	h.mu.RLock()
-	guestSessionID := client.GuestSessionID
-	recoveryAccepted := client.RecoveryAccepted
-	h.mu.RUnlock()
 	log.Printf("ws: left    %s", clientLabel(client))
-	if client.UserID == 0 && guestSessionID != "" && !recoveryAccepted && h.OnGuestSessionClosed != nil {
-		go h.OnGuestSessionClosed(guestSessionID)
-	}
 	h.sendJoinLeaveChat(client, "leave")
 }
 

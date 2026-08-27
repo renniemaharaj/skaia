@@ -1,13 +1,20 @@
 package email
 
 import (
+	"bytes"
+	"crypto/rand"
 	"crypto/tls"
+	"encoding/hex"
 	"fmt"
 	log "github.com/skaia/backend/internal/syslog"
+	"mime"
+	"mime/quotedprintable"
+	"net/mail"
 	"net/smtp"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -23,6 +30,12 @@ type Sender struct {
 	password string
 	from     string
 	fromName string
+}
+
+type Message struct {
+	Subject string
+	Text    string
+	HTML    string
 }
 
 // NewSenderFromEnv creates a Sender using SMTP_* environment variables.
@@ -64,21 +77,50 @@ func NewSenderFromEnv() *Sender {
 	}
 }
 
-// Send delivers an HTML email to the given recipient.
+// Send preserves the legacy HTML-only call shape.
 func (s *Sender) Send(to, subject, htmlBody string) error {
+	return s.SendMessage(to, Message{Subject: subject, Text: "Please view this message in an HTML-capable email client.", HTML: htmlBody})
+}
+
+// SendMessage delivers equivalent plain-text and HTML bodies.
+func (s *Sender) SendMessage(to string, message Message) error {
 	if s == nil {
 		return fmt.Errorf("email sender not configured")
 	}
+	if strings.ContainsAny(message.Subject, "\r\n") || strings.TrimSpace(message.Subject) == "" {
+		return fmt.Errorf("email subject is invalid")
+	}
+	fromAddress, err := mail.ParseAddress(s.from)
+	if err != nil || fromAddress.Address != s.from {
+		return fmt.Errorf("email sender address is invalid")
+	}
+	toAddress, err := mail.ParseAddress(to)
+	if err != nil || toAddress.Address != to {
+		return fmt.Errorf("email recipient address is invalid")
+	}
+	if strings.ContainsAny(s.fromName, "\r\n") {
+		return fmt.Errorf("email sender name is invalid")
+	}
 
-	fromHeader := fmt.Sprintf("%s <%s>", s.fromName, s.from)
+	fromHeader := (&mail.Address{Name: s.fromName, Address: s.from}).String()
+	boundary, err := messageBoundary()
+	if err != nil {
+		return fmt.Errorf("email boundary: %w", err)
+	}
 	headers := []string{
 		"From: " + fromHeader,
-		"To: " + to,
-		"Subject: " + subject,
+		"To: " + toAddress.String(),
+		"Subject: " + mime.QEncoding.Encode("UTF-8", message.Subject),
+		"Date: " + time.Now().Format(time.RFC1123Z),
 		"MIME-Version: 1.0",
-		"Content-Type: text/html; charset=\"UTF-8\"",
+		`Content-Type: multipart/alternative; boundary="` + boundary + `"`,
 	}
-	msg := []byte(strings.Join(headers, "\r\n") + "\r\n\r\n" + htmlBody)
+	var body bytes.Buffer
+	body.WriteString(strings.Join(headers, "\r\n") + "\r\n\r\n")
+	writePart(&body, boundary, "text/plain", message.Text)
+	writePart(&body, boundary, "text/html", message.HTML)
+	body.WriteString("--" + boundary + "--\r\n")
+	msg := body.Bytes()
 
 	addr := fmt.Sprintf("%s:%d", s.host, s.port)
 
@@ -92,6 +134,24 @@ func (s *Sender) Send(to, subject, htmlBody string) error {
 		return s.sendTLS(addr, auth, msg, to)
 	}
 	return smtp.SendMail(addr, auth, s.from, []string{to}, msg)
+}
+
+func messageBoundary() (string, error) {
+	b := make([]byte, 18)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return "skaia-" + hex.EncodeToString(b), nil
+}
+
+func writePart(dst *bytes.Buffer, boundary, contentType, content string) {
+	dst.WriteString("--" + boundary + "\r\n")
+	dst.WriteString("Content-Type: " + contentType + "; charset=UTF-8\r\n")
+	dst.WriteString("Content-Transfer-Encoding: quoted-printable\r\n\r\n")
+	w := quotedprintable.NewWriter(dst)
+	_, _ = w.Write([]byte(content))
+	_ = w.Close()
+	dst.WriteString("\r\n")
 }
 
 // sendTLS handles implicit TLS (port 465).

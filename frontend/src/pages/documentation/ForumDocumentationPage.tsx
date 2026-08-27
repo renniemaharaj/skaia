@@ -136,7 +136,7 @@ export default function ForumDocumentationPage() {
       {!thread && <div className="documentation-empty"><h1>Forum documentation</h1><p>This forum does not have any articles yet.</p></div>}
       {thread && (
         <>
-          <header className="documentation-article__hero"><h1>{thread.title}</h1><p>Updated {new Date(thread.updated_at).toLocaleDateString()}</p></header>
+          <header className="documentation-article__hero"><h3>{thread.title}</h3><p>Updated {new Date(thread.updated_at).toLocaleDateString()}</p></header>
           <RichTextRenderer className="ProseMirror" html={indexed.html} />
           <section aria-label="Discussion"><ViewThreadComments threadId={String(thread.id)} /></section>
         </>

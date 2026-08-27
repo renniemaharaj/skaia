@@ -1,0 +1,31 @@
+<--/------->
+
+## email_recovery_hardening
+
+### Current Progress
+- **Phase 1: Evidence and contract inventory** - ✅ Complete
+- **Phase 2: Token and handler implementation** - 🟡 In progress
+- **Phase 3: Mail transport and templates** - ⬜ Not started
+- **Phase 4: WebSocket and frontend removal** - ⬜ Not started
+- **Phase 5: Specs and verification** - ⬜ Not started
+
+### Completed Work
+- [x] 2026-08-26: Removed the unrelated general WebSocket rerouter hardening
+  changes from this worktree. The retained WebSocket/frontend deletions are
+  limited to the obsolete administrator-reviewed recovery delivery contract.
+- [x] 2026-08-26: The complete backend test suite passes; focused
+  SEO/documentation frontend tests and the production build pass.
+- [x] 2026-08-26: Confirmed the recovery exploit from browser-controlled
+  `guest_session_id` through administrator approval to WebSocket credential delivery.
+- [x] 2026-08-26: Confirmed the existing reset/verification tables and SMTP sender
+  can be reused; no new mail subsystem or migration is required.
+- [x] 2026-08-26: Removed the backend administrator recovery routes and handler
+  path, and began hash-only single-use token repository/service wiring.
+
+### Next Steps
+- [ ] Complete and test atomic reset and verification token behavior.
+- [ ] Complete safe multipart SMTP transport and the light transactional templates.
+- [ ] Remove remaining recovery WebSocket/frontend contracts and dead styles.
+- [ ] Update durable specs and run focused plus full backend/frontend checks.
+
+<--/------->

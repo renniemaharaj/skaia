@@ -17,14 +17,22 @@ import (
 )
 
 var ErrInvalidLegalConfig = errors.New("invalid legal configuration")
+var ErrInvalidSEOConfig = errors.New("invalid SEO configuration")
+var ErrConfigMutationForbidden = errors.New("site configuration mutation forbidden")
 
 var legalIdentifier = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 var legalSlug = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+var googleFontFamily = regexp.MustCompile(`^[A-Za-z](?:[A-Za-z0-9 -]{0,62}[A-Za-z0-9])?$`)
 
 // Service wraps the repository with business logic.
 type Service struct {
 	repo          Repository
 	invalidateSEO func()
+	policy        ManagementPolicy
+}
+
+type ManagementPolicy interface {
+	HasPermission(userID int64, permission string) (bool, error)
 }
 
 type ServiceOption func(*Service)
@@ -47,6 +55,14 @@ func WithRedisClient(rdb *redis.Client) ServiceOption {
 func WithSEOInvalidator(invalidate func()) ServiceOption {
 	return func(s *Service) {
 		s.invalidateSEO = invalidate
+	}
+}
+
+// WithManagementPolicy supplies the fail-closed permission authority for
+// privileged site-configuration writes.
+func WithManagementPolicy(policy ManagementPolicy) ServiceOption {
+	return func(s *Service) {
+		s.policy = policy
 	}
 }
 
@@ -82,6 +98,60 @@ func (s *Service) DeleteConfig(key string) error {
 		s.invalidateSEO()
 	}
 	return nil
+}
+
+// SaveSEO validates the public typography value and enforces site management at
+// the service boundary before persisting a partial SEO configuration update.
+func (s *Service) SaveSEO(actorID int64, valueJSON string) ([]byte, error) {
+	if s == nil || s.policy == nil || actorID <= 0 {
+		return nil, ErrConfigMutationForbidden
+	}
+	allowed, err := s.policy.HasPermission(actorID, "home.manage")
+	if err != nil || !allowed {
+		return nil, ErrConfigMutationForbidden
+	}
+
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(valueJSON), &fields); err != nil || fields == nil {
+		return nil, ErrInvalidSEOConfig
+	}
+	allowedFields := map[string]struct{}{
+		"title": {}, "description": {}, "og_image": {}, "dom_skin": {},
+		"dom_video": {}, "particle_style": {}, "font_family": {},
+	}
+	for key, raw := range fields {
+		if _, ok := allowedFields[key]; !ok {
+			return nil, ErrInvalidSEOConfig
+		}
+		var value string
+		if err := json.Unmarshal(raw, &value); err != nil || len(value) > 2048 {
+			return nil, ErrInvalidSEOConfig
+		}
+	}
+	if raw, ok := fields["font_family"]; ok {
+		var family string
+		if err := json.Unmarshal(raw, &family); err != nil {
+			return nil, ErrInvalidSEOConfig
+		}
+		family = strings.Join(strings.Fields(family), " ")
+		if family != "" && !googleFontFamily.MatchString(family) {
+			return nil, ErrInvalidSEOConfig
+		}
+		normalized, err := json.Marshal(family)
+		if err != nil {
+			return nil, err
+		}
+		fields["font_family"] = normalized
+	}
+
+	payload, err := json.Marshal(fields)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.UpsertConfig("seo", string(payload)); err != nil {
+		return nil, err
+	}
+	return payload, nil
 }
 
 func (s *Service) LegalConfig() (*models.LegalConfig, error) {

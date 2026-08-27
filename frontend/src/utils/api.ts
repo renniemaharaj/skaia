@@ -63,22 +63,9 @@ export interface AuthResponse {
   totp_token?: string;
 }
 
-export interface RecoveryRequest {
-  id: string;
-  email: string;
-  user_id: number;
-  username: string;
-  display_name: string;
-  status: string;
-  guest_session_id?: string;
-  created_at: string;
-  expires_at: string;
-}
-
 export interface ForgotPasswordResponse {
   status: string;
   message?: string;
-  request?: RecoveryRequest | null;
 }
 
 // Admin TOTP (2FA) Management
@@ -664,34 +651,10 @@ export async function resendVerificationEmail(): Promise<{ status: string }> {
 }
 
 // Password Reset
-export async function forgotPassword(
-  email: string,
-  guestSessionId?: string
-): Promise<ForgotPasswordResponse> {
+export async function forgotPassword(email: string): Promise<ForgotPasswordResponse> {
   return apiRequest("/auth/forgot-password", {
     method: "POST",
-    body: JSON.stringify({ email, guest_session_id: guestSessionId }),
-  });
-}
-
-export async function listRecoveryRequests(): Promise<RecoveryRequest[]> {
-  return apiRequest<RecoveryRequest[]>("/auth/admin/recovery-requests");
-}
-
-export async function acceptRecoveryRequest(
-  requestId: string
-): Promise<{ status: string; delivered?: boolean }> {
-  return apiRequest<{ status: string; delivered?: boolean }>(
-    `/auth/admin/recovery-requests/${requestId}/accept`,
-    {
-      method: "POST",
-    }
-  );
-}
-
-export async function rejectRecoveryRequest(requestId: string): Promise<{ status: string }> {
-  return apiRequest<{ status: string }>(`/auth/admin/recovery-requests/${requestId}/reject`, {
-    method: "POST",
+    body: JSON.stringify({ email }),
   });
 }
 

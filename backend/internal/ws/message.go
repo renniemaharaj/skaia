@@ -12,63 +12,61 @@ const WebSocketSubprotocolProto = "skaia.proto.v1"
 type MessageType string
 
 const (
-	StoreSync               MessageType = "store:sync"
-	StoreUpdate             MessageType = "store:update"
-	ForumSync               MessageType = "forum:sync"
-	ForumUpdate             MessageType = "forum:update"
-	UserUpdate              MessageType = "user:update"
-	UserJoin                MessageType = "user:join"
-	UserLeave               MessageType = "user:leave"
-	Subscribe               MessageType = "subscribe"
-	Unsubscribe             MessageType = "unsubscribe"
-	Ping                    MessageType = "ping"
-	Presence                MessageType = "presence"                  // client => server: announce route
-	PresenceSync            MessageType = "presence:update"           // server => client: online list
-	Tp                      MessageType = "tp"                        // client => server => target: teleport request
-	GlobalChat              MessageType = "global:chat"               // bidirectional: send / receive global chat
-	GlobalChatHistory       MessageType = "global:chat:history"       // server => client on connect: recent history
-	InboxUpdate             MessageType = "inbox:update"              // server => subscribed clients: conversation changed
-	InboxMsg                MessageType = "inbox:message"             // server => recipient: unread badge ping
-	NotificationMsg         MessageType = "notification"              // server => client: incoming user notification
-	NotificationUpdate      MessageType = "notification:update"       // server => client: notification read/deleted
-	NotificationSync        MessageType = "notification:sync"         // server => client on connect: notification bootstrap
-	CartUpdate              MessageType = "cart:update"               // server => client: user's cart changed
-	OrderUpdate             MessageType = "order:update"              // server => client: order created/updated/deleted
-	RecoveryRequestUpdate   MessageType = "recovery_request:update"   // server => admins: account recovery request changed
-	RecoveryRequestAccepted MessageType = "recovery_request:accepted" // server => requester: account recovery approved
-	ConfigUpdate            MessageType = "config:update"             // server => all: branding/seo/footer/landing changed
-	PageUpdate              MessageType = "page:update"               // server => all: CMS page created/updated/deleted
-	DocumentationUpdate     MessageType = "documentation:update"      // server => clients: documentation manifest/article invalidation
-	TrashUpdate             MessageType = "trash:update"              // server => all: content-free restore invalidation
-	Cursor                  MessageType = "cursor:update"             // client => server => same-route clients: cursor position
-	EventsUpdate            MessageType = "events:update"             // server => admin clients: new audit event
-	VoiceControl            MessageType = "voice:control"             // client => server => client: admin voice chat controls
-	VoiceSignal             MessageType = "voice:signal"              // client => server => target: WebRTC signaling
-	MediaAdd                MessageType = "media:add"                 // client => server: add youtube video
-	MediaRemove             MessageType = "media:remove"              // client => server: remove queue item
-	MediaAction             MessageType = "media:action"              // client => server: pause/resume queue
-	MediaEnded              MessageType = "media:ended"               // client => server: current video ended
-	MediaTransitionStart    MessageType = "media:transition:start"    // client => server: start transition mixing
-	MediaTransition         MessageType = "media:transition"          // client => server: manual transition
-	MediaHistoryClear       MessageType = "media:history:clear"       // client => server: clear route history
-	MediaSync               MessageType = "media:sync"                // server => client: full queue sync
-	MediaSfx                MessageType = "media:sfx"                 // client => server => room: play sound effect
-	MediaScraperJobs        MessageType = "mediascraper:jobs"         // server => all: update active jobs count
-	GrengoJobUpdate         MessageType = "grengo:job_update"         // server => client: async job update
-	GrengoJobAction         MessageType = "grengo:action"             // client => server => grengo: trigger export
-	GrengoActionAck         MessageType = "grengo:action_ack"         // server => client: grengo action accepted/rejected
-	GrengoStatsUpdate       MessageType = "grengo:stats_update"       // server => client: live stats stream
-	GrengoStorageUpdate     MessageType = "grengo:storage_update"     // server => client: live storage stream
-	GrengoHardwareUpdate    MessageType = "grengo:hardware_update"    // server => client: live hardware stream
-	MediaScraperResult      MessageType = "mediascraper:result"       // server => all: job completion
-	MediaScraperStarted     MessageType = "mediascraper:started"      // server => all: job started processing
-	MediaScraperDropped     MessageType = "mediascraper:dropped"      // server => all: job cleared and back to pending
-	LogsStream              MessageType = "logs:stream"               // server => subscribed clients: realtime log line
-	ProvisioningProgress    MessageType = "provisioning:progress"     // server => subscribed clients: live provisioning log line
-	ProvisioningStatus      MessageType = "provisioning:status"       // server => subscribed + admin clients: instance status changed
-	ApiRequest              MessageType = "api:request"               // client => server: multiplexed API request
-	ApiResponse             MessageType = "api:response"              // server => client: multiplexed API response
-	ErrorMessage            MessageType = "error"
+	StoreSync            MessageType = "store:sync"
+	StoreUpdate          MessageType = "store:update"
+	ForumSync            MessageType = "forum:sync"
+	ForumUpdate          MessageType = "forum:update"
+	UserUpdate           MessageType = "user:update"
+	UserJoin             MessageType = "user:join"
+	UserLeave            MessageType = "user:leave"
+	Subscribe            MessageType = "subscribe"
+	Unsubscribe          MessageType = "unsubscribe"
+	Ping                 MessageType = "ping"
+	Presence             MessageType = "presence"               // client => server: announce route
+	PresenceSync         MessageType = "presence:update"        // server => client: online list
+	Tp                   MessageType = "tp"                     // client => server => target: teleport request
+	GlobalChat           MessageType = "global:chat"            // bidirectional: send / receive global chat
+	GlobalChatHistory    MessageType = "global:chat:history"    // server => client on connect: recent history
+	InboxUpdate          MessageType = "inbox:update"           // server => subscribed clients: conversation changed
+	InboxMsg             MessageType = "inbox:message"          // server => recipient: unread badge ping
+	NotificationMsg      MessageType = "notification"           // server => client: incoming user notification
+	NotificationUpdate   MessageType = "notification:update"    // server => client: notification read/deleted
+	NotificationSync     MessageType = "notification:sync"      // server => client on connect: notification bootstrap
+	CartUpdate           MessageType = "cart:update"            // server => client: user's cart changed
+	OrderUpdate          MessageType = "order:update"           // server => client: order created/updated/deleted
+	ConfigUpdate         MessageType = "config:update"          // server => all: branding/seo/footer/landing changed
+	PageUpdate           MessageType = "page:update"            // server => all: CMS page created/updated/deleted
+	DocumentationUpdate  MessageType = "documentation:update"   // server => clients: documentation manifest/article invalidation
+	TrashUpdate          MessageType = "trash:update"           // server => all: content-free restore invalidation
+	Cursor               MessageType = "cursor:update"          // client => server => same-route clients: cursor position
+	EventsUpdate         MessageType = "events:update"          // server => admin clients: new audit event
+	VoiceControl         MessageType = "voice:control"          // client => server => client: admin voice chat controls
+	VoiceSignal          MessageType = "voice:signal"           // client => server => target: WebRTC signaling
+	MediaAdd             MessageType = "media:add"              // client => server: add youtube video
+	MediaRemove          MessageType = "media:remove"           // client => server: remove queue item
+	MediaAction          MessageType = "media:action"           // client => server: pause/resume queue
+	MediaEnded           MessageType = "media:ended"            // client => server: current video ended
+	MediaTransitionStart MessageType = "media:transition:start" // client => server: start transition mixing
+	MediaTransition      MessageType = "media:transition"       // client => server: manual transition
+	MediaHistoryClear    MessageType = "media:history:clear"    // client => server: clear route history
+	MediaSync            MessageType = "media:sync"             // server => client: full queue sync
+	MediaSfx             MessageType = "media:sfx"              // client => server => room: play sound effect
+	MediaScraperJobs     MessageType = "mediascraper:jobs"      // server => all: update active jobs count
+	GrengoJobUpdate      MessageType = "grengo:job_update"      // server => client: async job update
+	GrengoJobAction      MessageType = "grengo:action"          // client => server => grengo: trigger export
+	GrengoActionAck      MessageType = "grengo:action_ack"      // server => client: grengo action accepted/rejected
+	GrengoStatsUpdate    MessageType = "grengo:stats_update"    // server => client: live stats stream
+	GrengoStorageUpdate  MessageType = "grengo:storage_update"  // server => client: live storage stream
+	GrengoHardwareUpdate MessageType = "grengo:hardware_update" // server => client: live hardware stream
+	MediaScraperResult   MessageType = "mediascraper:result"    // server => all: job completion
+	MediaScraperStarted  MessageType = "mediascraper:started"   // server => all: job started processing
+	MediaScraperDropped  MessageType = "mediascraper:dropped"   // server => all: job cleared and back to pending
+	LogsStream           MessageType = "logs:stream"            // server => subscribed clients: realtime log line
+	ProvisioningProgress MessageType = "provisioning:progress"  // server => subscribed clients: live provisioning log line
+	ProvisioningStatus   MessageType = "provisioning:status"    // server => subscribed + admin clients: instance status changed
+	ApiRequest           MessageType = "api:request"            // client => server: multiplexed API request
+	ApiResponse          MessageType = "api:response"           // server => client: multiplexed API response
+	ErrorMessage         MessageType = "error"
 )
 
 // PresenceUser is the public representation of a single online user sent to clients.

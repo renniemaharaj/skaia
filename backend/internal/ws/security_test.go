@@ -78,7 +78,7 @@ func TestClientRejectsServerOnlyAndUnknownMessages(t *testing.T) {
 	hub := NewHub()
 	client := newSecurityTestClient(hub, 0)
 
-	for _, messageType := range []MessageType{ApiResponse, UserUpdate, RecoveryRequestAccepted, PageUpdate, "unknown"} {
+	for _, messageType := range []MessageType{ApiResponse, UserUpdate, PageUpdate, "unknown"} {
 		client.handleMessage(Message{Type: messageType})
 		if len(hub.broadcast) != 0 {
 			t.Fatalf("%q was accepted as a client broadcast", messageType)

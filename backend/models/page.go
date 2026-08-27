@@ -122,6 +122,7 @@ type SEO struct {
 	DomSkin       string `json:"dom_skin"`
 	DomVideo      string `json:"dom_video"`
 	ParticleStyle string `json:"particle_style"`
+	FontFamily    string `json:"font_family"`
 }
 
 // Footer holds the customisable footer content from site_config.

@@ -34,6 +34,10 @@
   - `SectionAnimationControl` now uses `Select` for animation style and `Button unstyled` for compact intensity buttons.
   - `page-builder-core.css` now styles `.section-animation-control .sk-select__native` with explicit padding and `background-image: none`.
   - Verification: `mise exec node@24.16.0 -- npm run build` passes.
+- [x] 2026-08-26: Added site-wide Google Font selection to the shared Visuals
+  settings form with curated defaults, validated custom families, public token
+  application, and fail-closed service-level `home.manage` persistence. Both
+  documentation readers now use the requested compact `h3` article-title scale.
 - [ ] Continue Phase 4: Broaden token/inline-style audit beyond the touched builder/editor files, including global `index.css` checkbox rules and remaining page-builder/layout block inline styles.
 
 <--/------->

@@ -217,8 +217,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 				log.Printf("user.Handler.register: create verification token: %v", err)
 				return
 			}
-			html := iemail.VerifyEmailHTML(uname, token)
-			if err := h.email.Send(uemail, "Verify Your Email", html); err != nil {
+			if err := h.email.SendMessage(uemail, iemail.VerifyEmailMessage(uname, token)); err != nil {
 				log.Printf("user.Handler.register: send verification email to %s: %v", uemail, err)
 			}
 		}(user.ID, user.Username, user.Email)

@@ -247,25 +247,35 @@ func (h *Handler) updateSEO(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body json.RawMessage
+	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, "invalid JSON")
 		return
 	}
-	if err := h.svc.UpsertConfig("seo", string(body)); err != nil {
+	userID, _ := utils.UserIDFromCtx(r)
+	payload, err := h.svc.SaveSEO(userID, string(body))
+	if errors.Is(err, ErrConfigMutationForbidden) {
+		utils.WriteError(w, http.StatusForbidden, "forbidden")
+		return
+	}
+	if errors.Is(err, ErrInvalidSEOConfig) {
+		utils.WriteError(w, http.StatusBadRequest, "invalid site settings")
+		return
+	}
+	if err != nil {
 		log.Printf("config.updateSEO: %v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "save failed")
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(body)
-	userID, _ := utils.UserIDFromCtx(r)
+	w.Write(payload)
 	h.dispatcher.Dispatch(ievents.Job{
 		UserID:   userID,
 		Activity: ievents.ActSEOUpdated,
 		Resource: ievents.ResConfig,
 		IP:       ievents.ClientIP(r),
 		Fn: func() {
-			h.hub.BroadcastConfig("seo_updated", body)
+			h.hub.BroadcastConfig("seo_updated", payload)
 		},
 	})
 }

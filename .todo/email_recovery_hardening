@@ -1,0 +1,55 @@
+# Email Recovery Hardening
+
+## Context
+
+The administrator-reviewed recovery flow bound credential delivery to a
+browser-supplied guest WebSocket identifier. A requester could spoof that
+identifier and receive another account's recovery credentials after approval.
+The repository already has SMTP configuration and token tables, but its reset
+and verification service methods were placeholders and its messages were not a
+complete multipart transactional-email system.
+
+## Goal
+
+- Replace WebSocket credential recovery with email-address ownership proof.
+- Use opaque, hash-only, expiring, single-use reset and verification tokens.
+- Provide consistent light HTML and plain-text transactional templates that
+  work when an administrator configures SMTP.
+- Remove the obsolete recovery routes, UI, protocol messages, and guest-session
+  credential-delivery code.
+- Harden only demonstrated adjacent mail/auth weaknesses without expanding into
+  a general authentication rewrite.
+
+## Non-Goals
+
+- Replace SMTP with a vendor-specific mail API.
+- Redesign JWT/session revocation unless a reported rerouter concern requires it.
+- Build a general notification-template editor.
+
+## Steps
+
+1. Implement atomic token replacement and consumption in the auth repository.
+2. Wire generic, non-enumerating forgot-password delivery and verification.
+3. Add safe multipart SMTP messages and a restrained project-aligned template set.
+4. Remove administrator/WebSocket recovery contracts and simplify the frontend.
+5. Add adversarial token/template/handler tests and update durable specs.
+
+## Verification
+
+- Focused auth, email, WebSocket, and frontend tests.
+- Full backend `go test ./...` with isolated Go caches and a test JWT secret.
+- Frontend tests, lint, and production build.
+- Search for removed recovery message, route, and credential-push contracts.
+
+## References
+
+- `.specs/security_architecture_spec`
+- `.specs/realtime_wss_spec`
+- `.specs/backend_spec`
+- `.specs/frontend_spec`
+- `.routines/worker`
+- `.routines/auditor`
+- `backend/internal/auth`
+- `backend/internal/email`
+- `backend/internal/ws`
+- `frontend/src/components/auth/ForgotPasswordPage.tsx`

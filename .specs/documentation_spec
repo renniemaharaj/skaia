@@ -71,6 +71,9 @@ forum documentation projection, documentation SEO/cache/realtime, or migration
 - `DocumentationShell` owns responsive sidebar/search/navigation, mobile scrim,
   top bar, on-page heading outline, and previous/next links. Drawer controls are
   focusable, labeled, Escape-dismissible, and token styled.
+- Documentation article heroes use the compact global `h3` scale in both the
+  canonical and forum-backed readers so long guide titles do not dominate the
+  reading surface.
 - `/doc` reuses the shared `DirectoryLayout`, `FilterBar`, persisted grid/list
   view control, and `TableView`; documentation does not maintain a parallel
   catalog shell. The new-collection action belongs inside the shared filter bar.

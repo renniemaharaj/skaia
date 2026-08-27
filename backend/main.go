@@ -662,7 +662,11 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 	}
 
 	cfgRepo := icfg.NewRepository(db)
-	cfgSvc := icfg.NewService(cfgRepo, icfg.WithRedisClient(rdb))
+	cfgSvc := icfg.NewService(
+		cfgRepo,
+		icfg.WithRedisClient(rdb),
+		icfg.WithManagementPolicy(userSvc),
+	)
 
 	// Bootstrap hub chat slow-mode from the persisted config so it takes
 	// effect on the first connection rather than waiting for the next toggle.
@@ -1035,7 +1039,6 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		ibible.NewHandler(ibible.NewService(bibleRepo)).Mount(api)
 
 		authHandler := auth.NewHandler(authSvc, hub, dispatcher, emailSender, inboxSvc, userSvc)
-		hub.OnGuestSessionClosed = authHandler.ExpireRecoveryRequestsForGuestSession
 		authhandler.NewHandler(authHandler).Mount(api, imw.JWTAuthMiddleware)
 		isecurity.NewAccountTrustHandler(accountTrustPolicy).Mount(api, imw.JWTAuthMiddleware)
 		isession.NewHandler(isession.NewService(isession.NewSQLRepository(db))).MountPublic(api)

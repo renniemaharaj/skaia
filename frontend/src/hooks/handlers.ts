@@ -7,7 +7,6 @@ import { formatCents } from "../utils/money";
 import { playChatSound, playMessageSound, playNotificationSound } from "../utils/sound";
 import { sendWebSocketMessage } from "../utils/wsProtobuf";
 import { applyWsUpdate } from "../utils/wsRegistry";
-import { consumePendingRecoveryRequest, getGuestSessionId } from "../utils/guestSession";
 
 export interface WebSocketMessage {
   type: string;
@@ -36,7 +35,6 @@ const EVENT_BUS_TYPES = new Set([
   "logs:stream",
   "provisioning:progress",
   "provisioning:status",
-  "recovery_request:update",
   "voice:signal",
 ]);
 
@@ -294,30 +292,4 @@ export const handleConfigUpdate = (payload: WebSocketMessage["payload"]) => {
       detail: { action: payload?.action, data: payload?.data },
     })
   );
-};
-
-export const handleRecoveryAccepted = (
-  payload: any,
-  setCurrentUser: Setter<User | null>,
-  setAccessToken: ValueSetter<string | null>,
-  setRefreshToken: ValueSetter<string | null>
-) => {
-  const request = payload?.data?.request;
-  const auth = payload?.data?.auth;
-  if (!auth?.access_token || !auth?.user) return;
-  if (
-    !request?.id ||
-    !request?.guest_session_id ||
-    request.guest_session_id !== getGuestSessionId() ||
-    !consumePendingRecoveryRequest(request.id, request.guest_session_id)
-  ) {
-    return;
-  }
-  setAccessToken(auth.access_token);
-  if (auth.refresh_token) {
-    setRefreshToken(auth.refresh_token);
-  }
-  setCurrentUser(auth.user);
-  toast.success("Your recovery request was accepted");
-  window.dispatchEvent(new CustomEvent("recovery_request:accepted", { detail: payload }));
 };

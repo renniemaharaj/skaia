@@ -2,6 +2,11 @@ import { FileText, Paintbrush, Trash2 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { uploader } from "../../atoms/uploadAtom";
 import { apiRequest } from "../../utils/api";
+import {
+  SITE_FONT_PRESETS,
+  normalizeSiteFontFamily,
+  siteFontPreset,
+} from "../../utils/siteFont";
 import { FormField, FormFileInput, FormSectionIntro, FormSelect, ManagedForm } from "../form";
 
 interface MetaConfigForm {
@@ -10,9 +15,11 @@ interface MetaConfigForm {
   dom_skin: string;
   dom_video: string;
   particle_style: string;
+  font_family: string;
 }
 
 interface MetaValues extends MetaConfigForm {
+  fontPreset: string;
   ogImageFile: File | null;
   domSkinFile: File | null;
   domVideoFile: File | null;
@@ -38,6 +45,7 @@ export default function MetaControlPanel({
       description="Manage SEO, visuals, and site-wide metadata."
       initialValues={{
         ...initialConfig,
+        fontPreset: siteFontPreset(initialConfig.font_family),
         ogImageFile: null,
         domSkinFile: null,
         domVideoFile: null,
@@ -62,11 +70,14 @@ export default function MetaControlPanel({
         },
       ]}
       submitLabel="Save site settings"
-      validate={values =>
-        category === "seo" && !values.description.trim()
+      validate={values => ({
+        ...(category === "seo" && !values.description.trim()
           ? { description: "Site description is required" }
-          : {}
-      }
+          : {}),
+        ...(values.fontPreset === "custom" && !normalizeSiteFontFamily(values.font_family)
+          ? { font_family: "Enter a family using only letters, numbers, spaces, or hyphens." }
+          : {}),
+      })}
       onSubmit={async (values, helpers) => {
         helpers.setStatus(undefined);
         try {
@@ -79,12 +90,14 @@ export default function MetaControlPanel({
           const dom_video = values.domVideoFile
             ? (await uploader.upload(values.domVideoFile, { uploadType: "video" })).url
             : values.dom_video;
+          const font_family = normalizeSiteFontFamily(values.font_family) ?? "";
           const updated = {
             description: values.description,
             og_image,
             dom_skin,
             dom_video,
             particle_style: values.particle_style,
+            font_family,
           };
           await apiRequest("/config/seo", {
             method: "PUT",
@@ -135,8 +148,37 @@ export default function MetaControlPanel({
             <FormSectionIntro
               icon={<Paintbrush size={18} />}
               title="Visual Settings"
-              description="Customize the site-wide background and particle treatment."
+              description="Customize the site-wide typography, background, and particle treatment."
             />
+            <FormSelect
+              name="fontPreset"
+              label="Site font"
+              block
+              options={[
+                ...SITE_FONT_PRESETS,
+                { value: "custom", label: "Custom Google Font" },
+              ]}
+              onValueChange={value => {
+                if (value !== "custom") {
+                  void formik.setFieldValue("font_family", value);
+                } else if (SITE_FONT_PRESETS.some(option => option.value === formik.values.font_family)) {
+                  void formik.setFieldValue("font_family", "");
+                }
+              }}
+            />
+            <p className="form-help">
+              Choose a Google Font or enter another Google Fonts family.
+            </p>
+            {formik.values.fontPreset === "custom" && (
+              <FormField
+                name="font_family"
+                label="Google Font family"
+                help="Enter the family name exactly as listed on Google Fonts, for example IBM Plex Sans."
+                placeholder="IBM Plex Sans"
+                maxLength={64}
+                required
+              />
+            )}
             <FormSelect
               name="particle_style"
               label="Particle style"

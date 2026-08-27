@@ -21,7 +21,6 @@ import {
   handleInboxMessage,
   handleInboxUpdate,
   handleNotification,
-  handleRecoveryAccepted,
   handleStoreUpdate,
   handleUserUpdate,
 } from "./handlers";
@@ -213,10 +212,6 @@ export const useWebSocketSync = () => {
 
             case "documentation:update":
               window.dispatchEvent(new CustomEvent("documentation:updated", { detail: payload }));
-              return;
-
-            case "recovery_request:accepted":
-              handleRecoveryAccepted(payload, setCurrentUser, setAccessToken, setRefreshToken);
               return;
 
             default:

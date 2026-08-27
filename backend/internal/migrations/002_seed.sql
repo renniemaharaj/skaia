@@ -161,7 +161,8 @@ INSERT INTO site_config (key, value) VALUES
     ('seo', '{
         "title": "",
         "description": "",
-        "og_image": "/banner.png"
+        "og_image": "/banner.png",
+        "font_family": ""
     }'::jsonb),
     ('footer', '{
         "variant": 0,

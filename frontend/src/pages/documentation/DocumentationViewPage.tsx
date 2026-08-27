@@ -274,7 +274,7 @@ export default function DocumentationViewPage({
       {articleView && (
         <>
           <header className="documentation-article__hero">
-            <h1>{articleView.article.title}</h1>
+            <h3>{articleView.article.title}</h3>
             {articleView.article.summary && <p>{articleView.article.summary}</p>}
           </header>
           <RichTextRenderer className="ProseMirror" html={indexed.html} />
