@@ -30,16 +30,24 @@ export default function PublicExternalIdentities({ userId }: { userId: string })
   if (identities.length === 0) return null;
 
   return (
-    <section className="identity-settings__section up-card" aria-labelledby="public-identities-heading">
+    <section
+      className="identity-settings__section up-card"
+      aria-labelledby="public-identities-heading"
+    >
       <div className="identity-settings__heading">
         <div>
-          <h3 id="public-identities-heading"><Link2 size={15} aria-hidden="true" /> Linked identities</h3>
+          <h3 id="public-identities-heading">
+            <Link2 size={15} aria-hidden="true" /> Linked identities
+          </h3>
           <p>Verified accounts this member has chosen to share.</p>
         </div>
       </div>
       <div className="identity-settings__list">
         {identities.map(identity => (
-          <div className="identity-settings__item" key={`${identity.provider_key}:${identity.display_name}`}>
+          <div
+            className="identity-settings__item"
+            key={`${identity.provider_key}:${identity.display_name}`}
+          >
             <div className="identity-settings__item-copy">
               <strong>{identity.display_name}</strong>
               <span>{identity.provider}</span>

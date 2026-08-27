@@ -42,6 +42,21 @@ navigation/narration, WebSocket consumers, or page-builder UX.
   for `subscribe`/`unsubscribe`; it must remain a singleton per browser context.
 - Route pages live under `src/pages`; reusable domain UI lives under
   `src/components`; shared CSS tokens live only in `src/index.css`.
+- `components/ui/` is the only foundation primitive owner. `Button`, `Select`,
+  `Checkbox`, `Surface`, `ComposerInput`, `TextField`/`TextArea`, `GlassMenu`,
+  `PromptContainer`, and shared feedback components own their common semantics,
+  interaction states, and token CSS. `components/form/` is the Formik adapter
+  layer. Files under `components/input/` are deprecated direct re-exports only;
+  they contain no implementation or CSS authority and exist solely for the
+  migration window.
+- Routine application controls use the `Button` action variant; primary and
+  secondary variants are reserved for form or major actions. Existing global
+  `.btn`, local action recipes, domain cards, and specialized tab systems are
+  migration boundaries, not competing foundation APIs. Generic selectable or
+  static containers use `Surface`; domain cards may compose it when their data
+  and layout contract is genuinely shared. Message composition uses
+  `ComposerInput`, while ordinary labeled inputs and textareas use
+  `TextField`/`TextArea` or the deliberate Formik adapters.
 - `MediaPlaceholder` owns URL-keyed empty, loading, ready, and error presentation
   for image, video, and audio content. Its typed layouts preserve compact,
   fixed-frame, fill, and background geometry while exposing native playback,
@@ -418,7 +433,9 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 - Dark mode is `html[data-theme="dark"]`; do not use
   `@media (prefers-color-scheme: dark)`.
 - Use shared shadows; add a token before introducing a new shadow.
-- Card-like containers use `.card`; section containers use `.section`.
+- Legacy card-like containers may use `.card` during the CSS normalization
+  window; new generic static or selectable containers use `Surface`. Section
+  containers use `.section`.
 - Semantic and form-like containers use `.compact-form-card` for the shared transparent
   flat-glass surface while retaining domain layout classes. Form groups keep comfortable
   separation, labels explain their controls, major actions use `Button`, and icon-only
@@ -455,7 +472,13 @@ All UI colors, shadows, radii, and fonts must route through global tokens in
 
 | File | Contract |
 | --- | --- |
-| `src/index.css` | global tokens, `.card`, `.section`, buttons, utilities |
+| `src/index.css` | global tokens, resets, utilities, and temporary legacy recipes |
+| `src/components/ui/Button.tsx` | canonical semantic action primitive |
+| `src/components/ui/Select.tsx` | canonical select/menu trigger primitive |
+| `src/components/ui/Checkbox.tsx` | canonical controlled/uncontrolled checkbox primitive |
+| `src/components/ui/Surface.tsx` | canonical generic static/selectable surface primitive |
+| `src/components/ui/ComposerInput.tsx` | message-composer input responsibility |
+| `src/components/ui/TextField.tsx` | ordinary text-field and textarea primitives |
 | `src/hooks/useWebSocketSync.ts` | WS singleton, message-to-atom reducer |
 | `src/hooks/usePageData.ts` | page load/live-update behavior |
 | `src/pages/page/PageBuilder.tsx` | page editor, section merge/save pipeline |

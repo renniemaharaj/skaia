@@ -1,7 +1,7 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { useState } from "react";
 import { flowStateAtom } from "../../../atoms/flow";
-import Select from "../../input/Select";
+import Select from "../../ui/Select";
 import { nodeGroups } from "../config";
 
 const NodePicker = ({

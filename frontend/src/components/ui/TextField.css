@@ -1,0 +1,61 @@
+.ui-field {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.ui-field--block {
+  width: 100%;
+}
+
+.ui-field__label {
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.ui-field__control {
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+textarea.ui-field__control {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.ui-field__control:focus-visible {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.ui-field__control:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ui-field--error .ui-field__control {
+  border-color: var(--error-color);
+}
+
+.ui-field__help,
+.ui-field__error {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.ui-field__help {
+  color: var(--text-secondary);
+}
+
+.ui-field__error {
+  color: var(--error-color);
+}

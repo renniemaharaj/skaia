@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Eye, MessageCircle, Pencil, Settings, SquarePen, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import Button from "../../components/input/Button";
+import Button from "../../components/ui/Button";
 import { InteractiveActionSection } from "../../components/page/InteractiveActionSection";
 import { isPageDocument, PageDocumentContent } from "../../components/page/PageDocumentField";
 import type { InteractiveConfig, InteractiveField } from "../../components/page/interactiveTypes";
@@ -103,11 +103,15 @@ export default function CommunityDetailPage() {
   };
 
   const remove = async () => {
-    if (!data || !(await confirmDestructiveAction({
-      title: `Delete this ${data.kind}?`,
-      body: "The publication and its linked custom page will move to Trash together.",
-      confirmLabel: `Delete ${data.kind}`,
-    }))) return;
+    if (
+      !data ||
+      !(await confirmDestructiveAction({
+        title: `Delete this ${data.kind}?`,
+        body: "The publication and its linked custom page will move to Trash together.",
+        confirmLabel: `Delete ${data.kind}`,
+      }))
+    )
+      return;
     try {
       await apiRequest(`/community/${data.kind}/${data.id}`, { method: "DELETE" });
       toast.success(`${data.kind[0].toUpperCase()}${data.kind.slice(1)} moved to Trash`);
@@ -131,10 +135,7 @@ export default function CommunityDetailPage() {
 
   if (error) {
     return (
-      <CommunityModuleShell
-        backTo={`/community/${kind}`}
-        backLabel={`Back to ${kind}s`}
-      >
+      <CommunityModuleShell backTo={`/community/${kind}`} backLabel={`Back to ${kind}s`}>
         <div className="community-detail-state">
           <p role="alert" className="community-error">
             {error}
@@ -146,10 +147,7 @@ export default function CommunityDetailPage() {
   }
   if (!data) {
     return (
-      <CommunityModuleShell
-        backTo={`/community/${kind}`}
-        backLabel={`Back to ${kind}s`}
-      >
+      <CommunityModuleShell backTo={`/community/${kind}`} backLabel={`Back to ${kind}s`}>
         <div className="community-detail-state" aria-busy="true">
           <p role="status">Loading community content…</p>
         </div>
@@ -159,10 +157,7 @@ export default function CommunityDetailPage() {
 
   const hasPageDocument = isPageDocument(data.body);
   return (
-    <CommunityModuleShell
-      backTo={`/community/${data.kind}`}
-      backLabel={`Back to ${data.kind}s`}
-    >
+    <CommunityModuleShell backTo={`/community/${data.kind}`} backLabel={`Back to ${data.kind}s`}>
       <main className="community-detail">
         <header>
           <div className="community-detail__heading">
@@ -172,68 +167,72 @@ export default function CommunityDetailPage() {
             <small>By {data.author_name}</small>
           </div>
           <div className="community-detail__page-actions">
-              {(data.visibility === "public" || data.can_manage_page) && (
-                <Link
-                  className="action-btn"
-                  to={`/page/${data.page_slug}`}
-                  title="View full page"
-                  aria-label="View full page"
-                >
-                  <Eye size={14} />
-                </Link>
-              )}
-              {data.can_manage_page && (
-                <Link
-                  className="action-btn"
-                  to={`/form/page/${data.page_slug}/manage`}
-                  title="Manage page"
-                  aria-label="Manage page"
-                >
-                  <Settings size={14} />
-                </Link>
-              )}
+            {(data.visibility === "public" || data.can_manage_page) && (
               <Link
                 className="action-btn"
-                to={`/view-thread/${data.canonical_thread_id}`}
-                title="View discussion thread"
-                aria-label="View discussion thread"
+                to={`/page/${data.page_slug}`}
+                title="View full page"
+                aria-label="View full page"
               >
-                <MessageCircle size={14} />
+                <Eye size={14} />
               </Link>
-              {data.can_edit_thread && (
-                <Link
-                  className="action-btn edit-btn"
-                  to={`/edit-thread/${data.canonical_thread_id}`}
-                  title="Edit discussion thread"
-                  aria-label="Edit discussion thread"
-                >
-                  <SquarePen size={14} />
-                </Link>
-              )}
-              {data.can_edit && (
-                <Link
-                  className="action-btn edit-btn"
-                  to={`/form/community/${data.kind}/${data.id}/edit`}
-                  title={`Edit ${data.kind}`}
-                  aria-label={`Edit ${data.kind}`}
-                >
-                  <Pencil size={14} />
-                </Link>
-              )}
-              {data.can_delete && (
-                <Button
-                  unstyled
-                  className="action-btn danger"
-                  title={`Delete ${data.kind}`}
-                  aria-label={`Delete ${data.kind}`}
-                  onClick={() => void remove()}
-                >
-                  <Trash2 size={14} />
-                </Button>
-              )}
+            )}
+            {data.can_manage_page && (
+              <Link
+                className="action-btn"
+                to={`/form/page/${data.page_slug}/manage`}
+                title="Manage page"
+                aria-label="Manage page"
+              >
+                <Settings size={14} />
+              </Link>
+            )}
+            <Link
+              className="action-btn"
+              to={`/view-thread/${data.canonical_thread_id}`}
+              title="View discussion thread"
+              aria-label="View discussion thread"
+            >
+              <MessageCircle size={14} />
+            </Link>
+            {data.can_edit_thread && (
+              <Link
+                className="action-btn edit-btn"
+                to={`/edit-thread/${data.canonical_thread_id}`}
+                title="Edit discussion thread"
+                aria-label="Edit discussion thread"
+              >
+                <SquarePen size={14} />
+              </Link>
+            )}
+            {data.can_edit && (
+              <Link
+                className="action-btn edit-btn"
+                to={`/form/community/${data.kind}/${data.id}/edit`}
+                title={`Edit ${data.kind}`}
+                aria-label={`Edit ${data.kind}`}
+              >
+                <Pencil size={14} />
+              </Link>
+            )}
+            {data.can_delete && (
+              <Button
+                unstyled
+                className="action-btn danger"
+                title={`Delete ${data.kind}`}
+                aria-label={`Delete ${data.kind}`}
+                onClick={() => void remove()}
+              >
+                <Trash2 size={14} />
+              </Button>
+            )}
           </div>
         </header>
-        {actionError && <p role="alert" className="community-error">{actionError}</p>}
+        {actionError && (
+          <p role="alert" className="community-error">
+            {actionError}
+          </p>
+        )}
         {data.showcase?.media?.length ? (
           <div className="community-media">
             {data.showcase.media.slice(0, 12).map(url => (
@@ -271,27 +270,30 @@ export default function CommunityDetailPage() {
             heading="Your vote"
             description="Support or oppose this proposal. You can update your selection."
             config={actionConfig(
-              [{
-                key: "choice",
-                type: "radio",
-                label: "Position",
-                required: true,
-                options: [
-                  { key: "support", label: "Support" },
-                  { key: "oppose", label: "Oppose" },
-                ],
-              }],
+              [
+                {
+                  key: "choice",
+                  type: "radio",
+                  label: "Position",
+                  required: true,
+                  options: [
+                    { key: "support", label: "Support" },
+                    { key: "oppose", label: "Oppose" },
+                  ],
+                },
+              ],
               data.proposal.own_vote ? "Update vote" : "Submit vote",
               "Your vote was recorded."
             )}
             submission={{
               mode: "replace",
               initialAnswers: {
-                choice: data.proposal.own_vote === 1
-                  ? "support"
-                  : data.proposal.own_vote === -1
-                    ? "oppose"
-                    : "",
+                choice:
+                  data.proposal.own_vote === 1
+                    ? "support"
+                    : data.proposal.own_vote === -1
+                      ? "oppose"
+                      : "",
               },
               submit: vote,
             }}
@@ -341,16 +343,18 @@ export default function CommunityDetailPage() {
             heading="Attendance"
             description="Tell the host whether you are going or interested."
             config={actionConfig(
-              [{
-                key: "attendance",
-                type: "radio",
-                label: "Response",
-                required: true,
-                options: [
-                  { key: "going", label: "Going" },
-                  { key: "interested", label: "Interested" },
-                ],
-              }],
+              [
+                {
+                  key: "attendance",
+                  type: "radio",
+                  label: "Response",
+                  required: true,
+                  options: [
+                    { key: "going", label: "Going" },
+                    { key: "interested", label: "Interested" },
+                  ],
+                },
+              ],
               data.event.own_attendance ? "Update response" : "Submit response",
               "Attendance updated."
             )}

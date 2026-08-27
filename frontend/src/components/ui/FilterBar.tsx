@@ -1,6 +1,6 @@
 import { FilterX } from "lucide-react";
 import type { ReactNode } from "react";
-import Button from "../input/Button";
+import Button from "../ui/Button";
 import SearchField from "./SearchField";
 import "./FilterBar.css";
 

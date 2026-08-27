@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import Button from "../../components/input/Button";
+import Button from "../../components/ui/Button";
 import { ModulePageShell } from "../../components/layout/ModulePageShell";
 import {
   DirectoryLayout,

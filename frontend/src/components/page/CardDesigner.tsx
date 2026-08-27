@@ -21,9 +21,9 @@ import {
  * Produces a CardTemplate stored in the section config JSON.
  */
 import { Suspense, lazy, useCallback, useState } from "react";
-import Button from "../input/Button";
-import Select from "../input/Select";
-import Tile from "../input/Tile";
+import Button from "../ui/Button";
+import Select from "../ui/Select";
+import Tile from "../ui/Surface";
 import { BoxSpacingControls } from "./EditControls";
 import type {
   CardContentAlign,

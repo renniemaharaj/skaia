@@ -11,9 +11,66 @@
   background: color-mix(in srgb, var(--bg-secondary) 50%, transparent);
 }
 
+.deployment-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+  cursor: pointer;
+}
+
+.deployment-expand-btn:hover {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary));
+  color: var(--text-primary);
+}
+
+.deployment-status {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.deployment-status--completed {
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: var(--color-success);
+}
+
+.deployment-status--failed,
+.deployment-status--cancelled {
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+  color: var(--color-danger);
+}
+
+.deployment-empty-state {
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+}
+
+.deployment-row {
+  cursor: pointer;
+}
+
 .terminal-container {
   margin: 1rem;
-  background: #0a0a0a; /* True black terminal feel */
+  background: var(--terminal-bg);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   overflow: hidden;
@@ -41,11 +98,11 @@
   font-size: 0.8rem;
   max-height: 280px;
   overflow-y: auto;
-  color: #e5e5e5;
+  color: var(--terminal-text);
 }
 
 .terminal-empty {
-  color: #666;
+  color: var(--terminal-muted);
   font-style: italic;
 }
 
@@ -56,27 +113,27 @@
 }
 
 .log-time {
-  color: #6b7280;
+  color: var(--terminal-muted);
   margin-right: 0.5rem;
 }
 
 .log-level--error,
 .log-level--fatal,
 .log-level--panic {
-  color: #ef4444;
+  color: var(--error-color);
 }
 .log-level--warning {
-  color: #f59e0b;
+  color: var(--warning-color);
 }
 .log-level--success {
-  color: #10b981;
+  color: var(--success-color);
 }
 .log-level--info,
 .log-level--print {
-  color: #e5e5e5;
+  color: var(--terminal-text);
 }
 .log-level--debug {
-  color: #8b5cf6;
+  color: var(--terminal-debug);
 }
 
 .blueprint-scroll-container {
@@ -128,7 +185,7 @@
 
 .blueprint-card:hover {
   border-color: color-mix(in srgb, var(--primary-color) 50%, var(--border-color));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-md);
 }
 
 .blueprint-card h4 {
@@ -151,7 +208,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-dark);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -168,7 +225,7 @@
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-lg);
 }
 
 .deployments-modal .modal-header {
@@ -209,6 +266,6 @@
   color: var(--text-secondary);
 }
 .log-source {
-  color: #888;
+  color: var(--terminal-muted);
   font-style: italic;
 }

@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { apiRequest } from "../../../../utils/api";
 import { normalizeRoute } from "../../../../utils/route";
 import { sendWebSocketMessage } from "../../../../utils/wsProtobuf";
-import Button from "../../../input/Button";
+import Button from "../../../ui/Button";
 import { MediaPlaceholder } from "../../../ui/MediaPlaceholder";
 import UserAvatar from "../../../user/UserAvatar";
 import UserProfileOverlay from "../../../user/UserProfileOverlay";

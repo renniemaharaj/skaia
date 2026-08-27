@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/skaia/backend/internal/ws"
 	pb "github.com/skaia/grpc/grengo"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -21,7 +20,6 @@ type Service struct {
 	client     pb.GrengoServiceClient
 	passcodeMu sync.RWMutex
 	passcode   string // "p1:p2" for X-Grengo-Passcode header; empty = no auth
-	hub        *ws.Hub
 }
 
 // passcodeInterceptor injects X-Grengo-Passcode on every outgoing gRPC request.
@@ -44,12 +42,9 @@ func (t *passcodeInterceptor) StreamClientInterceptor(ctx context.Context, desc 
 }
 
 // NewService creates a grengo service that talks to the internal API.
-func NewService(apiURL string, hub *ws.Hub) *Service {
+func NewService(apiURL string) *Service {
 	grpcURL := normalizeGRPCTarget(apiURL)
-	svc := &Service{
-		grpcURL: grpcURL,
-		hub:     hub,
-	}
+	svc := &Service{grpcURL: grpcURL}
 	interceptor := &passcodeInterceptor{passcode: svc.currentPasscode}
 
 	conn, _ := grpc.NewClient(grpcURL,
@@ -90,7 +85,7 @@ func normalizeGRPCTarget(apiURL string) string {
 
 // WithPasscode returns a new Service that authenticates with the given passcode pair.
 func (s *Service) WithPasscode(p1, p2 string) *Service {
-	svc := NewService(s.grpcURL, s.hub)
+	svc := NewService(s.grpcURL)
 	svc.SetPasscode(p1, p2)
 	return svc
 }

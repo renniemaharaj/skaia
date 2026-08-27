@@ -119,9 +119,17 @@ update specs and .tip with durable facts
 
 ## Last Ran
 
-- 2026-08-26
+- 2026-08-27
 
 ## Last Run Remarks
+
+- Completed sequence index 1, `ui_primitive_consolidation`. Foundation
+  implementation and CSS authority now live under `components/ui`; deprecated
+  `components/input` files are direct compatibility re-exports, core
+  Admin/Settings/Auth routes use typed controls, and focused coverage exercises
+  action, select/menu, checkbox, surface, composer/field, feedback, dialog, and
+  compatibility behavior. All 300 serial frontend tests, lint, build, and four
+  UI policy gates pass; repository-wide CSS convergence advances to index 2.
 
 - Completed the implementation and workspace rollout for
   `go_web_platform_surface_rebrand`. Platform-owned copy,

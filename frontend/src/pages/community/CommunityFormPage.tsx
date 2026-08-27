@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import Button from "../../components/input/Button";
+import Button from "../../components/ui/Button";
 import { FormField, FormSelect, ManagedForm } from "../../components/form";
 import { apiRequest } from "../../utils/api";
 import { CommunityModuleShell } from "./CommunityModuleShell";
@@ -67,14 +67,22 @@ export default function CommunityFormPage() {
     if (!id) return;
     apiRequest<Publication>(`/community/${kind}/${id}`)
       .then(setPublication)
-      .catch(caught => setLoadError(caught instanceof Error ? caught.message : "Content unavailable"));
+      .catch(caught =>
+        setLoadError(caught instanceof Error ? caught.message : "Content unavailable")
+      );
   }, [id, kind]);
 
   if (editing && loadError) {
     return (
-      <CommunityModuleShell backTo={`/community/${kind}/${id}`} backLabel={`Back to ${kind}`} comfortable>
+      <CommunityModuleShell
+        backTo={`/community/${kind}/${id}`}
+        backLabel={`Back to ${kind}`}
+        comfortable
+      >
         <main className="community-form-state">
-          <p role="alert" className="community-error">{loadError}</p>
+          <p role="alert" className="community-error">
+            {loadError}
+          </p>
           <Button onClick={() => window.location.reload()}>Retry</Button>
         </main>
       </CommunityModuleShell>
@@ -82,8 +90,14 @@ export default function CommunityFormPage() {
   }
   if (editing && !publication) {
     return (
-      <CommunityModuleShell backTo={`/community/${kind}/${id}`} backLabel={`Back to ${kind}`} comfortable>
-        <main className="community-form-state" aria-busy="true"><p role="status">Loading publication…</p></main>
+      <CommunityModuleShell
+        backTo={`/community/${kind}/${id}`}
+        backLabel={`Back to ${kind}`}
+        comfortable
+      >
+        <main className="community-form-state" aria-busy="true">
+          <p role="status">Loading publication…</p>
+        </main>
       </CommunityModuleShell>
     );
   }
@@ -149,8 +163,8 @@ export default function CommunityFormPage() {
             const created = await apiRequest<{ id: number }>(
               editing ? `/community/${kind}/${id}` : `/community/${kind}`,
               {
-              method: editing ? "PUT" : "POST",
-              body: JSON.stringify(payload),
+                method: editing ? "PUT" : "POST",
+                body: JSON.stringify(payload),
               }
             );
             navigate(`/community/${kind}/${created.id}`);

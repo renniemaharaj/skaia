@@ -4,8 +4,8 @@ import type { Product, ProductMedia, StoreCategory } from "../../atoms/store";
 import { apiRequest } from "../../utils/api";
 import { centsToDollars } from "../../utils/money";
 import { FormCheckbox, FormField, FormSelect, ManagedForm } from "../form";
-import Button from "../input/Button";
-import Select from "../input/Select";
+import Button from "../ui/Button";
+import Select from "../ui/Select";
 import { ProductMediaTable } from "./ProductMediaTable";
 import "../forum/IconButton.css";
 

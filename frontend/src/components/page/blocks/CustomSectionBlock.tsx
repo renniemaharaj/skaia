@@ -22,8 +22,8 @@ import type {
 import { DEFAULT_CARD_TEMPLATE } from "../types";
 
 import { cacheTTLLabel, formatTimeAgo } from "../../../utils/cache";
-import Button from "../../input/Button";
-import Select from "../../input/Select";
+import Button from "../../ui/Button";
+import Select from "../../ui/Select";
 import { ActiveJobsBadge } from "../../mediascraper/ActiveJobsBadge";
 import { ComponentBindMapper } from "../ComponentBindMapper";
 import { ComponentGroupRenderer } from "../ComponentGroupEditor";

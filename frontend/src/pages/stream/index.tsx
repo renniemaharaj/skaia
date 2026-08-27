@@ -10,7 +10,7 @@ import {
 } from "../../atoms/presence";
 import { streamRoutePlaybackAtom } from "../../atoms/voice";
 import { ContentFlatCard } from "../../components/cards/ContentFlatCard";
-import Button from "../../components/input/Button";
+import Button from "../../components/ui/Button";
 import { apiRequest } from "../../utils/api";
 import { normalizeRoute } from "../../utils/route";
 import "./StreamPage.css";

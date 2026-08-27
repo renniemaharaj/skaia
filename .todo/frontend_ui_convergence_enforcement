@@ -1,0 +1,52 @@
+# Frontend UI Convergence and Enforcement
+
+## Context
+The audit found broad residual drift even after prior targeted primitive work:
+402 raw buttons in 106 files, 29 native checkboxes, 64 `unstyled` Button escapes,
+673 inline style objects, many local modal/tab/loading/empty patterns, and no
+focused tests for the current Button, Select, Checkbox, Tile, generic Input, or
+GlassMenu foundations. A one-time migration will regress without a bounded
+policy gate.
+
+## Goal
+- Converge remaining first-party UI onto the canonical component set.
+- Distinguish intentional native/dynamic exceptions from migration debt.
+- Add maintainability gates that ratchet rather than reward superficial splitting.
+
+## Non-Goals
+- Ban dynamic styles required for measured geometry, authored presentation, or canvas rendering.
+- Wrap every semantic HTML element in a component.
+- Force third-party internals to match platform markup.
+
+## Steps
+1. Inventory every raw button/select/checkbox, `unstyled` escape, inline style,
+   modal/menu/tab, loading/empty/error, and card/surface implementation; classify
+   it as canonical primitive internals, reviewed specialized behavior, or debt.
+2. Migrate debt route-family by route-family using the components established by
+   index 1 and the CSS ownership from index 2. Preserve semantic button/form
+   behavior, focus, disabled/loading state, and destructive confirmation policy.
+3. Remove transitional `components/input` re-exports and legacy `.btn`/surface
+   compatibility only after imports and visual parity converge.
+4. Add repository checks for new raw controls, unreviewed `unstyled`, cross-domain
+   CSS imports, source/CSS growth above the baseline, and unowned token drift.
+5. Maintain a small exception manifest with path, owner, rationale, and removal
+   condition for cohesive engines, isolated third-party surfaces, and measured
+   dynamic styles.
+6. Re-run the large-file inventory and update `.specs/frontend_spec` with the
+   implemented component, CSS, ownership, budget, and exception contracts.
+
+## Verification
+- Focused primitive tests and route-family accessibility/visual checks.
+- Policy checks prove no unreviewed regression beyond the final allowlist.
+- Complete frontend test suite, lint, TypeScript/build, native-dialog,
+  media-placeholder, managed-form, and loading-boundary gates.
+- Correctness/auditor pass confirms one UI authority and no stale plan/spec claims.
+
+## References
+- `.todo/frontend_maintainability_normalization_sequence`
+- `.todo/ui_primitive_consolidation`
+- `.specs/frontend_spec`
+- `frontend/src/components/ui/`
+- `frontend/src/components/input/`
+- `frontend/scripts/`
+

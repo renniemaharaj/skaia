@@ -11,10 +11,23 @@ describe("ExternalIdentitySettings", () => {
     vi.mocked(apiRequest).mockReset();
     vi.mocked(apiRequest).mockImplementation(async endpoint => {
       if (endpoint === "/external-identities/providers") {
-        return [{ id: 2, key: "game", name: "Game account", public_display_allowed: true }] as never;
+        return [
+          { id: 2, key: "game", name: "Game account", public_display_allowed: true },
+        ] as never;
       }
       if (endpoint === "/external-identities/links") {
-        return [{ id: 9, provider_id: 2, provider_key: "game", provider: "Game account", subject: "opaque-42", display_name: "Player 42", public: false, verified_at: "2026-08-23T12:00:00Z" }] as never;
+        return [
+          {
+            id: 9,
+            provider_id: 2,
+            provider_key: "game",
+            provider: "Game account",
+            subject: "opaque-42",
+            display_name: "Player 42",
+            public: false,
+            verified_at: "2026-08-23T12:00:00Z",
+          },
+        ] as never;
       }
       return {} as never;
     });
@@ -28,7 +41,10 @@ describe("ExternalIdentitySettings", () => {
     );
 
     await waitFor(() => expect(screen.getByText("Player 42")).toBeInTheDocument());
-    expect(screen.getByRole("link", { name: "Linked identities" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Linked identities" })).toHaveAttribute(
+      "aria-current",
+      "page"
+    );
     expect(screen.getByRole("button", { name: "Reverify" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Make public" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Unlink Player 42" })).toBeInTheDocument();

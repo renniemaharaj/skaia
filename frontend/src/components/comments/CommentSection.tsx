@@ -6,7 +6,7 @@ import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { lazy, Suspense } from "react";
 const Editor = lazy(() => import("../forum/Editor"));
 const ViewThread = lazy(() => import("../forum/ViewThread"));
-import ComposerInput from "../input/Input";
+import ComposerInput from "../ui/ComposerInput";
 import StarRating from "../ui/StarRating";
 import RoleBadge from "../user/RoleBadge";
 import UserAvatar from "../user/UserAvatar";

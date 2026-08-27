@@ -7,7 +7,8 @@ import { accessTokenAtom } from "../../../atoms/auth";
 import { PageBuilderContext } from "../PageBuilderContext";
 import type { InteractiveConfig } from "../interactiveTypes";
 import type { PageSection } from "../types";
-import { InteractiveSectionBlock, ResultsView } from "./InteractiveSectionBlock";
+import { InteractiveSectionBlock } from "./InteractiveSectionBlock";
+import { ResultsView } from "./InteractiveSectionViews";
 
 vi.mock("../../../utils/api", async importOriginal => {
   const actual = await importOriginal<typeof import("../../../utils/api")>();
@@ -189,10 +190,7 @@ describe("InteractiveSectionBlock", () => {
     fireEvent.click(screen.getByRole("button", { name: "Update attendance" }));
 
     await waitFor(() =>
-      expect(submit).toHaveBeenCalledWith(
-        { attendance: "going" },
-        expect.any(String)
-      )
+      expect(submit).toHaveBeenCalledWith({ attendance: "going" }, expect.any(String))
     );
     expect(screen.getByRole("button", { name: "Update attendance" })).toBeInTheDocument();
     expect(apiRequest).not.toHaveBeenCalled();

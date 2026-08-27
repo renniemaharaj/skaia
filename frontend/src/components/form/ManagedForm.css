@@ -48,11 +48,7 @@
 
 .managed-form--grouped .managed-form__submit {
   border: 0;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color) 0%,
-    var(--skaia-green-primary) 100%
-  );
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--skaia-green-primary) 100%);
   color: var(--bg-color);
 }
 

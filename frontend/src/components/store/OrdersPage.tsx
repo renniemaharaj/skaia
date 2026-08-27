@@ -28,10 +28,16 @@ import UserInlineCard from "../../components/user/UserInlineCard";
 import UserProfileOverlay from "../../components/user/UserProfileOverlay";
 import { apiRequest } from "../../utils/api";
 import { formatCents } from "../../utils/money";
-import Button from "../input/Button";
-import Select from "../input/Select";
+import Button from "../ui/Button";
+import Select from "../ui/Select";
 import { confirmDestructiveAction } from "../ui/Prompt";
 import { StorePageShell } from "./StorePageShell";
+import {
+  DEFAULT_ORDER_FILTERS,
+  filterOrders,
+  type OrderSortMode,
+  type OrderWithPayment,
+} from "./orderFilters";
 import "../../styles/Cart.css";
 import "./OrdersPage.css";
 import "leaflet/dist/leaflet.css";
@@ -45,17 +51,6 @@ const DefaultIcon = L.icon({
   iconAnchor: [12, 41],
 });
 L.Marker.prototype.options.icon = DefaultIcon;
-
-type OrderWithPayment = Order & { payment?: Payment };
-
-type OrderSortMode = "newest" | "oldest" | "total-desc" | "total-asc";
-
-const DEFAULT_ORDER_FILTERS = {
-  search: "",
-  status: "all",
-  payment: "all",
-  sort: "newest" as OrderSortMode,
-};
 
 export const OrdersPage = () => {
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
@@ -485,43 +480,10 @@ export const OrdersPage = () => {
     orderFilters.payment !== "all" ||
     orderFilters.sort !== "newest";
 
-  const visibleOrders = useMemo(() => {
-    const search = orderFilters.search.trim().toLowerCase();
-    return orders
-      .filter(order => {
-        if (orderFilters.status !== "all" && order.status !== orderFilters.status) return false;
-
-        const paymentStatus = paymentsByOrder[order.id]?.status || "unpaid";
-        if (orderFilters.payment !== "all" && paymentStatus !== orderFilters.payment) return false;
-
-        if (!search) return true;
-        return [
-          order.id,
-          order.user_id,
-          order.guest_email,
-          order.guest_phone,
-          order.delivery_location,
-          order.status,
-          paymentStatus,
-        ].some(value =>
-          String(value || "")
-            .toLowerCase()
-            .includes(search)
-        );
-      })
-      .sort((a, b) => {
-        switch (orderFilters.sort) {
-          case "oldest":
-            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-          case "total-desc":
-            return b.total_price - a.total_price;
-          case "total-asc":
-            return a.total_price - b.total_price;
-          case "newest":
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        }
-      });
-  }, [orderFilters, orders, paymentsByOrder]);
+  const visibleOrders = useMemo(
+    () => filterOrders(orders, paymentsByOrder, orderFilters),
+    [orderFilters, orders, paymentsByOrder]
+  );
 
   const orderFilterBar = (
     <FilterBar
@@ -590,16 +552,16 @@ export const OrdersPage = () => {
   );
 
   const updateOrderStatus = async (id: string, status: string) => {
-	try {
-	  await apiRequest(`/store/orders/${id}/status`, {
-		method: "PUT",
-		body: JSON.stringify({ status }),
-	  });
-	  toast.success("Order status updated");
-	  fetchOrders();
-	} catch (err) {
-	  toast.error(err instanceof Error ? err.message : "Failed to update status");
-	}
+    try {
+      await apiRequest(`/store/orders/${id}/status`, {
+        method: "PUT",
+        body: JSON.stringify({ status }),
+      });
+      toast.success("Order status updated");
+      fetchOrders();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update status");
+    }
   };
 
   const deleteOrder = async (id: string) => {

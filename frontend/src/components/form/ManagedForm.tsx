@@ -1,7 +1,7 @@
 import { Form, Formik, type FormikConfig, type FormikProps, type FormikValues } from "formik";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import Button from "../input/Button";
+import Button from "../ui/Button";
 import FormHeaderActions from "../ui/FormHeaderActions";
 import FormSectionIntro from "./FormSectionIntro";
 

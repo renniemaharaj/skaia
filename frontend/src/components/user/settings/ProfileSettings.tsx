@@ -2,8 +2,8 @@ import { Link2, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import type { ProfileUser } from "../types";
 import { useProfileEdit } from "../useProfileEdit";
 import "../UserProfile.css";
-import Button from "../../input/Button";
-import Select from "../../input/Select";
+import Button from "../../ui/Button";
+import Select from "../../ui/Select";
 import { FormFileInput, FormSectionIntro, ManagedForm, type ManagedFormTab } from "../../form";
 import { MediaPlaceholder } from "../../ui/MediaPlaceholder";
 import UserAvatar from "../UserAvatar";
@@ -167,7 +167,7 @@ export default function ProfileSettings({
                   setEditAvatarUrl(upload.url);
                 }}
               />
-              <button
+              <Button unstyled
                 type="button"
                 className="action-btn danger"
                 onClick={() => {
@@ -177,7 +177,7 @@ export default function ProfileSettings({
                 title="Reset Avatar"
               >
                 <Trash2 size={14} />
-              </button>
+              </Button>
             </div>
             {(avatarPreview || editAvatarUrl) && (
               <UserAvatar
@@ -202,7 +202,7 @@ export default function ProfileSettings({
                   setEditBannerUrl(upload.url);
                 }}
               />
-              <button
+              <Button unstyled
                 type="button"
                 className="action-btn danger"
                 onClick={() => {
@@ -212,7 +212,7 @@ export default function ProfileSettings({
                 title="Reset Banner"
               >
                 <Trash2 size={14} />
-              </button>
+              </Button>
             </div>
             {(bannerPreview || editBannerUrl) && (
               <MediaPlaceholder
@@ -286,7 +286,7 @@ export default function ProfileSettings({
                 placeholder="Or paste a URL…"
                 style={{ flex: 1 }}
               />
-              <button
+              <Button unstyled
                 type="button"
                 className="action-btn danger"
                 onClick={() => {
@@ -296,7 +296,7 @@ export default function ProfileSettings({
                 title="Reset Background Image"
               >
                 <Trash2 size={14} />
-              </button>
+              </Button>
             </div>
             <FormFileInput
               label="Upload background image"
@@ -334,7 +334,7 @@ export default function ProfileSettings({
                 placeholder="Or paste a URL… (mp4/webm)"
                 style={{ flex: 1 }}
               />
-              <button
+              <Button unstyled
                 type="button"
                 className="action-btn danger"
                 onClick={() => {
@@ -344,7 +344,7 @@ export default function ProfileSettings({
                 title="Reset Background Video"
               >
                 <Trash2 size={14} />
-              </button>
+              </Button>
             </div>
             <FormFileInput
               label="Upload background video"
@@ -388,14 +388,14 @@ export default function ProfileSettings({
               <label className="form-label" style={{ marginBottom: 0 }}>
                 Background Position
               </label>
-              <button
+              <Button unstyled
                 type="button"
                 className="action-btn danger"
                 onClick={() => setEditBackgroundPosition("")}
                 title="Reset Background Position"
               >
                 <Trash2 size={14} />
-              </button>
+              </Button>
             </div>
             <Select
               value={editBackgroundPosition}
@@ -416,7 +416,7 @@ export default function ProfileSettings({
                 placeholder="Or paste a URL…"
                 style={{ flex: 1 }}
               />
-              <button
+              <Button unstyled
                 type="button"
                 className="action-btn danger"
                 onClick={() => {
@@ -426,7 +426,7 @@ export default function ProfileSettings({
                 title="Reset Profile Card Art"
               >
                 <Trash2 size={14} />
-              </button>
+              </Button>
             </div>
             <FormFileInput
               label="Upload profile card art"

@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { VideoOff } from "lucide-react";
-import Button from "../../../input/Button";
+import Button from "../../../ui/Button";
 import { RemoteMedia } from "./RemoteMedia";
 import { DraggablePiP } from "./DraggablePiP";
 import { StreamOverlayControls } from "../StreamOverlayControls";

@@ -14,8 +14,8 @@ import { useEffect, useState } from "react";
 import type { User } from "../../atoms/auth";
 import type { StoreCategory } from "../../atoms/store";
 import { formatCents } from "../../utils/money";
-import Button from "../input/Button";
-import Select from "../input/Select";
+import Button from "../ui/Button";
+import Select from "../ui/Select";
 import { FilterBar } from "../ui/FilterBar";
 import type { StoreFilterState, StoreViewMode } from "./Store";
 

@@ -1,7 +1,7 @@
 import { GripHorizontal, X } from "lucide-react";
 import { useCallback, useState } from "react";
-import Button from "../input/Button";
-import Select from "../input/Select";
+import Button from "../ui/Button";
+import Select from "../ui/Select";
 import {
   INPUT_TEXT_OPTION,
   inputTextBinding,
@@ -163,9 +163,7 @@ export const ComponentBindMapper = ({
                 {usesInputText && bp.key === "icon" && (
                   <IconPicker
                     current={inputTextValue(mapped)}
-                    onPick={name =>
-                      onChange({ ...bindings, [bp.key]: inputTextBinding(name) })
-                    }
+                    onPick={name => onChange({ ...bindings, [bp.key]: inputTextBinding(name) })}
                   />
                 )}
               </span>

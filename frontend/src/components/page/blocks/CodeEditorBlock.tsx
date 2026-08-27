@@ -5,7 +5,7 @@ import "./CodeEditorBlock.css";
 import { Copy, Download, FileCode } from "lucide-react";
 import { toast } from "sonner";
 import { useThemeContext } from "../../../hooks/theme/useThemeContext";
-import Select from "../../input/Select";
+import Select from "../../ui/Select";
 import { SectionToolbarActions } from "../EditControls";
 
 /** Lazy-load the project's Monaco wrapper (inherits theme) and ViewThread for md/html. */

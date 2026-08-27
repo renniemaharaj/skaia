@@ -82,7 +82,6 @@ const VisualizerPage = lazy(() => import("./visualizer/index.tsx"));
 const UserUploadsDirectory = lazy(() => import("../components/user/UserUploadsDirectory.tsx"));
 const SettingsPage = lazy(() => import("./settings/index.tsx"));
 const FlowPage = lazy(() => import("./flow/index.tsx"));
-const GrengoPage = lazy(() => import("./admin/grengo.tsx"));
 const StreamPage = lazy(() => import("./stream/index.tsx"));
 const ClipMakerPage = lazy(() =>
   import("./clipmaker/index.tsx").then(m => ({ default: m.ClipMakerPage }))
@@ -112,7 +111,11 @@ const StoreCheckoutPolicyPage = lazy(() => import("./admin/StoreCheckoutPolicyPa
 
 export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "form/community/:kind/new", element: <CommunityFormPage />, conditional: "community" },
-  { path: "form/community/:kind/:id/edit", element: <CommunityFormPage />, conditional: "community" },
+  {
+    path: "form/community/:kind/:id/edit",
+    element: <CommunityFormPage />,
+    conditional: "community",
+  },
   { path: "form/page/:slug/manage", element: <PageManageFormPage /> },
   { path: "form/site/legal/new", element: <LegalPolicyFormPage /> },
   {
@@ -211,7 +214,6 @@ export const protectedRoutes: (CustomRoute | IndexRoute)[] = [
   { path: "deployments", element: <DeploymentsPage /> },
   { path: "datasources", element: <DataSourcesPage /> },
   { path: "datasources/:id", element: <DataSourceEditorPage /> },
-  { path: "tmp/:sessionId", element: <GrengoPage /> },
   { path: "activity", element: <ActivityPage /> },
   { path: "trash", element: <TrashPage /> },
   { path: "flow", element: <FlowPage /> },

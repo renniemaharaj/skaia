@@ -17,8 +17,8 @@ import {
   VolumeX,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Button from "../input/Button";
-import Select from "../input/Select";
+import Button from "../ui/Button";
+import Select from "../ui/Select";
 import BibleBrowser from "./BibleBrowser";
 import BibleDialog from "./BibleDialog";
 import BibleVerseText from "./BibleVerseText";

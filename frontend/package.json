@@ -10,6 +10,7 @@
     "check:media-placeholders": "node scripts/check-media-placeholders.mjs",
     "check:managed-forms": "node scripts/check-managed-forms.mjs",
     "check:loading-boundaries": "node scripts/check-loading-boundaries.mjs",
+    "check:css-architecture": "node scripts/check-css-architecture.mjs",
     "lint": "biome lint .",
     "format": "biome format --write .",
     "preview": "vite preview",

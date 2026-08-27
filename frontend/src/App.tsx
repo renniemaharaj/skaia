@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes } from "react-router-dom";
 import "./App.css";
 import ErrorBoundary from "./ErrorBoundary";
 import SiteHead from "./components/SiteHead";
-import GrengoSessionDialog from "./components/admin/GrengoSessionDialog";
 import { ThemeProvider } from "./hooks/theme/ThemeProvider";
 import { useFeatures } from "./hooks/useFeatures";
 import { useGuestSandboxMode } from "./hooks/useGuestSandboxMode";
@@ -41,7 +40,6 @@ export default function App() {
                 </Routes>
               </Suspense>
             </ErrorBoundary>
-            <GrengoSessionDialog />
           </Layout>
         </SiteConfigLoader>
       </ThemeProvider>

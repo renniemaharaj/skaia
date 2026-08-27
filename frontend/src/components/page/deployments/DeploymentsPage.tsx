@@ -10,80 +10,39 @@ import {
   Trash2,
 } from "lucide-react";
 import React, { useEffect, useState, useRef, useMemo } from "react";
-import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { socketAtom } from "../../../atoms/auth";
 import { apiRequest } from "../../../utils/api";
 import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
-import Button from "../../input/Button";
-import Input from "../../input/Input";
-import Select from "../../input/Select";
+import Input from "../../ui/ComposerInput";
 import { Console, type ConsoleLine } from "../../ui/Console";
 import { customConfirm } from "../../ui/Prompt";
 import type { TableColumn } from "../../ui/TableView/TableView";
 import { DirectoryLayout } from "../layout/templates/DirectoryLayout";
 import "./Deployments.css";
-// Reuse orders page CSS for expand buttons and status pills if needed
-import "../../store/OrdersPage.css";
 import { useLayoutPosition } from "../../../atoms/viewModes";
 import { GlassMenu } from "../../ui/GlassMenu";
-
-interface Blueprint {
-  id: number;
-  name: string;
-  description: string;
-  is_active: boolean;
-}
-
-interface Instance {
-  id: number;
-  blueprint_id: number;
-  status: string;
-  version_tag: string;
-  config_payload: {
-    url?: string;
-    port?: number;
-    [key: string]: any;
-  };
-}
-
-interface LogEntry {
-  time: string;
-  level: string;
-  prefix: string;
-  msg: string;
-  file?: string;
-  line?: number;
-  func?: string;
-}
-
-interface ContainerStats {
-  name: string;
-  cpu_percent: number;
-  mem_usage: string;
-  mem_limit: string;
-  mem_percent: number;
-  net_io: string;
-  block_io: string;
-  pids: number;
-  Name?: string;
-  CPUPerc?: string;
-  MemUsage?: string;
-  NetIO?: string;
-}
-
-type ViewMode = "grid" | "list";
+import { DeploymentInstanceCard } from "./DeploymentInstanceCard";
+import { NewDeploymentDialog } from "./NewDeploymentDialog";
+import type {
+  DeploymentBlueprint,
+  DeploymentContainerStats,
+  DeploymentInstance,
+  DeploymentLogEntry,
+  DeploymentViewMode,
+  FrappeVersion,
+} from "./types";
 
 export function DeploymentsPage() {
-  const [blueprints, setBlueprints] = useState<Blueprint[]>([]);
-  const [instances, setInstances] = useState<Instance[]>([]);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [blueprints, setBlueprints] = useState<DeploymentBlueprint[]>([]);
+  const [instances, setInstances] = useState<DeploymentInstance[]>([]);
+  const [logs, setLogs] = useState<DeploymentLogEntry[]>([]);
   const [expandedInstances, setExpandedInstances] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useLayoutPosition<ViewMode>("deployments", "list");
+  const [viewMode, setViewMode] = useLayoutPosition<DeploymentViewMode>("deployments", "list");
   const [showNewModal, setShowNewModal] = useState(false);
-  const [selectedFrappeVersion, setSelectedFrappeVersion] = useState<"15" | "16" | "17-dev">("16");
+  const [selectedFrappeVersion, setSelectedFrappeVersion] = useState<FrappeVersion>("16");
   const [logCap, setLogCap] = useState(500);
   const logCapRef = useRef(logCap);
   const [openAppsMenu, setOpenAppsMenu] = useState<{
@@ -91,7 +50,7 @@ export function DeploymentsPage() {
     x: number;
     y: number;
   } | null>(null);
-  const [stats, setStats] = useState<ContainerStats[]>([]);
+  const [stats, setStats] = useState<DeploymentContainerStats[]>([]);
   type AppForReact = { name: string; description: string; version?: string };
   const availableApps: AppForReact[] = [
     {
@@ -182,7 +141,7 @@ export function DeploymentsPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const data = await apiRequest<ContainerStats[]>("/provisioning/stats");
+        const data = await apiRequest<DeploymentContainerStats[]>("/provisioning/stats");
         setStats(data || []);
       } catch (err) {}
     };
@@ -207,7 +166,7 @@ export function DeploymentsPage() {
 
   const fetchBlueprints = async () => {
     try {
-      const data = await apiRequest<Blueprint[]>("/provisioning/blueprints");
+      const data = await apiRequest<DeploymentBlueprint[]>("/provisioning/blueprints");
       setBlueprints(data || []);
     } catch (err) {
       toast.error("Failed to load blueprints");
@@ -217,7 +176,7 @@ export function DeploymentsPage() {
   const fetchInstances = async () => {
     setLoading(true);
     try {
-      const data = await apiRequest<Instance[]>("/provisioning/instances");
+      const data = await apiRequest<DeploymentInstance[]>("/provisioning/instances");
       setInstances(data || []);
     } catch (err) {
       toast.error("Failed to load instances");
@@ -348,7 +307,7 @@ export function DeploymentsPage() {
         },
       });
       if (resp.ok) {
-        const historicalLogs: LogEntry[] = await resp.json();
+        const historicalLogs: DeploymentLogEntry[] = await resp.json();
         setLogs(prev => {
           const filtered = prev.filter(l => l.prefix !== String(id) || l.time !== "historical");
           if (!historicalLogs || historicalLogs.length === 0) return filtered;
@@ -404,7 +363,7 @@ export function DeploymentsPage() {
     });
   }, [instances, blueprints, search]);
 
-  const instanceColumns: TableColumn<Instance>[] = [
+  const instanceColumns: TableColumn<DeploymentInstance>[] = [
     {
       header: "",
       width: "44px",
@@ -413,7 +372,7 @@ export function DeploymentsPage() {
         return (
           <button
             type="button"
-            className="orders-expand-btn"
+            className="deployment-expand-btn"
             onClick={event => {
               event.stopPropagation();
               toggleExpand(inst.id);
@@ -471,7 +430,7 @@ export function DeploymentsPage() {
         if (inst.status === "running") statusClass = "completed";
         if (inst.status === "failed") statusClass = "failed";
         return (
-          <span className={`orders-status orders-status--${statusClass}`}>
+          <span className={`deployment-status deployment-status--${statusClass}`}>
             {inst.status.toUpperCase()}
           </span>
         );
@@ -554,7 +513,7 @@ export function DeploymentsPage() {
   ];
 
   const renderInstanceRow = (
-    inst: Instance,
+    inst: DeploymentInstance,
     _index: number,
     rowProps: { className: string; style: React.CSSProperties },
     cells: React.ReactNode[]
@@ -594,7 +553,7 @@ export function DeploymentsPage() {
       <React.Fragment key={inst.id}>
         <div
           {...rowProps}
-          className={`${rowProps.className} order-row-hover`}
+          className={`${rowProps.className} deployment-row`}
           onClick={() => toggleExpand(inst.id)}
         >
           {cells}
@@ -648,65 +607,6 @@ export function DeploymentsPage() {
           </div>
         )}
       </React.Fragment>
-    );
-  };
-
-  const NewDeploymentModal = () => {
-    return createPortal(
-      <div className="modal-backdrop" onClick={() => setShowNewModal(false)}>
-        <div className="modal-content deployments-modal" onClick={e => e.stopPropagation()}>
-          <div className="modal-header">
-            <h3>New Deployment</h3>
-            <button className="modal-close" onClick={() => setShowNewModal(false)}>
-              ×
-            </button>
-          </div>
-          <div className="modal-body">
-            <p className="modal-subtitle">
-              Select an available blueprint to provision a new instance.
-            </p>
-            {blueprints.length === 0 ? (
-              <p className="orders-empty-state">No active blueprints currently available.</p>
-            ) : (
-              <div className="blueprint-grid">
-                {blueprints.map(bp => (
-                  <div key={bp.id} className="blueprint-card">
-                    <div>
-                      <h4>{bp.name}</h4>
-                      <p>{bp.description}</p>
-                      {bp.name.toLowerCase().includes("frappe") && (
-                        <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-                          <Select
-                            size="sm"
-                            block
-                            value={selectedFrappeVersion}
-                            onChange={e =>
-                              setSelectedFrappeVersion(e.target.value as "15" | "16" | "17-dev")
-                            }
-                            options={[
-                              { value: "16", label: "Stable 16" },
-                              { value: "15", label: "Stable 15" },
-                              { value: "17-dev", label: "Dev 17" },
-                            ]}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="action"
-                      onClick={() => provisionInstance(bp.id, bp.name)}
-                    >
-                      Deploy {bp.name}
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>,
-      document.body
     );
   };
 
@@ -776,83 +676,27 @@ export function DeploymentsPage() {
         tableRowKey={inst => inst.id}
         renderRowWrapper={renderInstanceRow}
         renderGridCard={inst => (
-          <div key={inst.id} className="ds-card" onClick={() => toggleExpand(inst.id)}>
-            <div className="ds-card__header">
-              <div className="ds-card__title-row">
-                <Server size={16} className="ds-card__type-icon" />
-                <h3 className="ds-card__title">Instance #{inst.id}</h3>
-              </div>
-              <div style={{ display: "flex", gap: "4px" }}>
-                {inst.status === "stopped" && (
-                  <button
-                    className="action-btn"
-                    onClick={e => {
-                      e.stopPropagation();
-                      startInstance(inst.id);
-                    }}
-                  >
-                    <Play size={14} />
-                  </button>
-                )}
-                {inst.status === "running" && (
-                  <>
-                    <button
-                      className="action-btn"
-                      onClick={e => {
-                        e.stopPropagation();
-                        restartInstance(inst.id);
-                      }}
-                    >
-                      <RefreshCw size={14} />
-                    </button>
-                    <button
-                      className="action-btn danger"
-                      onClick={e => {
-                        e.stopPropagation();
-                        stopInstance(inst.id);
-                      }}
-                    >
-                      <Square size={14} />
-                    </button>
-                  </>
-                )}
-                <button
-                  className="action-btn danger ds-card__danger-btn"
-                  onClick={e => {
-                    e.stopPropagation();
-                    deleteInstance(inst.id);
-                  }}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
-            <p className="ds-card__desc">
-              Blueprint:{" "}
-              {blueprints.find(b => b.id === inst.blueprint_id)?.name || `ID ${inst.blueprint_id}`}
-            </p>
-            <div className="ds-card__meta">
-              <span
-                className={`orders-status orders-status--${inst.status === "running" ? "completed" : inst.status === "failed" ? "failed" : "pending"}`}
-              >
-                {inst.status.toUpperCase()}
-              </span>
-              {inst.config_payload?.url && (
-                <a
-                  href={inst.config_payload.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={e => e.stopPropagation()}
-                  style={{ fontSize: "12px", color: "var(--primary-color)" }}
-                >
-                  {inst.config_payload.url.replace(/^https?:\/\//, "")}
-                </a>
-              )}
-            </div>
-          </div>
+          <DeploymentInstanceCard
+            key={inst.id}
+            instance={inst}
+            blueprints={blueprints}
+            onToggle={toggleExpand}
+            onStart={startInstance}
+            onRestart={restartInstance}
+            onStop={stopInstance}
+            onDelete={deleteInstance}
+          />
         )}
       />
-      {showNewModal && <NewDeploymentModal />}
+      {showNewModal && (
+        <NewDeploymentDialog
+          blueprints={blueprints}
+          frappeVersion={selectedFrappeVersion}
+          onFrappeVersionChange={setSelectedFrappeVersion}
+          onDeploy={provisionInstance}
+          onClose={() => setShowNewModal(false)}
+        />
+      )}
       {openAppsMenu && (
         <GlassMenu
           x={openAppsMenu.x}
@@ -924,7 +768,12 @@ export function DeploymentsPage() {
                               >
                                 {app.name}{" "}
                               </span>
-                              <span style={{ color: "var(--text-muted)", fontSize: "0.9em" }}>
+                              <span
+                                style={{
+                                  color: "var(--text-muted)",
+                                  fontSize: "0.9em",
+                                }}
+                              >
                                 {app.description}
                               </span>
                             </div>

@@ -21,8 +21,8 @@ import { SectionToolbarActions } from "../EditControls";
 import { detectColumns, mapRowsToItems } from "../mapRows";
 import type { RawRow } from "../mapRows";
 
-import Button from "../../input/Button";
-import Select from "../../input/Select";
+import Button from "../../ui/Button";
+import Select from "../../ui/Select";
 import { ActiveJobsBadge } from "../../mediascraper/ActiveJobsBadge";
 import { CardDesigner } from "../CardDesigner";
 import { ComponentBindMapper } from "../ComponentBindMapper";

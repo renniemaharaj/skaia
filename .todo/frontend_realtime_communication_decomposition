@@ -1,0 +1,47 @@
+# Frontend Realtime and Communication Decomposition
+
+## Context
+Inbox, presence, and voice/video files mix socket policy, route synchronization,
+device lifecycle, moderation, responsive geometry, dialogs, and rendering.
+`InboxPage.tsx` is 1,541 lines, `WebRTCPanel.tsx` 1,100,
+`PresencePanel.tsx` 1,021, and `MediaSection.tsx` 837. Their CSS owners are also
+among the largest files. This makes singleton and teardown invariants hard to
+verify during UI changes.
+
+## Goal
+- Isolate realtime/device lifecycle from presentation and responsive shell state.
+- Preserve the one-WebSocket and existing WebRTC manager authorities.
+- Reuse shared menus, dialogs, actions, fields, media, and feedback states.
+
+## Non-Goals
+- Replace Jotai, the WebSocket singleton, LiveKit, or the WebRTC manager.
+- Change message, presence, moderation, voice, or stream protocols.
+- Split tightly coupled media lifecycle code without tests proving teardown.
+
+## Steps
+1. Decompose inbox into conversation data/actions, list, chat header, composer,
+   message timeline, message/system-card renderers, participant moderation, and
+   responsive route state. Move parsing/formatting to pure tested modules.
+2. Separate presence launcher/drag/resize geometry, chat, people, DEFCON/slow
+   mode, and lazy voice coordination while retaining one panel state owner.
+3. Separate WebRTC route/device/session hooks from call controls, active streams,
+   enlarged playback, metadata, recording, and admin settings.
+4. Split `MediaSection` into capture/device controls, preview, stream publication,
+   and lifecycle feedback around the existing manager hooks.
+5. Decompose paired CSS by the same owners and verify teardown, reconnect,
+   permission, narrow-mobile, loading, empty, and error behavior.
+
+## Verification
+- Focused socket subscription/reconnect and media teardown tests.
+- Keyboard/focus and responsive checks for menus, dialogs, launcher, and composer.
+- Complete frontend tests, lint, build, and policy gates.
+
+## References
+- `.todo/frontend_maintainability_normalization_sequence`
+- `.specs/frontend_spec`
+- `.specs/realtime_wss_spec`
+- `frontend/src/components/inbox/InboxPage.tsx`
+- `frontend/src/components/page/layout/PresencePanel.tsx`
+- `frontend/src/components/page/layout/WebRTCPanel.tsx`
+- `frontend/src/components/page/layout/voice/MediaSection.tsx`
+

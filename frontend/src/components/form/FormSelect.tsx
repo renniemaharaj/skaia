@@ -1,5 +1,5 @@
 import { useField } from "formik";
-import Select, { type SelectProps } from "../input/Select";
+import Select, { type SelectProps } from "../ui/Select";
 
 interface FormSelectProps extends Omit<SelectProps, "name" | "value" | "onChange" | "error"> {
   name: string;

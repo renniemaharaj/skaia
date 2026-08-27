@@ -1,12 +1,9 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
-  ArrowLeft,
-  ArrowRight,
   Atom,
   ChevronDown,
   ChevronUp,
   Gauge,
-  GhostIcon,
   LocateFixed,
   MessageCircle,
   Mic,
@@ -15,15 +12,26 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import { Suspense, lazy, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { currentUserAtom, hasPermissionAtom, socketAtom } from "../../../atoms/auth";
-import { type GlobalChatMessage, globalChatMessagesAtom } from "../../../atoms/chat";
+import {
+  currentUserAtom,
+  hasPermissionAtom,
+  socketAtom,
+} from "../../../atoms/auth";
+import { globalChatMessagesAtom } from "../../../atoms/chat";
 import { seoAtom } from "../../../atoms/config";
 import { mediaStateAtom } from "../../../atoms/media";
 import {
-  type OnlineUser,
   presenceLauncherPositionAtom,
   pendingTpUserAtom,
   presencePanelExpandedAtom,
@@ -34,18 +42,19 @@ import {
 import { enlargedStreamIdAtom } from "../../../atoms/voice";
 
 import { adminTriggerMFAChallenge, apiRequest } from "../../../utils/api";
-import { formatLocalTime } from "../../../utils/serverTime";
 import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
-import ComposerInput from "../../input/Input";
-import UserAvatar from "../../user/UserAvatar";
-import UserInlineCard from "../../user/UserInlineCard";
-import UserProfileOverlay from "../../user/UserProfileOverlay";
+import ComposerInput from "../../ui/ComposerInput";
 import { usePresenceUsers } from "../../../hooks/usePresenceUsers";
 import {
   clampPresenceLauncherPosition,
   isPresenceLauncherDragTarget,
   presenceLauncherStyle,
 } from "./presenceLauncher";
+import {
+  ChatBubble,
+  type PresenceRowAction,
+  UserRow,
+} from "./PresenceParticipants";
 import "./PresencePanel.css";
 // Lazy-loaded: opened only on user interaction, so no reason to bloat the initial payload.
 const PhysicsControls = lazy(() => import("./PhysicsControls"));
@@ -55,15 +64,6 @@ const WebRTCPanel = lazy(() => import("./WebRTCPanel"));
  * Extensible per-row action. Add new actions to the rowActions array below.
  * Each action receives the target OnlineUser and can call navigate / socket etc.
  */
-interface PresenceRowAction {
-  key: string;
-  icon: React.ReactNode;
-  title: string;
-  /** Return true to hide this action for the given user. */
-  hidden?: (u: OnlineUser) => boolean;
-  handler: (u: OnlineUser) => void;
-}
-
 type DefconThreatLevel = "low" | "guarded" | "elevated" | "high" | "critical";
 
 interface DefconInfo {
@@ -78,178 +78,6 @@ interface DefconInfo {
 // Defined OUTSIDE PresencePanel so React sees a stable component identity
 // across parent re-renders (cursor updates, theme changes, etc.) and never
 // destroys / remounts the existing DOM nodes unnecessarily.
-interface UserRowProps {
-  u: OnlineUser;
-  dim?: boolean;
-  currentUserId?: string | number;
-  rowActions: PresenceRowAction[];
-}
-
-const UserRow = memo(({ u, dim, currentUserId, rowActions }: UserRowProps) => {
-  const isGuest = u.user_id < 0;
-  const isMe = !isGuest && String(u.user_id) === String(currentUserId);
-  const visibleActions = rowActions.filter(a => !a.hidden?.(u));
-
-  const [isSpeaking, setIsSpeaking] = useState(false);
-
-  useEffect(() => {
-    let timeout: any;
-    const handleSpeaking = (e: any) => {
-      if (e.detail === String(u.user_id)) {
-        setIsSpeaking(true);
-        clearTimeout(timeout);
-        timeout = setTimeout(() => setIsSpeaking(false), 300);
-      }
-    };
-    window.addEventListener("voice:speaking", handleSpeaking);
-    return () => {
-      window.removeEventListener("voice:speaking", handleSpeaking);
-      clearTimeout(timeout);
-    };
-  }, [u.user_id]);
-
-  const actions = visibleActions.length > 0 && (
-    <span
-      className="pp-actions"
-      onClick={e => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
-      onKeyDown={e => e.stopPropagation()}
-    >
-      {visibleActions.map(action => (
-        <button
-          type="button"
-          key={action.key}
-          className={`pp-action-btn pp-action-btn--${action.key}`}
-          title={action.title}
-          onClick={e => {
-            e.preventDefault();
-            e.stopPropagation();
-            action.handler(u);
-          }}
-        >
-          {action.icon}
-        </button>
-      ))}
-    </span>
-  );
-
-  const inner = (
-    <>
-      <span className={`pp-avatar${isSpeaking ? " pp-avatar--speaking" : ""}`}>
-        {isGuest ? (
-          <GhostIcon size={14} />
-        ) : (
-          <UserProfileOverlay
-            userId={u.user_id}
-            fallbackName={u.user_name}
-            fallbackAvatar={u.avatar || undefined}
-            disableClick={true}
-          >
-            <div style={{ display: "flex", width: "100%", height: "100%" }}>
-              <UserAvatar
-                src={u.avatar || undefined}
-                alt={u.user_name}
-                size={22}
-                initials={u.user_name?.[0]?.toUpperCase()}
-              />
-            </div>
-          </UserProfileOverlay>
-        )}
-      </span>
-      <span className="pp-name pp-guest">{isGuest ? "Guest" : u.user_name || `#${u.user_id}`}</span>
-      {isMe && <span className="pp-you">you</span>}
-      {dim && <span className="pp-route">{u.route}</span>}
-      {actions}
-    </>
-  );
-
-  if (isGuest) {
-    return (
-      <span
-        className={`pp-user-row pp-guest-row${dim ? " pp-dim" : ""}`}
-        title={dim ? u.route : undefined}
-      >
-        {inner}
-      </span>
-    );
-  }
-  return (
-    <Link
-      to={`/users/${u.user_id}`}
-      className={`pp-user-row${dim ? " pp-dim" : ""}${isMe ? " pp-me" : ""}`}
-      title={dim ? u.route : undefined}
-    >
-      {inner}
-    </Link>
-  );
-});
-
-UserRow.displayName = "PresenceUserRow";
-
-interface ChatBubbleProps {
-  msg: GlobalChatMessage;
-  currentUserId?: string | number;
-  isContinuation?: boolean;
-}
-
-const ChatBubble = memo(({ msg, currentUserId, isContinuation }: ChatBubbleProps) => {
-  const isMe = !msg.is_guest && String(msg.user_id) === String(currentUserId);
-  const time = formatLocalTime(msg.created_at);
-  const isSystemEvent = msg.kind === "join" || msg.kind === "leave";
-  const userCard = (
-    <UserInlineCard
-      userId={msg.is_guest ? undefined : msg.user_id}
-      name={msg.is_guest ? msg.user_name || "Guest" : msg.user_name || `#${msg.user_id}`}
-      avatar={msg.avatar || undefined}
-      roles={msg.roles}
-      isGuest={msg.is_guest}
-      compact
-    />
-  );
-
-  if (isSystemEvent) {
-    const Icon = msg.kind === "join" ? ArrowRight : ArrowLeft;
-    return (
-      <div className={`pp-chat-system${isContinuation ? " pp-chat-system--continuation" : ""}`}>
-        {!isContinuation && (
-          <div className="pp-chat-meta">
-            {userCard}
-            <span className="pp-chat-time">{time}</span>
-          </div>
-        )}
-        <div className="pp-chat-content pp-chat-system-content">
-          <span className={`pp-chat-system__icon pp-chat-system__icon--${msg.kind}`}>
-            <Icon size={13} />
-          </span>
-          <span className="pp-chat-system__text">{msg.kind === "join" ? "joined" : "left"}</span>
-          {isContinuation && <span className="pp-chat-time pp-chat-time--inline">{time}</span>}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={`pp-chat-bubble${isMe ? " pp-chat-bubble--me" : ""}${isContinuation ? " pp-chat-bubble--continuation" : ""}`}
-    >
-      {!isContinuation && (
-        <div className="pp-chat-meta">
-          {userCard}
-          <span className="pp-chat-time">{time}</span>
-        </div>
-      )}
-      <p className="pp-chat-content">
-        {isContinuation && <span className="pp-chat-time pp-chat-time--hover">{time}</span>}
-        {msg.content}
-      </p>
-    </div>
-  );
-});
-
-ChatBubble.displayName = "PresenceChatBubble";
-
 const PresencePanel = () => {
   const [expanded, setExpanded] = useAtom(presencePanelExpandedAtom);
   const enlargedStreamId = useAtomValue(enlargedStreamIdAtom);
@@ -259,15 +87,18 @@ const PresencePanel = () => {
   const [hasOpenedVoice, setHasOpenedVoice] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
   const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" && (window.innerWidth <= 720 || window.innerHeight <= 500)
+    typeof window !== "undefined" &&
+      (window.innerWidth <= 720 || window.innerHeight <= 500),
   );
   const [mobilePanelHeight, setMobilePanelHeight] = useState(
     typeof window !== "undefined"
       ? Math.round(window.visualViewport?.height ?? window.innerHeight)
-      : 0
+      : 0,
   );
   const [panelWidth, setPanelWidth] = useAtom(presencePanelWidthAtom);
-  const [launcherPosition, setLauncherPosition] = useAtom(presenceLauncherPositionAtom);
+  const [launcherPosition, setLauncherPosition] = useAtom(
+    presenceLauncherPositionAtom,
+  );
   const [dragPosition, setDragPosition] = useState(launcherPosition);
   const [isResizing, setIsResizing] = useState(false);
   const panelRootRef = useRef<HTMLDivElement>(null);
@@ -288,7 +119,9 @@ const PresencePanel = () => {
     height: window.visualViewport?.height ?? window.innerHeight,
   });
 
-  const handleLauncherPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleLauncherPointerDown = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
     if (expanded || event.button !== 0) return;
     if (!isPresenceLauncherDragTarget(event.target as Element)) return;
     const rect = panelRootRef.current?.getBoundingClientRect();
@@ -306,10 +139,14 @@ const PresencePanel = () => {
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
-  const handleLauncherPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleLauncherPointerMove = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
     const drag = launcherDragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
-    if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) >= 5) {
+    if (
+      Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) >= 5
+    ) {
       drag.moved = true;
     }
     if (!drag.moved) return;
@@ -318,19 +155,21 @@ const PresencePanel = () => {
       clampPresenceLauncherPosition(
         { x: event.clientX - drag.offsetX, y: event.clientY - drag.offsetY },
         { width: drag.width, height: drag.height },
-        launcherViewportSize()
-      )
+        launcherViewportSize(),
+      ),
     );
   };
 
-  const handleLauncherPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleLauncherPointerUp = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
     const drag = launcherDragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     if (drag.moved) {
       const position = clampPresenceLauncherPosition(
         { x: event.clientX - drag.offsetX, y: event.clientY - drag.offsetY },
         { width: drag.width, height: drag.height },
-        launcherViewportSize()
+        launcherViewportSize(),
       );
       setDragPosition(position);
       setLauncherPosition(position);
@@ -353,10 +192,13 @@ const PresencePanel = () => {
       const position = clampPresenceLauncherPosition(
         launcherPosition,
         { width: rect.width, height: rect.height },
-        launcherViewportSize()
+        launcherViewportSize(),
       );
       setDragPosition(position);
-      if (position.x !== launcherPosition.x || position.y !== launcherPosition.y) {
+      if (
+        position.x !== launcherPosition.x ||
+        position.y !== launcherPosition.y
+      ) {
         setLauncherPosition(position);
       }
     };
@@ -376,7 +218,9 @@ const PresencePanel = () => {
   }, [activeTab, hasOpenedVoice]);
 
   const isPanelSplit = expanded && !isMobile;
-  const actualPanelWidth = isMobile ? Math.min(panelWidth, window.innerWidth * 0.5) : panelWidth;
+  const actualPanelWidth = isMobile
+    ? Math.min(panelWidth, window.innerWidth * 0.5)
+    : panelWidth;
 
   useEffect(() => {
     if (!isResizing) return;
@@ -407,7 +251,10 @@ const PresencePanel = () => {
   }, [isResizing, isMobile]);
   useEffect(() => {
     if (isPanelSplit) {
-      document.body.style.setProperty("--presence-panel-width", `${actualPanelWidth}px`);
+      document.body.style.setProperty(
+        "--presence-panel-width",
+        `${actualPanelWidth}px`,
+      );
     } else {
       document.body.style.removeProperty("--presence-panel-width");
     }
@@ -454,7 +301,9 @@ const PresencePanel = () => {
       }
 
       // Fetch initial cached state
-      apiRequest<DefconInfo>("/defcon/telemetry").then(setDefconInfo).catch(console.error);
+      apiRequest<DefconInfo>("/defcon/telemetry")
+        .then(setDefconInfo)
+        .catch(console.error);
 
       return () => {
         if (socket) {
@@ -481,7 +330,9 @@ const PresencePanel = () => {
       }
       toast.success("DEFCON reset");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to reset DEFCON");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to reset DEFCON",
+      );
     } finally {
       setDefconResetting(false);
     }
@@ -496,18 +347,21 @@ const PresencePanel = () => {
         key: "dm",
         icon: <MessageCircle size={11} />,
         title: "Send message",
-        hidden: u => u.user_id < 0 || !currentUser || String(u.user_id) === String(currentUser.id),
-        handler: u => navigate(`/inbox?with=${u.user_id}`),
+        hidden: (u) =>
+          u.user_id < 0 ||
+          !currentUser ||
+          String(u.user_id) === String(currentUser.id),
+        handler: (u) => navigate(`/inbox?with=${u.user_id}`),
       },
       {
         key: "tp_to",
         icon: <Navigation size={11} />,
         title: "Go to their location",
-        hidden: u =>
+        hidden: (u) =>
           !currentUser ||
           !u.route ||
           (u.user_id > 0 && String(u.user_id) === String(currentUser.id)),
-        handler: u => {
+        handler: (u) => {
           setPendingTpUser(u.user_id);
           navigate(u.route);
         },
@@ -516,10 +370,10 @@ const PresencePanel = () => {
         key: "tp_here",
         icon: <LocateFixed size={11} />,
         title: "Summon here",
-        hidden: u =>
+        hidden: (u) =>
           !hasPermission("presence.tp-here") ||
           (u.user_id > 0 && String(u.user_id) === String(currentUser?.id)),
-        handler: u => {
+        handler: (u) => {
           if (!socket || socket.readyState !== WebSocket.OPEN) return;
           sendWebSocketMessage(socket, {
             type: "tp",
@@ -536,22 +390,33 @@ const PresencePanel = () => {
         key: "mfa_challenge",
         icon: <ShieldCheck size={11} />,
         title: "Trigger MFA challenge",
-        hidden: u =>
+        hidden: (u) =>
           !hasPermission("home.manage") ||
           u.user_id < 0 ||
           (u.user_id > 0 && String(u.user_id) === String(currentUser?.id)),
-        handler: async u => {
+        handler: async (u) => {
           try {
             await adminTriggerMFAChallenge(String(u.user_id));
-            toast.success(`Successfully triggered challenge for ${u.user_name || "User"}`);
+            toast.success(
+              `Successfully triggered challenge for ${u.user_name || "User"}`,
+            );
           } catch (err: any) {
-            toast.error(`Failed to trigger challenge: ${err.message || "Unknown error"}`);
+            toast.error(
+              `Failed to trigger challenge: ${err.message || "Unknown error"}`,
+            );
           }
         },
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentUser, navigate, setPendingTpUser, hasPermission, socket, location.pathname]
+    [
+      currentUser,
+      navigate,
+      setPendingTpUser,
+      hasPermission,
+      socket,
+      location.pathname,
+    ],
   );
 
   // Auto-scroll chat feed to bottom when new messages arrive
@@ -568,7 +433,7 @@ const PresencePanel = () => {
     const delta = chatMessages.length - prevChatLenRef.current;
     prevChatLenRef.current = chatMessages.length;
     if (delta === 1 && activeTab !== "chat") {
-      setChatUnread(n => n + 1);
+      setChatUnread((n) => n + 1);
     }
   }, [chatMessages.length, activeTab]);
 
@@ -598,7 +463,7 @@ const PresencePanel = () => {
     setSlowModeLoading(true);
     try {
       const data = await apiRequest<{ enabled: boolean; interval: number }>(
-        "/config/comment-slowmode"
+        "/config/comment-slowmode",
       );
       setSlowModeEnabled(data?.enabled ?? false);
       setSlowModeInterval(data?.interval ?? 10);
@@ -621,11 +486,15 @@ const PresencePanel = () => {
             enabled: !slowModeEnabled,
             interval: slowModeInterval || 10,
           }),
-        }
+        },
       );
       setSlowModeEnabled(data?.enabled ?? false);
       setSlowModeInterval(data?.interval ?? 10);
-      toast.success(data?.enabled ? "Comment slow mode enabled" : "Comment slow mode disabled");
+      toast.success(
+        data?.enabled
+          ? "Comment slow mode enabled"
+          : "Comment slow mode disabled",
+      );
     } catch {
       toast.error("Failed to update comment slow mode");
     } finally {
@@ -638,7 +507,9 @@ const PresencePanel = () => {
     void loadSlowMode();
 
     const handler = (e: Event) => {
-      const { action, data } = (e as CustomEvent<{ action: string; data?: any }>).detail;
+      const { action, data } = (
+        e as CustomEvent<{ action: string; data?: any }>
+      ).detail;
       if (action === "comment_slowmode_updated") {
         setSlowModeEnabled(data?.enabled ?? false);
         setSlowModeInterval(data?.interval ?? 10);
@@ -664,7 +535,9 @@ const PresencePanel = () => {
     ...(expanded && mobilePanelHeight > 0
       ? { "--presence-panel-height": `${mobilePanelHeight}px` }
       : {}),
-    ...(isPanelSplit ? { "--presence-panel-width": `${actualPanelWidth}px` } : {}),
+    ...(isPanelSplit
+      ? { "--presence-panel-width": `${actualPanelWidth}px` }
+      : {}),
     ...presenceLauncherStyle(expanded, dragPosition),
   } as React.CSSProperties;
   const layoutChildren = useAtomValue(layoutChildrenAtom);
@@ -676,7 +549,10 @@ const PresencePanel = () => {
       style={panelStyle as any}
       id="presence-panel-root"
     >
-      <div className="pp-wrapper" style={isPanelSplit ? { width: actualPanelWidth } : undefined}>
+      <div
+        className="pp-wrapper"
+        style={isPanelSplit ? { width: actualPanelWidth } : undefined}
+      >
         {/* Control bar: mode tabs + expand toggle */}
         <div
           className="pp-controls"
@@ -684,7 +560,7 @@ const PresencePanel = () => {
           onPointerMove={handleLauncherPointerMove}
           onPointerUp={handleLauncherPointerUp}
           onPointerCancel={handleLauncherPointerUp}
-          onClickCapture={event => {
+          onClickCapture={(event) => {
             if (!suppressLauncherClickRef.current) return;
             event.preventDefault();
             event.stopPropagation();
@@ -712,7 +588,9 @@ const PresencePanel = () => {
             >
               <MessageCircle size={13} />
               {chatUnread > 0 && activeTab !== "chat" && (
-                <span className="pp-chat-badge">{chatUnread > 9 ? "9+" : chatUnread}</span>
+                <span className="pp-chat-badge">
+                  {chatUnread > 9 ? "9+" : chatUnread}
+                </span>
               )}
             </button>
             <button
@@ -767,7 +645,7 @@ const PresencePanel = () => {
           <button
             type="button"
             className="pp-chevron"
-            onClick={() => setExpanded(v => !v)}
+            onClick={() => setExpanded((v) => !v)}
             title={expanded ? "Collapse" : "Expand"}
           >
             {expanded ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
@@ -785,7 +663,7 @@ const PresencePanel = () => {
             {here.length > 0 && (
               <>
                 <p className="pp-section-label">On this page</p>
-                {here.map(u => (
+                {here.map((u) => (
                   <UserRow
                     key={u.user_id}
                     u={u}
@@ -798,8 +676,10 @@ const PresencePanel = () => {
 
             {elsewhere.length > 0 && (
               <>
-                <p className="pp-section-label pp-section-label--elsewhere">Elsewhere</p>
-                {elsewhere.map(u => (
+                <p className="pp-section-label pp-section-label--elsewhere">
+                  Elsewhere
+                </p>
+                {elsewhere.map((u) => (
                   <UserRow
                     key={u.user_id}
                     u={u}
@@ -811,7 +691,9 @@ const PresencePanel = () => {
               </>
             )}
 
-            {total === 0 && <p className="pp-empty">No one online right now.</p>}
+            {total === 0 && (
+              <p className="pp-empty">No one online right now.</p>
+            )}
           </div>
 
           <div
@@ -824,7 +706,9 @@ const PresencePanel = () => {
             }}
           >
             <div className="pp-chat-feed">
-              {chatMessages.length === 0 && <p className="pp-empty">No messages yet. Say hi!</p>}
+              {chatMessages.length === 0 && (
+                <p className="pp-empty">No messages yet. Say hi!</p>
+              )}
               {chatMessages.map((msg, idx) => {
                 const prevMsg = chatMessages[idx - 1];
                 const isSameUser =
@@ -833,7 +717,8 @@ const PresencePanel = () => {
                   prevMsg.is_guest === msg.is_guest;
                 const isRecent =
                   prevMsg &&
-                  new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() <
+                  new Date(msg.created_at).getTime() -
+                    new Date(prevMsg.created_at).getTime() <
                     5 * 60 * 1000;
                 const isContinuation = isSameUser && isRecent;
                 return (
@@ -849,7 +734,7 @@ const PresencePanel = () => {
             </div>
             <div className="pp-chat-input-row">
               <ComposerInput
-                handleSend={msg => {
+                handleSend={(msg) => {
                   if (!socket || socket.readyState !== WebSocket.OPEN) return;
                   sendWebSocketMessage(socket, {
                     type: "global:chat",
@@ -871,7 +756,9 @@ const PresencePanel = () => {
             {hasOpenedVoice && (
               <Suspense fallback={null}>
                 <WebRTCPanel
-                  voiceOnly={location.pathname.startsWith("/view-thread/") && !isMobile}
+                  voiceOnly={
+                    location.pathname.startsWith("/view-thread/") && !isMobile
+                  }
                 />
               </Suspense>
             )}
@@ -917,7 +804,10 @@ const PresencePanel = () => {
                     }}
                   >
                     <span>[ DEFCON THREAT TELEMETRY ]</span>
-                    <span className="defcon-threat-label" style={{ marginLeft: 0 }}>
+                    <span
+                      className="defcon-threat-label"
+                      style={{ marginLeft: 0 }}
+                    >
                       {defconInfo.threat_level}
                     </span>
                   </div>
@@ -941,7 +831,9 @@ const PresencePanel = () => {
                     marginBottom: "1rem",
                   }}
                 >
-                  <span style={{ color: "var(--text-secondary, #aaa)" }}>› Active Jails:</span>
+                  <span style={{ color: "var(--text-secondary, #aaa)" }}>
+                    › Active Jails:
+                  </span>
                   <strong style={{ color: "var(--text-primary, #fff)" }}>
                     {defconInfo.ips_jailed}
                   </strong>
@@ -967,7 +859,9 @@ const PresencePanel = () => {
                     marginBottom: "1rem",
                   }}
                 >
-                  <span style={{ color: "var(--text-secondary, #aaa)" }}>› Cleared Citizens:</span>
+                  <span style={{ color: "var(--text-secondary, #aaa)" }}>
+                    › Cleared Citizens:
+                  </span>
                   <strong style={{ color: "var(--text-primary, #fff)" }}>
                     {defconInfo.citizens}
                   </strong>
@@ -978,10 +872,13 @@ const PresencePanel = () => {
                     justifyContent: "space-between",
                     marginTop: "1rem",
                     paddingTop: "1rem",
-                    borderTop: "1px dashed var(--border-color, rgba(255,255,255,0.2))",
+                    borderTop:
+                      "1px dashed var(--border-color, rgba(255,255,255,0.2))",
                   }}
                 >
-                  <span style={{ color: "var(--text-secondary, #aaa)" }}>› Dynamic Threshold:</span>
+                  <span style={{ color: "var(--text-secondary, #aaa)" }}>
+                    › Dynamic Threshold:
+                  </span>
                   <strong style={{ color: "var(--text-primary, #fff)" }}>
                     {defconInfo.limiter_state} req/m
                   </strong>

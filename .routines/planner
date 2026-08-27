@@ -107,9 +107,21 @@ operational policies.
 
 ## Last Ran
 
-- 2026-08-26
+- 2026-08-27
 
 ## Last Run Remarks
+
+- Created the six-stage `frontend_maintainability_normalization_sequence` from a
+  whole-frontend size, ownership, primitive-adoption, and CSS-drift inventory.
+  The sequence reuses `ui_primitive_consolidation` as its foundation stage,
+  isolates CSS normalization before domain decomposition, splits admin/tooling,
+  realtime/communication, and page/commerce work into bounded handoffs, and ends
+  with residual convergence plus enforceable budgets and exception ownership.
+- The baseline records 118,189 TypeScript/TSX/CSS lines, 27 TSX files at or above
+  500 lines, 402 raw buttons, 64 unstyled Button escapes, 673 inline style
+  objects, 17 CSS files at or above 500 lines, cross-domain stylesheet imports,
+  missing core primitive tests, and an exact repeated 350-line clipmaker CSS
+  block. The completed route-shell plan remains authoritative and is not reopened.
 
 - Reconciled the completed surface implementation into backend, frontend,
   migration, route-resolution, caching, security, documentation, and protocol

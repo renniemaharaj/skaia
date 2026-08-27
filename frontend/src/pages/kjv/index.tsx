@@ -21,7 +21,7 @@ import type {
   BibleURLMode,
   ResolvedBibleLocation,
 } from "../../components/bible/types";
-import Button from "../../components/input/Button";
+import Button from "../../components/ui/Button";
 import "./Bible.css";
 
 export default function KJVPage() {

@@ -117,10 +117,12 @@ telemetry API exposes bounded counters and no identities or payloads.
   the same fail-closed visibility/ownership policy.
 - WebSocket ingress uses an explicit client-originated message allowlist.
   Unknown or server-only event types are rejected rather than broadcast.
-- Control-plane WebSocket actions require an established authenticated admin,
-  `admin.general`, a live Grengo session, fresh action/target-bound step-up, and
-  a closed action/argument allowlist. A browser never borrows a backend-held
-  passcode, and control-plane telemetry is never broadcast to guests/members.
+- Browser-accessible Grengo administration is absent: the frontend has no
+  dashboard/session route, backend `/api/grengo` routes are not mounted, and the
+  WebSocket registry contains no Grengo action, acknowledgement, job, log, or
+  telemetry messages. The remaining Grengo gRPC client is backend-internal and
+  exposes only deployment provisioning plus the bounded container-stat projection
+  used by the provisioning service; it never accepts browser-selected commands.
 - Teleport requires `presence.tp-here`, established account trust, canonical
   connection identities, and a validated destination; authentication alone is
   insufficient.

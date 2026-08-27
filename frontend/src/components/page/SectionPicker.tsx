@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import Button from "../input/Button";
+import Button from "../ui/Button";
 import { FilterBar } from "../ui/FilterBar";
 import {
   SECTION_TYPE_DESCRIPTIONS,

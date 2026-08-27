@@ -23,7 +23,7 @@ import {
 import { MediaPlaceholder } from "../ui/MediaPlaceholder";
 import { customPrompt } from "../ui/Prompt";
 import "./SecuritySettings.css";
-import Button from "../input/Button";
+import Button from "../ui/Button";
 import { FormField, FormSectionIntro, ManagedForm } from "../form";
 import { Link2, UserRound } from "lucide-react";
 
@@ -57,7 +57,6 @@ export default function SecuritySettings({
   const [verifyLoading, setVerifyLoading] = useState(false);
 
   useEffect(() => {
-    console.log("TOTP enabled state:", totpEnabled);
   }, [totpEnabled]);
 
   // Admin/Power User Controls

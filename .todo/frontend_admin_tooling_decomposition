@@ -1,0 +1,53 @@
+# Frontend Admin and Tooling Decomposition
+
+## Context
+Admin and editor routes combine independent API, realtime, state, form, console,
+table, and dialog concerns. The former 2,117-line browser Grengo dashboard and
+its backend REST/WebSocket control surface were removed during the production
+normalization exception recorded by the sequence coordinator; Grengo remains an
+internal provisioning client only. `DataSourceEditorPage`, deployments, roles,
+and security routes still combine multiple responsibilities and remain the
+decomposition targets for this stage.
+
+## Goal
+- Turn admin/tooling route files into readable orchestration boundaries.
+- Give each remote-data/state cluster one tested hook or focused controller.
+- Reuse the canonical UI foundation without changing the remaining backend
+  contracts.
+
+## Non-Goals
+- Reintroduce browser-accessible Grengo administration or change datasource
+  sandbox, deployment, role, or security behavior.
+- Introduce a second client cache/state framework.
+- Split presentational fragments that have no independent responsibility.
+
+## Steps
+1. Keep the removed Grengo dashboard/session route and general REST/WebSocket
+   proxy absent. The remaining backend client is limited to deployment
+   provisioning and bounded container statistics.
+2. Split `DataSourceEditorPage` into datasource document/run state, editor
+   workspace, diagnostics/fetch results, component preview, and save-section
+   flow while retaining the backend runner as sole execution authority.
+3. Decompose deployments into resource hooks, filters/table or grid, instance
+   detail/log console, app menu, and create workflow; remove its dependency on
+   `OrdersPage.css`.
+4. Separate role catalog/editor/assignment flows in `RolesManagementPage` and
+   TOTP/session/backup/recovery panels in `SecuritySettings`.
+5. Add focused state-transition and accessibility tests before reducing each
+   route to composition, permission projection, and navigation.
+
+## Verification
+- Behavior parity for loading, empty, error, permission, reconnect, destructive,
+  save, and retry states.
+- Focused tests for extracted hooks/panels and complete frontend gates.
+- No new source file above 500 lines; any remaining file above 600 has a written
+  cohesive exception in the tip.
+
+## References
+- `.todo/frontend_maintainability_normalization_sequence`
+- `.specs/frontend_spec`
+- `.specs/security_architecture_spec`
+- `frontend/src/components/page/datasources/DataSourceEditorPage.tsx`
+- `frontend/src/components/page/deployments/DeploymentsPage.tsx`
+- `frontend/src/components/admin/RolesManagementPage.tsx`
+- `frontend/src/components/auth/SecuritySettings.tsx`

@@ -1,16 +1,5 @@
 import { useAtom, useAtomValue } from "jotai";
-import {
-  Mic,
-  MicOff,
-  Settings,
-  Volume2,
-  VolumeX,
-  Video,
-  VideoOff,
-  MonitorUp,
-  Save,
-  Radio,
-} from "lucide-react";
+import { Settings, MonitorUp, Save, Radio } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { toast } from "sonner";
@@ -28,7 +17,6 @@ import { getGuestSessionId } from "../../../utils/guestSession";
 import { getSoundVolume } from "../../../utils/sound";
 import { sendWebSocketMessage } from "../../../utils/wsProtobuf";
 
-import Select from "../../input/Select";
 import UserAvatar from "../../user/UserAvatar";
 import UserProfileOverlay from "../../user/UserProfileOverlay";
 import "../../ui/MediaPreviewLightbox.css";
@@ -39,6 +27,8 @@ import { ActiveStreams } from "./voice/ActiveStreams";
 import { MediaSection } from "./voice/MediaSection";
 import { EnlargedStream } from "./voice/EnlargedStream";
 import StreamMetaEditor from "./voice/StreamMetaEditor";
+import { VoiceAudioControls } from "./voice/VoiceAudioControls";
+import { VoiceVideoControls } from "./voice/VoiceVideoControls";
 
 import { useMediaDevices } from "./voice/useMediaDevices";
 import { useLocalRecording } from "./voice/useLocalRecording";
@@ -637,234 +627,38 @@ export default function WebRTCPanel({
       )}
 
       {!mediaOnly && (
-        <div
-          className="ui-panel vp-settings-panel"
-          style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>Audio Controls</h4>
-            <button
-              className="action-btn "
-              onClick={() => setIsPlayerMuted(!isPlayerMuted)}
-              title={isPlayerMuted ? "Unmute All" : "Mute All"}
-            >
-              {isPlayerMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-            </button>
-          </div>
-
-          <div className="vp-setting-row" style={{ marginBottom: 0 }}>
-            <span className="vp-setting-label">
-              {micActive ? (
-                <Mic size={14} className="vp-text-primary" />
-              ) : (
-                <MicOff size={14} className="vp-text-secondary" />
-              )}
-              Voice Chat
-            </span>
-            <label className="vp-switch">
-              <input
-                type="checkbox"
-                checked={micActive}
-                onChange={toggleMic}
-                disabled={!canSpeak}
-              />
-              <div className="vp-switch-track">
-                <div className="vp-switch-thumb" />
-              </div>
-            </label>
-          </div>
-
-          {audioDevices.length > 0 && (
-            <Select
-              size="sm"
-              variant="minimal"
-              value={selectedAudioDeviceId}
-              onChange={e => handleAudioDeviceChange(e.target.value)}
-              options={audioDevices.map(d => ({
-                label: d.label || "Microphone",
-                value: d.deviceId,
-              }))}
-            />
-          )}
-
-          {activeMicUserIds.size > 0 && (
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "0.5rem",
-                paddingTop: "0.25rem",
-                borderTop: "1px solid var(--border-color)",
-              }}
-            >
-              {Array.from(activeMicUserIds).map(uid => {
-                const isCurrentUser = uid === String(myPresenceId);
-                // The current user speaks if their local activeSpeakers was updated recently
-                const isSpeaking = now - (activeSpeakers[uid] || 0) < 300;
-                let user;
-                if (isCurrentUser && currentUser) {
-                  user = {
-                    user_name: currentUser.display_name || currentUser.username,
-                    avatar: currentUser.avatar_url,
-                  };
-                } else {
-                  user = onlineUsers.find(u => String(u.user_id) === uid);
-                }
-
-                if (!user) return null;
-
-                const connState =
-                  peerConnectionStates[uid] || (isCurrentUser ? "connected" : "connecting");
-                const stateColor =
-                  connState === "connected"
-                    ? "var(--success-color, #10b981)"
-                    : connState === "failed"
-                      ? "var(--error-color, #ef4444)"
-                      : "var(--warning-color, #f59e0b)"; // connecting, disconnected, new
-
-                return (
-                  <UserProfileOverlay
-                    key={uid}
-                    userId={uid}
-                    fallbackName={user.user_name}
-                    fallbackAvatar={user.avatar || undefined}
-                  >
-                    <div
-                      title={`Connection: ${connState}`}
-                      style={{
-                        position: "relative",
-                        display: "flex",
-                        borderRadius: "50%",
-                        transition: "box-shadow 0.15s ease",
-                        boxShadow: isSpeaking
-                          ? "0 0 0 2px var(--primary-color), 0 0 8px var(--primary-color)"
-                          : "none",
-                      }}
-                    >
-                      <UserAvatar src={user.avatar || undefined} alt={user.user_name} size={28} />
-                      {!isCurrentUser && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            bottom: -2,
-                            right: -2,
-                            width: 10,
-                            height: 10,
-                            borderRadius: "50%",
-                            backgroundColor: stateColor,
-                            border: "2px solid var(--surface-2)",
-                            zIndex: 2,
-                          }}
-                        />
-                      )}
-                    </div>
-                  </UserProfileOverlay>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <VoiceAudioControls
+          playerMuted={isPlayerMuted}
+          onTogglePlayerMute={() => setIsPlayerMuted(!isPlayerMuted)}
+          micActive={micActive}
+          canSpeak={Boolean(canSpeak)}
+          onToggleMic={toggleMic}
+          audioDevices={audioDevices}
+          selectedAudioDeviceId={selectedAudioDeviceId}
+          onAudioDeviceChange={handleAudioDeviceChange}
+          activeMicUserIds={activeMicUserIds}
+          currentUser={currentUser}
+          onlineUsers={onlineUsers}
+          myPresenceId={myPresenceId}
+          activeSpeakers={activeSpeakers}
+          now={now}
+          peerConnectionStates={peerConnectionStates}
+        />
       )}
 
       {!mediaOnly && videoDevices.length > 0 && (
-        <div
-          className="ui-panel vp-settings-panel"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-            marginTop: "12px",
-          }}
-        >
-          <div className="vp-setting-row" style={{ marginBottom: 0 }}>
-            <span className="vp-setting-label">
-              {cameraActive ? (
-                <Video size={14} className="vp-text-primary" />
-              ) : (
-                <VideoOff size={14} className="vp-text-secondary" />
-              )}
-              Camera
-            </span>
-            <label className="vp-switch">
-              <input
-                type="checkbox"
-                checked={cameraActive}
-                onChange={toggleCamera}
-                disabled={!canSpeak}
-              />
-              <div className="vp-switch-track">
-                <div className="vp-switch-thumb" />
-              </div>
-            </label>
-          </div>
-
-          {videoDevices.length > 0 && (
-            <Select
-              size="sm"
-              variant="minimal"
-              value={selectedVideoDeviceId}
-              onChange={e => handleVideoDeviceChange(e.target.value)}
-              options={videoDevices.map(d => ({
-                label: d.label || "Camera",
-                value: d.deviceId,
-              }))}
-            />
-          )}
-
-          {activeCameraUserIds.size > 0 && (
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "0.5rem",
-                paddingTop: "0.25rem",
-                borderTop: "1px solid var(--border-color)",
-              }}
-            >
-              {Array.from(activeCameraUserIds).map(uid => {
-                const isCurrentUser = uid === String(myPresenceId);
-                let user;
-                if (isCurrentUser && currentUser) {
-                  user = {
-                    user_name: currentUser.display_name || currentUser.username,
-                    avatar: currentUser.avatar_url,
-                  };
-                } else {
-                  user = onlineUsers.find(u => String(u.user_id) === uid);
-                }
-                if (!user) return null;
-
-                return (
-                  <UserProfileOverlay
-                    key={`cam-${uid}`}
-                    userId={uid}
-                    fallbackName={user.user_name}
-                    fallbackAvatar={user.avatar || undefined}
-                  >
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <UserAvatar
-                        src={user.avatar || undefined}
-                        alt={user.user_name}
-                        size={20}
-                        style={{
-                          border: "1px solid var(--primary)",
-                          padding: "1px",
-                          borderRadius: "50%",
-                        }}
-                      />
-                    </div>
-                  </UserProfileOverlay>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <VoiceVideoControls
+          cameraActive={cameraActive}
+          canSpeak={Boolean(canSpeak)}
+          onToggleCamera={toggleCamera}
+          videoDevices={videoDevices}
+          selectedVideoDeviceId={selectedVideoDeviceId}
+          onVideoDeviceChange={handleVideoDeviceChange}
+          activeCameraUserIds={activeCameraUserIds}
+          currentUser={currentUser}
+          onlineUsers={onlineUsers}
+          myPresenceId={myPresenceId}
+        />
       )}
 
       {!mediaOnly && (

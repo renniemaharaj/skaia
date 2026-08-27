@@ -7,8 +7,8 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import Button from "../../components/input/Button";
-import Select from "../../components/input/Select";
+import Button from "../../components/ui/Button";
+import Select from "../../components/ui/Select";
 import { apiRequest } from "../../utils/api";
 import "./status.css";
 

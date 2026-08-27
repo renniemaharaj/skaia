@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { FormikHelpers } from "formik";
 
 import { FormField, ManagedForm } from "../components/form";
+import Button from "../components/ui/Button";
 import {
   type AuthResponse,
   type MFAChallengeReason,
@@ -120,7 +121,7 @@ const MFAChallenge = ({
           afterActions={formik => (
             <div className="auth-toggle">
               <p>
-                <button
+                <Button unstyled
                   type="button"
                   className="auth-toggle-btn"
                   onClick={() => {
@@ -130,18 +131,18 @@ const MFAChallenge = ({
                   disabled={formik.isSubmitting}
                 >
                   {useBackupCode ? "Use authenticator code" : "Use a backup code"}
-                </button>
+                </Button>
               </p>
               {onBack && (
                 <p>
-                  <button
+                  <Button unstyled
                     type="button"
                     className="auth-toggle-btn"
                     onClick={onBack}
                     disabled={formik.isSubmitting}
                   >
                     Back to login
-                  </button>
+                  </Button>
                 </p>
               )}
             </div>

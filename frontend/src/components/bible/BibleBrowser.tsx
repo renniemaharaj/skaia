@@ -1,7 +1,7 @@
 import { BookOpen, BookOpenCheck, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useLayoutPosition } from "../../atoms/viewModes";
-import Select from "../input/Select";
+import Select from "../ui/Select";
 import { DirectoryLayout, type ViewMode } from "../page/layout/templates/DirectoryLayout";
 import type { TableColumn } from "../ui/TableView/TableView";
 import BookTile from "./BookTile";

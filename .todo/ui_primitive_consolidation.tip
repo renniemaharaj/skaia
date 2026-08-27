@@ -1,12 +1,14 @@
 <--/------->
 
 ## ui_primitive_consolidation
+@todo-sequence(group=frontend_maintainability_normalization_sequence, index=1)
 
 ### Current Progress
 - **Phase 1: Primitive Components** - ✅ Complete
 - **Phase 2: Input & Control Standardization** - ✅ Complete
 - **Phase 3: Route & Layout Consolidation** - ✅ Complete
-- **Phase 4: Design Token Hardening** - 🟡 In progress
+- **Phase 4: Design Token Hardening** - ✅ Complete
+- **Phase 5: Canonical Foundation Realignment** - ✅ Complete
 
 ### Next Steps
 - [x] 2026-06-09: `DerivedSectionBlock` and `CustomSectionBlock` now share the registered component picker/bind mapper path used by datasource previews.
@@ -38,6 +40,24 @@
   settings form with curated defaults, validated custom families, public token
   application, and fail-closed service-level `home.manage` persistence. Both
   documentation readers now use the requested compact `h3` article-title scale.
-- [ ] Continue Phase 4: Broaden token/inline-style audit beyond the touched builder/editor files, including global `index.css` checkbox rules and remaining page-builder/layout block inline styles.
+- [x] 2026-08-27: Foundation CSS uses shared tokens. Repository-wide global
+  `.btn`, hard-color, checkbox-reset, and unrelated inline-style cleanup remains
+  owned by sequence index 2, `frontend_css_architecture_normalization`.
+- [x] 2026-08-27: Made `components/ui/` the only foundation owner with direct
+  compatibility re-exports for `components/input` consumers.
+- [x] 2026-08-27: Reconciled the semantic foundation: `Button` owns common
+  actions; `Surface` owns generic static/selectable containers; `ComposerInput`
+  is distinct from `TextField`/`TextArea`; existing `GlassMenu`,
+  `PromptContainer`, shared feedback, and specialized tab/shell owners remain
+  authoritative without adding duplicate abstractions.
+- [x] 2026-08-27: Added focused behavior/accessibility coverage for Button,
+  Select/menu, controlled and uncontrolled Checkbox state, Surface keyboard
+  activation, ComposerInput, text fields, feedback, dialog focus/queueing, and
+  compatibility aliases. Named Admin, Settings, and Auth core routes contain no
+  raw button, select, or checkbox controls.
+- [x] 2026-08-27: Verification passed: 300 serial frontend tests, Biome lint,
+  TypeScript/Vite production build, native-dialog, managed-form,
+  loading-boundary, and media-placeholder policy gates. Existing Vite large
+  chunk warnings remain unchanged.
 
 <--/------->

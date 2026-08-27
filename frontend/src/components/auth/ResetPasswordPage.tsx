@@ -5,6 +5,7 @@ import type { FormikHelpers } from "formik";
 import { resetPassword } from "../../utils/api";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
 import { FormField, ManagedForm } from "../form";
+import Button from "../ui/Button";
 import "./Auth.css";
 import "../ui/FormGroup.css";
 
@@ -45,14 +46,14 @@ export default function ResetPasswordPage() {
                 Your password has been changed. You can now log in with your new password.
               </p>
               <div className="form-actions" style={{ justifyContent: "center" }}>
-                <button
+                <Button unstyled
                   type="button"
                   className="auth-button"
                   onClick={() => navigate("/login")}
                   style={{ display: "inline-flex" }}
                 >
                   Go to Login
-                </button>
+                </Button>
               </div>
             </div>
           </ContentStandOutCard>

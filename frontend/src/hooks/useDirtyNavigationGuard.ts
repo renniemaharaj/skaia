@@ -19,11 +19,19 @@ export function useDirtyNavigationGuard(active: boolean, options: DirtyNavigatio
     if (!active) return;
 
     const guard = (event: MouseEvent) => {
-      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
         return;
       }
       const target = event.target;
-      const anchor = target instanceof Element ? target.closest<HTMLAnchorElement>("a[href]") : null;
+      const anchor =
+        target instanceof Element ? target.closest<HTMLAnchorElement>("a[href]") : null;
       if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) return;
 
       const destination = new URL(anchor.href, window.location.href);

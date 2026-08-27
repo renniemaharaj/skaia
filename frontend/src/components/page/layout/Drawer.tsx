@@ -42,7 +42,7 @@ import {
   setSoundVolume,
 } from "../../../utils/sound";
 import InboxMail from "../../inbox/InboxMail";
-import Select from "../../input/Select";
+import Select from "../../ui/Select";
 import NotificationBell from "../../notifications/NotificationBell";
 import type { Branding } from "../types";
 

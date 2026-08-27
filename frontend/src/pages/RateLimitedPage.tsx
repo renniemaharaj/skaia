@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import type { FormikHelpers } from "formik";
 import { toast } from "sonner";
 import { FormField, FormSectionIntro, ManagedForm } from "../components/form";
+import Button from "../components/ui/Button";
 import { type RateLimitDefconInfo, apiRequest } from "../utils/api";
 import ErrorPage from "./ErrorPage";
 import "../components/ui/FormGroup.css";
@@ -82,13 +83,13 @@ const RateLimitedPage: React.FC<RateLimitedPageProps> = ({
       </p>
 
       {canRequestPriorityAccess && !showOverride && (
-        <button
+        <Button unstyled
           type="button"
           onClick={() => setShowOverride(true)}
           className="rate-limited-override-btn"
         >
           <Lock size={12} /> Priority Access
-        </button>
+        </Button>
       )}
 
       {canRequestPriorityAccess && showOverride && (

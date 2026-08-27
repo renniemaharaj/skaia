@@ -3,7 +3,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { hasPermissionAtom, isAuthenticatedAtom } from "../../atoms/auth";
-import Button from "../../components/input/Button";
+import Button from "../../components/ui/Button";
 import {
   DirectoryLayout,
   type ViewMode,
@@ -93,14 +93,20 @@ export default function CommunityDirectoryPage() {
   ];
 
   async function remove(publication: Publication) {
-    if (!(await confirmDestructiveAction({
-      title: `Delete this ${publication.kind}?`,
-      body: "The publication and its linked custom page will move to Trash together.",
-      confirmLabel: `Delete ${publication.kind}`,
-    }))) return;
+    if (
+      !(await confirmDestructiveAction({
+        title: `Delete this ${publication.kind}?`,
+        body: "The publication and its linked custom page will move to Trash together.",
+        confirmLabel: `Delete ${publication.kind}`,
+      }))
+    )
+      return;
     try {
       await apiRequest(`/community/${publication.kind}/${publication.id}`, { method: "DELETE" });
-      setData(current => ({ ...current, items: current.items.filter(item => item.id !== publication.id) }));
+      setData(current => ({
+        ...current,
+        items: current.items.filter(item => item.id !== publication.id),
+      }));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Deletion failed");
     }
@@ -109,7 +115,9 @@ export default function CommunityDirectoryPage() {
   function controls(publication: Publication, overlay = false) {
     if (!publication.can_edit && !publication.can_delete) return null;
     return (
-      <div className={`community-card__actions${overlay ? " community-card__actions--overlay" : ""}`}>
+      <div
+        className={`community-card__actions${overlay ? " community-card__actions--overlay" : ""}`}
+      >
         {publication.can_edit && (
           <Link
             className="action-btn edit-btn"
@@ -145,23 +153,27 @@ export default function CommunityDirectoryPage() {
         onSearchChange={setSearch}
         viewMode={view}
         onViewModeChange={setView}
-        headerActions={canCreate ? (
-          <Link
-            className="action-btn"
-            to={`/form/community/${kind}/new`}
-            title={`Create ${kind}`}
-            aria-label={`Create ${kind}`}
-          >
-            <Plus size={15} />
-          </Link>
-        ) : undefined}
+        headerActions={
+          canCreate ? (
+            <Link
+              className="action-btn"
+              to={`/form/community/${kind}/new`}
+              title={`Create ${kind}`}
+              aria-label={`Create ${kind}`}
+            >
+              <Plus size={15} />
+            </Link>
+          ) : undefined
+        }
         items={data.items}
         tableColumns={columns}
         tableRowKey={value => value.id}
         renderGridCard={value => (
           <article key={value.id} className="community-card">
             <span>{value.kind}</span>
-            <h2><Link to={`/community/${value.kind}/${value.id}`}>{value.title}</Link></h2>
+            <h2>
+              <Link to={`/community/${value.kind}/${value.id}`}>{value.title}</Link>
+            </h2>
             <p>{value.summary || "No summary provided."}</p>
             <small>By {value.author_name}</small>
             {controls(value, true)}

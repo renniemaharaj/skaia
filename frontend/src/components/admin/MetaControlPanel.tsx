@@ -2,12 +2,9 @@ import { FileText, Paintbrush, Trash2 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { uploader } from "../../atoms/uploadAtom";
 import { apiRequest } from "../../utils/api";
-import {
-  SITE_FONT_PRESETS,
-  normalizeSiteFontFamily,
-  siteFontPreset,
-} from "../../utils/siteFont";
+import { SITE_FONT_PRESETS, normalizeSiteFontFamily, siteFontPreset } from "../../utils/siteFont";
 import { FormField, FormFileInput, FormSectionIntro, FormSelect, ManagedForm } from "../form";
+import Button from "../ui/Button";
 
 interface MetaConfigForm {
   description: string;
@@ -154,21 +151,18 @@ export default function MetaControlPanel({
               name="fontPreset"
               label="Site font"
               block
-              options={[
-                ...SITE_FONT_PRESETS,
-                { value: "custom", label: "Custom Google Font" },
-              ]}
+              options={[...SITE_FONT_PRESETS, { value: "custom", label: "Custom Google Font" }]}
               onValueChange={value => {
                 if (value !== "custom") {
                   void formik.setFieldValue("font_family", value);
-                } else if (SITE_FONT_PRESETS.some(option => option.value === formik.values.font_family)) {
+                } else if (
+                  SITE_FONT_PRESETS.some(option => option.value === formik.values.font_family)
+                ) {
                   void formik.setFieldValue("font_family", "");
                 }
               }}
             />
-            <p className="form-help">
-              Choose a Google Font or enter another Google Fonts family.
-            </p>
+            <p className="form-help">Choose a Google Font or enter another Google Fonts family.</p>
             {formik.values.fontPreset === "custom" && (
               <FormField
                 name="font_family"
@@ -261,14 +255,14 @@ function MediaFileField({
           placeholder="URL or upload below"
           aria-label={`${label} URL`}
         />
-        <button
+        <Button unstyled
           type="button"
           className="action-btn danger"
           onClick={onReset}
           aria-label={`Reset ${label}`}
         >
           <Trash2 size={14} />
-        </button>
+        </Button>
       </div>
       <FormFileInput
         label={`Upload ${label}`}

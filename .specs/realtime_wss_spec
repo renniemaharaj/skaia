@@ -59,15 +59,10 @@ limit/error WS messages.
 | `voice:signal` | WebRTC signaling payload | Same-route peer connection setup |
 | `media:*` | media control payloads | Shared media state/sfx |
 
-`tp` requires established account trust plus `presence.tp-here`. Grengo control
-actions are not part of ordinary client ingress: any future browser action also
-requires `admin.general`, a live Grengo session, fresh action-bound step-up, and
-an action/argument allowlist. Grengo telemetry uses authorized subscription or
-direct-session delivery and is never globally broadcast.
+`tp` requires established account trust plus `presence.tp-here`. The registry has
+no Grengo action or telemetry messages; browser control-plane access is absent.
 
-The registry defines decodable message types, not authorization. `grengo:action`
-is retained only as a correlated rejection response for old clients and cannot
-reach a control-plane handler. Guests and
+The registry defines decodable message types, not authorization. Guests and
 provisional accounts may receive public route media state but cannot mutate queue,
 playback, SFX, retained route state, or persisted history. Every media mutation
 uses the centralized account-trust and route/resource policy before work.
@@ -102,7 +97,6 @@ uses the centralized account-trust and route/resource policy before work.
 | `mfa:required` | none | auth challenge event |
 | `defcon:telemetry` | telemetry stats | admin telemetry |
 | `activity:event` | `ActivityEvent` | activity feed |
-| `grengo:*` | job/stats/storage/hardware payload | custom browser events |
 | `mediascraper:*` | job/result payloads | custom browser events |
 | `recovery_request:accepted` | `{ request, auth }` | Authenticate only the browser tab holding the same pending request and guest-session IDs |
 

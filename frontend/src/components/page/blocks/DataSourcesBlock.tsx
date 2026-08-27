@@ -8,7 +8,7 @@ import "./DataSourcesBlock.css";
 import { AlertTriangle, Database, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "../../../utils/api";
-import Button from "../../input/Button";
+import Button from "../../ui/Button";
 
 const TabbedEditor = lazy(() => import("../TabbedEditor"));
 

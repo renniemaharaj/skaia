@@ -3,11 +3,11 @@ import { Link } from "react-router-dom";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../../cards/ContentStandOutCard";
 import { FormSectionIntro } from "../../form";
-import Select, { type SelectOption } from "../../input/Select";
+import Select, { type SelectOption } from "../../ui/Select";
 import { MoneyAmount } from "../../ui/MoneyAmount";
 import { BillingInfoCard } from "./BillingInfoCard";
 import { DeliveryLocationPicker } from "./DeliveryLocationPicker";
-import Checkbox from "../../input/Checkbox";
+import Checkbox from "../../ui/Checkbox";
 import type { LegalPolicy } from "../../../types/legal";
 
 export type WalletCard = {
@@ -208,7 +208,11 @@ export function CheckoutPanel({
                 <Checkbox
                   key={policy.id}
                   checked={acceptedPolicyIDs.has(policy.id)}
-                  label={policyCheckboxLabel(checkoutPolicyCheckboxText, policy.name, policy.page_slug)}
+                  label={policyCheckboxLabel(
+                    checkoutPolicyCheckboxText,
+                    policy.name,
+                    policy.page_slug
+                  )}
                   onChange={event => onPolicyAcceptanceChange(policy.id, event.target.checked)}
                 />
               ))}

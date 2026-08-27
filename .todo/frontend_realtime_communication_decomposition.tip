@@ -1,0 +1,20 @@
+<--/------->
+
+## frontend_realtime_communication_decomposition
+@todo-sequence(group=frontend_maintainability_normalization_sequence, index=4)
+
+### Current Progress
+- **Phase 1: Concern and lifecycle inventory** - ✅ Complete
+- **Phase 2: Inbox decomposition** - ⬜ Not started
+- **Phase 3: Presence decomposition** - ⬜ Not started
+- **Phase 4: Voice and media decomposition** - ⬜ Not started
+- **Phase 5: Realtime regression verification** - ⬜ Not started
+
+### Next Steps
+- [ ] Wait for sequence indexes 1-3.
+- [ ] Extract inbox pure parsers and conversation/message owners first.
+- [ ] Preserve singleton subscriptions and teardown while splitting presence/voice.
+- [ ] Run reconnect, device, responsive, and accessibility verification.
+
+<--/------->
+

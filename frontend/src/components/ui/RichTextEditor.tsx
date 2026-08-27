@@ -64,16 +64,14 @@ export function RichTextEditor({ value, onChange, minHeight }: RichTextEditorPro
       style={{ "--editor-min-height": minHeight || "200px" } as React.CSSProperties}
     >
       <div className="editor-toolbar">
-        <button type="button" className="import-html-btn" onClick={() => fileInputRef.current?.click()}>
+        <button
+          type="button"
+          className="import-html-btn"
+          onClick={() => fileInputRef.current?.click()}
+        >
           Import HTML
         </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="text/html,.html"
-          onChange={loadHTML}
-          hidden
-        />
+        <input ref={fileInputRef} type="file" accept="text/html,.html" onChange={loadHTML} hidden />
       </div>
       <RichTextEditorControl
         output="html"

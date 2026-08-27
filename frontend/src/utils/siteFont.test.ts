@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  googleFontStylesheetURL,
-  normalizeSiteFontFamily,
-  siteFontPreset,
-} from "./siteFont";
+import { googleFontStylesheetURL, normalizeSiteFontFamily, siteFontPreset } from "./siteFont";
 
 describe("site font configuration", () => {
   it("normalizes safe Google Font family names", () => {

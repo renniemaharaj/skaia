@@ -2,7 +2,7 @@ import { useReactFlow } from "@xyflow/react";
 import { Maximize, PlusSquare } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
-import Select from "../../input/Select";
+import Select from "../../ui/Select";
 import { nodeGroups } from "../config";
 
 export default function Controls() {

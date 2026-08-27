@@ -1,0 +1,19 @@
+<--/------->
+
+## frontend_ui_convergence_enforcement
+@todo-sequence(group=frontend_maintainability_normalization_sequence, index=6)
+
+### Current Progress
+- **Phase 1: Baseline inventory** - ✅ Complete
+- **Phase 2: Residual route-family migration** - ⬜ Not started
+- **Phase 3: Compatibility retirement and gates** - ⬜ Not started
+- **Phase 4: Spec and final audit closure** - ⬜ Not started
+
+### Next Steps
+- [ ] Wait for sequence indexes 1-5.
+- [ ] Recompute the baseline and classify every remaining exception.
+- [ ] Migrate residual debt, retire compatibility, and land ratcheted checks.
+- [ ] Reconcile the frontend spec and close the sequence after full verification.
+
+<--/------->
+

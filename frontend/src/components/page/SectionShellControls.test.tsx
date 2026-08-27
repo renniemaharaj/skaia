@@ -55,12 +55,7 @@ describe("SectionShellControls", () => {
       return rect({ top: 0, right: 0, bottom: 0, left: 0 });
     });
 
-    render(
-      <SectionShellControls
-        shell={DEFAULT_SECTION_SHELL}
-        onChange={vi.fn()}
-      />
-    );
+    render(<SectionShellControls shell={DEFAULT_SECTION_SHELL} onChange={vi.fn()} />);
 
     const trigger = screen.getByRole("button", { name: "Appearance" });
     fireEvent.click(trigger);
@@ -98,12 +93,7 @@ describe("SectionShellControls", () => {
 
   it("uses shared selects and keeps the Appearance panel open while choosing an option", () => {
     const onChange = vi.fn();
-    render(
-      <SectionShellControls
-        shell={DEFAULT_SECTION_SHELL}
-        onChange={onChange}
-      />
-    );
+    render(<SectionShellControls shell={DEFAULT_SECTION_SHELL} onChange={onChange} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
     const panel = screen.getByRole("dialog", { name: "Section appearance" });

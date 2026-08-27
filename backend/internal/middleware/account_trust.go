@@ -67,7 +67,7 @@ func isMutation(method string) bool {
 
 func requiresEstablishedRead(path string) bool {
 	for _, prefix := range []string{
-		"/api/analytics/", "/api/events", "/api/grengo/", "/api/instances",
+		"/api/analytics/", "/api/events", "/api/instances",
 		"/api/mediascraper/", "/api/trash/", "/api/clipmaker/",
 	} {
 		if strings.HasPrefix(path, prefix) {

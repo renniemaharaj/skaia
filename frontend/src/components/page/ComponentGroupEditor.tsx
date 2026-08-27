@@ -8,8 +8,8 @@ import { ChevronDown, ChevronUp, Maximize2, Plus, Trash2 } from "lucide-react";
  * percentage of the total.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Button from "../input/Button";
-import Select from "../input/Select";
+import Button from "../ui/Button";
+import Select from "../ui/Select";
 import { CardDesigner } from "./CardDesigner";
 import { ComponentBindMapper } from "./ComponentBindMapper";
 import { ComponentRenderer } from "./ComponentRenderer";
@@ -116,9 +116,7 @@ export function ComponentGroupEditor({
   };
 
   const removeComponent = (id: string) =>
-    update(
-      sorted.filter(item => item.id !== id).map((item, index) => ({ ...item, order: index }))
-    );
+    update(sorted.filter(item => item.id !== id).map((item, index) => ({ ...item, order: index })));
 
   const moveComponent = (id: string, direction: "up" | "down") =>
     update(moveComponentItem(group.items, id, direction));

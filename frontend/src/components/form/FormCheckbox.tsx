@@ -1,5 +1,5 @@
 import { useField } from "formik";
-import Checkbox, { type CheckboxProps } from "../input/Checkbox";
+import Checkbox, { type CheckboxProps } from "../ui/Checkbox";
 
 interface FormCheckboxProps extends Omit<CheckboxProps, "name" | "checked" | "onChange"> {
   name: string;

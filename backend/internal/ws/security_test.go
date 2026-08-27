@@ -14,27 +14,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func TestGrengoBrowserActionIsRejectedWithoutControlPlaneCall(t *testing.T) {
-	hub := NewHub()
-	client := newSecurityTestClient(hub, 7)
-	client.handleMessage(Message{Type: GrengoJobAction, Payload: json.RawMessage(`{"request_id":"req-1"}`)})
-
-	var serverMessage wspb.ServerMessage
-	if err := proto.Unmarshal(<-client.Send, &serverMessage); err != nil {
-		t.Fatal(err)
-	}
-	if serverMessage.GetType() != string(GrengoActionAck) {
-		t.Fatalf("message type = %q", serverMessage.GetType())
-	}
-	var ack map[string]any
-	if err := json.Unmarshal(serverMessage.GetPayload(), &ack); err != nil {
-		t.Fatal(err)
-	}
-	if ack["accepted"] != false || ack["request_id"] != "req-1" {
-		t.Fatalf("ack = %#v", ack)
-	}
-}
-
 func TestPresenceCannotOverrideServerIdentity(t *testing.T) {
 	hub := NewHub()
 	client := newSecurityTestClient(hub, 7)

@@ -108,8 +108,8 @@ const UserManagePanel = ({
       {!canManageTarget && (
         <div className="up-manage-notice">
           <div>
-            You cannot modify this user - they have equal or greater power level than you (
-            power {actorPower} is not greater than power {targetPower}).
+            You cannot modify this user - they have equal or greater power level than you ( power{" "}
+            {actorPower} is not greater than power {targetPower}).
           </div>
           {currentUserRoles.includes("superuser") && (user.roles ?? []).includes("superuser") && (
             <SuperUsersDemotionVoteButton targetUserId={user.id} />

@@ -8,7 +8,8 @@ the embedded immutable KJV corpus contracts.
 ## Load when
 
 Changing backend handlers/services/repositories, routes, models, migrations,
-auth, store, cache, WebSocket emission, uploads, SSR, or grengo proxy behavior.
+auth, store, cache, WebSocket emission, uploads, SSR, or internal Grengo
+provisioning behavior.
 
 ## Owns
 
@@ -97,7 +98,6 @@ All application APIs are under `/api`; `/health`, `/ready`, `/sitemap.xml`, `/ws
 | `/api/account-safeguards` | `main.go` + `internal/security` | `admin.general`-protected bounded trust/limiter counters |
 | `/api/status` | `internal/status` | opt-in sanitized public status plus `admin.general`-policy diagnostics/incidents |
 | `/api/mediascraper` | `internal/mediascraper` | scrape/job controls |
-| `/api/grengo` | `internal/grengo` | in-app tenant administration proxy |
 | `/api/bible/kjv` | `internal/bible` | public immutable KJV catalog and per-book reads |
 | `/api/site` | `backend/main.go` | arm/disarm, `home.manage` + power-level gate |
 

@@ -234,8 +234,6 @@ func (c *Client) handleMessage(msg Message) {
 			return
 		}
 		c.Hub.mediaUpdates <- MediaUpdateAction{Client: c, Message: msg}
-	case GrengoJobAction:
-		c.handleGrengoJobAction(msg)
 	case ApiRequest:
 		c.handleApiRequest(msg)
 	default:
@@ -459,24 +457,6 @@ func responseHeaders(headers http.Header) (map[string]string, error) {
 		}
 	}
 	return out, nil
-}
-
-func (c *Client) handleGrengoJobAction(msg Message) {
-	var req struct {
-		RequestID string `json:"request_id"`
-	}
-	_ = json.Unmarshal(msg.Payload, &req)
-
-	payload := map[string]any{
-		"request_id": req.RequestID,
-		"accepted":   false,
-		"job_id":     "",
-		"error":      "browser control is disabled; use the authenticated Grengo session API",
-	}
-	data, err := json.Marshal(payload)
-	if err == nil {
-		c.queueMessage(&Message{Type: GrengoActionAck, Payload: data})
-	}
 }
 
 // WritePump pumps encoded outbound messages from the hub to the connection and

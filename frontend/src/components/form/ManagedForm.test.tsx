@@ -72,10 +72,7 @@ describe("ManagedForm tabs", () => {
     );
 
     expect(screen.getByRole("link", { name: "Profile" })).toHaveClass("managed-form__tab");
-    expect(screen.getByRole("tab", { name: "Access" })).toHaveClass(
-      "managed-form__tab",
-      "active"
-    );
+    expect(screen.getByRole("tab", { name: "Access" })).toHaveClass("managed-form__tab", "active");
 
     await user.click(screen.getByRole("tab", { name: "Access" }));
     expect(onSelect).toHaveBeenCalledOnce();

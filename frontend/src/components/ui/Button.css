@@ -56,7 +56,6 @@
   border-radius: var(--radius-sm);
 }
 
-
 /* Action */
 .sk-btn--action {
   background: color-mix(in srgb, var(--bg-secondary) 72%, transparent);

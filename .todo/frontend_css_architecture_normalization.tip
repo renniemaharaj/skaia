@@ -1,0 +1,24 @@
+<--/------->
+
+## frontend_css_architecture_normalization
+@todo-sequence(group=frontend_maintainability_normalization_sequence, index=2)
+
+### Current Progress
+- **Phase 1: Ownership and duplication inventory** - ✅ Complete
+- **Phase 2: Token and primitive CSS alignment** - ⬜ Not started
+- **Phase 3: Domain stylesheet decomposition** - ⬜ Not started
+- **Phase 4: Visual and policy verification** - ⬜ Not started
+
+### Next Steps
+- [x] 2026-08-27: Sequence index 1 defined canonical `components/ui` ownership
+  and deprecated direct `components/input` compatibility re-exports.
+- [x] 2026-08-27: Removed the verified 350-line clipmaker utility duplicate;
+  `npm run check:css-architecture` now requires each signature selector exactly
+  once so the copied block cannot silently return.
+- [ ] Replace cross-domain stylesheet imports with owner components or shared recipes.
+- [x] 2026-08-27: Deployment cards no longer import order-route CSS and uploads
+  no longer import profile/directory CSS; the CSS architecture gate protects
+  those corrected boundaries while the broader cross-domain inventory remains.
+- [ ] Classify and ratchet hard colors, `var()` fallbacks, and `!important` exceptions.
+
+<--/------->

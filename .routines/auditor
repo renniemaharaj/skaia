@@ -89,9 +89,22 @@ truth and implementation meet the highest maintainability and product-quality ba
 
 ## Last Ran
 
-- 2026-08-26
+- 2026-08-27
 
 ## Last Run Remarks
+
+- Audited frontend maintainability and design ownership across all first-party
+  TS/TSX/CSS, existing UI and shell plans, shared primitives, route/domain CSS,
+  and current frontend contracts. High-severity maintainability hotspots are the
+  2,117-line multi-concern Grengo dashboard, 1,541-line inbox, and four other
+  1,000-line TSX routes/components; CSS has nine files above 1,000 lines.
+- Confirmed systemic UI drift: global and typed Button authorities coexist with
+  402 raw button call sites and 64 `unstyled` escapes; card/surface and
+  modal/menu/tab/feedback ownership is fragmented; core controls lack focused
+  tests; cross-domain CSS imports leak route context; and the clipmaker stylesheet
+  repeats one 350-line button/card block exactly. Routed the broad fixes into the
+  ordered frontend maintainability normalization sequence rather than changing
+  runtime code during the audit.
 
 - Audited the Go Web Platform surface implementation across tenant-brand authority,
   pristine-only page migration, landing-page preservation, canonical registered

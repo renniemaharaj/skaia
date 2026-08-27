@@ -1,7 +1,7 @@
 import { useAtom } from "jotai";
 import { Link } from "react-router-dom";
 import { physicsSettingsAtom } from "../../../atoms/physics";
-import Select from "../../input/Select";
+import Select from "../../ui/Select";
 import { type PhysicsSettings, defaultSettings } from "../../ui/GravityParticles/engine";
 
 const Section = ({

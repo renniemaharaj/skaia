@@ -6,7 +6,6 @@ import {
   Download,
   ExternalLink,
   FileIcon,
-  Film,
   ImageIcon,
   LayoutGrid,
   List,
@@ -25,31 +24,19 @@ import { MediaPreviewLightbox } from "../ui/MediaPreviewLightbox";
 import { confirmDestructiveAction, customAlert } from "../ui/Prompt";
 import { SkeletonContent } from "../ui/Skeleton";
 import { TableView } from "../ui/TableView/TableView";
+import {
+  formatUploadDate as formatDate,
+  formatUploadSize as formatSize,
+  isImageUpload as isImage,
+  isVideoUpload as isVideo,
+  storageBarClass,
+  type UserStorageInfo,
+  type UserUpload,
+  uploadTypeIcon as getTypeIcon,
+  uploadTypeLabel as getTypeLabel,
+} from "./uploadModel";
 
-import "../page/layout/templates/DirectoryLayout.css";
-import "./UserProfile.css";
-
-interface UserUpload {
-  url: string;
-  filename: string;
-  size: number;
-  type: string;
-  mime_type: string;
-  created_at: string;
-}
-
-interface UserStorageInfo {
-  user_used: number;
-  user_limit: number;
-  user_percent: number;
-  total_used: number;
-  total_limit: number;
-  total_percent: number;
-  user_used_human: string;
-  user_limit_human: string;
-  total_used_human: string;
-  total_limit_human: string;
-}
+import "./UserUploads.css";
 
 interface Props {
   userId: string | undefined;
@@ -292,57 +279,6 @@ const UserUploads = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  const isImage = (u: UserUpload) =>
-    u.mime_type.startsWith("image/") ||
-    u.type === "images" ||
-    u.type === "photos" ||
-    u.type === "banners";
-
-  const isVideo = (u: UserUpload) => u.mime_type.startsWith("video/") || u.type === "videos";
-
-  const getTypeIcon = (u: UserUpload) => {
-    if (isImage(u)) return <ImageIcon size={14} />;
-    if (isVideo(u)) return <Film size={14} />;
-    return <FileIcon size={14} />;
-  };
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case "images":
-        return "Image";
-      case "photos":
-        return "Avatar";
-      case "banners":
-        return "Banner";
-      case "videos":
-        return "Video";
-      case "files":
-        return "File";
-      default:
-        return type;
-    }
-  };
-
-  const storageBarClass = (pct: number) => {
-    if (pct >= 80) return "up-storage-bar-fill up-storage-danger";
-    if (pct >= 50) return "up-storage-bar-fill up-storage-warning";
-    return "up-storage-bar-fill up-storage-ok";
   };
 
   const StorageBar = () => {

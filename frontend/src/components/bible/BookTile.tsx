@@ -1,5 +1,5 @@
 import pageArt from "../../assets/Bible_Page_Art.jpg";
-import Button from "../input/Button";
+import Button from "../ui/Button";
 import type { BibleBookSummary } from "./types";
 
 interface BookTileProps {

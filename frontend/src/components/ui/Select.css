@@ -129,7 +129,6 @@ html[data-theme="dark"] .sk-select__trigger {
   right: 0.85rem;
 }
 
-
 /* Standard: solid background with border */
 .sk-select--standard .sk-select__trigger {
   background: var(--bg-secondary);

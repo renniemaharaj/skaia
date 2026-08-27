@@ -50,12 +50,14 @@
 }
 
 /* Checked state */
-.sk-checkbox__box--checked {
+.sk-checkbox__box--checked,
+.sk-checkbox__input:checked ~ .sk-checkbox__box {
   background: var(--primary-color);
   border-color: var(--primary-color);
 }
 
-.sk-checkbox__box--checked .sk-checkbox__check {
+.sk-checkbox__box--checked .sk-checkbox__check,
+.sk-checkbox__input:checked ~ .sk-checkbox__box .sk-checkbox__check {
   opacity: 1;
   transform: scale(1);
 }
@@ -66,7 +68,6 @@
   transform: scale(0.5);
   transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
-
 
 /* Small */
 .sk-checkbox--sm .sk-checkbox__box {

@@ -1,0 +1,53 @@
+# Frontend CSS Architecture Normalization
+
+## Context
+The frontend has 17 CSS files above 500 lines and 9 above 1,000. Style ownership
+crosses domain boundaries: deployments imports `OrdersPage.css`, uploads imports
+both `DirectoryLayout.css` and `UserProfile.css`, and unrelated consumers import
+primitive implementation styles directly. Global `.btn` rules duplicate the
+typed Button primitive, while card/surface styling is spread across global
+`.card`, `Tile`, `SpotlightCard`, `ContentFlatCard`, and `GlassCard` layers.
+
+`pages/clipmaker/isolated-studio.css` is 3,540 lines and contains an exact copy of
+the same 350-line button/card block at lines 1960-2309 and 2883-3232.
+
+## Goal
+- Make token, primitive, component, route, and isolated third-party CSS ownership explicit.
+- Remove exact duplication and cross-domain stylesheet dependencies.
+- Preserve the verified route-shell and isolated editor behavior.
+
+## Non-Goals
+- Visually redesign clipmaker or other specialized canvases.
+- Convert all CSS to a new library or styling framework.
+- Treat every `!important` as invalid without checking the documented exceptions.
+
+## Steps
+1. Classify every stylesheet over 500 lines by owner and split only at real
+   component or feature boundaries; begin with clipmaker, page builder,
+   datasource, header/presence, cart/store, admin, inbox, and user-profile CSS.
+2. Delete the exact repeated clipmaker block, scope the remaining imported
+   third-party rules, and replace platform-owned button/dialog styles there with
+   canonical primitives where the isolated integration permits it.
+3. Remove global/primitive duplicate button and surface recipes after index 1
+   defines the canonical compatibility path.
+4. Move shared directory, form, lightbox, menu, and feature-card behavior behind
+   their owning components; eliminate imports of another route's stylesheet.
+5. Replace hard-coded colors outside `index.css` with semantic tokens. Classify
+   `var()` fallbacks and `!important` uses against the frontend spec and retain
+   only documented third-party/reset/editor/mobile exceptions.
+6. Add CSS ownership and token-drift checks with explicit reviewed exceptions.
+
+## Verification
+- Screenshot/geometry coverage for affected desktop and mobile route families.
+- CSS drift, duplicate-block, cross-domain import, and stylesheet budget checks.
+- Complete frontend tests, lint, TypeScript/build, and existing UI policy checks.
+
+## References
+- `.todo/frontend_maintainability_normalization_sequence`
+- `.todo/ui_primitive_consolidation`
+- `.specs/frontend_spec`
+- `frontend/src/index.css`
+- `frontend/src/pages/clipmaker/isolated-studio.css`
+- `frontend/src/components/page/page-builder-core.css`
+- `frontend/src/components/page/datasources/DataSources.css`
+

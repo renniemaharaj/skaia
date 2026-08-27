@@ -5,16 +5,21 @@ export interface DocumentHeading {
 }
 
 function slugifyHeading(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "") || "section";
+  return (
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "section"
+  );
 }
 
 export function indexDocumentHeadings(html: string): { html: string; headings: DocumentHeading[] } {
   if (typeof DOMParser === "undefined") return { html, headings: [] };
-  const document = new DOMParser().parseFromString(`<div id="documentation-root">${html}</div>`, "text/html");
+  const document = new DOMParser().parseFromString(
+    `<div id="documentation-root">${html}</div>`,
+    "text/html"
+  );
   const root = document.getElementById("documentation-root");
   if (!root) return { html, headings: [] };
 

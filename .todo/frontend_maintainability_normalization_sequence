@@ -1,0 +1,83 @@
+# Frontend Maintainability Normalization Sequence
+
+## Context
+The 2026-08-27 frontend audit found 118,189 lines across first-party TypeScript,
+TSX, and CSS. Twenty-seven TSX files exceed 500 lines, thirteen exceed 800 lines,
+and six exceed 1,000 lines. At audit time the largest route component was the
+2,117-line `GrengoDashboard.tsx`; the production-normalization exception later
+removed that browser control surface instead of decomposing it.
+
+Design ownership is also fragmented. The tree contains 402 raw buttons in 106
+files, 29 raw checkboxes in 13 files, 64 `Button unstyled` uses in 16 files, a
+global `.btn` system alongside `input/Button.css`, multiple overlapping card
+abstractions, and cross-domain CSS imports. CSS contains 105 hard-coded color
+matches outside `index.css` and the isolated clipmaker stylesheet. The 3,540-line
+clipmaker stylesheet contains an exact repeated 350-line button/card block.
+
+The existing `ui_primitive_consolidation` completed useful migrations but did
+not establish one canonical primitive owner or a repository-wide enforcement
+boundary. This sequence expands that plan rather than duplicating it. The
+completed `module_submodule_shell_consolidation` remains authoritative for route
+shell geometry and is not reopened here.
+
+## Goal
+- Establish one tested, semantic frontend UI foundation and one token authority.
+- Decompose unreasonable files around cohesive state, data, and presentation
+  ownership without creating prop-forwarding fragments.
+- Remove contextual CSS coupling and repeated interaction implementations.
+- Ratchet maintainability and design-system adoption with explicit exceptions.
+
+## Non-Goals
+- Redesign tenant-authored pages or change backend/API contracts.
+- Mechanically split cohesive algorithmic modules solely to satisfy a line count.
+- Replace specialized canvas/editor boundaries with generic route shells.
+- Change `ModulePageShell`, `DirectoryLayout`, or other verified shell behavior
+  except where a decomposition preserves their current contract.
+
+## Standards
+1. `components/ui/` is the only foundation primitive owner. Domain components
+   may compose primitives but must not recreate their interaction or visual
+   states. `components/form/` remains the Formik adapter layer.
+2. Raw interactive HTML is confined to primitive implementations, reviewed
+   accessibility/third-party adapters, and explicit allowlisted exceptions.
+3. `index.css` owns tokens and global reset/typography. Component CSS owns only
+   its component; unrelated domains must not import another route's stylesheet.
+4. New or materially changed route/component files should remain below 500 lines.
+   Files above 600 lines with multiple state/effect/render concerns require
+   decomposition; files above 900 lines require an explicit cohesive exception.
+5. Extract by responsibility: API/state hooks, pure model helpers, focused panels,
+   and reusable domain components. Do not trade one large file for pass-through
+   prop chains, duplicate fetches, or competing state owners.
+6. Loading, empty, error, modal, menu, tabs, fields, actions, and surfaces use the
+   shared foundation unless a documented specialized boundary requires otherwise.
+7. Every foundation primitive and extracted state owner receives focused behavior,
+   accessibility, and regression coverage before call-site migration.
+
+## Steps
+1. Complete `ui_primitive_consolidation` as the canonical foundation stage.
+2. Execute `frontend_css_architecture_normalization`.
+3. Execute `frontend_admin_tooling_decomposition`.
+4. Execute `frontend_realtime_communication_decomposition`.
+5. Execute `frontend_page_commerce_decomposition`.
+6. Execute `frontend_ui_convergence_enforcement` and reconcile the frontend spec.
+
+## Verification
+- Validate the sequence declarations and todo pairing contract.
+- Run focused tests after each extraction, followed by the complete frontend test,
+  lint, TypeScript/build, and existing UI policy gates.
+- Add ratcheted large-file, raw-control, cross-domain CSS, and token drift checks;
+  exceptions must name an owner and rationale rather than only an exact count.
+- Finish with a route-family visual/accessibility pass at desktop and narrow mobile
+  widths, including loading, empty, error, disabled, focus, and destructive states.
+
+## References
+- `.specs/frontend_spec`
+- `.routines/planner`
+- `.routines/worker`
+- `.routines/auditor`
+- `.routines/correctness`
+- `.todo/ui_primitive_consolidation`
+- `.todo/module_submodule_shell_consolidation`
+- `frontend/src/index.css`
+- `frontend/src/components/input/`
+- `frontend/src/components/ui/`

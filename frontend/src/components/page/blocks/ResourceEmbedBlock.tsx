@@ -6,7 +6,7 @@ import DocumentationViewPage from "../../../pages/documentation/DocumentationVie
 import { apiRequest } from "../../../utils/api";
 import { ContentFlatCard } from "../../cards/ContentFlatCard";
 import ViewThreadPage from "../../forum/thread-view/ViewThreadPage";
-import Select from "../../input/Select";
+import Select from "../../ui/Select";
 import { ProductPage } from "../../store/ProductPage";
 import { EditableText } from "../EditControls";
 import type { PageItem, PageSection } from "../types";
@@ -66,13 +66,14 @@ function resourceLabel(resourceType: ResourceType | undefined): string {
   );
 }
 
-function EmbeddedRoute({ resourceType, reference }: { resourceType: ResourceType; reference: string }) {
+function EmbeddedRoute({
+  resourceType,
+  reference,
+}: { resourceType: ResourceType; reference: string }) {
   return (
     <div className="resource-embed-route" data-resource-type={resourceType}>
       {resourceType === "product" && <ProductPage productId={reference} />}
-      {resourceType === "forum_thread" && (
-        <ViewThreadPage embeddedThreadId={reference} embedded />
-      )}
+      {resourceType === "forum_thread" && <ViewThreadPage embeddedThreadId={reference} embedded />}
       {resourceType === "documentation" && (
         <DocumentationViewPage embeddedDocumentationSlug={reference} embedded />
       )}

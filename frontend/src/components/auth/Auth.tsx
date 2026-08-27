@@ -9,6 +9,7 @@ import "../ui/FormGroup.css";
 import "./Auth.css";
 import MFAChallenge from "../../pages/MFAChallenge";
 import { FormField, ManagedForm } from "../form";
+import Button from "../ui/Button";
 
 interface AuthPageProps {
   onAuthSuccess?: (token: string) => void;
@@ -148,7 +149,7 @@ export const Auth: React.FC<AuthPageProps> = ({ onAuthSuccess, initialMode = "lo
               <div className="auth-toggle">
                 <p>
                   {isLogin ? "Don't have an account?" : "Already have an account?"}
-                  <button
+                  <Button unstyled
                     type="button"
                     className="auth-toggle-btn"
                     onClick={() => {
@@ -160,7 +161,7 @@ export const Auth: React.FC<AuthPageProps> = ({ onAuthSuccess, initialMode = "lo
                     disabled={formik.isSubmitting}
                   >
                     {isLogin ? "Sign up" : "Log in"}
-                  </button>
+                  </Button>
                 </p>
               </div>
             </>

@@ -5,8 +5,8 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { hasPermissionAtom } from "../../atoms/auth";
 import { useLayoutPosition } from "../../atoms/viewModes";
-import Button from "../../components/input/Button";
-import Checkbox from "../../components/input/Checkbox";
+import Button from "../../components/ui/Button";
+import Checkbox from "../../components/ui/Checkbox";
 import { ModulePageShell } from "../../components/layout/ModulePageShell";
 import {
   DirectoryLayout,
@@ -353,11 +353,7 @@ export default function LegalProgressPage() {
     }
   }
 
-  async function togglePolicyPlacement(
-    policyID: string,
-    key: PlacementKey,
-    enabled: boolean
-  ) {
+  async function togglePolicyPlacement(policyID: string, key: PlacementKey, enabled: boolean) {
     if (!config || !canManage) return;
     setWorkingPolicyID(policyID);
     try {
@@ -425,7 +421,9 @@ function policyStatus(page: PolicyPage | null) {
 function PolicyStatusBadge({ page }: { page: PolicyPage | null }) {
   const status = policyStatus(page);
   return (
-    <span className={`legal-policy-status legal-policy-status--${status.tone}`}>{status.label}</span>
+    <span className={`legal-policy-status legal-policy-status--${status.tone}`}>
+      {status.label}
+    </span>
   );
 }
 

@@ -1,0 +1,32 @@
+.ui-empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  padding: 1.25rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.ui-empty-state__icon {
+  display: inline-flex;
+  color: var(--text-secondary);
+}
+
+.ui-empty-state__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.ui-empty-state__description {
+  max-width: 36rem;
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.ui-empty-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}

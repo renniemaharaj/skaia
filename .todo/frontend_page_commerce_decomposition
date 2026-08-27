@@ -1,0 +1,57 @@
+# Frontend Page, Content, and Commerce Decomposition
+
+## Context
+Page-builder and commerce files contain several reusable responsibilities but
+retain route-scale implementations: `EditControls.tsx` is 1,124 lines,
+`PageBuilder.tsx` 897, `InteractiveSectionBlock.tsx` 802,
+`CustomPages.tsx` 750, `CardDesigner.tsx` 722, `UserUploads.tsx` 955, and
+`OrdersPage.tsx` 936. Large paired stylesheets and local action/card/modal
+patterns prevent consistent use of the shared foundation.
+
+## Goal
+- Separate page document/state orchestration from editor control families.
+- Separate commerce/upload data operations from route presentation.
+- Reuse shared surfaces, directories, tables, fields, dialogs, actions, media,
+  and feedback without changing durable page/store contracts.
+
+## Non-Goals
+- Change the JSON page document, interactive response, cart, order, or upload APIs.
+- Reopen completed route-shell or normalized-page-model decisions.
+- Merge distinct proposal/event/form/store semantics into generic business logic.
+
+## Steps
+1. Split `EditControls` into pure config transforms plus layout, spacing,
+   animation, editable text, icon/media/color picker, toolbar, and item-action
+   modules; retain one `SectionFrame` shared-shell authority.
+2. Extract `PageBuilder` document convergence/save controller, management
+   actions, engagement/analytics, toolbar, and section mutation adapters while
+   preserving `usePageData` and multiplayer invariants.
+3. Split interactive section field rendering, response/results views, designer,
+   and submission lifecycle; split browse preview/directory behavior from custom
+   page management and analytics actions.
+4. Split card designer option metadata and focused control groups; align its
+   fields and selectable surfaces with the canonical primitives.
+5. Split uploads into data/actions, selection controller, storage summary,
+   directory/grid/table presentation, and preview actions without duplicating
+   `DirectoryLayout`, media, or lightbox ownership.
+6. Split orders into order data, reference-code management, filters, map/detail,
+   table/grid, and status mutations; remove cart stylesheet coupling.
+
+## Verification
+- Page save/merge/multiplayer and interactive-section regression tests.
+- Upload selection/deletion/lightbox and order filter/status/reference tests.
+- Mobile/desktop visual checks plus complete frontend gates.
+
+## References
+- `.todo/frontend_maintainability_normalization_sequence`
+- `.specs/frontend_spec`
+- `.specs/custom_pages_multiplayer_spec`
+- `.specs/custom_page_interactive_sections_spec`
+- `frontend/src/components/page/EditControls.tsx`
+- `frontend/src/components/page/PageBuilder.tsx`
+- `frontend/src/components/page/blocks/InteractiveSectionBlock.tsx`
+- `frontend/src/components/page/CustomPages.tsx`
+- `frontend/src/components/page/CardDesigner.tsx`
+- `frontend/src/components/user/UserUploads.tsx`
+- `frontend/src/components/store/OrdersPage.tsx`
+

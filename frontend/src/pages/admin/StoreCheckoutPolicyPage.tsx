@@ -2,7 +2,7 @@ import { ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FormField, FormSelect, ManagedForm } from "../../components/form";
-import Checkbox from "../../components/input/Checkbox";
+import Checkbox from "../../components/ui/Checkbox";
 import { ModulePageShell } from "../../components/layout/ModulePageShell";
 import type { LegalConfig } from "../../types/legal";
 import { apiRequest } from "../../utils/api";
@@ -85,7 +85,9 @@ export default function StoreCheckoutPolicyPage() {
                 },
               });
             } catch (caught) {
-              helpers.setStatus(caught instanceof Error ? caught.message : "Policies could not be saved");
+              helpers.setStatus(
+                caught instanceof Error ? caught.message : "Policies could not be saved"
+              );
             }
           }}
         >
@@ -115,28 +117,28 @@ export default function StoreCheckoutPolicyPage() {
                 maxLength={200}
               />
               {config.policies.length === 0 ? (
-              <p>
-                No policy pages are available. A site manager can create one from{" "}
-                <Link to="/form/site/legal">Site policies</Link>.
-              </p>
+                <p>
+                  No policy pages are available. A site manager can create one from{" "}
+                  <Link to="/form/site/legal">Site policies</Link>.
+                </p>
               ) : (
-              config.policies.map(policy => {
-                const checked = formik.values.policy_ids.includes(policy.id);
-                return (
-                  <Checkbox
-                    key={policy.id}
-                    checked={checked}
-                    label={policy.name}
-                    description={policy.description || `Page: /page/${policy.page_slug}`}
-                    onChange={event => {
-                      const next = event.target.checked
-                        ? [...formik.values.policy_ids, policy.id]
-                        : formik.values.policy_ids.filter(id => id !== policy.id);
-                      void formik.setFieldValue("policy_ids", next);
-                    }}
-                  />
-                );
-              })
+                config.policies.map(policy => {
+                  const checked = formik.values.policy_ids.includes(policy.id);
+                  return (
+                    <Checkbox
+                      key={policy.id}
+                      checked={checked}
+                      label={policy.name}
+                      description={policy.description || `Page: /page/${policy.page_slug}`}
+                      onChange={event => {
+                        const next = event.target.checked
+                          ? [...formik.values.policy_ids, policy.id]
+                          : formik.values.policy_ids.filter(id => id !== policy.id);
+                        void formik.setFieldValue("policy_ids", next);
+                      }}
+                    />
+                  );
+                })
               )}
             </>
           )}

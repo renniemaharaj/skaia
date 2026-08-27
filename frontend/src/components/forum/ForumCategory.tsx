@@ -2,7 +2,7 @@ import { useAtomValue } from "jotai";
 import { useEffect, useState } from "react";
 import { hasPermissionAtom } from "../../atoms/auth";
 import { apiRequest } from "../../utils/api";
-import Select from "../input/Select";
+import Select from "../ui/Select";
 
 interface Category {
   id: string;

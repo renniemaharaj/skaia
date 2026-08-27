@@ -1,0 +1,22 @@
+<--/------->
+
+## frontend_admin_tooling_decomposition
+@todo-sequence(group=frontend_maintainability_normalization_sequence, index=3)
+
+### Current Progress
+- **Phase 1: Concern inventory** - ✅ Complete
+- **Phase 2: Admin runtime containment** - ✅ Complete
+- **Phase 3: Datasource and deployment decomposition** - ⬜ Not started
+- **Phase 4: Roles and security decomposition** - ⬜ Not started
+- **Phase 5: Regression verification** - ⬜ Not started
+
+### Next Steps
+- [ ] Wait for sequence indexes 1-2.
+- [x] 2026-08-27: Removed the browser Grengo dashboard/session route and general
+  backend REST/WebSocket proxy under the coordinator's security-reducing
+  production exception. Internal deployment provisioning and bounded container
+  statistics remain available through the backend-owned client.
+- [ ] Decompose datasource and deployment routes without changing execution authority.
+- [ ] Finish roles/security and record remaining size exceptions, if any.
+
+<--/------->

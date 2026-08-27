@@ -686,7 +686,7 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		if armedDir == "" {
 			armedDir = "armed"
 		}
-		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/site/arm", "/api/site/disarm", "/api/health", "/api/ready", "/api/status", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh", "/api/grengo/"}))
+		api.Use(imw.ArmedMiddleware(armedDir, []string{"/api/arm", "/api/disarm", "/api/site/arm", "/api/site/disarm", "/api/health", "/api/ready", "/api/status", "/api/time", "/api/armed-status", "/api/auth/login", "/api/auth/refresh"}))
 		api.Use(defconLimiter, imw.ExtractTokenMiddleware, imw.IPHoppingMiddleware(authSvc), imw.MFARequiredMiddleware(authSvc), imw.AccountTrustBoundary(accountTrustPolicy), imw.MutationBudget(actionBudget))
 
 		api.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -1156,23 +1156,17 @@ func buildRouter(db *sql.DB, hub *ws.Hub, dispatcher *ievents.Dispatcher, rdb *r
 		statusPolicy := isecurity.NewStatusPolicy(userSvc)
 		istatus.NewHandler(istatus.NewService(statusRepo, statusChecker, statusPolicy)).Mount(api, imw.JWTAuthMiddleware)
 
-		// Grengo multi-tenant management API.
+		// Narrow internal Grengo client used only by backend provisioning.
 		grengoAPI := os.Getenv("GRENGO_API_URL")
 		var grengoSvc *igrengo.Service
 		if grengoAPI != "" {
-			grengoSvc = igrengo.NewService(grengoAPI, hub)
+			grengoSvc = igrengo.NewService(grengoAPI)
 			if pcode := os.Getenv("GRENGO_API_PASSCODE"); pcode != "" {
 				parts := strings.SplitN(pcode, ":", 2)
 				if len(parts) == 2 {
 					grengoSvc = grengoSvc.WithPasscode(parts[0], parts[1])
 				}
 			}
-			go grengoSvc.WatchJobs()
-			go grengoSvc.WatchStats()
-			go grengoSvc.WatchStorage()
-			go grengoSvc.WatchHardware()
-			go grengoSvc.WatchLogs()
-			igrengo.NewHandler(grengoSvc).Mount(api, imw.JWTAuthMiddleware)
 		}
 
 		immediascraper.SetHub(hub)

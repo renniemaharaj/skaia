@@ -32,7 +32,10 @@ describe("DocumentationShell", () => {
     expect(search).toHaveAttribute("placeholder", "Search guides…");
     fireEvent.change(search, { target: { value: "install" } });
     expect(onSearchChange).toHaveBeenCalledWith("install");
-    expect(screen.getByRole("link", { name: "Requirements" })).toHaveAttribute("href", "#requirements");
+    expect(screen.getByRole("link", { name: "Requirements" })).toHaveAttribute(
+      "href",
+      "#requirements"
+    );
 
     const menu = screen.getByRole("button", { name: "Open documentation navigation" });
     fireEvent.click(menu);

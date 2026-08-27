@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { type ProductMedia, productCategoriesAtom } from "../../atoms/store";
 import { apiRequest } from "../../utils/api";
 import { FormCheckbox, FormField, FormSelect, ManagedForm } from "../form";
-import Select from "../input/Select";
+import Select from "../ui/Select";
 import { ProductMediaTable } from "./ProductMediaTable";
 import "../forum/IconButton.css";
 

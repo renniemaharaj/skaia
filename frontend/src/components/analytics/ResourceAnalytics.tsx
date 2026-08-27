@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { apiRequest } from "../../utils/api";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
-import Select from "../input/Select";
+import Select from "../ui/Select";
 import CountUp from "../ui/CountUp/CountUp";
 import "./ResourceAnalytics.css";
 

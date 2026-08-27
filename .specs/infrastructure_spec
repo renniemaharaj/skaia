@@ -53,18 +53,14 @@ go build -o grengo .
 | `grengo load-check` | Capped read-only, local-by-default load sample |
 | `grengo wipe all` | Confirm exact phrase, attempt all service stops, remove every client plus shared data with ownership fallback, and fail if anything remains |
 
-## Management API
+## Internal Provisioning Client
 
-The grengo API exposes session-scoped management routes used by the in-app admin
-dashboard under backend `/api/grengo`.
-
-| Area | Routes |
-| --- | --- |
-| Session | `POST /session`, `/s/{sessionId}/validate`, `DELETE /s/{sessionId}` |
-| Sites | list/create/delete/start/stop/enable/disable/arm/disarm/env |
-| Node | stats, storage, sysinfo, compose up/down |
-| Transfer | export/import site, export/import node, job download |
-| Migrations | migrate site, migrate all |
+The browser has no Grengo dashboard or management API. When `GRENGO_API_URL` is
+configured, the backend creates a private gRPC client solely for deployment
+provisioning and the bounded container-stat projection used by that service.
+Tenant lifecycle, transfer, compose, environment, arbitrary command, and log
+stream operations remain CLI/operator responsibilities and are not proxied by
+the tenant application over REST or WebSocket.
 
 ## Nginx Contracts
 
@@ -136,7 +132,8 @@ Per-tenant env:
 - `internal/app/nginx.go`
 - `internal/app/public_url.go`
 - `compose.yml` `/healthz`
-- `backend/main.go` armed middleware and `/api/grengo` mount
+- `backend/main.go` narrow provisioning client construction and absence of an
+  `/api/grengo` mount
 - `go test ./internal/app/...` root Docker-context and generated env contracts
 
 ## Trace

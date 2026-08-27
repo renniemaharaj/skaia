@@ -1,12 +1,22 @@
 # UI Primitive Consolidation Plan
 
 ## Context
-Currently, the codebase contains extensive duplication of native HTML elements like `<button>`, `<select>`, and `<input type="checkbox">` (over 300 instances found). This leads to inconsistent styling (e.g., misaligned select arrows, varied button hover effects) and makes global design updates difficult. The components in datasources component picker should be based off of the same components we use from our `src/components`.
+Targeted migrations created useful Button, Select, Checkbox, Input, and Tile
+components, but the 2026-08-27 whole-frontend audit found that the foundation is
+still split between `components/input` and `components/ui`, has no focused tests
+for its core controls, and coexists with global `.btn`, local card/action systems,
+402 raw buttons, and 64 `unstyled` escapes. This plan is now sequence index 1 for
+`frontend_maintainability_normalization_sequence` and owns the canonical
+foundation before broad decomposition or migration begins.
 
 ## Goal
 - Consolidate scattered UI elements into reusable, consistent primitive components.
 - Maximize UI consistency across all routes.
 - Replace naked HTML tags with typed, beautifully styled React primitives.
+- Establish `components/ui/` as the single foundation owner, with deliberate
+  form adapters in `components/form/` and temporary compatibility re-exports.
+- Cover foundation semantics, keyboard/focus behavior, disabled/loading states,
+  controlled/uncontrolled behavior, and accessibility with focused tests.
 
 ## Non-Goals
 - Complete redesign of the entire app visual language.
@@ -23,9 +33,21 @@ Currently, the codebase contains extensive duplication of native HTML elements l
 3. Builder & Editor Standardization.
    - Convert the `Component Picker` UI in Datasource Editor to use the new `<Select>` and `<Tile>` primitives.
    - Refactor Page Builder block configuration forms (`CardDesigner`, `ColumnMapper`, `DerivedSectionBlock`).
-4. CSS Token Standardization.
-   - Audit `index.css` to ensure `var(--primary-color)`, `var(--border-color)`, `var(--bg-secondary)`, and spacing variables are correctly mapped.
-   - Remove legacy inline styles and one-off classes (`.btn-custom`, `.select-box`).
+4. Foundation CSS token standardization.
+   - Ensure primitive styles use the shared color, border, background, focus,
+     radius, typography, and spacing tokens.
+   - Remove legacy inline styles and one-off classes from migrated call sites.
+   - Hand repository-wide token drift, global `.btn` removal, and unrelated
+     inline-style ownership to sequence index 2 rather than duplicating its scope.
+5. Canonical foundation realignment.
+   - Move Button, Select, Checkbox, and Tile authority into `components/ui/`.
+   - Rename the current generic `Input` to its real composer responsibility and
+     add deliberate text-field/textarea primitives rather than overloading it.
+   - Reconcile global `.btn` and overlapping Tile/Card/ContentFlatCard/GlassCard
+     contracts into one semantic action and surface vocabulary.
+   - Add shared dialog/menu/tabs/feedback primitives only where the inventory
+     proves repeated interaction ownership; retain specialized domain behavior.
+   - Add focused tests and a compatibility path for later sequence members.
 
 ## Verification
 - Confirm 0 raw `<button>`, `<select>`, and `<input type="checkbox">` elements remain in core routes (grep search).
@@ -34,8 +56,10 @@ Currently, the codebase contains extensive duplication of native HTML elements l
 
 ## References
 - `frontend/src/components/input/`
+- `frontend/src/components/ui/`
+- `.todo/frontend_maintainability_normalization_sequence`
 - `frontend/src/components/page/datasources/DataSourceEditorPage.tsx`
-- `frontend/src/components/admin/GrengoDashboard.tsx`
+- `.specs/security_architecture_spec`
 
 ## History / Notes
 **Phase 1 Completion:**
@@ -48,7 +72,8 @@ All four primitives created in `src/components/input/`:
 **Phase 2 Completion:**
 Migrated core routes to new primitives:
 - `MetaControlPanel.tsx` - 1 Select, 4 Buttons
-- `GrengoDashboard.tsx` - 1 Select, 26+ Buttons
+- Former `GrengoDashboard.tsx` - 1 Select, 26+ Buttons before the later
+  security-reducing removal of the browser control surface
 - `Auth.tsx` - 1 submit Button
 - `auth/SecuritySettings.tsx` - 16 Buttons
 - `ProfileSettings.tsx` - 1 Select, 9 Buttons

@@ -144,7 +144,10 @@ export function DocumentationShell({
         type="button"
         onClick={closeSidebar}
       />
-      <aside className={`documentation-sidebar${sidebarOpen ? " is-open" : ""}`} aria-label="Documentation navigation">
+      <aside
+        className={`documentation-sidebar${sidebarOpen ? " is-open" : ""}`}
+        aria-label="Documentation navigation"
+      >
         <div className="documentation-sidebar__header">
           <Link to={catalogHref} className="documentation-brand" onClick={closeSidebar}>
             <BookOpen size={18} />

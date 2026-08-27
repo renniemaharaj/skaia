@@ -80,9 +80,21 @@ docs disagree.
 
 ## Last Ran
 
-- 2026-08-24
+- 2026-08-27
 
 ## Last Run Remarks
+
+- Reconciled the prior targeted primitive work with current implementation truth.
+  `ui_primitive_consolidation` did complete its named route migrations, but it did
+  not establish a single repository-wide component authority: `components/input`
+  and `components/ui`, global `.btn`, local action/card systems, raw controls,
+  and cross-domain styles still coexist. Expanded that existing plan as sequence
+  index 1 and preserved the completed module-shell contract as a separate concern.
+- Classified file size as a maintainability signal rather than an automatic
+  violation. The new plans require decomposition only when large files combine
+  distinct state/effect/render responsibilities, retain explicit cohesive
+  exceptions for engines and isolated integrations, and prohibit superficial
+  splitting that duplicates state or produces pass-through prop chains.
 
 - Reconciled component-group editing with existing authority: presets continue
   to live in `custom_sections` and update through `/config/section-presets`, while

@@ -169,9 +169,7 @@
   color: var(--text-secondary);
   box-shadow: none;
   cursor: pointer;
-  transition:
-    color 180ms ease,
-    background 180ms ease;
+  transition: color 180ms ease, background 180ms ease;
 }
 
 .utility-launcher__trigger:hover,
@@ -409,10 +407,20 @@
   background: var(--bg-tertiary);
 }
 
-.drawer-context-tools__action--success { color: var(--success-color); }
-.drawer-context-tools__action--danger { color: var(--error-color); }
-.drawer-context-tools__action:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.drawer-context-tools__action:disabled { opacity: 0.5; cursor: not-allowed; }
+.drawer-context-tools__action--success {
+  color: var(--success-color);
+}
+.drawer-context-tools__action--danger {
+  color: var(--error-color);
+}
+.drawer-context-tools__action:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.drawer-context-tools__action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 .drawer-customize-trigger:hover,
 .drawer-customize-trigger.active {

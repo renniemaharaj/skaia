@@ -1,0 +1,20 @@
+<--/------->
+
+## frontend_page_commerce_decomposition
+@todo-sequence(group=frontend_maintainability_normalization_sequence, index=5)
+
+### Current Progress
+- **Phase 1: Concern and contract inventory** - ✅ Complete
+- **Phase 2: Page-builder decomposition** - ⬜ Not started
+- **Phase 3: Interactive and browse decomposition** - ⬜ Not started
+- **Phase 4: Upload and commerce decomposition** - ⬜ Not started
+- **Phase 5: Contract regression verification** - ⬜ Not started
+
+### Next Steps
+- [ ] Wait for sequence indexes 1-4.
+- [ ] Extract pure `EditControls` config transforms with parity tests.
+- [ ] Decompose page, upload, and order state owners without changing APIs.
+- [ ] Verify multiplayer, media, interactive, cart, and order invariants.
+
+<--/------->
+

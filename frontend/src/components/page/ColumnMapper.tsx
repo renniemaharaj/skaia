@@ -8,8 +8,8 @@ import { GripHorizontal, X } from "lucide-react";
  * Users drag a chip onto a slot, or use the select dropdown.
  */
 import { useCallback, useState } from "react";
-import Button from "../input/Button";
-import Select from "../input/Select";
+import Button from "../ui/Button";
+import Select from "../ui/Select";
 import type { ColumnMap, MappableField } from "./types";
 import { MAPPABLE_FIELDS, MAPPABLE_FIELD_LABELS } from "./types";
 import "./ColumnMapper.css";

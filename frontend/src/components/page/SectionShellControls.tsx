@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import Select from "../input/Select";
+import Select from "../ui/Select";
 import { ColorPickerButton } from "./EditControls";
 import type { SharedSectionShell } from "./types";
 
@@ -62,8 +62,12 @@ export function getAnchoredPanelPosition(
   return { top, left, maxHeight, placement };
 }
 
-function rawColor(source: ColorSource): string | undefined { return source.mode === "literal" ? source.value : undefined; }
-function isSafeSectionColor(value: string): boolean { return /^#[0-9a-f]{3,8}$/i.test(value); }
+function rawColor(source: ColorSource): string | undefined {
+  return source.mode === "literal" ? source.value : undefined;
+}
+function isSafeSectionColor(value: string): boolean {
+  return /^#[0-9a-f]{3,8}$/i.test(value);
+}
 
 function ColorSourceControl({
   label,

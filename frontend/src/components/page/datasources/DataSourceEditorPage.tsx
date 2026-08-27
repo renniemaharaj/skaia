@@ -1,36 +1,24 @@
 import {
-  AlertTriangle,
   AlignCenterHorizontal,
   ArrowLeft,
-  Bookmark,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Clock,
   Code2,
-  Eye,
-  FileJson,
-  Filter,
-  Globe,
   LayoutGrid,
   Loader2,
   Maximize2,
   MoveVertical,
-  Pencil,
   Play,
   Save,
   Trash2,
-  X,
 } from "lucide-react";
-import { type CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { apiRequest } from "../../../utils/api";
-import Button from "../../input/Button";
+import Button from "../../ui/Button";
 import { SkeletonContent, SkeletonPrimitive } from "../../ui/Skeleton";
-import Select from "../../input/Select";
+import Select from "../../ui/Select";
 import { customConfirm } from "../../ui/Prompt";
-import { ComponentGroupEditor, ComponentGroupRenderer } from "../ComponentGroupEditor";
+import { ComponentGroupEditor } from "../ComponentGroupEditor";
 import { EventHookEditor } from "../EventHookEditor";
 import TabbedEditor from "../TabbedEditor";
 import type {
@@ -45,52 +33,15 @@ import {
   type DataSourceFetchLogEntry,
   runDatasourcePreview,
 } from "./datasourcePreview";
+import { DataSourceResultsPanel, type DataSourceResultPanel } from "./DataSourceResultsPanel";
+import {
+  DEFAULT_DATASOURCE_CODE,
+  type DataSourcePreviewItem,
+  type DataSourceRunStats,
+} from "./editorTypes";
 import "./DataSources.css";
 
-interface EvalItem {
-  heading?: string;
-  subheading?: string;
-  icon?: string;
-  image_url?: string;
-  link_url?: string;
-  [key: string]: unknown;
-}
-
-type FetchLogEntry = DataSourceFetchLogEntry;
-
-interface RunStats {
-  duration: number;
-  exitReason: "success" | "compile_error" | "runtime_error" | "invalid_return" | "timeout";
-  totalItems: number;
-  validItems: number;
-  skippedItems: number;
-  fetchLog: FetchLogEntry[];
-}
-
-const EXIT_REASON_LABELS: Record<RunStats["exitReason"], string> = {
-  success: "Success",
-  compile_error: "Compile Error",
-  runtime_error: "Runtime Error",
-  invalid_return: "Invalid Return",
-  timeout: "Timeout",
-};
-
-const DEFAULT_CODE = `// Return an array of items:
-// { heading, subheading, icon?, image_url?, link_url? }
-return [
- { heading: "Example", subheading: "Hello world" },
-];
-`;
-
-import { CACHE_TTL_OPTIONS, cacheTTLLabel, formatTimeAgo } from "../../../utils/cache";
-
-const DATASOURCE_PREVIEW_TYPES = ["component"] as const;
-
-type DataSourcePreviewType = (typeof DATASOURCE_PREVIEW_TYPES)[number];
-
-const DATASOURCE_PREVIEW_TYPE_LABELS: Record<DataSourcePreviewType, string> = {
-  component: "Component Registry",
-};
+import { CACHE_TTL_OPTIONS } from "../../../utils/cache";
 
 export default function DataSourceEditorPage() {
   const { id } = useParams<{ id: string }>();
@@ -101,7 +52,7 @@ export default function DataSourceEditorPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [files, setFiles] = useState<Record<string, string>>({
-    "main.ts": DEFAULT_CODE,
+    "main.ts": DEFAULT_DATASOURCE_CODE,
   });
   const [envData, setEnvData] = useState("");
   const [cacheTTL, setCacheTTL] = useState(0);
@@ -113,9 +64,9 @@ export default function DataSourceEditorPage() {
   const [compiledJS, setCompiledJS] = useState<string | null>(null);
   const [lastRunAt, setLastRunAt] = useState<Date | null>(null);
   const [diagnostics, setDiagnostics] = useState<DataSourceDiagnostic[]>([]);
-  const [previewItems, setPreviewItems] = useState<EvalItem[]>([]);
+  const [previewItems, setPreviewItems] = useState<DataSourcePreviewItem[]>([]);
   const [evalError, setEvalError] = useState<string | null>(null);
-  const [runStats, setRunStats] = useState<RunStats | null>(null);
+  const [runStats, setRunStats] = useState<DataSourceRunStats | null>(null);
   const [expandedFetch, setExpandedFetch] = useState<Set<number>>(new Set());
 
   const tableColumns = useMemo(() => {
@@ -127,8 +78,7 @@ export default function DataSourceEditorPage() {
   }, [previewItems]);
 
   // Active panel on the right
-  type RightPanel = "preview" | "compiled" | "diagnostics";
-  const [activePanel, setActivePanel] = useState<RightPanel>("preview");
+  const [activePanel, setActivePanel] = useState<DataSourceResultPanel>("preview");
 
   type LayoutMode = "default" | "wide" | "center";
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("default");
@@ -162,7 +112,10 @@ export default function DataSourceEditorPage() {
 
   const applySavedSection = useCallback(
     (section: CustomSection) => {
-      let config: { component_group?: ComponentGroup; event_hooks?: EventHook[] } = {};
+      let config: {
+        component_group?: ComponentGroup;
+        event_hooks?: EventHook[];
+      } = {};
       try {
         config = JSON.parse(section.config || "{}");
       } catch {
@@ -241,7 +194,7 @@ export default function DataSourceEditorPage() {
       if (ds.files && Object.keys(ds.files).length > 0) {
         setFiles(ds.files);
       } else {
-        setFiles({ "main.ts": ds.code || DEFAULT_CODE });
+        setFiles({ "main.ts": ds.code || DEFAULT_DATASOURCE_CODE });
       }
       // Fetch env data (returns empty for unauthorized users)
       try {
@@ -328,7 +281,7 @@ export default function DataSourceEditorPage() {
     setExpandedFetch(new Set());
 
     const startedAt = performance.now();
-    let fetchLog: FetchLogEntry[] = [];
+    let fetchLog: DataSourceFetchLogEntry[] = [];
     try {
       const result = await runDatasourcePreview(files, envData);
       fetchLog = result.fetch_log ?? [];
@@ -385,7 +338,7 @@ export default function DataSourceEditorPage() {
       }
 
       // Per-item validation and sanitization - skip bad entries, never throw
-      const sanitized: EvalItem[] = [];
+      const sanitized: DataSourcePreviewItem[] = [];
       let skippedItems = 0;
       for (const raw of rawItems as unknown[]) {
         if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
@@ -409,7 +362,7 @@ export default function DataSourceEditorPage() {
           skippedItems++;
           continue;
         }
-        const row: EvalItem = {
+        const row: DataSourcePreviewItem = {
           ...obj,
           heading: heading ?? undefined,
           subheading: subheading ?? undefined,
@@ -477,12 +430,6 @@ export default function DataSourceEditorPage() {
   const editorHeight = heightMode
     ? Math.max(400, Math.min(viewportHeight * 0.55, 700))
     : Math.max(400, Math.min(codeLineCount * 20 + 40, 700));
-
-  // Issues tab badge
-  const issuesBadgeCount =
-    diagnostics.filter(d => d.category === 1).length + (runStats?.skippedItems ?? 0);
-  const hasIssues =
-    issuesBadgeCount > 0 || !!evalError || (runStats != null && runStats.exitReason !== "success");
 
   const handleSaveSection = async () => {
     if (!sectionName.trim()) {
@@ -708,434 +655,48 @@ export default function DataSourceEditorPage() {
         </div>
 
         {/* Right: Results panel */}
-        <div className="ds-editor__results-panel">
-          <div className="ds-editor__panel-tabs">
-            <Button
-              unstyled
-              className={`ds-editor__tab ${activePanel === "preview" ? "ds-editor__tab--active" : ""}`}
-              onClick={() => setActivePanel("preview")}
-            >
-              <Eye size={13} /> Preview
-              {previewItems.length > 0 && (
-                <span className="ds-editor__tab-badge">{previewItems.length}</span>
-              )}
-            </Button>
-            <Button
-              unstyled
-              className={`ds-editor__tab ${activePanel === "compiled" ? "ds-editor__tab--active" : ""}`}
-              onClick={() => setActivePanel("compiled")}
-            >
-              <FileJson size={13} /> Compiled JS
-            </Button>
-            <Button
-              unstyled
-              className={`ds-editor__tab ${activePanel === "diagnostics" ? "ds-editor__tab--active" : ""}`}
-              onClick={() => setActivePanel("diagnostics")}
-            >
-              <AlertTriangle size={13} /> Issues
-              {hasIssues && (
-                <span className="ds-editor__tab-badge ds-editor__tab-badge--warn">
-                  {issuesBadgeCount || "!"}
-                </span>
-              )}
-            </Button>
-
-            {lastRunAt && (
-              <div className="ds-editor__last-updated">
-                <Clock size={11} />
-                <span>Updated {formatTimeAgo(lastRunAt)}</span>
-                {cacheTTL > 0 && (
-                  <span className="ds-editor__cache-badge">{cacheTTLLabel(cacheTTL)}</span>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="ds-editor__panel-content">
-            {/* Preview */}
-            {activePanel === "preview" && (
-              <div className="ds-editor__preview">
-                {/* Preview type selector + save section */}
-                {previewItems.length > 0 && (
-                  <div className="ds-preview__toolbar">
-                    <div className="ds-preview__type-tabs">
-                      <Button
-                        unstyled
-                        className="ds-preview__type-tab ds-preview__type-tab--active"
-                      >
-                        <LayoutGrid size={13} /> Component Registry
-                      </Button>
-                    </div>
-                    {!isNew && (
-                      <Select
-                        className="ds-preview__saved-section-select"
-                        value={editingSectionId ?? ""}
-                        onChange={event => {
-                          const sectionId = Number(event.target.value);
-                          if (!sectionId) {
-                            startNewSectionDesign();
-                            return;
-                          }
-                          const section = savedSections.find(item => item.id === sectionId);
-                          if (section) applySavedSection(section);
-                        }}
-                        size="sm"
-                        aria-label="Saved section design"
-                      >
-                        <option value="">New section design</option>
-                        {savedSections.map(section => (
-                          <option key={section.id} value={section.id}>
-                            {section.name}
-                          </option>
-                        ))}
-                      </Select>
-                    )}
-                    {!isNew && (
-                      <Button
-                        unstyled
-                        className="ds-preview__save-section-btn"
-                        onClick={() => setShowSaveSection(v => !v)}
-                      >
-                        {editingSectionId ? <Pencil size={13} /> : <Bookmark size={13} />}
-                        {editingSectionId ? "Edit Section" : "Save as Section"}
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                {/* Save as section form */}
-                {showSaveSection && (
-                  <SaveAsSectionForm
-                    sectionName={sectionName}
-                    sectionDesc={sectionDesc}
-                    onSectionNameChange={setSectionName}
-                    onSectionDescChange={setSectionDesc}
-                    previewType="component"
-                    onClose={() => setShowSaveSection(false)}
-                    onSubmit={handleSaveSection}
-                    saving={savingSection}
-                    isNew={isNew}
-                    editing={editingSectionId !== null}
-                  />
-                )}
-
-                {runStats && <RunSummaryCard runStats={runStats} />}
-
-                {runStats && runStats.fetchLog.length > 0 && (
-                  <FetchLogPanel
-                    fetchLog={runStats.fetchLog}
-                    expandedFetch={expandedFetch}
-                    onToggle={i =>
-                      setExpandedFetch(prev => {
-                        const next = new Set(prev);
-                        if (next.has(i)) next.delete(i);
-                        else next.add(i);
-                        return next;
-                      })
-                    }
-                  />
-                )}
-
-                {previewItems.length === 0 && !evalError && (
-                  <div className="ds-editor__preview-empty">
-                    <Play size={32} />
-                    <p>Click "Run" to evaluate the data source and preview results.</p>
-                  </div>
-                )}
-                {evalError && (
-                  <div className="ds-editor__error">
-                    <AlertTriangle size={16} />
-                    <pre>{evalError}</pre>
-                  </div>
-                )}
-
-                {previewItems.length > 0 && !componentWorkspace && (
-                  <div className="ds-component-picker">
-                    <ComponentGroupEditor
-                      group={componentGroup}
-                      components={componentsList}
-                      availableColumns={tableColumns}
-                      firstRow={previewItems[0] || null}
-                      onChange={setComponentGroup}
-                      onWorkspaceModeChange={setComponentWorkspace}
-                    />
-                    <div className="ds-component-picker__hooks">
-                      <EventHookEditor hooks={componentHooks} onChange={setComponentHooks} />
-                    </div>
-                  </div>
-                )}
-
-                {previewItems.length > 0 && (
-                  <div
-                    className="ds-component-preview"
-                    style={{ "--ds-component-gap": `${componentGroup.gap}px` } as CSSProperties}
-                  >
-                    {previewItems.map((row, i) => (
-                      <ComponentGroupRenderer
-                        key={i}
-                        group={componentGroup}
-                        components={componentsList}
-                        row={row}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Compiled JS */}
-            {activePanel === "compiled" && (
-              <div className="ds-editor__compiled">
-                {compiledJS ? (
-                  <pre className="ds-editor__compiled-code">{compiledJS}</pre>
-                ) : (
-                  <div className="ds-editor__preview-empty">
-                    <FileJson size={32} />
-                    <p>Run the data source to see compiled JavaScript output.</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Diagnostics */}
-            {activePanel === "diagnostics" && (
-              <div className="ds-editor__diagnostics">
-                {/* Empty state - only before first run */}
-                {!runStats && diagnostics.length === 0 && !evalError && (
-                  <div className="ds-editor__preview-empty">
-                    <CheckCircle2 size={32} />
-                    <p>No issues. Run the data source to check for errors.</p>
-                  </div>
-                )}
-
-                {/* Run Summary */}
-                {runStats && <RunSummaryCard runStats={runStats} />}
-
-                {/* Fetch Log */}
-                {runStats && runStats.fetchLog.length > 0 && (
-                  <FetchLogPanel
-                    fetchLog={runStats.fetchLog}
-                    expandedFetch={expandedFetch}
-                    onToggle={i =>
-                      setExpandedFetch(prev => {
-                        const next = new Set(prev);
-                        if (next.has(i)) next.delete(i);
-                        else next.add(i);
-                        return next;
-                      })
-                    }
-                  />
-                )}
-
-                {/* Error */}
-                {evalError && (
-                  <div className="ds-editor__error">
-                    <AlertTriangle size={16} />
-                    <pre>{evalError}</pre>
-                  </div>
-                )}
-
-                {/* TypeScript Diagnostics */}
-                {diagnostics.map((d, i) => (
-                  <div
-                    key={i}
-                    className={`ds-diagnostic ${d.category === 1 ? "ds-diagnostic--error" : "ds-diagnostic--warn"}`}
-                  >
-                    <span className="ds-diagnostic__location">
-                      {d.file ? `${d.file} ` : ""}Ln {d.line}, Col {d.col}
-                    </span>
-                    <span className="ds-diagnostic__message">{d.message}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Sub-components
-function RunSummaryCard({ runStats }: { runStats: RunStats }) {
-  return (
-    <div className="ds-run-summary">
-      <div className="ds-run-summary__header">
-        <span className="ds-run-summary__title">Run Summary</span>
-        <span
-          className={`ds-run-summary__status ds-run-summary__status--${
-            runStats.exitReason === "success"
-              ? "success"
-              : runStats.exitReason === "timeout"
-                ? "timeout"
-                : "error"
-          }`}
-        >
-          {runStats.exitReason === "success" ? (
-            <CheckCircle2 size={11} />
-          ) : (
-            <AlertTriangle size={11} />
-          )}
-          {EXIT_REASON_LABELS[runStats.exitReason]}
-        </span>
-      </div>
-      <div className="ds-run-summary__stats">
-        <span className="ds-run-stat">
-          <Clock size={11} />
-          <strong>{runStats.duration}</strong>ms
-        </span>
-        {runStats.totalItems > 0 && (
-          <span className="ds-run-stat">
-            <Filter size={11} />
-            <strong>{runStats.validItems}</strong>/{runStats.totalItems} valid
-            {runStats.skippedItems > 0 && (
-              <>
-                {" "}
-                (<strong className="ds-run-stat__skipped">{runStats.skippedItems}</strong> skipped)
-              </>
-            )}
-          </span>
-        )}
-        <span className="ds-run-stat">
-          <Globe size={11} />
-          <strong>{runStats.fetchLog.length}</strong> outbound
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function FetchLogPanel({
-  fetchLog,
-  expandedFetch,
-  onToggle,
-}: {
-  fetchLog: FetchLogEntry[];
-  expandedFetch: Set<number>;
-  onToggle: (i: number) => void;
-}) {
-  return (
-    <div className="ds-fetch-log">
-      <div className="ds-fetch-log__title">Outbound Requests</div>
-      {fetchLog.map((entry, i) => {
-        const expanded = expandedFetch.has(i);
-        const statusOk = entry.status !== undefined && entry.status >= 200 && entry.status < 300;
-        const statusWarn = entry.status !== undefined && entry.status >= 300 && entry.status < 400;
-        return (
-          <div key={i} className="ds-fetch-entry">
-            <div className="ds-fetch-entry__row" onClick={() => onToggle(i)}>
-              <span className="ds-fetch-entry__method">{entry.method}</span>
-              <span className="ds-fetch-entry__url" title={entry.url}>
-                {entry.url}
-              </span>
-              {entry.status !== undefined ? (
-                <span
-                  className={`ds-fetch-entry__status ${
-                    statusOk
-                      ? "ds-fetch-entry__status--ok"
-                      : statusWarn
-                        ? "ds-fetch-entry__status--warn"
-                        : "ds-fetch-entry__status--error"
-                  }`}
-                >
-                  {entry.status} {entry.statusText}
-                </span>
-              ) : entry.error ? (
-                <span className="ds-fetch-entry__status ds-fetch-entry__status--error">Error</span>
-              ) : null}
-              {entry.duration !== undefined && (
-                <span className="ds-fetch-entry__duration">{entry.duration}ms</span>
-              )}
-              {expanded ? (
-                <ChevronDown size={13} className="ds-fetch-entry__chevron" />
-              ) : (
-                <ChevronRight size={13} className="ds-fetch-entry__chevron" />
-              )}
-            </div>
-            {expanded && entry.headers && Object.keys(entry.headers).length > 0 && (
-              <div className="ds-fetch-entry__headers">
-                {Object.entries(entry.headers).map(([k, v]) => (
-                  <div key={k}>
-                    <strong>{k}:</strong> {v}
-                  </div>
-                ))}
-              </div>
-            )}
-            {expanded && entry.error && <div className="ds-fetch-entry__error">{entry.error}</div>}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function SaveAsSectionForm({
-  sectionName,
-  sectionDesc,
-  onSectionNameChange,
-  onSectionDescChange,
-  previewType,
-  onClose,
-  onSubmit,
-  saving,
-  isNew: _isNew,
-  editing,
-}: {
-  sectionName: string;
-  sectionDesc: string;
-  onSectionNameChange: (v: string) => void;
-  onSectionDescChange: (v: string) => void;
-  previewType: DataSourcePreviewType;
-  onClose: () => void;
-  onSubmit: () => void;
-  saving: boolean;
-  isNew: boolean;
-  editing: boolean;
-}) {
-  return (
-    <div className="ds-save-section">
-      <div className="ds-save-section__header">
-        <span>{editing ? "Edit Custom Section" : "Save as Custom Section"}</span>
-        <Button unstyled className="action-btn " onClick={onClose} title="Close">
-          <X size={14} />
-        </Button>
-      </div>
-      <div className="ds-save-section__body">
-        <div className="ds-save-section__field">
-          <label>Name</label>
-          <input
-            type="text"
-            value={sectionName}
-            onChange={e => onSectionNameChange(e.target.value)}
-            placeholder="e.g. Recent Threads Grid"
-          />
-        </div>
-        <div className="ds-save-section__field">
-          <label>Description</label>
-          <input
-            type="text"
-            value={sectionDesc}
-            onChange={e => onSectionDescChange(e.target.value)}
-            placeholder="Optional"
-          />
-        </div>
-        <div className="ds-save-section__info">
-          Type: <strong>{DATASOURCE_PREVIEW_TYPE_LABELS[previewType]}</strong>
-        </div>
-        <div className="ds-save-section__actions">
-          <Button unstyled className="ds-save-section__cancel" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            unstyled
-            className="ds-save-section__submit"
-            onClick={onSubmit}
-            disabled={saving || !sectionName.trim()}
-          >
-            {saving ? <Loader2 size={13} className="spin" /> : <Save size={13} />}
-            {saving ? "Saving…" : editing ? "Update Section" : "Save Section"}
-          </Button>
-        </div>
+        <DataSourceResultsPanel
+          activePanel={activePanel}
+          onActivePanelChange={setActivePanel}
+          previewItems={previewItems}
+          diagnostics={diagnostics}
+          compiledJS={compiledJS}
+          evalError={evalError}
+          runStats={runStats}
+          expandedFetch={expandedFetch}
+          onToggleFetch={index =>
+            setExpandedFetch(previous => {
+              const next = new Set(previous);
+              if (next.has(index)) next.delete(index);
+              else next.add(index);
+              return next;
+            })
+          }
+          lastRunAt={lastRunAt}
+          cacheTTL={cacheTTL}
+          isNew={isNew}
+          savedSections={savedSections}
+          editingSectionId={editingSectionId}
+          onSelectSection={applySavedSection}
+          onNewSection={startNewSectionDesign}
+          showSaveSection={showSaveSection}
+          onToggleSaveSection={() => setShowSaveSection(value => !value)}
+          sectionName={sectionName}
+          sectionDesc={sectionDesc}
+          onSectionNameChange={setSectionName}
+          onSectionDescChange={setSectionDesc}
+          onCloseSaveSection={() => setShowSaveSection(false)}
+          onSaveSection={handleSaveSection}
+          savingSection={savingSection}
+          componentWorkspace={componentWorkspace}
+          componentGroup={componentGroup}
+          componentsList={componentsList}
+          tableColumns={tableColumns}
+          componentHooks={componentHooks}
+          setComponentGroup={setComponentGroup}
+          setComponentWorkspace={setComponentWorkspace}
+          setComponentHooks={setComponentHooks}
+        />
       </div>
     </div>
   );

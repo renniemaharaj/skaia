@@ -28,10 +28,11 @@ export default function DocumentationViewPage({
   embeddedArticleSlug,
   embedded = false,
 }: DocumentationViewPageProps = {}) {
-  const { documentationSlug: routeDocumentationSlug = "", articleSlug: routeArticleSlug } = useParams<{
-    documentationSlug: string;
-    articleSlug?: string;
-  }>();
+  const { documentationSlug: routeDocumentationSlug = "", articleSlug: routeArticleSlug } =
+    useParams<{
+      documentationSlug: string;
+      articleSlug?: string;
+    }>();
   const documentationSlug = embeddedDocumentationSlug ?? routeDocumentationSlug;
   const articleSlug = embeddedArticleSlug ?? routeArticleSlug;
   const navigate = useNavigate();

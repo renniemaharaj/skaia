@@ -14,9 +14,7 @@ const components: ComponentDefinition[] = [
     repeatable: true,
     props_schema: {},
     style_targets: ["root"],
-    bind_points: [
-      { key: "body", label: "Body", description: "", kind: "text", required: true },
-    ],
+    bind_points: [{ key: "body", label: "Body", description: "", kind: "text", required: true }],
     version: 1,
   },
   {

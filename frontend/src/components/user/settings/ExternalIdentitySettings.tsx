@@ -2,7 +2,7 @@ import { ExternalLink, Link2, ShieldCheck, Trash2, UserRound } from "lucide-reac
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { apiRequest } from "../../../utils/api";
-import Button from "../../input/Button";
+import Button from "../../ui/Button";
 import { FormSectionIntro, ManagedForm, type ManagedFormTab } from "../../form";
 import { confirmDestructiveAction } from "../../ui/Prompt";
 import "./ExternalIdentitySettings.css";
@@ -130,7 +130,9 @@ export default function ExternalIdentitySettings({ basePath, exitPath }: Props) 
       setLinks(current => current.map(item => (item.id === updated.id ? updated : item)));
       toast.success(updated.public ? "Identity shown on your profile" : "Identity is now private");
     } catch (updateError) {
-      toast.error(updateError instanceof Error ? updateError.message : "Could not update visibility");
+      toast.error(
+        updateError instanceof Error ? updateError.message : "Could not update visibility"
+      );
     }
   };
 
@@ -151,9 +153,27 @@ export default function ExternalIdentitySettings({ basePath, exitPath }: Props) 
   };
 
   const tabs: ManagedFormTab[] = [
-    { id: "profile", label: "Profile", icon: <UserRound size={15} />, active: false, to: `${basePath}/profile` },
-    { id: "security", label: "Security", icon: <ShieldCheck size={15} />, active: false, to: `${basePath}/security` },
-    { id: "identities", label: "Linked identities", icon: <Link2 size={15} />, active: true, to: `${basePath}/identities` },
+    {
+      id: "profile",
+      label: "Profile",
+      icon: <UserRound size={15} />,
+      active: false,
+      to: `${basePath}/profile`,
+    },
+    {
+      id: "security",
+      label: "Security",
+      icon: <ShieldCheck size={15} />,
+      active: false,
+      to: `${basePath}/security`,
+    },
+    {
+      id: "identities",
+      label: "Linked identities",
+      icon: <Link2 size={15} />,
+      active: true,
+      to: `${basePath}/identities`,
+    },
   ];
 
   return (
@@ -176,7 +196,11 @@ export default function ExternalIdentitySettings({ basePath, exitPath }: Props) 
         description="Connect verified accounts from services configured by this site. You control what appears publicly."
       />
 
-      {error && <div className="managed-form__error" role="alert">{error}</div>}
+      {error && (
+        <div className="managed-form__error" role="alert">
+          {error}
+        </div>
+      )}
 
       <section className="identity-settings__section" aria-labelledby="linked-identities-heading">
         <div className="identity-settings__heading">
@@ -187,16 +211,22 @@ export default function ExternalIdentitySettings({ basePath, exitPath }: Props) 
           <span className="identity-settings__count">{links.length}</span>
         </div>
         {loading ? (
-          <div className="identity-settings__state" aria-live="polite">Loading linked identities…</div>
+          <div className="identity-settings__state" aria-live="polite">
+            Loading linked identities…
+          </div>
         ) : links.length === 0 ? (
-          <div className="identity-settings__state">You have not linked an external identity yet.</div>
+          <div className="identity-settings__state">
+            You have not linked an external identity yet.
+          </div>
         ) : (
           <div className="identity-settings__list">
             {links.map(link => (
               <article className="identity-settings__item" key={link.id}>
                 <div className="identity-settings__item-copy">
                   <strong>{link.display_name}</strong>
-                  <span>{link.provider} · {link.public ? "Public" : "Private"}</span>
+                  <span>
+                    {link.provider} · {link.public ? "Public" : "Private"}
+                  </span>
                 </div>
                 <div className="identity-settings__actions">
                   <Button
@@ -212,10 +242,20 @@ export default function ExternalIdentitySettings({ basePath, exitPath }: Props) 
                   >
                     Reverify
                   </Button>
-                  <Button size="sm" variant="secondary" iconLeft={<ExternalLink size={14} />} onClick={() => void updateVisibility(link)}>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    iconLeft={<ExternalLink size={14} />}
+                    onClick={() => void updateVisibility(link)}
+                  >
                     Make {link.public ? "private" : "public"}
                   </Button>
-                  <Button size="icon" variant="danger" aria-label={`Unlink ${link.display_name}`} onClick={() => void unlink(link)}>
+                  <Button
+                    size="icon"
+                    variant="danger"
+                    aria-label={`Unlink ${link.display_name}`}
+                    onClick={() => void unlink(link)}
+                  >
                     <Trash2 size={15} />
                   </Button>
                 </div>
@@ -238,32 +278,93 @@ export default function ExternalIdentitySettings({ basePath, exitPath }: Props) 
           <div className="identity-settings__challenge">
             <p>{challenge.instructions}</p>
             <div className="form-group">
-              <label className="form-label" htmlFor="identity-proof">Verification proof</label>
-              <input id="identity-proof" className="form-input" value={proof} onChange={event => setProof(event.target.value)} autoComplete="off" />
+              <label className="form-label" htmlFor="identity-proof">
+                Verification proof
+              </label>
+              <input
+                id="identity-proof"
+                className="form-input"
+                value={proof}
+                onChange={event => setProof(event.target.value)}
+                autoComplete="off"
+              />
             </div>
             <div className="identity-settings__actions">
-              <Button variant="secondary" onClick={() => { setChallenge(null); setProof(""); }} disabled={working}>Cancel</Button>
-              <Button variant="primary" onClick={() => void completeChallenge()} loading={working} disabled={!proof.trim()}>Verify and link</Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setChallenge(null);
+                  setProof("");
+                }}
+                disabled={working}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => void completeChallenge()}
+                loading={working}
+                disabled={!proof.trim()}
+              >
+                Verify and link
+              </Button>
             </div>
           </div>
         ) : (
           <div className="form-grid">
             <div className="form-group">
-              <label className="form-label" htmlFor="identity-provider">Provider</label>
-              <select id="identity-provider" className="form-input" value={providerKey} onChange={event => setProviderKey(event.target.value)}>
-                {providers.map(provider => <option key={provider.id} value={provider.key}>{provider.name}{linkedProviderIDs.has(provider.id) ? " (linked)" : ""}</option>)}
+              <label className="form-label" htmlFor="identity-provider">
+                Provider
+              </label>
+              <select
+                id="identity-provider"
+                className="form-input"
+                value={providerKey}
+                onChange={event => setProviderKey(event.target.value)}
+              >
+                {providers.map(provider => (
+                  <option key={provider.id} value={provider.key}>
+                    {provider.name}
+                    {linkedProviderIDs.has(provider.id) ? " (linked)" : ""}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="identity-subject">Account identifier</label>
-              <input id="identity-subject" className="form-input" value={subject} onChange={event => setSubject(event.target.value)} maxLength={255} />
+              <label className="form-label" htmlFor="identity-subject">
+                Account identifier
+              </label>
+              <input
+                id="identity-subject"
+                className="form-input"
+                value={subject}
+                onChange={event => setSubject(event.target.value)}
+                maxLength={255}
+              />
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="identity-display-name">Display name</label>
-              <input id="identity-display-name" className="form-input" value={displayName} onChange={event => setDisplayName(event.target.value)} maxLength={120} placeholder={subject || "Name shown for this identity"} />
+              <label className="form-label" htmlFor="identity-display-name">
+                Display name
+              </label>
+              <input
+                id="identity-display-name"
+                className="form-input"
+                value={displayName}
+                onChange={event => setDisplayName(event.target.value)}
+                maxLength={120}
+                placeholder={subject || "Name shown for this identity"}
+              />
             </div>
             <div className="identity-settings__connect-action">
-              <Button variant="primary" onClick={() => void startChallenge()} loading={working} disabled={!providerKey || !subject.trim()} iconLeft={<Link2 size={15} />}>{hasUnlinkedProvider ? "Begin verification" : "Begin reverification"}</Button>
+              <Button
+                variant="primary"
+                onClick={() => void startChallenge()}
+                loading={working}
+                disabled={!providerKey || !subject.trim()}
+                iconLeft={<Link2 size={15} />}
+              >
+                {hasUnlinkedProvider ? "Begin verification" : "Begin reverification"}
+              </Button>
             </div>
           </div>
         )}

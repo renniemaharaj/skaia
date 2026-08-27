@@ -1,0 +1,39 @@
+<--/------->
+
+## frontend_maintainability_normalization_sequence
+@todo-sequence(group=frontend_maintainability_normalization_sequence, index=0)
+
+### Current Progress
+- **Phase 1: Audit and deduplication** - ✅ Complete
+- **Phase 2: Ordered worker handoffs** - ✅ Complete
+- **Phase 3: Foundation and decomposition execution** - 🟡 In progress
+- **Phase 4: Cross-route convergence audit** - ⬜ Not started
+
+### Next Steps
+- [x] 2026-08-27: Completed sequence index 1, `ui_primitive_consolidation`,
+  with canonical `components/ui` ownership, compatibility re-exports, named
+  core-route migration, focused tests, and complete frontend verification.
+- [ ] Execute sequence index 2, `frontend_css_architecture_normalization`.
+- [ ] Advance through indexes 2-6 only after each lower member is complete.
+- [ ] Re-run the inventory and reconcile `.specs/frontend_spec` after index 6.
+
+### Recorded Exception
+- 2026-08-27 production normalization may verify and repair the partial index
+  3-5 extractions already present in the shared dirty worktree. The
+  browser-accessible Grengo control plane may also be removed out of order
+  because that change reduces security exposure instead of introducing a new
+  UI contract. This exception does not mark indexes 2-5 complete or permit new
+  higher-index scope; index 2 remains the next sequence worker.
+
+### Audit Baseline (2026-08-27)
+- 118,189 TypeScript/TSX/CSS lines; 372 TSX files and 141 CSS files.
+- 27 TSX files are at least 500 lines; 13 are at least 800; 6 exceed 1,000.
+- 17 CSS files are at least 500 lines and 9 exceed 1,000 lines.
+- 402 raw buttons across 106 files, 6 raw selects, 29 raw checkboxes, 673
+  inline style objects, and 64 `unstyled` primitive escapes across 16 files.
+- 105 hard-coded CSS color matches outside the token authority and isolated
+  clipmaker boundary; 81 `var()` fallbacks and 172 `!important` uses outside
+  the isolated clipmaker boundary require classification against the spec.
+- Exact duplicate: `isolated-studio.css` lines 1960-2309 and 2883-3232.
+
+<--/------->

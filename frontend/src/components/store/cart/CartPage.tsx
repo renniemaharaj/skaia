@@ -59,7 +59,8 @@ export const CartPage = () => {
   const [userCards, setUserCards] = useState<WalletCard[]>([]);
   const [savedCheckoutBrief, setSavedCheckoutBrief] = useState<SavedCheckoutInfo | null>(null);
   const [checkoutPolicies, setCheckoutPolicies] = useState<LegalPolicy[]>([]);
-  const [checkoutNoticeVariant, setCheckoutNoticeVariant] = useState<LegalConfig["checkout_notice_variant"]>("standard");
+  const [checkoutNoticeVariant, setCheckoutNoticeVariant] =
+    useState<LegalConfig["checkout_notice_variant"]>("standard");
   const [checkoutNoticeMessage, setCheckoutNoticeMessage] = useState(
     "Review and accept each policy before submitting your order. This browser remembers your choices."
   );

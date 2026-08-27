@@ -1,7 +1,7 @@
 import { RotateCcw, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import Button from "../../components/input/Button";
+import Button from "../../components/ui/Button";
 import { DirectoryLayout } from "../../components/page/layout/templates/DirectoryLayout";
 import { customConfirm } from "../../components/ui/Prompt";
 import { SkeletonContent } from "../../components/ui/Skeleton";

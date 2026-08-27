@@ -8,7 +8,7 @@ import {
   setPolicyAccepted,
   subscribeToPolicyAcceptance,
 } from "../../../utils/policyAcceptance";
-import Checkbox from "../../input/Checkbox";
+import Checkbox from "../../ui/Checkbox";
 
 export function CookiePolicyNotice() {
   const [config, setConfig] = useState<LegalConfig | null>(null);
@@ -41,7 +41,10 @@ export function CookiePolicyNotice() {
   if (policies.length === 0) return null;
 
   return (
-    <aside className="layout-guest-sandbox-banner layout-policy-banner" aria-label="Cookie policies">
+    <aside
+      className="layout-guest-sandbox-banner layout-policy-banner"
+      aria-label="Cookie policies"
+    >
       <Cookie size={16} className="layout-guest-sandbox-icon" aria-hidden="true" />
       <div className="layout-policy-banner__copy">
         <strong>Cookie policies</strong>

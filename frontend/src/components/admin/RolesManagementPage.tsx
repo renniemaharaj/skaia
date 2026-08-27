@@ -11,8 +11,8 @@ import type { Permission, ProfileUser, Role } from "../user/types";
 import "./RolesManagementPage.css";
 import { ContentFlatCard } from "../cards/ContentFlatCard";
 import { ContentStandOutCard } from "../cards/ContentStandOutCard";
-import Button from "../input/Button";
-import Checkbox from "../input/Checkbox";
+import Button from "../ui/Button";
+import Checkbox from "../ui/Checkbox";
 import { SideRouteShell } from "../layout/SideRouteShell";
 import { SkeletonContent } from "../ui/Skeleton";
 
@@ -501,7 +501,7 @@ export default function RolesManagementPage() {
                 >
                   {/* Role Display */}
                   <div className="rmp-edit-section">
-                    <button
+                    <Button unstyled
                       className="rmp-section-header"
                       style={{
                         width: "100%",
@@ -523,7 +523,7 @@ export default function RolesManagementPage() {
                       ) : (
                         <ChevronDown size={16} />
                       )}
-                    </button>
+                    </Button>
                     {expandedEditSection === "display" && (
                       <div
                         className="rmp-form-row"
@@ -603,7 +603,7 @@ export default function RolesManagementPage() {
                     className="rmp-edit-section"
                     style={{ borderTop: "1px solid var(--border-color)" }}
                   >
-                    <button
+                    <Button unstyled
                       className="rmp-section-header"
                       style={{
                         width: "100%",
@@ -625,7 +625,7 @@ export default function RolesManagementPage() {
                       ) : (
                         <ChevronDown size={16} />
                       )}
-                    </button>
+                    </Button>
                     {expandedEditSection === "features" && (
                       <div
                         className="rmp-form-row"
@@ -682,7 +682,7 @@ export default function RolesManagementPage() {
                     className="rmp-edit-section"
                     style={{ borderTop: "1px solid var(--border-color)" }}
                   >
-                    <button
+                    <Button unstyled
                       className="rmp-section-header"
                       style={{
                         width: "100%",
@@ -704,7 +704,7 @@ export default function RolesManagementPage() {
                       ) : (
                         <ChevronDown size={16} />
                       )}
-                    </button>
+                    </Button>
                     {expandedEditSection === "permissions" && (
                       <div className="rmp-perms-panel" style={{ padding: "0 1rem 1rem 1rem" }}>
                         {role.loadedPerms === undefined ? (
@@ -753,7 +753,7 @@ export default function RolesManagementPage() {
                     className="rmp-edit-section"
                     style={{ borderTop: "1px solid var(--border-color)" }}
                   >
-                    <button
+                    <Button unstyled
                       className="rmp-section-header"
                       style={{
                         width: "100%",
@@ -775,7 +775,7 @@ export default function RolesManagementPage() {
                       ) : (
                         <ChevronDown size={16} />
                       )}
-                    </button>
+                    </Button>
                     {expandedEditSection === "users" && (
                       <div className="rmp-perms-panel" style={{ padding: "0 1rem 1rem 1rem" }}>
                         <div style={{ marginBottom: "1.5rem", maxWidth: "350px" }}>
@@ -827,7 +827,7 @@ export default function RolesManagementPage() {
                                 >
                                   {u.display_name || u.username}
                                 </span>
-                                <button
+                              <Button unstyled
                                   className="rmp-user-badge-remove"
                                   onClick={() =>
                                     removeUserFromRole(role.id, role.name, String(u.id))
@@ -835,7 +835,7 @@ export default function RolesManagementPage() {
                                   title={`Remove ${u.display_name || u.username} from ${role.name}`}
                                 >
                                   <X size={12} />
-                                </button>
+                              </Button>
                               </div>
                             ))}
                           </div>

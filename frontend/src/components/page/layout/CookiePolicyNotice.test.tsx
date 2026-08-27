@@ -34,9 +34,7 @@ describe("CookiePolicyNotice", () => {
     );
 
     await waitFor(() =>
-      expect(
-        screen.getByRole("complementary", { name: "Cookie policies" })
-      ).toBeInTheDocument()
+      expect(screen.getByRole("complementary", { name: "Cookie policies" })).toBeInTheDocument()
     );
     expect(screen.getByRole("link", { name: "Cookie choices" })).toHaveAttribute(
       "href",
@@ -44,7 +42,9 @@ describe("CookiePolicyNotice", () => {
     );
     await user.click(screen.getByRole("checkbox"));
     await waitFor(() =>
-      expect(screen.queryByRole("complementary", { name: "Cookie policies" })).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole("complementary", { name: "Cookie policies" })
+      ).not.toBeInTheDocument()
     );
     expect(localStorage.getItem("skaia.policy-acceptance.v1")).toContain("cookies");
   });

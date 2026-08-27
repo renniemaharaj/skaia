@@ -47,7 +47,9 @@ describe("CheckoutPanel policy acceptance", () => {
       <MemoryRouter>
         <CheckoutPanel
           {...baseProps}
-          checkoutPolicies={[{ id: "refunds", name: "Refund policy", page_slug: "legal-refunds-a1b2" } as never]}
+          checkoutPolicies={[
+            { id: "refunds", name: "Refund policy", page_slug: "legal-refunds-a1b2" } as never,
+          ]}
         />
       </MemoryRouter>
     );
@@ -79,7 +81,9 @@ describe("CheckoutPanel policy acceptance", () => {
       <MemoryRouter>
         <CheckoutPanel
           {...baseProps}
-          checkoutPolicies={[{ id: "refunds", name: "Refund policy", page_slug: "legal-refunds-a1b2" } as never]}
+          checkoutPolicies={[
+            { id: "refunds", name: "Refund policy", page_slug: "legal-refunds-a1b2" } as never,
+          ]}
           acceptedPolicyIDs={new Set(["refunds"])}
         />
       </MemoryRouter>
